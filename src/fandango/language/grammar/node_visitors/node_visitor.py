@@ -1,7 +1,6 @@
 import abc
 from typing import Generic, Optional, TypeVar
 from fandango.language.grammar.nodes.alternative import Alternative
-from fandango.language.grammar.nodes.char_set import CharSet
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
@@ -56,8 +55,4 @@ class NodeVisitor(abc.ABC, Generic[AggregateType]):
 
     # noinspection PyUnusedLocal
     def visitTerminalNode(self, node: TerminalNode):
-        return self.default_result()
-
-    # noinspection PyUnusedLocal
-    def visitCharSet(self, node: CharSet):
         return self.default_result()

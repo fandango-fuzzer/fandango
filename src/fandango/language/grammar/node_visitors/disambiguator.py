@@ -3,7 +3,6 @@ from collections.abc import Sequence
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
-from fandango.language.grammar.nodes.char_set import CharSet
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
@@ -120,11 +119,3 @@ class Disambiguator(NodeVisitor):
         self, node: TerminalNode
     ) -> dict[tuple[Symbol, ...], list[tuple[Node, ...]]]:
         return {(node.symbol,): [(node,)]}
-
-    def visitCharSet(
-        self, node: CharSet
-    ) -> dict[tuple[Symbol, ...], list[tuple[Node, ...]]]:
-        return {
-            (Terminal(c),): [(node, TerminalNode(Terminal(c), self._grammar_settings))]
-            for c in node.chars
-        }

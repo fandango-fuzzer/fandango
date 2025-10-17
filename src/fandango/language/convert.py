@@ -20,7 +20,6 @@ from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.grammar_settings import GrammarSetting
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.alternative import Alternative
-from fandango.language.grammar.nodes.char_set import CharSet
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
@@ -307,12 +306,6 @@ class GrammarProcessor(FandangoParserVisitor):
             if number not in ["0", "1"]:
                 raise UnsupportedOperation(f"Unsupported bit spec: {number}")
             return TerminalNode(Terminal.from_number(number), self._grammar_settings)
-        elif ctx.char_set():
-            text = ctx.char_set().getText()
-            LOGGER.warning(
-                f"{text}: Charset specs are deprecated. Use regular expressions (r'...') instead."
-            )
-            return CharSet(text, self._grammar_settings)
         elif ctx.alternative():
             return self.visitAlternative(ctx.alternative())
         else:

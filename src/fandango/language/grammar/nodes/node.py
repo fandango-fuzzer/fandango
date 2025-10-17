@@ -23,7 +23,6 @@ class NodeType(enum.Enum):
     OPTION = "option"
     NON_TERMINAL = "non_terminal"
     TERMINAL = "terminal"
-    CHAR_SET = "char_set"
 
     def __repr__(self):
         return str(self)
