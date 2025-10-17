@@ -4,7 +4,6 @@ from fandango.language import NonTerminal, Terminal
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
-from fandango.language.grammar.nodes.char_set import CharSet
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
@@ -99,9 +98,6 @@ class GrammarReducer(NodeVisitor):
             self._grammar_settings,
             node.id,
         )
-
-    def visitCharSet(self, node: CharSet):
-        return CharSet(node.chars, self._grammar_settings)
 
     def visitNonTerminalNode(self, node: NonTerminalNode):
         if node.sender is None and node.recipient is None:

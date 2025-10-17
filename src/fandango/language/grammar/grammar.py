@@ -14,7 +14,6 @@ from fandango.language.grammar.literal_generator import LiteralGenerator
 from fandango.language.grammar.node_visitors.disambiguator import Disambiguator
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
-from fandango.language.grammar.nodes.char_set import CharSet
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
@@ -708,9 +707,6 @@ class Grammar(NodeVisitor):
         return [node]
 
     def visitTerminalNode(self, node: TerminalNode):
-        return []
-
-    def visitCharSet(self, node: CharSet):
         return []
 
     def compute_k_paths(self, k: int) -> set[tuple[Node, ...]]:

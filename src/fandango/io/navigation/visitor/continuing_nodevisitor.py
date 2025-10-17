@@ -32,7 +32,7 @@ class ContinuingNodeVisitor(NodeVisitor):
         self.tree = tree
         self.current_path = []
         self.current_tree = [None]
-        if tree is not None:
+        if self.tree is not None:
             self.current_path.append((self.tree.nonterminal, False))
             if len(self.tree.children) != 0:
                 self.current_tree = [[self.tree.children[0]]]
