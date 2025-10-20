@@ -4,7 +4,9 @@ from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.grammarnavigator import GrammarNavigator
 from fandango.io.navigation.grammarreducer import GrammarReducer
 from fandango.io.navigation.packetiterativeparser import PacketIterativeParser
-from fandango.language import Grammar, NonTerminal, DerivationTree, Terminal, Symbol
+from fandango.language import Grammar, DerivationTree
+from fandango.language.symbols.non_terminal import NonTerminal
+from fandango.language.symbols.symbol import Symbol
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.node_visitors.grammar_graph_converter import (
     GrammarGraphNode,
