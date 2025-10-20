@@ -30,7 +30,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         self.node_cost = 0
         self.max_comparisons = 10_000_000
         self.comparisons = 0
-        self.search_symbols = None
+        self.search_symbols: Optional[list[Symbol]] = None
         self.is_search_end_node = False
 
     def astar(
@@ -67,13 +67,13 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
 
     def _get_path_symbols(
         self, node: GrammarGraphNode, include_controlflow: bool
-    ) -> list[GrammarGraphNode]:
-        chain = [node]
+    ) -> list[Symbol]:
+        node_chain = [node]
         current = node
         while current.parent is not None:
             current = current.parent
-            chain.append(current)
-        chain = list(map(lambda x: x.node.to_symbol(), chain))
+            node_chain.append(current)
+        chain = list(map(lambda x: x.node.to_symbol(), node_chain))
         chain = chain[::-1]
         if include_controlflow:
             return chain
@@ -84,7 +84,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
                 deleted += 1
         return chain
 
-    def heuristic_path_symbols(self, current_chain: list[GrammarGraphNode]) -> float:
+    def heuristic_path_symbols(self, current_chain: list[Symbol]) -> float:
         if not self.search_symbols or not current_chain:
             return 1
         max_overlap = 0
@@ -152,12 +152,13 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         else:
             start_nav_node = self.graph.start
         self.search_symbols = list(destination_k_path)
-        return list(
-            self.astar(
-                start_nav_node,
-                EagerGrammarGraphNode(NonTerminalNode(NonTerminal("<dummy>"), []), []),
-            )
+        a_star_path = self.astar(
+            start_nav_node,
+            EagerGrammarGraphNode(NonTerminalNode(NonTerminal("<dummy>"), []), []),
         )
+        if a_star_path is None:
+            return None
+        return list(a_star_path)
 
     def astar_tree(self, *, tree: DerivationTree, destination_k_path: list[Symbol]):
         return self.astar_tree_w_controlflow(
@@ -165,14 +166,19 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         )
 
     def astar_search_end_w_controlflow(
-        self, tree: DerivationTree
+        self, tree: Optional[DerivationTree]
     ) -> Iterable[GrammarGraphNode]:
+        if tree is None:
+            return []
         start_node = self.graph.walk(tree)
         if start_node.is_accepting:
             return []
         self.search_symbol = None
         self.is_search_end_node = True
-        return self.astar(start_node, start_node)
+        a_star_path = self.astar(start_node, start_node)
+        if a_star_path is None:
+            return []
+        return a_star_path
 
     def astar_search_end(self, tree: DerivationTree) -> Iterable[GrammarGraphNode]:
         return self.astar_search_end_w_controlflow(tree)
