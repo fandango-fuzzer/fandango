@@ -32,7 +32,7 @@ class PacketNavigator(GrammarNavigator):
             ),
             start_symbol,
         )
-        self._packet_symbols = set(
+        self._packet_symbols: set[NonTerminal] = set(
             map(lambda x: x[2], grammar.get_protocol_messages(start_symbol))
         )
         self._parser = PacketIterativeParser(reduced_rules)
@@ -74,11 +74,12 @@ class PacketNavigator(GrammarNavigator):
         path = list(
             filter(lambda n: n is None or isinstance(n.node, NonTerminalNode), path)
         )
-        symbol_path = []
+        symbol_path: list[Optional[PacketNonTerminal | NonTerminal]] = []
         for n in path:
             if n is None:
                 symbol_path.append(None)
                 continue
+            assert isinstance(n.node, NonTerminalNode)
             if n.node.sender is not None:
                 symbol_path.append(
                     PacketNonTerminal(
@@ -102,14 +103,17 @@ class PacketNavigator(GrammarNavigator):
             return True
         packet_k_paths = set()
         for k_path in k_paths:
-            packet_path = tuple()
+            packet_path: tuple[Symbol, ...] = tuple()
             for symbol in k_path:
                 if symbol in self._packet_symbols:
+                    assert isinstance(symbol, NonTerminal)
                     symbol = NonTerminal(f"<_packet_{symbol.name()[1:]}")
                 packet_path += (symbol,)
             packet_k_paths.add(packet_path)
         k = max(1, max(map(lambda x: len(x), k_paths)))
         col_tree = self.grammar.collapse(controlflow_tree)
+        if col_tree is None:
+            return False
         covered_k_paths = self.grammar._extract_k_paths_from_tree(col_tree, k)
         return len(packet_k_paths.difference(covered_k_paths)) == 0
 
