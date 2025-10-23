@@ -3,14 +3,14 @@ from typing import Union, Iterable, Optional
 from astar import AStar
 from fandango.errors import FandangoError
 from fandango.io.navigation.reachability_checker import ReachabilityChecker
-from fandango.language import DerivationTree, Symbol, NonTerminal, Terminal, Grammar
+from fandango.language import DerivationTree, Grammar
+from fandango.language.symbols import Symbol, NonTerminal
 from fandango.language.grammar.node_visitors.grammar_graph_converter import (
     GrammarGraphNode,
     EagerGrammarGraphNode,
     GrammarGraphConverter,
 )
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
-from fandango.language.grammar.nodes.terminal import TerminalNode
 
 
 class NavigatorTimedOutError(FandangoError):
