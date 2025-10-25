@@ -1,6 +1,7 @@
 import abc
 import enum
 from typing import Any
+import warnings
 
 from fandango.language.tree_value import TreeValue, TreeValueType
 
@@ -57,12 +58,18 @@ class Symbol(abc.ABC):
     def __hash__(self) -> int:
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def format_as_spec(self) -> str:
+        raise NotImplementedError
+
     def __str__(self) -> str:
-        raise NotImplementedError(
-            f"__str__ not implemented for {self.__class__.__name__}, use method specific to your usecase."
+        warnings.warn(
+            f"Don't rely on the __str__ impl on {self.__class__.__name__}, use method specific to your usecase"
         )
+        return self.format_as_spec()
 
     def __repr__(self) -> str:
-        raise NotImplementedError(
-            f"__repr__ not implemented for {self.__class__.__name__}, use method specific to your usecase."
+        warnings.warn(
+            f"Don't rely on the __repr__ impl on {self.__class__.__name__}, use method specific to your usecase"
         )
+        return f"{self.__class__.__name__}({self.format_as_spec()})"
