@@ -25,7 +25,6 @@ from fandango.language.grammar.nodes.repetition import (
 )
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.grammar.parser.parser import Parser
-from fandango.language.symbols.terminal import Terminal
 from fandango.language.tree import DerivationTree, TreeTuple
 from fandango.language.symbols import Symbol, NonTerminal
 from fandango.language.tree_value import TreeValueType
@@ -101,7 +100,6 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
 
     def derive_sources(self, tree: DerivationTree) -> list[DerivationTree]:
         gen_symbol = tree.symbol
-        assert isinstance(gen_symbol, (NonTerminal, Terminal))
         if not gen_symbol.is_non_terminal:
             raise FandangoValueError(
                 f"Tree {gen_symbol.format_as_spec()} is not a nonterminal"
