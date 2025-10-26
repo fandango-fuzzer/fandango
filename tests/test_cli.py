@@ -15,16 +15,16 @@ from .utils import DOCS_ROOT, IS_BEARTYPE_ACTIVE, RESOURCES_ROOT, run_command
 # beartype somehow scrambles the fixed rng
 if IS_BEARTYPE_ACTIVE:
     expected_with_random_seed = [
-        "6040",
-        "0561",
-        "37900",
-        "17",
-        "06",
-        "9",
-        "56683",
-        "8254",
-        "44066",
-        "52",
+        "6040162449562186",
+        "8868661899",
+        "4131018312686693",
+        "785",
+        "43016024477927",
+        "2076345978549",
+        "59183658507964",
+        "99423807392",
+        "494941188734201",
+        "85421138745559834",
     ]
 else:
     expected_with_random_seed = [
@@ -274,7 +274,7 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
             "10",
             "--no-cache",
             "-c",
-            "len(str(<start>)) > 10",
+            "len(str(<start>)) > 1000",
         ]
         expected = """fandango:ERROR: Population did not converge to a perfect population
 fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
