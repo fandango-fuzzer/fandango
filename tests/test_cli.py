@@ -274,7 +274,7 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
             "10",
             "--no-cache",
             "-c",
-            "len(str(<start>)) > 10",
+            "len(str(<start>)) > 1000",
         ]
         expected = """fandango:ERROR: Population did not converge to a perfect population
 fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
