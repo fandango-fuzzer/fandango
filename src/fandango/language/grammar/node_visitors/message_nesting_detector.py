@@ -21,7 +21,7 @@ class MessageNestingDetector(NodeVisitor[None, None]):
         elif node.sender is not None and node.symbol in self.current_path:
             str_path = [str(p) for p in self.current_path]
             raise RuntimeError(
-                f"Found illegal packet-definitions within packet-definition of non_terminal {node.symbol}! DerivationPath: "
+                f"Found illegal packet-definitions within packet-definition of non_terminal {node.symbol.format_as_spec()}! DerivationPath: "
                 + " -> ".join(str_path)
             )
         else:
@@ -31,7 +31,7 @@ class MessageNestingDetector(NodeVisitor[None, None]):
             parties = self.grammar[node.symbol].msg_parties(include_recipients=False)
             if len(parties) != 0:
                 raise RuntimeError(
-                    f"Found illegal packet-definitions within packet-definition of non_terminal {node.symbol}: "
+                    f"Found illegal packet-definitions within packet-definition of non_terminal {node.symbol.format_as_spec()}: "
                     + ", ".join(parties)
                 )
             return
