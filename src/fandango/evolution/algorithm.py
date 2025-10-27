@@ -113,6 +113,7 @@ class Fandango:
             diversity_weight,
             warnings_are_errors,
         )
+        # TODO: i would remove the adaptive tuner for now
         self.adaptive_tuner = AdaptiveTuner(
             mutation_rate,
             crossover_rate,
@@ -129,10 +130,13 @@ class Fandango:
         self.crossover_operator = crossover_method
         self.mutation_method = mutation_method
 
+        # TODO: do this only if initial_population is provided.
         self.population = self._parse_and_deduplicate(population=initial_population)
         self._initial_solutions, self.evaluation = GeneratorWithReturn(
             self.evaluator.evaluate_population(self.population)
         ).collect()
+
+        # TODO: if no initial population, generate initial population here
 
         self.crossovers_made = 0
         self.fixes_made = 0
@@ -148,6 +152,7 @@ class Fandango:
         :param population: The initial population to parse and deduplicate.
         :return: A list of unique parse trees.
         """
+        # TODO: check actual performance of this method
         if population is None:
             return []
         LOGGER.info("Deduplicating the provided initial population...")
@@ -181,6 +186,8 @@ class Fandango:
 
         :return: A generator of DerivationTree objects, all of which are valid solutions to the grammar (or satisify the minimum fitness threshold).
         """
+        # TODO: check performance of this method.
+        # TODO: ensure kpath generation is used here too.
         LOGGER.info(
             f"Generating (additional) initial population (size: {self.population_size - len(self.population)})..."
         )
@@ -212,17 +219,18 @@ class Fandango:
 
         :return: A tuple containing the new population and the set of unique hashes of the individuals in the new population.
         """
+        # TODO: make this method return just the elites, and not the unique hashes. that should be computed elsewhere.
         # defer increment until data is available
         with self.profiler.timer("select_elites") as timer:
-            new_population = self.evaluator.select_elites(
+            elites = self.evaluator.select_elites(
                 self.evaluation,
                 self.elitism_rate,
                 self.population_size,
             )
-            timer.increment(len(new_population))
+            timer.increment(len(elites))
 
-        unique_hashes = {hash(ind) for ind in new_population}
-        return new_population, unique_hashes
+        unique_hashes = {hash(ind) for ind in elites}
+        return elites, unique_hashes
 
     def _perform_crossover(
         self, new_population: list[DerivationTree], unique_hashes: set[int]
@@ -233,6 +241,9 @@ class Fandango:
         :param new_population: The new population to perform crossover on.
         :param unique_hashes: The set of unique hashes of the individuals in the new population.
         """
+        # TODO: crossover should choose from non-elite set only
+        # TODO: crossover % should mean: if %, cross a single individual, and remove both parents. else, copy random individual from previous gen. remove said individual from selection pool.
+        # TODO: since we produce 1 input per 2 parents, we fill the population until we reach the target size. (NOT DONE HERE, BUT IN generate_simple)
         if len(self.evaluation) < 2:
             return None
         try:
@@ -285,6 +296,7 @@ class Fandango:
 
         :param new_population: The new population to perform mutation on.
         """
+        # TODO: remove mutation pool, does not make sense. all population is subject to mutation based on %.
         mutation_pool = self.evaluator.compute_mutation_pool(new_population)
         mutated_population = []
         for individual in mutation_pool:
@@ -312,6 +324,7 @@ class Fandango:
         :param new_population: The new population to perform destruction on.
         :return: The new population after destruction.
         """
+        # TODO: find most efficient way to destroy % of population at random.
         LOGGER.debug(f"Destroying {self.destruction_rate * 100:.2f}% of the population")
         random.shuffle(new_population)
         return new_population[: int(self.population_size * (1 - self.destruction_rate))]
@@ -370,6 +383,7 @@ class Fandango:
         :param max_generations: The maximum number of generations to generate. If None, the generation will run indefinitely.
         :return: A generator of DerivationTree objects, all of which are valid solutions to the grammar (or satisify the minimum fitness threshold).
         """
+        # TODO: since initial population was produced during init, we can remove this check.
         while self._initial_solutions:
             yield self._initial_solutions.pop(0)
 
@@ -380,6 +394,7 @@ class Fandango:
         generation = 0
 
         while True:
+            # TODO: check the stop condition. if fitness is 1.0?
             if max_generations is not None and generation >= max_generations:
                 break
             generation += 1
@@ -389,27 +404,34 @@ class Fandango:
             LOGGER.info(f"Generation {generation} - Average Fitness: {avg_fitness:.2f}")
 
             # Selection
+            # TODO: rename variables for better understanding
             new_population, unique_hashes = self._perform_selection()
 
             # Crossover
+            # TODO: keep crossing till a) population is full, or b) no more crossovers can be made (all parents are dead)
             for _ in range(self.population_size):
                 if len(new_population) >= self.population_size:
                     break
                 if random.random() < self.adaptive_tuner.crossover_rate:
                     yield from self._perform_crossover(new_population, unique_hashes)
 
+
             # Truncate if necessary
+            # TODO: if population is smaller than population_size, fill it with new individuals from grammar fuzzing. use grammar coverage to guide generation, avoiding paths that are already existent in the population.
             if len(new_population) > self.population_size:
                 new_population = new_population[: self.population_size]
 
             # Mutation
+            # TODO: all individuals should be subject to mutation.
             yield from self._perform_mutation(new_population)
 
             # Destruction
+            # TODO: destruction should be adaptive. When diversity is low, increase destruction rate? discuss with team.
             if self.destruction_rate > 0:
                 new_population = self._perform_destruction(new_population)
 
             # Ensure Uniqueness & Fill Population
+            # TODO: check if this makes sense
             new_population = list(set(new_population))
             yield from self.population_manager.refill_population(
                 new_population,
@@ -418,6 +440,7 @@ class Fandango:
                 self.population_size,
             )
 
+            # TODO: are we double evaluating here?
             self.population = []
             for ind in new_population:
                 _fitness, failing_trees = yield from self.evaluator.evaluate_individual(
@@ -431,8 +454,10 @@ class Fandango:
 
             # For soft constraints, the normalized fitness may change over time as we observe more inputs.
             # Hence, we periodically flush the fitness cache to re-evaluate the population if the grammar contains soft constraints.
+            # TODO: check if caches are actually used.
             self.evaluator.flush_fitness_cache()
 
+            # TODO: is this a triple evaluation now?
             with self.profiler.timer("evaluate_population", increment=self.population):
                 self.evaluation = yield from self.evaluator.evaluate_population(
                     self.population
@@ -453,6 +478,7 @@ class Fandango:
                 current_max_repetitions,
             )
 
+            # TODO: I would remove the adaptive tuner for now tbh
             if self.adaptive_tuner.current_max_repetition > current_max_repetitions:
                 self.grammar.set_max_repetition(
                     self.adaptive_tuner.current_max_repetition
