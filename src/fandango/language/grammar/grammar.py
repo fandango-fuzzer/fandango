@@ -101,9 +101,13 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
     def derive_sources(self, tree: DerivationTree) -> list[DerivationTree]:
         gen_symbol = tree.symbol
         if not gen_symbol.is_non_terminal:
-            raise FandangoValueError(f"Tree {tree.symbol} is not a nonterminal")
+            raise FandangoValueError(
+                f"Tree {gen_symbol.format_as_spec()} is not a nonterminal"
+            )
         if tree.symbol not in self.generators:
-            raise FandangoValueError(f"No generator found for tree {tree.symbol}")
+            raise FandangoValueError(
+                f"No generator found for tree {gen_symbol.format_as_spec()}"
+            )
 
         if not self.is_use_generator(tree):
             return []

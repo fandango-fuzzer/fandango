@@ -200,11 +200,15 @@ class NonTerminalSearch(abc.ABC):
         return targets
 
     def __repr__(self) -> str:
-        warnings.warn("Don't rely on this, use method specific to your usecase")
+        warnings.warn(
+            f"Don't rely on the __repr__ impl on {self.__class__.__name__}, use method specific to your usecase. Report this as a bug if this is called from within Fandango."
+        )
         return f"{self.__class__.__name__}({self.format_as_spec()})"
 
     def __str__(self) -> str:
-        warnings.warn("Don't rely on this, use method specific to your usecase")
+        warnings.warn(
+            f"Don't rely on the __str__ impl on {self.__class__.__name__}, use method specific to your usecase. Report this as a bug if this is called from within Fandango."
+        )
         return self.format_as_spec()
 
     @abc.abstractmethod
