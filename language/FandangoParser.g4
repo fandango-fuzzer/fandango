@@ -152,7 +152,6 @@ star_selection_or_dot_selection
 
 star_selection
     : '*' dot_selection
-    | '**' dot_selection
     ;
 
 dot_selection

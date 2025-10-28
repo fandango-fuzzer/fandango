@@ -895,7 +895,6 @@ public:
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *STAR();
     Dot_selectionContext *dot_selection();
-    antlr4::tree::TerminalNode *POWER();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;

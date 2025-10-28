@@ -29,18 +29,16 @@ class ExpressionConstraint(Constraint):
         self,
         tree: DerivationTree,
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
-        population: Optional[list[DerivationTree]] = None,
         local_variables: Optional[dict[str, Any]] = None,
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on whether the given expression evaluates to True.
         :param DerivationTree tree: The tree to evaluate.
         :param Optional[dict[str, DerivationTree]] scope: The scope of the tree.
-        :param Optional[list[DerivationTree]] population: The population of trees.
         :param Optional[dict[str, Any]] local_variables: Local variables to use in the evaluation.
         :return ConstraintFitness: The fitness of the tree.
         """
-        tree_hash = self.get_hash(tree, scope, population, local_variables)
+        tree_hash = self.get_hash(tree, scope, local_variables)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
@@ -53,7 +51,7 @@ class ExpressionConstraint(Constraint):
             return ConstraintFitness(0, 0, False)
         has_combinations = False
         # Iterate over all combinations of the tree and the scope
-        for combination in self.combinations(tree, scope, population):
+        for combination in self.combinations(tree, scope):
             has_combinations = True
             # Update the local variables to initialize the placeholders with the values of the combination
             local_vars = self.local_variables.copy()
@@ -103,7 +101,7 @@ class ExpressionConstraint(Constraint):
             )
         return representation
 
-    def accept(self, visitor: "ConstraintVisitor") -> None:
+    def accept(self, visitor: ConstraintVisitor) -> None:
         """
         Accepts a visitor to traverse the constraint structure.
         :param ConstraintVisitor visitor: The visitor to accept.
