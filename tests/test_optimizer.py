@@ -68,14 +68,13 @@ class GeneticTest(unittest.TestCase):
         manager = PopulationManager(
             grammar=self.fandango.grammar,
             start_symbol=self.fandango.start_symbol,
-            warnings_are_errors=True,
         )
         population: list[DerivationTree] = []
         expected_count = 10
         generator = manager.refill_population(
             current_population=population,
             eval_individual=self.fandango.evaluator.evaluate_individual,
-            max_nodes=self.fandango.adaptive_tuner.current_max_nodes,
+            max_nodes=self.fandango.hyperparameters.max_nodes,
             target_population_size=expected_count,
         )
         solutions = list(generator)
@@ -94,7 +93,6 @@ class GeneticTest(unittest.TestCase):
         manager = PopulationManager(
             grammar=self.fandango.grammar,
             start_symbol=self.fandango.start_symbol,
-            warnings_are_errors=True,
         )
 
         initial_count = 10
@@ -104,7 +102,7 @@ class GeneticTest(unittest.TestCase):
         generator = manager.refill_population(
             current_population=population,
             eval_individual=self.fandango.evaluator.evaluate_individual,
-            max_nodes=self.fandango.adaptive_tuner.current_max_nodes,
+            max_nodes=self.fandango.hyperparameters.max_nodes,
             target_population_size=initial_count,
         )
 
@@ -116,7 +114,7 @@ class GeneticTest(unittest.TestCase):
         generator = manager.refill_population(
             current_population=population,
             eval_individual=self.fandango.evaluator.evaluate_individual,
-            max_nodes=self.fandango.adaptive_tuner.current_max_nodes,
+            max_nodes=self.fandango.hyperparameters.max_nodes,
             target_population_size=initial_count + additional_count,
         )
         solutions = list(generator)
@@ -182,14 +180,14 @@ class GeneticTest(unittest.TestCase):
 
     def test_select_elites(self):
         # Select the elites
-        elites = self.fandango.evaluator.select_elites(
+        elites = self.fandango.population_manager.select_elites(
             self.fandango.evaluation,
-            elitism_rate=self.fandango.elitism_rate,
+            elitism_rate=self.fandango.hyperparameters.elitism_rate,
             population_size=self.fandango.population_size,
         )
 
         self.assertEqual(
-            len(elites), self.fandango.elitism_rate * self.fandango.population_size
+            len(elites), self.fandango.hyperparameters.elitism_rate * self.fandango.population_size
         )
 
         # Check that the population is valid
@@ -198,10 +196,10 @@ class GeneticTest(unittest.TestCase):
 
     def test_selection(self):
         # Select the parents
-        parent1, parent2 = self.fandango.evaluator.tournament_selection(
+        parent1, parent2 = self.fandango.population_manager.tournament_selection(
             self.fandango.evaluation,
             tournament_size=max(
-                2, int(self.fandango.population_size * self.fandango.tournament_size)
+                2, int(self.fandango.population_size * self.fandango.hyperparameters.tournament_size)
             ),
         )
 
@@ -223,9 +221,9 @@ class GeneticTest(unittest.TestCase):
     def test_crossover(self):
         # Select the parents
         tournament_size = max(
-            2, int(self.fandango.population_size * self.fandango.tournament_size)
+            2, int(self.fandango.population_size * self.fandango.hyperparameters.tournament_size)
         )
-        parent1, parent2 = self.fandango.evaluator.tournament_selection(
+        parent1, parent2 = self.fandango.population_manager.tournament_selection(
             self.fandango.evaluation,
             tournament_size,
         )
@@ -251,9 +249,9 @@ class GeneticTest(unittest.TestCase):
     def test_mutation(self):
         # Select the parents
         tournament_size = max(
-            2, int(self.fandango.population_size * self.fandango.tournament_size)
+            2, int(self.fandango.population_size * self.fandango.hyperparameters.tournament_size)
         )
-        parent1, parent2 = self.fandango.evaluator.tournament_selection(
+        parent1, parent2 = self.fandango.population_manager.tournament_selection(
             self.fandango.evaluation, tournament_size
         )
 
