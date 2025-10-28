@@ -81,25 +81,18 @@ class GeneticBase(abc.ABC):
         self,
         tree: DerivationTree,
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
-        population: Optional[list[DerivationTree]] = None,
     ) -> list[tuple[tuple[str, Container], ...]]:
         """
         Get all possible combinations of trees that satisfy the searches.
         :param DerivationTree tree: The tree to calculate the fitness.
         :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of non-terminals matching to trees.
         :return list[list[tuple[str, DerivationTree]]]: The list of combinations of trees that fill all non-terminals
-        :param Optional[list[DerivationTree]] population: The population of trees to calculate the fitness.
         in the genetic base.
         """
         nodes: list[list[tuple[str, Container]]] = []
         for name, search in self.searches.items():
             nodes.append(
-                [
-                    (name, container)
-                    for container in search.find(
-                        tree, scope=scope, population=population
-                    )
-                ]
+                [(name, container) for container in search.find(tree, scope=scope)]
             )
         return list(itertools.product(*nodes))
 
