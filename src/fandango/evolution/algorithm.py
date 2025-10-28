@@ -284,9 +284,13 @@ class Fandango:
         :return: The new population after destruction.
         """
         # TODO: find most efficient way to destroy % of population at random.
-        LOGGER.debug(f"Destroying {self.hyperparameters.destruction_rate * 100:.2f}% of the population")
+        LOGGER.debug(
+            f"Destroying {self.hyperparameters.destruction_rate * 100:.2f}% of the population"
+        )
         random.shuffle(new_population)
-        return new_population[: int(self.population_size * (1 - self.hyperparameters.destruction_rate))]
+        return new_population[
+            : int(self.population_size * (1 - self.hyperparameters.destruction_rate))
+        ]
 
     def evolve(
         self,
@@ -416,10 +420,9 @@ class Fandango:
                 self.population
             )
             # Keep only the fittest individuals
-            self.evaluation = sorted(
-                self.evaluation, key=lambda x: x[1], reverse=True
-            )[: self.population_size]
-
+            self.evaluation = sorted(self.evaluation, key=lambda x: x[1], reverse=True)[
+                : self.population_size
+            ]
 
     def _generate_io(
         self, max_generations: Optional[int] = None

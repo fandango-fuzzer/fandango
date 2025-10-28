@@ -7,7 +7,7 @@ class HyperparameterManager:
         destruction_rate: float,
         tournament_size: float,
         max_nodes: int = 5000,
-        max_repetitions: int = 2000
+        max_repetitions: int = 2000,
     ):
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate

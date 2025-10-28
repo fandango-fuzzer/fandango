@@ -187,7 +187,8 @@ class GeneticTest(unittest.TestCase):
         )
 
         self.assertEqual(
-            len(elites), self.fandango.hyperparameters.elitism_rate * self.fandango.population_size
+            len(elites),
+            self.fandango.hyperparameters.elitism_rate * self.fandango.population_size,
         )
 
         # Check that the population is valid
@@ -199,7 +200,11 @@ class GeneticTest(unittest.TestCase):
         parent1, parent2 = self.fandango.population_manager.tournament_selection(
             self.fandango.evaluation,
             tournament_size=max(
-                2, int(self.fandango.population_size * self.fandango.hyperparameters.tournament_size)
+                2,
+                int(
+                    self.fandango.population_size
+                    * self.fandango.hyperparameters.tournament_size
+                ),
             ),
         )
 
@@ -221,7 +226,11 @@ class GeneticTest(unittest.TestCase):
     def test_crossover(self):
         # Select the parents
         tournament_size = max(
-            2, int(self.fandango.population_size * self.fandango.hyperparameters.tournament_size)
+            2,
+            int(
+                self.fandango.population_size
+                * self.fandango.hyperparameters.tournament_size
+            ),
         )
         parent1, parent2 = self.fandango.population_manager.tournament_selection(
             self.fandango.evaluation,
@@ -249,7 +258,11 @@ class GeneticTest(unittest.TestCase):
     def test_mutation(self):
         # Select the parents
         tournament_size = max(
-            2, int(self.fandango.population_size * self.fandango.hyperparameters.tournament_size)
+            2,
+            int(
+                self.fandango.population_size
+                * self.fandango.hyperparameters.tournament_size
+            ),
         )
         parent1, parent2 = self.fandango.population_manager.tournament_selection(
             self.fandango.evaluation, tournament_size
