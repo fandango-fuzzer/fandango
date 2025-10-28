@@ -55,8 +55,8 @@ class Fandango:
         destruction_rate: float = 0.0,
         logger_level: Optional[LoggerLevel] = None,
         random_seed: Optional[int] = None,
-        max_nodes: int = 5000,
-        max_repetitions: int = 2000,
+        max_nodes: int = 200,
+        max_repetitions: int = 20,
         start_symbol: str = "<start>",
     ):
         if tournament_size > 1:
@@ -107,7 +107,7 @@ class Fandango:
         )
 
         self.grammar.set_max_repetition(max_repetitions)
-        self.grammar.set_max_nodes(max_nodes)
+        # self.grammar.set_max_nodes(max_nodes)
 
         self.crossover_operator = crossover_method
         self.mutation_method = mutation_method
