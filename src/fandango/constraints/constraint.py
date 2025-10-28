@@ -37,20 +37,12 @@ class Constraint(GeneticBase, ABC):
         self,
         tree: DerivationTree,
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
-        population: Optional[list[DerivationTree]] = None,
         local_variables: Optional[dict[str, Any]] = None,
     ) -> ConstraintFitness:
         """
         Abstract method to calculate the fitness of the tree.
         """
         raise NotImplementedError("Fitness function not implemented")
-
-    @staticmethod
-    def is_debug_statement(expression: str) -> bool:
-        """
-        Determines if the expression is a print statement.
-        """
-        return expression.startswith("print(")
 
     @abstractmethod
     def accept(self, visitor: "ConstraintVisitor") -> None:

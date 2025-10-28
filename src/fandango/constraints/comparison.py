@@ -44,13 +44,12 @@ class ComparisonConstraint(Constraint):
         self,
         tree: DerivationTree,
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
-        population: Optional[list[DerivationTree]] = None,
         local_variables: Optional[dict[str, Any]] = None,
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the given comparison.
         """
-        tree_hash = self.get_hash(tree, scope, population, local_variables)
+        tree_hash = self.get_hash(tree, scope, local_variables)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
@@ -62,7 +61,7 @@ class ComparisonConstraint(Constraint):
         if tree is None:
             return DistanceAwareConstraintFitness([], False)
         # Iterate over all combinations of the tree and the scope
-        for combination in self.combinations(tree, scope, population):
+        for combination in self.combinations(tree, scope):
             has_combinations = True
             # Update the local variables to initialize the placeholders with the values of the combination
             local_vars = self.local_variables.copy()
@@ -150,7 +149,7 @@ class ComparisonConstraint(Constraint):
             )
         return representation
 
-    def accept(self, visitor: "ConstraintVisitor") -> None:
+    def accept(self, visitor: ConstraintVisitor) -> None:
         """
         Accepts a visitor to traverse the constraint structure.
         :param ConstraintVisitor visitor: The visitor to accept.

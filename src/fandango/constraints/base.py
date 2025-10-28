@@ -8,7 +8,6 @@ from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 
 if TYPE_CHECKING:
-    from fandango.constraints.failing_tree import FailingTree
     from fandango.constraints.fitness import Fitness
 
 
@@ -53,14 +52,12 @@ class GeneticBase(abc.ABC):
         self,
         tree: DerivationTree,
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
-        population: Optional[list[DerivationTree]] = None,
         local_variables: Optional[dict[str, Any]] = None,
     ) -> "Fitness":
         """
         Abstract method to calculate the fitness of the tree.
         :param DerivationTree tree: The tree to calculate the fitness.
         :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of non-terminals matching to trees.
-        :param Optional[list[DerivationTree]] population: The population of trees to calculate the fitness.
         :param Optional[dict[str, Any]] local_variables: The local variables to use in the fitness calculation.
         :return Fitness: The fitness of the tree.
         """
@@ -70,14 +67,12 @@ class GeneticBase(abc.ABC):
     def get_hash(
         tree: DerivationTree,
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
-        population: Optional[list[DerivationTree]] = None,
         local_variables: Optional[dict[str, Any]] = None,
     ) -> int:
         return hash(
             (
                 tree,
                 tuple((scope or {}).items()),
-                tuple(population or []),
                 tuple((local_variables or {}).items()),
             )
         )
@@ -112,35 +107,16 @@ class GeneticBase(abc.ABC):
         self,
         tree: DerivationTree,
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
-        population: Optional[list[DerivationTree]] = None,
         local_variables: Optional[dict[str, Any]] = None,
     ) -> bool:
         """
         Check if the tree satisfies the genetic base.
         :param DerivationTree tree: The tree to check.
         :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of non-terminals matching to trees.
-        :param Optional[list[DerivationTree]] population: The population of trees to calculate the fitness.
         :param Optional[dict[str, Any]] local_variables: The local variables to use in the fitness calculation.
         :return bool: True if the tree satisfies the genetic base, False otherwise.
         """
-        return self.fitness(tree, scope, population, local_variables).success
-
-    def get_failing_nodes(
-        self,
-        tree: DerivationTree,
-        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
-        population: Optional[list[DerivationTree]] = None,
-        local_variables: Optional[dict[str, Any]] = None,
-    ) -> list["FailingTree"]:
-        """
-        Get the failing nodes of the tree.
-        :param DerivationTree tree: The tree to check.
-        :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of non-terminals matching to trees.
-        :param Optional[list[DerivationTree]] population: The population of trees to calculate the fitness.
-        :param Optional[dict[str, Any]] local_variables: The local variables to use in the fitness calculation.
-        :return list[FailingTree]: The list of failing trees
-        """
-        return self.fitness(tree, scope, population, local_variables).failing_trees
+        return self.fitness(tree, scope, local_variables).success
 
     def __str__(self) -> str:
         warnings.warn("Don't rely on this, use method specific to your usecase")

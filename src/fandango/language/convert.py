@@ -38,7 +38,6 @@ from fandango.language.search import (
     RuleSearch,
     SelectiveSearch,
     StarSearch,
-    PopulationSearch,
 )
 from fandango.language.symbols import NonTerminal, Terminal
 from fandango.logger import LOGGER
@@ -714,8 +713,6 @@ class SearchProcessor(FandangoParserVisitor):
         search: NonTerminalSearch
         if ctx.STAR():
             search = StarSearch(base)
-        elif ctx.POWER():
-            search = PopulationSearch(base)
         else:
             raise FandangoValueError(f"Unknown star selection: {ctx.getText()}")
         return ast.Name(id=identifier), [search], {identifier: search}
