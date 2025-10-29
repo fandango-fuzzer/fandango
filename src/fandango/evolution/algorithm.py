@@ -105,8 +105,6 @@ class Fandango:
         self.evaluator = Evaluator(
             grammar,
             constraints,
-            1.0,
-            False,
         )
 
         self.population = self._parse_and_deduplicate(population=initial_population)
@@ -414,7 +412,6 @@ class Fandango:
 
             visualize_evaluation(generation, max_generations, self.evaluation)
         clear_visualization()
-        self._log_statistics()
 
     def _generate_io(
         self, max_generations: Optional[int] = None
@@ -531,20 +528,6 @@ class Fandango:
                         "Remote response does not match constraints"
                     )
             history_tree.set_all_read_only(True)
-
-    @property
-    def average_population_fitness(self) -> float:
-        return sum(e[1] for e in self.evaluation) / self.population_size
-
-    def _log_statistics(self) -> None:
-        LOGGER.debug("---------- FANDANGO statistics ----------")
-        LOGGER.info(
-            f"Average fitness of population: {self.average_population_fitness:.2f}"
-        )
-        LOGGER.debug(f"Fixes made: {self.fixes_made}")
-        LOGGER.debug(f"Fitness checks: {self.evaluator.get_fitness_check_count()}")
-        LOGGER.debug(f"Crossovers made: {self.crossovers_made}")
-        LOGGER.debug(f"Mutations made: {self.mutations_made}")
 
     def _evolve_single(
         self,

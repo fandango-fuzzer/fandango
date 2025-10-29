@@ -353,10 +353,7 @@ class Fandango(FandangoBase):
         if desired_solutions is not None and len(solutions) < desired_solutions:
             warnings_are_errors = settings.get("warnings_are_errors", False)
             best_effort = settings.get("best_effort", False)
-            if (
-                self.fandango.average_population_fitness
-                < self.fandango.evaluator.expected_fitness
-            ):
+            if self.fandango.evaluator.average_population_fitness < 1.0:
                 LOGGER.error("Population did not converge to a perfect population")
                 if warnings_are_errors:
                     raise FandangoFailedError("Failed to find a perfect solution")

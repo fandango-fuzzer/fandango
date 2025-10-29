@@ -1,5 +1,4 @@
 import random
-from typing import Counter
 from collections.abc import Generator
 
 from fandango.constraints.constraint import Constraint
@@ -14,17 +13,13 @@ class Evaluator:
         self,
         grammar: Grammar,
         constraints: list[Constraint | SoftValue],
-        expected_fitness: float,
-        warnings_are_errors: bool = False,
     ):
         self._grammar = grammar
         self._soft_constraints: list[SoftValue] = []
         self._hard_constraints: list[Constraint] = []
-        self._expected_fitness = expected_fitness
-        self._warnings_are_errors = warnings_are_errors
         self._fitness_cache: dict[int, tuple[float, list[FailingTree]]] = {}
         self._solution_set: set[int] = set()
-        self._checks_made = 0
+        self.evaluation: list[tuple[DerivationTree, float, list[FailingTree]]] = []
 
         for constraint in constraints:
             if isinstance(constraint, SoftValue):
@@ -35,14 +30,12 @@ class Evaluator:
                 raise ValueError(f"Invalid constraint type: {type(constraint)}")
 
     @property
-    def expected_fitness(self) -> float:
-        return self._expected_fitness
-
-    def get_fitness_check_count(self) -> int:
-        """
-        :return: The number of fitness checks made so far.
-        """
-        return self._checks_made
+    def average_population_fitness(self) -> float:
+        return (
+            (sum(e[1] for e in self.evaluation) / len(self.evaluation))
+            if self.evaluation
+            else 0.0
+        )
 
     def compute_mutation_pool(
         self, population: list[DerivationTree]
@@ -85,7 +78,6 @@ class Evaluator:
                 else:
                     failing_trees.extend(result.failing_trees)
                     hard_fitness += result.fitness()
-                self._checks_made += 1
             except Exception as e:
                 LOGGER.error(
                     f"Error evaluating hard constraint {constraint.format_as_spec()}"
@@ -153,7 +145,7 @@ class Evaluator:
                     + soft_fitness * len(self._soft_constraints)
                 ) / (len(self._hard_constraints) + len(self._soft_constraints))
 
-        if fitness >= self._expected_fitness and key not in self._solution_set:
+        if fitness >= 1.0 and key not in self._solution_set:
             self._solution_set.add(key)
             yield individual
 
