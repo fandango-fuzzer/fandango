@@ -12,10 +12,10 @@ from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
 from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.evolution import GeneratorWithReturn
-from fandango.evolution.crossover import CrossoverOperator, SimpleSubtreeCrossover
+from fandango.evolution.crossover import SimpleSubtreeCrossover, CrossoverOperator
 from fandango.evolution.evaluation import Evaluator
 from fandango.evolution.hyperparameter import HyperparameterManager
-from fandango.evolution.mutation import MutationOperator, SimpleMutation
+from fandango.evolution.mutation import SimpleMutation, MutationOperator
 from fandango.evolution.population import IoPopulationManager, PopulationManager
 from fandango.io import FandangoIO
 from fandango.io.packetforecaster import ForcastingPacket, PacketForecaster
@@ -241,28 +241,30 @@ class Fandango:
             LOGGER.error(f"Error during crossover: {e}")
 
     def _perform_mutation(
-        self, new_population: list[DerivationTree]
+        self, population: list[DerivationTree]
     ) -> Generator[DerivationTree, None, None]:
         """
         Performs mutation of the population.
 
-        :param new_population: The new population to perform mutation on.
+        :param population: The new population to perform mutation on.
+
+        :return: A generator of mutated DerivationTree objects.
         """
-        mutation_pool = self.evaluator.compute_mutation_pool(new_population)
-        mutated_population = []
-        for individual in mutation_pool:
+        mutated_population: list[DerivationTree] = []
+        for individual in population:
             if random.random() < self.hyperparameter_manager.mutation_rate:
                 try:
                     mutated_individual = yield from self.mutation_method.mutate(
                         individual,
                         self.grammar,
                         self.evaluator.evaluate_individual,
+                        self.hyperparameter_manager.max_nodes,
                     )
                     mutated_population.append(mutated_individual)
-                    self.mutations_made += 1
                 except Exception as e:
                     LOGGER.error(f"Error during mutation: {e}")
-        new_population.extend(mutated_population)
+            else:
+                mutated_population.append(individual)
 
     def _perform_destruction(
         self, new_population: list[DerivationTree]

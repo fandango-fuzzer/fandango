@@ -24,7 +24,7 @@ class HyperparameterManager:
         self.mutation_rate = mutation_rate
         self.destruction_rate = destruction_rate
         self.max_nodes = max_nodes
-        self.current_max_repetitions = max_repetitions
+        self.max_repetitions = max_repetitions
 
     def adjust_hyperparameters(self):
         """

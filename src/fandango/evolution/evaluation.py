@@ -17,6 +17,7 @@ class Evaluator:
         self._grammar = grammar
         self._soft_constraints: list[SoftValue] = []
         self._hard_constraints: list[Constraint] = []
+        # TODO: Check the caching strategy here
         self._fitness_cache: dict[int, tuple[float, list[FailingTree]]] = {}
         self._solution_set: set[int] = set()
         self.evaluation: list[tuple[DerivationTree, float, list[FailingTree]]] = []
@@ -36,23 +37,6 @@ class Evaluator:
             if self.evaluation
             else 0.0
         )
-
-    def compute_mutation_pool(
-        self, population: list[DerivationTree]
-    ) -> list[DerivationTree]:
-        """
-        Computes the mutation pool for the given population.
-
-        The mutation pool is computed by sampling the population with replacement, where the probability of sampling an individual is proportional to its fitness.
-
-        :param population: The population to compute the mutation pool for.
-        :return: The mutation pool.
-        """
-        weights = [self._fitness_cache[hash(ind)][0] for ind in population]
-        if not all(w == 0 for w in weights):
-            return random.choices(population, weights=weights, k=len(population))
-        else:
-            return population
 
     def flush_fitness_cache(self) -> None:
         """
@@ -80,9 +64,8 @@ class Evaluator:
                     hard_fitness += result.fitness()
             except Exception as e:
                 LOGGER.error(
-                    f"Error evaluating hard constraint {constraint.format_as_spec()}"
+                    f"Error evaluating hard constraint {constraint.format_as_spec()}: {e}"
                 )
-                print_exception(e)
                 hard_fitness += 0.0
         hard_fitness /= len(self._hard_constraints)
         return hard_fitness, failing_trees
@@ -158,12 +141,19 @@ class Evaluator:
     ) -> Generator[
         DerivationTree, None, list[tuple[DerivationTree, float, list[FailingTree]]]
     ]:
-        evaluation: list[tuple[DerivationTree, float, list[FailingTree]]] = []
-        for ind in population:
-            ind_eval = yield from self.evaluate_individual(ind)
-            evaluation.append((ind, *ind_eval))
-
-        return evaluation
+        self.evaluation = []
+        for individual in population:
+            try:
+                result = yield from self.evaluate_individual(individual)
+                if isinstance(result, DerivationTree):
+                    yield result
+                else:
+                    fitness, failing_trees = result
+                    self.evaluation.append((individual, fitness, failing_trees))
+            except Exception as e:
+                LOGGER.error(f"Error evaluating individual: {e}")
+                self.evaluation.append((individual, 0.0, []))
+        return self.evaluation
 
     def select_elites(
         self,

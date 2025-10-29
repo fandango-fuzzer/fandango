@@ -18,6 +18,7 @@ class MutationOperator(ABC):
             [DerivationTree],
             Generator[DerivationTree, None, tuple[float, list[FailingTree]]],
         ],
+        max_nodes: int = 50,
     ) -> Generator[DerivationTree, None, DerivationTree]:
         """
         Abstract method to perform mutation on an individual.
@@ -25,6 +26,7 @@ class MutationOperator(ABC):
         :param individual: The individual (DerivationTree) to mutate.
         :param grammar: The Grammar used to generate new subtrees.
         :param evaluate_func: A function that, given an individual, returns a tuple (fitness, failing_trees).
+        :param max_nodes: Maximum number of nodes allowed in the mutated tree.
         :return: A new (mutated) DerivationTree.
         """
         pass
