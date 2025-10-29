@@ -125,9 +125,9 @@ class TestSoftValue(TestSoft):
             "-c",
             "minimizing int(<age>)",
             "-n",
-            "20",
+            "200",
             "--population-size",
-            "10",
+            "100",
             "--random-seed",
             "1",
         ]
@@ -146,9 +146,9 @@ class TestSoftValue(TestSoft):
             "--minimize",
             "int(<age>)",
             "-n",
-            "20",
+            "200",
             "--population-size",
-            "10",
+            "100",
             "--random-seed",
             "1",
         ]

@@ -425,9 +425,6 @@ class Fandango:
 
             prev_best_fitness = current_best_fitness
 
-            self.adaptive_tuner.log_generation_statistics(
-                generation, self.evaluation, self.population, self.evaluator
-            )
             visualize_evaluation(generation, max_generations, self.evaluation)
         clear_visualization()
         self._log_statistics()
