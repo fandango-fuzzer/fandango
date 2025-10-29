@@ -46,10 +46,10 @@ class Fandango:
     def __init__(
         self,
         grammar: Grammar,
+        # TODO: can we rename SoftValue to SoftConstraint to be more consistent? and Constraint to HardConstraint? Both inherit from BaseConstraint?
         constraints: list[Constraint | SoftValue],
         population_size: int = 100,
         initial_population: Optional[list[DerivationTree | str]] = None,
-        expected_fitness: float = 1.0,
         elitism_rate: float = 0.1,
         crossover_method: CrossoverOperator = SimpleSubtreeCrossover(),
         crossover_rate: float = 0.8,
@@ -58,8 +58,6 @@ class Fandango:
         mutation_rate: float = 0.2,
         destruction_rate: float = 0.0,
         logger_level: Optional[LoggerLevel] = None,
-        warnings_are_errors: bool = False,
-        best_effort: bool = False,
         random_seed: Optional[int] = None,
         start_symbol: str = "<start>",
         diversity_k: int = 5,
@@ -87,8 +85,6 @@ class Fandango:
         self.destruction_rate = destruction_rate
         self.start_symbol = start_symbol
         self.tournament_size = tournament_size
-        self.warnings_are_errors = warnings_are_errors
-        self.best_effort = best_effort
         self.remote_response_timeout = 15.0
 
         # Instantiate managers
@@ -96,21 +92,21 @@ class Fandango:
             self.population_manager: PopulationManager = IoPopulationManager(
                 grammar,
                 start_symbol,
-                warnings_are_errors,
+                False,
             )
         else:
             self.population_manager = PopulationManager(
                 grammar,
                 start_symbol,
-                warnings_are_errors,
+                False,
             )
         self.evaluator = Evaluator(
             grammar,
             constraints,
-            expected_fitness,
+            1.0,
             diversity_k,
             diversity_weight,
-            warnings_are_errors,
+            False,
         )
         self.adaptive_tuner = AdaptiveTuner(
             mutation_rate,
