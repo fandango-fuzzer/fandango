@@ -59,7 +59,6 @@ class Fandango:
         destruction_rate: float = 0.0,
         logger_level: Optional[LoggerLevel] = None,
         random_seed: Optional[int] = None,
-        start_symbol: str = "<start>",
         diversity_k: int = 5,
         diversity_weight: float = 1.0,
         max_repetition_rate: float = 0.5,
@@ -83,7 +82,6 @@ class Fandango:
         self.population_size = population_size
         self.elitism_rate = elitism_rate
         self.destruction_rate = destruction_rate
-        self.start_symbol = start_symbol
         self.tournament_size = tournament_size
         self.remote_response_timeout = 15.0
 
@@ -91,14 +89,12 @@ class Fandango:
         if self.grammar.fuzzing_mode == FuzzingMode.IO:
             self.population_manager: PopulationManager = IoPopulationManager(
                 grammar,
-                start_symbol,
-                False,
+                warnings_are_errors=False,
             )
         else:
             self.population_manager = PopulationManager(
                 grammar,
-                start_symbol,
-                False,
+                warnings_are_errors=False,
             )
         self.evaluator = Evaluator(
             grammar,

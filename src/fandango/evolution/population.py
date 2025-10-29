@@ -18,7 +18,7 @@ class PopulationManager:
     def __init__(
         self,
         grammar: Grammar,
-        start_symbol: str,
+        start_symbol: str = "<start>",
         warnings_are_errors: bool = False,
     ):
         self._grammar = grammar
@@ -188,7 +188,7 @@ class IoPopulationManager(PopulationManager):
     def __init__(
         self,
         grammar: Grammar,
-        start_symbol: str,
+        start_symbol: str = "<start>",
         warnings_are_errors: bool = False,
     ):
         super().__init__(grammar, start_symbol, warnings_are_errors)
