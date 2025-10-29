@@ -179,7 +179,7 @@ class Fandango:
 
         :return: A tuple containing the new population and the set of unique hashes of the individuals in the new population.
         """
-        new_population = self.evaluator.select_elites(
+        new_population = self.population_manager.select_elites(
             self.evaluation,
             self.hyperparameter_manager.elitism_rate,
             self.population_size,
@@ -200,7 +200,7 @@ class Fandango:
         if len(self.evaluation) < 2:
             return None
         try:
-            parent1, parent2 = self.evaluator.tournament_selection(
+            parent1, parent2 = self.population_manager.tournament_selection(
                 evaluation=self.evaluation,
                 tournament_size=max(
                     2,

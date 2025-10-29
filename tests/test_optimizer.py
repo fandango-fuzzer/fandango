@@ -178,7 +178,7 @@ class GeneticTest(unittest.TestCase):
 
     def test_select_elites(self):
         # Select the elites
-        elites = self.fandango.evaluator.select_elites(
+        elites = self.fandango.population_manager.select_elites(
             self.fandango.evaluation,
             elitism_rate=self.fandango.hyperparameter_manager.elitism_rate,
             population_size=self.fandango.population_size,
@@ -196,7 +196,7 @@ class GeneticTest(unittest.TestCase):
 
     def test_selection(self):
         # Select the parents
-        parent1, parent2 = self.fandango.evaluator.tournament_selection(
+        parent1, parent2 = self.fandango.population_manager.tournament_selection(
             self.fandango.evaluation,
             tournament_size=max(
                 2,
@@ -231,7 +231,7 @@ class GeneticTest(unittest.TestCase):
                 * self.fandango.hyperparameter_manager.tournament_size
             ),
         )
-        parent1, parent2 = self.fandango.evaluator.tournament_selection(
+        parent1, parent2 = self.fandango.population_manager.tournament_selection(
             self.fandango.evaluation,
             tournament_size,
         )
@@ -263,7 +263,7 @@ class GeneticTest(unittest.TestCase):
                 * self.fandango.hyperparameter_manager.tournament_size
             ),
         )
-        parent1, parent2 = self.fandango.evaluator.tournament_selection(
+        parent1, parent2 = self.fandango.population_manager.tournament_selection(
             self.fandango.evaluation, tournament_size
         )
 

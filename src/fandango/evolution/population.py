@@ -181,6 +181,35 @@ class PopulationManager:
             individual = individual.replace_multiple(self._grammar, replacements)
         return individual, fixes_made
 
+    @staticmethod
+    def select_elites(
+        evaluation: list[tuple[DerivationTree, float, list[FailingTree]]],
+        elitism_rate: float,
+        population_size: int,
+    ) -> list[DerivationTree]:
+        return [
+            x[0]
+            for x in sorted(evaluation, key=lambda x: x[1], reverse=True)[
+                : int(elitism_rate * population_size)
+            ]
+        ]
+
+    @staticmethod
+    def tournament_selection(
+        evaluation: list[tuple[DerivationTree, float, list[FailingTree]]],
+        tournament_size: int,
+    ) -> tuple[DerivationTree, DerivationTree]:
+        tournament = random.sample(evaluation, k=min(tournament_size, len(evaluation)))
+        tournament.sort(key=lambda x: x[1], reverse=True)
+        parent1 = tournament[0][0]
+        if len(tournament) == 2:
+            parent2 = tournament[1][0] if tournament[1][0] != parent1 else parent1
+        else:
+            parent2 = (
+                tournament[1][0] if tournament[1][0] != parent1 else tournament[2][0]
+            )
+        return parent1, parent2
+
 
 class IoPopulationManager(PopulationManager):
     def __init__(
