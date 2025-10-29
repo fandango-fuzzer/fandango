@@ -67,7 +67,6 @@ class GeneticTest(unittest.TestCase):
     def test_refill_population_with_empty_population(self):
         manager = PopulationManager(
             grammar=self.fandango.grammar,
-            warnings_are_errors=True,
         )
         population: list[DerivationTree] = []
         expected_count = 10
@@ -92,7 +91,6 @@ class GeneticTest(unittest.TestCase):
         # Generate a population of derivation trees
         manager = PopulationManager(
             grammar=self.fandango.grammar,
-            warnings_are_errors=True,
         )
 
         initial_count = 10

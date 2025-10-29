@@ -19,11 +19,9 @@ class PopulationManager:
         self,
         grammar: Grammar,
         start_symbol: str = "<start>",
-        warnings_are_errors: bool = False,
     ):
         self._grammar = grammar
         self._start_symbol = start_symbol
-        self._warnings_are_errors = warnings_are_errors
 
     def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
         return self._grammar.fuzz(self._start_symbol, max_nodes)
@@ -189,9 +187,8 @@ class IoPopulationManager(PopulationManager):
         self,
         grammar: Grammar,
         start_symbol: str = "<start>",
-        warnings_are_errors: bool = False,
     ):
-        super().__init__(grammar, start_symbol, warnings_are_errors)
+        super().__init__(grammar, start_symbol)
         self._prev_packet_idx = 0
         self.fuzzable_packets: Optional[list[ForcastingPacket]] = None
 

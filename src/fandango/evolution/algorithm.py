@@ -60,15 +60,19 @@ class Fandango:
         max_nodes: Optional[int] = 100,
         max_repetitions: Optional[int] = 100,
     ):
-        if tournament_size > 1:
+        if 0 >= tournament_size > 1:
             raise FandangoValueError(
-                f"Parameter tournament_size must be in range ]0, 1], but is {tournament_size}."
+                f"Parameter tournament_size must be in range (0, 1], but is {tournament_size}."
             )
         if random_seed is not None:
             random.seed(random_seed)
         if logger_level is not None:
             LOGGER.setLevel(logger_level.value)
         LOGGER.info("---------- Initializing FANDANGO algorithm ---------- ")
+
+        self.grammar = grammar
+        self.constraints = constraints
+        self.population_size = population_size
 
         self.hyperparameter_manager = HyperparameterManager(
             elitism_rate,
@@ -80,31 +84,30 @@ class Fandango:
             max_repetitions,
         )
 
-        self.grammar = grammar
-        self.constraints = constraints
-        self.population_size = population_size
-        self.remote_response_timeout = 15.0
+        self.crossover_operator = crossover_method
+        self.mutation_method = mutation_method
 
         # Instantiate managers
-        if self.grammar.fuzzing_mode == FuzzingMode.IO:
+        if self.grammar.fuzzing_mode == FuzzingMode.COMPLETE:
+            self.population_manager: PopulationManager = PopulationManager(
+                grammar,
+            )
+        elif self.grammar.fuzzing_mode == FuzzingMode.IO:
             self.population_manager: PopulationManager = IoPopulationManager(
                 grammar,
-                warnings_are_errors=False,
             )
+            self.remote_response_timeout = 15.0
         else:
-            self.population_manager = PopulationManager(
-                grammar,
-                warnings_are_errors=False,
+            raise FandangoValueError(
+                f"Invalid fuzzing mode: {self.grammar.fuzzing_mode}"
             )
+
         self.evaluator = Evaluator(
             grammar,
             constraints,
             1.0,
             False,
         )
-
-        self.crossover_operator = crossover_method
-        self.mutation_method = mutation_method
 
         self.population = self._parse_and_deduplicate(population=initial_population)
         self._initial_solutions, self.evaluation = GeneratorWithReturn(
