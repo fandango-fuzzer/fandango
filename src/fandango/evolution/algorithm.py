@@ -57,13 +57,9 @@ class Fandango:
         destruction_rate: float = 0.0,
         logger_level: Optional[LoggerLevel] = None,
         random_seed: Optional[int] = None,
+        max_nodes: Optional[int] = 200,
+        max_repetitions: Optional[int] = 1000,
         # TODO: remove all these diversity parameters
-        diversity_k: int = 5,
-        diversity_weight: float = 1.0,
-        max_repetition_rate: float = 0.5,
-        max_repetitions: Optional[int] = None,
-        max_nodes: int = 200,
-        max_nodes_rate: float = 0.5,
     ):
         if tournament_size > 1:
             raise FandangoValueError(
@@ -74,6 +70,9 @@ class Fandango:
         if logger_level is not None:
             LOGGER.setLevel(logger_level.value)
         LOGGER.info("---------- Initializing FANDANGO algorithm ---------- ")
+
+        self.max_nodes = max_nodes
+        self.max_repetitions = max_repetitions
 
         self.grammar = grammar
         self.constraints = constraints
@@ -98,19 +97,12 @@ class Fandango:
             grammar,
             constraints,
             1.0,
-            diversity_k,
-            diversity_weight,
             False,
         )
         self.adaptive_tuner = AdaptiveTuner(
             mutation_rate,
             crossover_rate,
             grammar.get_max_repetition(),
-            max_nodes,
-            max_repetitions,
-            max_repetition_rate,
-            max_nodes,
-            max_nodes_rate,
         )
 
         self.crossover_operator = crossover_method
@@ -175,7 +167,7 @@ class Fandango:
         yield from self.population_manager.refill_population(
             current_population=self.population,
             eval_individual=self.evaluator.evaluate_individual,
-            max_nodes=self.adaptive_tuner.current_max_nodes,
+            max_nodes=self.max_nodes,
             target_population_size=self.population_size,
         )
 
@@ -222,11 +214,7 @@ class Fandango:
             if crossovers is None:
                 return None
 
-            to_add = [
-                tree
-                for tree in crossovers
-                if tree.size() <= self.adaptive_tuner.current_max_nodes
-            ]
+            to_add = [tree for tree in crossovers if tree.size() <= self.max_nodes]
 
             for i, child in enumerate(to_add):
                 if i == 0:
@@ -380,7 +368,7 @@ class Fandango:
             yield from self.population_manager.refill_population(
                 new_population,
                 self.evaluator.evaluate_individual,
-                self.adaptive_tuner.current_max_nodes,
+                self.max_nodes,
                 self.population_size,
             )
 
@@ -470,7 +458,7 @@ class Fandango:
                     self.population_manager.refill_population(
                         current_population=self.population,
                         eval_individual=self.evaluator.evaluate_individual,
-                        max_nodes=self.adaptive_tuner.current_max_nodes,
+                        max_nodes=self.max_nodes,
                         target_population_size=self.population_size,
                     )
                 )

@@ -15,16 +15,12 @@ class Evaluator:
         grammar: Grammar,
         constraints: list[Constraint | SoftValue],
         expected_fitness: float,
-        diversity_k: int,
-        diversity_weight: float,
         warnings_are_errors: bool = False,
     ):
         self._grammar = grammar
         self._soft_constraints: list[SoftValue] = []
         self._hard_constraints: list[Constraint] = []
         self._expected_fitness = expected_fitness
-        self._diversity_k = diversity_k
-        self._diversity_weight = diversity_weight
         self._warnings_are_errors = warnings_are_errors
         self._fitness_cache: dict[int, tuple[float, list[FailingTree]]] = {}
         self._solution_set: set[int] = set()
@@ -71,23 +67,6 @@ class Evaluator:
         """
         if len(self._soft_constraints) > 0:
             self._fitness_cache = {}
-
-    def compute_diversity_bonus(self, individuals: list[DerivationTree]) -> list[float]:
-        ind_kpaths = [
-            self._grammar._extract_k_paths_from_tree(ind, self._diversity_k)
-            for ind in individuals
-        ]
-        frequencies = Counter(path for paths in ind_kpaths for path in paths)
-
-        bonus = [
-            (
-                sum(1.0 / frequencies[path] for path in paths) / len(paths)
-                if paths
-                else 0.0
-            )
-            for paths in ind_kpaths
-        ]
-        return bonus
 
     def evaluate_hard_constraints(
         self, individual: DerivationTree
@@ -191,13 +170,6 @@ class Evaluator:
         for ind in population:
             ind_eval = yield from self.evaluate_individual(ind)
             evaluation.append((ind, *ind_eval))
-
-        if self._diversity_k > 0 and self._diversity_weight > 0:
-            bonuses = self.compute_diversity_bonus(population)
-            evaluation = [
-                (ind, fitness + bonus, failing_trees)
-                for (ind, fitness, failing_trees), bonus in zip(evaluation, bonuses)
-            ]
 
         return evaluation
 
