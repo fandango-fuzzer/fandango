@@ -10,13 +10,19 @@ from fandango.logger import LOGGER
 class HyperparameterManager:
     def __init__(
         self,
-        mutation_rate: float,
+        elitism_rate: float,
+        tournament_size: float,
         crossover_rate: float,
+        mutation_rate: float,
+        destruction_rate: float,
         max_nodes: int,
         max_repetitions: int,
     ):
-        self.mutation_rate = mutation_rate
+        self.elitism_rate = elitism_rate
+        self.tournament_size = tournament_size
         self.crossover_rate = crossover_rate
+        self.mutation_rate = mutation_rate
+        self.destruction_rate = destruction_rate
         self.max_nodes = max_nodes
         self.current_max_repetitions = max_repetitions
 

@@ -71,8 +71,11 @@ class Fandango:
         LOGGER.info("---------- Initializing FANDANGO algorithm ---------- ")
 
         self.hyperparameter_manager = HyperparameterManager(
-            mutation_rate,
+            elitism_rate,
+            tournament_size,
             crossover_rate,
+            mutation_rate,
+            destruction_rate,
             max_nodes,
             max_repetitions,
         )
@@ -80,9 +83,6 @@ class Fandango:
         self.grammar = grammar
         self.constraints = constraints
         self.population_size = population_size
-        self.elitism_rate = elitism_rate
-        self.destruction_rate = destruction_rate
-        self.tournament_size = tournament_size
         self.remote_response_timeout = 15.0
 
         # Instantiate managers
@@ -180,7 +180,7 @@ class Fandango:
         """
         new_population = self.evaluator.select_elites(
             self.evaluation,
-            self.elitism_rate,
+            self.hyperparameter_manager.elitism_rate,
             self.population_size,
         )
 
@@ -202,7 +202,11 @@ class Fandango:
             parent1, parent2 = self.evaluator.tournament_selection(
                 evaluation=self.evaluation,
                 tournament_size=max(
-                    2, int(self.population_size * self.tournament_size)
+                    2,
+                    int(
+                        self.population_size
+                        * self.hyperparameter_manager.tournament_size
+                    ),
                 ),
             )
 
@@ -268,9 +272,16 @@ class Fandango:
         :param new_population: The new population to perform destruction on.
         :return: The new population after destruction.
         """
-        LOGGER.debug(f"Destroying {self.destruction_rate * 100:.2f}% of the population")
+        LOGGER.debug(
+            f"Destroying {self.hyperparameter_manager.destruction_rate * 100:.2f}% of the population"
+        )
         random.shuffle(new_population)
-        return new_population[: int(self.population_size * (1 - self.destruction_rate))]
+        return new_population[
+            : int(
+                self.population_size
+                * (1 - self.hyperparameter_manager.destruction_rate)
+            )
+        ]
 
     def evolve(
         self,
@@ -361,7 +372,7 @@ class Fandango:
             yield from self._perform_mutation(new_population)
 
             # Destruction
-            if self.destruction_rate > 0:
+            if self.hyperparameter_manager.destruction_rate > 0:
                 new_population = self._perform_destruction(new_population)
 
             # Ensure Uniqueness & Fill Population
