@@ -259,9 +259,7 @@ class Fandango(FandangoBase):
                 )
                 constraints += cast(list[Constraint | SoftValue], extra_constraints)
 
-        self.fandango = FandangoStrategy(
-            self.grammar, constraints, **settings
-        )
+        self.fandango = FandangoStrategy(self.grammar, constraints, **settings)
         LOGGER.info("---------- Done initializing base population ----------")
 
     def generate_solutions(
