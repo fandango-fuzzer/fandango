@@ -12,9 +12,9 @@ from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
 from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.evolution import GeneratorWithReturn
-from fandango.evolution.adaptation import AdaptiveTuner
 from fandango.evolution.crossover import CrossoverOperator, SimpleSubtreeCrossover
 from fandango.evolution.evaluation import Evaluator
+from fandango.evolution.hyperparameter import HyperparameterManager
 from fandango.evolution.mutation import MutationOperator, SimpleMutation
 from fandango.evolution.population import IoPopulationManager, PopulationManager
 from fandango.io import FandangoIO
@@ -57,9 +57,8 @@ class Fandango:
         destruction_rate: float = 0.0,
         logger_level: Optional[LoggerLevel] = None,
         random_seed: Optional[int] = None,
-        max_nodes: Optional[int] = 200,
-        max_repetitions: Optional[int] = 1000,
-        # TODO: remove all these diversity parameters
+        max_nodes: Optional[int] = 100,
+        max_repetitions: Optional[int] = 100,
     ):
         if tournament_size > 1:
             raise FandangoValueError(
@@ -71,8 +70,12 @@ class Fandango:
             LOGGER.setLevel(logger_level.value)
         LOGGER.info("---------- Initializing FANDANGO algorithm ---------- ")
 
-        self.max_nodes = max_nodes
-        self.max_repetitions = max_repetitions
+        self.hyperparameter_manager = HyperparameterManager(
+            mutation_rate,
+            crossover_rate,
+            max_nodes,
+            max_repetitions,
+        )
 
         self.grammar = grammar
         self.constraints = constraints
@@ -98,11 +101,6 @@ class Fandango:
             constraints,
             1.0,
             False,
-        )
-        self.adaptive_tuner = AdaptiveTuner(
-            mutation_rate,
-            crossover_rate,
-            grammar.get_max_repetition(),
         )
 
         self.crossover_operator = crossover_method
@@ -167,7 +165,7 @@ class Fandango:
         yield from self.population_manager.refill_population(
             current_population=self.population,
             eval_individual=self.evaluator.evaluate_individual,
-            max_nodes=self.max_nodes,
+            max_nodes=self.hyperparameter_manager.max_nodes,
             target_population_size=self.population_size,
         )
 
@@ -214,7 +212,11 @@ class Fandango:
             if crossovers is None:
                 return None
 
-            to_add = [tree for tree in crossovers if tree.size() <= self.max_nodes]
+            to_add = [
+                tree
+                for tree in crossovers
+                if tree.size() <= self.hyperparameter_manager.max_nodes
+            ]
 
             for i, child in enumerate(to_add):
                 if i == 0:
@@ -244,7 +246,7 @@ class Fandango:
         mutation_pool = self.evaluator.compute_mutation_pool(new_population)
         mutated_population = []
         for individual in mutation_pool:
-            if random.random() < self.adaptive_tuner.mutation_rate:
+            if random.random() < self.hyperparameter_manager.mutation_rate:
                 try:
                     mutated_individual = yield from self.mutation_method.mutate(
                         individual,
@@ -330,7 +332,6 @@ class Fandango:
         if len(self.population) < self.population_size:
             yield from self.generate_initial_population()
 
-        prev_best_fitness = 0.0
         generation = 0
 
         while True:
@@ -349,7 +350,7 @@ class Fandango:
             for _ in range(self.population_size):
                 if len(new_population) >= self.population_size:
                     break
-                if random.random() < self.adaptive_tuner.crossover_rate:
+                if random.random() < self.hyperparameter_manager.crossover_rate:
                     yield from self._perform_crossover(new_population, unique_hashes)
 
             # Truncate if necessary
@@ -368,7 +369,7 @@ class Fandango:
             yield from self.population_manager.refill_population(
                 new_population,
                 self.evaluator.evaluate_individual,
-                self.max_nodes,
+                self.hyperparameter_manager.max_nodes,
                 self.population_size,
             )
 
@@ -395,23 +396,7 @@ class Fandango:
                 : self.population_size
             ]
 
-            current_best_fitness = max(e[1] for e in self.evaluation)
-            current_max_repetitions = self.grammar.get_max_repetition()
-            self.adaptive_tuner.update_parameters(
-                generation,
-                prev_best_fitness,
-                current_best_fitness,
-                self.population,
-                self.evaluator,
-                current_max_repetitions,
-            )
-
-            if self.adaptive_tuner.current_max_repetition > current_max_repetitions:
-                self.grammar.set_max_repetition(
-                    self.adaptive_tuner.current_max_repetition
-                )
-
-            prev_best_fitness = current_best_fitness
+            self.hyperparameter_manager.adjust_hyperparameters()
 
             visualize_evaluation(generation, max_generations, self.evaluation)
         clear_visualization()
@@ -458,7 +443,7 @@ class Fandango:
                     self.population_manager.refill_population(
                         current_population=self.population,
                         eval_individual=self.evaluator.evaluate_individual,
-                        max_nodes=self.max_nodes,
+                        max_nodes=self.hyperparameter_manager.max_nodes,
                         target_population_size=self.population_size,
                     )
                 )

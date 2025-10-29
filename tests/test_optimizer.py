@@ -74,7 +74,7 @@ class GeneticTest(unittest.TestCase):
         generator = manager.refill_population(
             current_population=population,
             eval_individual=self.fandango.evaluator.evaluate_individual,
-            max_nodes=self.fandango.max_nodes,
+            max_nodes=self.fandango.hyperparameter_manager.max_nodes,
             target_population_size=expected_count,
         )
         solutions = list(generator)
@@ -102,7 +102,7 @@ class GeneticTest(unittest.TestCase):
         generator = manager.refill_population(
             current_population=population,
             eval_individual=self.fandango.evaluator.evaluate_individual,
-            max_nodes=self.fandango.max_nodes,
+            max_nodes=self.fandango.hyperparameter_manager.max_nodes,
             target_population_size=initial_count,
         )
 
@@ -114,7 +114,7 @@ class GeneticTest(unittest.TestCase):
         generator = manager.refill_population(
             current_population=population,
             eval_individual=self.fandango.evaluator.evaluate_individual,
-            max_nodes=self.fandango.max_nodes,
+            max_nodes=self.fandango.hyperparameter_manager.max_nodes,
             target_population_size=initial_count + additional_count,
         )
         solutions = list(generator)
