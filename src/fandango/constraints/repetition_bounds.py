@@ -69,17 +69,17 @@ class RepetitionBoundsSuggestion(Suggestion):
         nr_to_insert: int,
         rep_iteration: int,
         grammar: "Grammar",
-        tree: DerivationTree,
-        end_rep: DerivationTree,
     ) -> tuple[DerivationTree, DerivationTree]:
-        assert end_rep.parent is not None, "end_rep must have a parent"
-        index = index_by_reference(end_rep.parent, end_rep)
+        tree = self._ending_rep_tree.parent
+        assert tree is not None, "end_rep must have a parent"
+        index = index_by_reference(tree, self._ending_rep_tree)
+
         if index is None:
             raise ValueError("end_rep not found in its parent's children")
         insertion_index = index + 1
 
         starting_rep = 0
-        for ref in end_rep.origin_repetitions:
+        for ref in self._ending_rep_tree.origin_repetitions:
             if ref[0] == self._repetition_id and ref[1] == rep_iteration:
                 assert ref[2] is not None, "repetition index (ref[2]) must not be None"
                 starting_rep = ref[2] + 1
@@ -112,8 +112,10 @@ class RepetitionBoundsSuggestion(Suggestion):
         return tree, copy_parent
 
     def _delete_repetitions(
-        self, *, nr_to_delete: int, rep_iteration: int, tree: DerivationTree
+        self, *, nr_to_delete: int, rep_iteration: int
     ) -> tuple[DerivationTree, DerivationTree]:
+        assert self._ending_rep_tree.parent is not None
+        tree = self._ending_rep_tree.parent
         copy_parent = tree.deepcopy(
             copy_children=True, copy_parent=False, copy_params=False
         )
@@ -157,8 +159,6 @@ class RepetitionBoundsSuggestion(Suggestion):
                     nr_to_insert=self._goal_len - self._bound_len,
                     rep_iteration=self._iter_id,
                     grammar=grammar,
-                    tree=individual,
-                    end_rep=self._ending_rep_tree,
                 )
             )
         else:
@@ -169,12 +169,13 @@ class RepetitionBoundsSuggestion(Suggestion):
             delete_replace_pair = self._delete_repetitions(
                 nr_to_delete=self._bound_len - self._goal_len,
                 rep_iteration=self._iter_id,
-                tree=individual,
             )
             if self._goal_len == 0:
+                repetition_parent = self._ending_rep_tree.parent
+                assert repetition_parent is not None
                 delete_replacement: DerivationTree = delete_replace_pair[1]
-                node_a = _get_first_common_node(individual, self._starting_rep_value)
-                node_b = _get_first_common_node(individual, self._ending_rep_value)
+                node_a = _get_first_common_node(repetition_parent, self._starting_rep_value)
+                node_b = _get_first_common_node(repetition_parent, self._ending_rep_value)
                 node_c = _get_first_common_node(
                     self._starting_rep_value, self._ending_rep_value
                 )
@@ -187,13 +188,13 @@ class RepetitionBoundsSuggestion(Suggestion):
                 )
                 replacement = replacement.replace_multiple(
                     grammar=grammar,
-                    replacements=[(individual, delete_replacement)],
+                    replacements=[(repetition_parent, delete_replacement)],
                     current_path=first_node.get_choices_path(),
                 )
 
                 read_only_start_idx = len(first_node.get_path()) - 1
                 current_node = replacement
-                for path_node in individual.get_choices_path()[read_only_start_idx:]:
+                for path_node in repetition_parent.get_choices_path()[read_only_start_idx:]:
                     current_node = current_node.children[path_node.index]
                     current_node.read_only = True
                 current_node = replacement
