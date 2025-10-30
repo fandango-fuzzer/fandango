@@ -71,7 +71,7 @@ if __name__ == "__main__":
         <my_start> ::= 'a' | 'b' | 'c'
         where str(<my_start>) != 'd'
     """
-    fan = Fandango(spec, logging_level=logging_level, start_symbol="<my_start>")
+    fan = Fandango(spec, logging_level=logging_level)
 
     # Instantiate the spec into a population of derivation trees
     population = fan.fuzz(extra_constraints=["<my_start> != 'e'"], population_size=3)

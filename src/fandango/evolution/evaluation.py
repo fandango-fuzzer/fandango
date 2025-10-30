@@ -1,5 +1,4 @@
 import random
-from typing import Counter
 from collections.abc import Generator
 
 from fandango.constraints.constraint import Constraint
@@ -14,21 +13,14 @@ class Evaluator:
         self,
         grammar: Grammar,
         constraints: list[Constraint | SoftValue],
-        expected_fitness: float,
-        diversity_k: int,
-        diversity_weight: float,
-        warnings_are_errors: bool = False,
     ):
         self._grammar = grammar
         self._soft_constraints: list[SoftValue] = []
         self._hard_constraints: list[Constraint] = []
-        self._expected_fitness = expected_fitness
-        self._diversity_k = diversity_k
-        self._diversity_weight = diversity_weight
-        self._warnings_are_errors = warnings_are_errors
+        # TODO: Check the caching strategy here
         self._fitness_cache: dict[int, tuple[float, list[FailingTree]]] = {}
         self._solution_set: set[int] = set()
-        self._checks_made = 0
+        self.evaluation: list[tuple[DerivationTree, float, list[FailingTree]]] = []
 
         for constraint in constraints:
             if isinstance(constraint, SoftValue):
@@ -39,31 +31,12 @@ class Evaluator:
                 raise ValueError(f"Invalid constraint type: {type(constraint)}")
 
     @property
-    def expected_fitness(self) -> float:
-        return self._expected_fitness
-
-    def get_fitness_check_count(self) -> int:
-        """
-        :return: The number of fitness checks made so far.
-        """
-        return self._checks_made
-
-    def compute_mutation_pool(
-        self, population: list[DerivationTree]
-    ) -> list[DerivationTree]:
-        """
-        Computes the mutation pool for the given population.
-
-        The mutation pool is computed by sampling the population with replacement, where the probability of sampling an individual is proportional to its fitness.
-
-        :param population: The population to compute the mutation pool for.
-        :return: The mutation pool.
-        """
-        weights = [self._fitness_cache[hash(ind)][0] for ind in population]
-        if not all(w == 0 for w in weights):
-            return random.choices(population, weights=weights, k=len(population))
-        else:
-            return population
+    def average_population_fitness(self) -> float:
+        return (
+            (sum(e[1] for e in self.evaluation) / len(self.evaluation))
+            if self.evaluation
+            else 0.0
+        )
 
     def flush_fitness_cache(self) -> None:
         """
@@ -71,23 +44,6 @@ class Evaluator:
         """
         if len(self._soft_constraints) > 0:
             self._fitness_cache = {}
-
-    def compute_diversity_bonus(self, individuals: list[DerivationTree]) -> list[float]:
-        ind_kpaths = [
-            self._grammar._extract_k_paths_from_tree(ind, self._diversity_k)
-            for ind in individuals
-        ]
-        frequencies = Counter(path for paths in ind_kpaths for path in paths)
-
-        bonus = [
-            (
-                sum(1.0 / frequencies[path] for path in paths) / len(paths)
-                if paths
-                else 0.0
-            )
-            for paths in ind_kpaths
-        ]
-        return bonus
 
     def evaluate_hard_constraints(
         self, individual: DerivationTree
@@ -106,12 +62,10 @@ class Evaluator:
                 else:
                     failing_trees.extend(result.failing_trees)
                     hard_fitness += result.fitness()
-                self._checks_made += 1
             except Exception as e:
                 LOGGER.error(
-                    f"Error evaluating hard constraint {constraint.format_as_spec()}"
+                    f"Error evaluating hard constraint {constraint.format_as_spec()}: {e}"
                 )
-                print_exception(e)
                 hard_fitness += 0.0
         hard_fitness /= len(self._hard_constraints)
         return hard_fitness, failing_trees
@@ -174,7 +128,7 @@ class Evaluator:
                     + soft_fitness * len(self._soft_constraints)
                 ) / (len(self._hard_constraints) + len(self._soft_constraints))
 
-        if fitness >= self._expected_fitness and key not in self._solution_set:
+        if fitness >= 1.0 and key not in self._solution_set:
             self._solution_set.add(key)
             yield individual
 
@@ -187,45 +141,16 @@ class Evaluator:
     ) -> Generator[
         DerivationTree, None, list[tuple[DerivationTree, float, list[FailingTree]]]
     ]:
-        evaluation: list[tuple[DerivationTree, float, list[FailingTree]]] = []
-        for ind in population:
-            ind_eval = yield from self.evaluate_individual(ind)
-            evaluation.append((ind, *ind_eval))
-
-        if self._diversity_k > 0 and self._diversity_weight > 0:
-            bonuses = self.compute_diversity_bonus(population)
-            evaluation = [
-                (ind, fitness + bonus, failing_trees)
-                for (ind, fitness, failing_trees), bonus in zip(evaluation, bonuses)
-            ]
-
-        return evaluation
-
-    def select_elites(
-        self,
-        evaluation: list[tuple[DerivationTree, float, list[FailingTree]]],
-        elitism_rate: float,
-        population_size: int,
-    ) -> list[DerivationTree]:
-        return [
-            x[0]
-            for x in sorted(evaluation, key=lambda x: x[1], reverse=True)[
-                : int(elitism_rate * population_size)
-            ]
-        ]
-
-    def tournament_selection(
-        self,
-        evaluation: list[tuple[DerivationTree, float, list[FailingTree]]],
-        tournament_size: int,
-    ) -> tuple[DerivationTree, DerivationTree]:
-        tournament = random.sample(evaluation, k=min(tournament_size, len(evaluation)))
-        tournament.sort(key=lambda x: x[1], reverse=True)
-        parent1 = tournament[0][0]
-        if len(tournament) == 2:
-            parent2 = tournament[1][0] if tournament[1][0] != parent1 else parent1
-        else:
-            parent2 = (
-                tournament[1][0] if tournament[1][0] != parent1 else tournament[2][0]
-            )
-        return parent1, parent2
+        self.evaluation = []
+        for individual in population:
+            try:
+                result = yield from self.evaluate_individual(individual)
+                if isinstance(result, DerivationTree):
+                    yield result
+                else:
+                    fitness, failing_trees = result
+                    self.evaluation.append((individual, fitness, failing_trees))
+            except Exception as e:
+                LOGGER.error(f"Error evaluating individual: {e}")
+                self.evaluation.append((individual, 0.0, []))
+        return self.evaluation

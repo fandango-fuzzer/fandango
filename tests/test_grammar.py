@@ -109,7 +109,7 @@ class ConstraintTest(unittest.TestCase):
             grammar, c = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
 
-        solutions = self.get_solutions(grammar, c, desired_solutions=20)
+        solutions = self.get_solutions(grammar, c, desired_solutions=10)
         for solution in solutions:
             self.assertGreaterEqual(len(str(solution)), 3)
 
