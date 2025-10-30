@@ -34,18 +34,16 @@ class ConjunctionConstraint(Constraint):
         self,
         tree: DerivationTree,
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
-        population: Optional[list[DerivationTree]] = None,
         local_variables: Optional[dict[str, Any]] = None,
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the given conjunction.
         :param DerivationTree tree: The tree to evaluate.
         :param Optional[dict[str, DerivationTree]] scope: The scope of the tree.
-        :param Optional[list[DerivationTree]] population: The population of trees.
         :param Optional[dict[str, Any]] local_variables: Local variables to use in the evaluation.
         :return ConstraintFitness: The fitness of the tree.
         """
-        tree_hash = self.get_hash(tree, scope, population, local_variables)
+        tree_hash = self.get_hash(tree, scope, local_variables)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
@@ -53,14 +51,14 @@ class ConjunctionConstraint(Constraint):
             # If the conjunction is lazy, evaluate the constraints one by one and stop if one fails
             fitness_values = list()
             for constraint in self.constraints:
-                fitness = constraint.fitness(tree, scope, population, local_variables)
+                fitness = constraint.fitness(tree, scope, local_variables)
                 fitness_values.append(fitness)
                 if not fitness.success:
                     break
         else:
             # If the conjunction is not lazy, evaluate all constraints at once
             fitness_values = [
-                constraint.fitness(tree, scope, population, local_variables)
+                constraint.fitness(tree, scope, local_variables)
                 for constraint in self.constraints
             ]
         # Aggregate the fitness values
@@ -85,7 +83,7 @@ class ConjunctionConstraint(Constraint):
     def format_as_spec(self) -> str:
         return "(" + " and ".join(c.format_as_spec() for c in self.constraints) + ")"
 
-    def accept(self, visitor: "ConstraintVisitor") -> None:
+    def accept(self, visitor: ConstraintVisitor) -> None:
         """
         Accepts a visitor to traverse the constraint structure.
         :param ConstraintVisitor visitor: The visitor to accept.

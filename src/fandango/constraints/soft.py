@@ -84,18 +84,16 @@ class Value(GeneticBase):
         self,
         tree: DerivationTree,
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
-        population: Optional[list[DerivationTree]] = None,
         local_variables: Optional[dict[str, Any]] = None,
     ) -> ValueFitness:
         """
         Calculate the fitness of the tree based on the given expression.
         :param DerivationTree tree: The tree to evaluate.
         :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
-        :param Optional[list[DerivationTree]] population: The population of trees.
         :param Optional[dict[str, Any]] local_variables: Local variables to use in the evaluation.
         :return ValueFitness: The fitness of the tree.
         """
-        tree_hash = self.get_hash(tree, scope, population, local_variables)
+        tree_hash = self.get_hash(tree, scope, local_variables)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return self.cache[tree_hash]
@@ -106,7 +104,7 @@ class Value(GeneticBase):
             trees = []
             values = []
             # Iterate over all combinations of the tree and the scope
-            for combination in self.combinations(tree, scope, population):
+            for combination in self.combinations(tree, scope):
                 # Update the local variables to initialize the placeholders with the values of the combination
                 local_vars = self.local_variables.copy()
                 if local_variables:

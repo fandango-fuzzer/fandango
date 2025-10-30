@@ -8,7 +8,6 @@ from fandango.language.search import (
     ItemSearch,
     SelectiveSearch,
     DescendantAttributeSearch,
-    PopulationSearch,
     StarSearch,
 )
 from fandango.language.symbols import NonTerminal, Terminal
@@ -207,20 +206,3 @@ class TestSearches(unittest.TestCase):
         self.assertEqual(2, len(trees[0]))
         self.assertIn(self._C1, trees[0])
         self.assertIn(self._C2, trees[0])
-
-    def test_population_search(self):
-        search = PopulationSearch(RuleSearch(NonTerminal("<c>")))
-        trees = [
-            c.evaluate()
-            for c in search.find(
-                self.EXAMPLE,
-                population=[self.EXAMPLE, self.EXAMPLE, self._C2, self._C1, self._C3],
-            )
-        ]
-        self.assertEqual(1, len(trees))
-        self.assertIsInstance(trees[0], list)
-        self.assertEqual(7, len(trees[0]))
-        self.assertEqual(
-            [self._C1, self._C2, self._C1, self._C2, self._C2, self._C1, self._C3],
-            trees[0],
-        )
