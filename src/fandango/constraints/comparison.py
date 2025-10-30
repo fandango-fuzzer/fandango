@@ -2,7 +2,14 @@ from copy import copy
 import math
 from typing import Any, Optional, Unpack
 from fandango.constraints.base import GeneticBaseInitArgs
-from fandango.constraints.failing_tree import Comparison, ComparisonSide, FailingTree
+from fandango.constraints.failing_tree import (
+    ApplyAllSuggestions,
+    ApplyFirstSuggestion,
+    Comparison,
+    FailingTree,
+    Suggestion,
+)
+from fandango.language.grammar.grammar import Grammar
 from fandango.language.tree import DerivationTree
 from fandango.constraints.constraint_visitor import ConstraintVisitor
 from fandango.constraints.constraint import Constraint
@@ -12,6 +19,47 @@ from fandango.constraints.fitness import (
 )
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.logger import LOGGER, print_exception
+
+
+class EqualComparisonSuggestion(Suggestion):
+    def __init__(self, target: DerivationTree, source: Any):
+        """
+        Try parsing source into target.
+
+        :param target: The target to parse into.
+        :param source: What to parse.
+        """
+        self._target = target
+        self._source = source
+
+    def get_replacements(
+        self, individual: DerivationTree, grammar: Grammar
+    ) -> list[tuple[DerivationTree, DerivationTree]]:
+        """
+        Get the replacements for the failing tree.
+
+        :param individual: The individual to get the replacements for.
+        :param grammar: The grammar to use for parsing.
+        :return: Replacements (target, source) pairs.
+        """
+        symbol = self._target.symbol
+        assert isinstance(symbol, NonTerminal)
+
+        # don't parse if same symbol
+        if isinstance(self._source, DerivationTree) and symbol == self._source.symbol:
+            return [
+                (
+                    self._target,
+                    self._source.deepcopy(
+                        copy_children=True, copy_params=False, copy_parent=False
+                    ),
+                )
+            ]
+
+        elif suggested_tree := grammar.parse(self._source, start=symbol):
+            return [(self._target, suggested_tree)]
+
+        return []
 
 
 class ComparisonConstraint(Constraint):
@@ -55,8 +103,9 @@ class ComparisonConstraint(Constraint):
             return copy(self.cache[tree_hash])
         # Initialize the fitness values
         fitness_values = []
-        failing_trees = []
+        failing_trees: list[FailingTree] = []
         has_combinations = False
+        suggestions = []
         # If the tree is None, the fitness is 0
         if tree is None:
             return DistanceAwareConstraintFitness([], False)
@@ -86,18 +135,17 @@ class ComparisonConstraint(Constraint):
             if not hasattr(self, "types_checked") or not self.types_checked:
                 self.types_checked = self.check_type_compatibility(left, right)
 
-            # Initialize the suggestions
-            (fitness_value, suggestions) = self._evaluate_comparison(left, right)
+            (fitness_value, suggestion) = self._evaluate_comparison(left, right)
             if fitness_value < 1.0:
                 # If the comparison is not solved, add the failing trees to the list
                 for _, container in combination:
-                    for node in container.get_trees():
-                        ft = FailingTree(node, self, suggestions=suggestions)
-                        # if ft not in failing_trees:
-                        # failing_trees.append(ft)
-                        failing_trees.append(ft)
+                    failing_trees.extend(
+                        FailingTree(node, self) for node in container.get_trees()
+                    )
 
             fitness_values.append(fitness_value)
+            if suggestion is not None:
+                suggestions.append(suggestion)
 
         if not has_combinations:
             fitness_values.append(1.0)
@@ -106,6 +154,7 @@ class ComparisonConstraint(Constraint):
             fitness_values,
             success=all(it == 1.0 for it in fitness_values),
             failing_trees=failing_trees,
+            suggestion=ApplyAllSuggestions(suggestions),
         )
         # Cache the fitness
         self.cache[tree_hash] = fitness
@@ -170,56 +219,29 @@ class ComparisonConstraint(Constraint):
             global_variables=self.global_variables,
         )
 
-    def _evaluate_comparison(
-        self, left: Any, right: Any
-    ) -> tuple[float, list[tuple[Comparison, Any, ComparisonSide]]]:
+    def _evaluate_comparison(self, left: Any, right: Any) -> tuple[float, Suggestion]:
         suggestions = []
-        is_solved = self.operator.compare(left, right)
         fitness = 1.0
-        if not is_solved:
+        if not self.operator.compare(left, right):
             dist_norm = _distance_norm(left, right)
             fitness = (1.0 - dist_norm) if dist_norm is not None else 0.0
-            match self.operator:
-                case Comparison.EQUAL:
-                    if not self.right.strip().startswith("len("):
-                        suggestions.append(
-                            (Comparison.EQUAL, left, ComparisonSide.RIGHT)
-                        )
-                    if not self.left.strip().startswith("len("):
-                        suggestions.append(
-                            (Comparison.EQUAL, right, ComparisonSide.LEFT)
-                        )
-                case Comparison.NOT_EQUAL:
-                    # NOT_EQUAL does not span a range to the fitness is immediately zero if they are equal
-                    fitness = 0.0
+            if self.operator == Comparison.NOT_EQUAL:
+                # NOT_EQUAL does not span a range to the fitness is immediately zero if they are equal (introduced by @henryhchchc, moved by @riesentoaster)
+                fitness = 0.0
 
-                    suggestions.append(
-                        (Comparison.NOT_EQUAL, left, ComparisonSide.RIGHT)
-                    )
-                    suggestions.append(
-                        (Comparison.NOT_EQUAL, right, ComparisonSide.LEFT)
-                    )
-                case Comparison.GREATER:
-                    suggestions.append((Comparison.LESS, left, ComparisonSide.RIGHT))
-                    suggestions.append((Comparison.GREATER, right, ComparisonSide.LEFT))
-                case Comparison.GREATER_EQUAL:
-                    suggestions.append(
-                        (Comparison.LESS_EQUAL, left, ComparisonSide.RIGHT)
-                    )
-                    suggestions.append(
-                        (Comparison.GREATER_EQUAL, right, ComparisonSide.LEFT)
-                    )
-                case Comparison.LESS:
-                    suggestions.append((Comparison.GREATER, left, ComparisonSide.RIGHT))
-                    suggestions.append((Comparison.LESS, right, ComparisonSide.LEFT))
-                case Comparison.LESS_EQUAL:
-                    suggestions.append(
-                        (Comparison.GREATER_EQUAL, left, ComparisonSide.RIGHT)
-                    )
-                    suggestions.append(
-                        (Comparison.LESS_EQUAL, right, ComparisonSide.LEFT)
-                    )
-        return fitness, suggestions
+            if isinstance(left, DerivationTree) and not left.read_only:
+                assert isinstance(left.symbol, NonTerminal)
+                match self.operator:
+                    case Comparison.EQUAL:
+                        suggestions.append(EqualComparisonSuggestion(left, right))
+
+            if isinstance(right, DerivationTree) and not right.read_only:
+                assert isinstance(right.symbol, NonTerminal)
+                match self.operator:
+                    case Comparison.EQUAL:
+                        suggestions.append(EqualComparisonSuggestion(right, left))
+
+        return fitness, ApplyFirstSuggestion(suggestions)
 
 
 def _distance_norm(left: Any, right: Any) -> Optional[float]:
