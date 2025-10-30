@@ -120,10 +120,10 @@ class ConstraintTest(unittest.TestCase):
         solutions = self.get_solutions(grammar, c, desired_solutions=10)
         for solution in solutions:
             len_outer = solution.children[0].to_int()
-            self.assertEqual(len_outer, len(solution.children) - 3)
+            self.assertEqual(len_outer, len(solution.children) - 3, solution.to_tree())
             for tree in solution.children[2:-1]:
                 len_inner = tree.children[0].to_int()
-                self.assertEqual(len_inner, len(tree.children) - 1)
+                self.assertEqual(len_inner, len(tree.children) - 1, solution.to_tree())
 
     def test_repetition_computed_b(self):
         with open(RESOURCES_ROOT / "dynamic_repetition_2.fan", "r") as file:
@@ -133,15 +133,17 @@ class ConstraintTest(unittest.TestCase):
         for solution in solutions:
             len_a = solution.children[0].to_int()
             assert len_a is not None
-            self.assertLessEqual(len_a + 2, len(solution.children))
+            self.assertLessEqual(len_a + 2, len(solution.children), solution.to_tree())
             for child in solution.children[1 : len_a + 1]:
-                self.assertTrue(child.symbol == NonTerminal("<a>"))
+                self.assertTrue(child.symbol == NonTerminal("<a>"), solution.to_tree())
             len_b = solution.children[len_a + 1]
             assert len_b is not None
-            self.assertTrue(len_b.symbol == NonTerminal("<len_b>"))
+            self.assertTrue(len_b.symbol == NonTerminal("<len_b>"), solution.to_tree())
             len_b = len_b.to_int()
             assert len_b is not None
-            self.assertEqual(len_a + len_b + 2, len(solution.children))
+            self.assertEqual(
+                len_a + len_b + 2, len(solution.children), solution.to_tree()
+            )
             for child in solution.children[len_a + 4 :]:
                 self.assertTrue(child.symbol == NonTerminal("<b>"))
 
