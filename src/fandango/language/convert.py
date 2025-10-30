@@ -577,11 +577,23 @@ class ConstraintProcessor(FandangoParserVisitor):
         else:
             raise UnsupportedOperation(f"Unknown operator in {ctx.getText()}")
         left, _, left_map = self.searches.visit(ctx.expr(0))
+        single_left_nt = None
+        if len(left_map) == 1:
+            search = next(iter(left_map.values()))
+            if isinstance(search, RuleSearch):
+                single_left_nt = search.symbol
         right, _, right_map = self.searches.visit(ctx.expr(1))
+        single_right_nt = None
+        if len(right_map) == 1:
+            search = next(iter(right_map.values()))
+            if isinstance(search, RuleSearch):
+                single_right_nt = search.symbol
         return ComparisonConstraint(
             op,
             ast.unparse(left),
             ast.unparse(right),
+            single_left_nt=single_left_nt,
+            single_right_nt=single_right_nt,
             searches={**left_map, **right_map},
             local_variables=self.local_variables,
             global_variables=self.global_variables,

@@ -7,6 +7,7 @@ from fandango.constraints.failing_tree import (
     ApplyFirstSuggestion,
     Comparison,
     FailingTree,
+    NopSuggestion,
     Suggestion,
 )
 from fandango.language.grammar.grammar import Grammar
@@ -72,6 +73,8 @@ class ComparisonConstraint(Constraint):
         operator: Comparison,
         left: str,
         right: str,
+        single_left_nt: Optional[NonTerminal] = None,
+        single_right_nt: Optional[NonTerminal] = None,
         **kwargs: Unpack[GeneticBaseInitArgs],
     ) -> None:
         """
@@ -79,6 +82,8 @@ class ComparisonConstraint(Constraint):
         :param Comparison operator: The operator to use.
         :param str left: The left side of the comparison.
         :param str right: The right side of the comparison.
+        :param Optional[NonTerminal] single_left_nt: If the left side depends on exactly one non-terminal.
+        :param Optional[NonTerminal] single_right_nt: If the right side depends on exactly one non-terminal.
         :param args: Additional arguments.
         :param kwargs: Additional keyword arguments.
         """
@@ -86,6 +91,8 @@ class ComparisonConstraint(Constraint):
         self.operator = operator
         self.left = left
         self.right = right
+        self.single_left_nt = single_left_nt
+        self.single_right_nt = single_right_nt
         self.types_checked = False
 
     def fitness(
@@ -116,9 +123,18 @@ class ComparisonConstraint(Constraint):
             local_vars = self.local_variables.copy()
             if local_variables:
                 local_vars.update(local_variables)
-            local_vars.update(
-                {name: container.evaluate() for name, container in combination}
-            )
+            var_evals = {name: container.evaluate() for name, container in combination}
+            local_vars.update(var_evals)
+            single_left_nt_tree = None
+            single_right_nt_tree = None
+            for tree in filter(
+                lambda x: isinstance(x, DerivationTree), var_evals.values()
+            ):
+                if tree.symbol == self.single_left_nt:
+                    single_left_nt_tree = tree
+                elif tree.symbol == self.single_right_nt:
+                    single_right_nt_tree = tree
+
             # Evaluate the left and right side of the comparison
             try:
                 left = self.eval(self.left, self.global_variables, local_vars)
@@ -135,7 +151,9 @@ class ComparisonConstraint(Constraint):
             if not hasattr(self, "types_checked") or not self.types_checked:
                 self.types_checked = self.check_type_compatibility(left, right)
 
-            (fitness_value, suggestion) = self._evaluate_comparison(left, right)
+            (fitness_value, suggestion) = self._evaluate_comparison(
+                left, right, single_left_nt_tree, single_right_nt_tree
+            )
             if fitness_value < 1.0:
                 # If the comparison is not solved, add the failing trees to the list
                 for _, container in combination:
@@ -219,27 +237,42 @@ class ComparisonConstraint(Constraint):
             global_variables=self.global_variables,
         )
 
-    def _evaluate_comparison(self, left: Any, right: Any) -> tuple[float, Suggestion]:
+    def _evaluate_comparison(
+        self,
+        left: Any,
+        right: Any,
+        single_left_nt_tree: Optional[DerivationTree],
+        single_right_nt_tree: Optional[DerivationTree],
+    ) -> tuple[float, Suggestion]:
+        """
+        Evaluate the comparison.
+        :param left: The left side of the comparison.
+        :param right: The right side of the comparison.
+        :param single_left_nt_tree: If the left side depends on exactly one non-terminal, the tree below it.
+        :param single_right_nt_tree: If the right side depends on exactly one non-terminal, the tree below it.
+        :return: The fitness and combined suggestion.
+        """
+        if self.operator.compare(left, right):
+            return 1.0, NopSuggestion()
+
+        dist_norm = _distance_norm(left, right)
+        fitness = (1.0 - dist_norm) if dist_norm is not None else 0.0
+        if self.operator == Comparison.NOT_EQUAL:
+            # NOT_EQUAL does not span a range to the fitness is immediately zero if they are equal (introduced by @henryhchchc, moved by @riesentoaster)
+            fitness = 0.0
+
         suggestions = []
-        fitness = 1.0
-        if not self.operator.compare(left, right):
-            dist_norm = _distance_norm(left, right)
-            fitness = (1.0 - dist_norm) if dist_norm is not None else 0.0
-            if self.operator == Comparison.NOT_EQUAL:
-                # NOT_EQUAL does not span a range to the fitness is immediately zero if they are equal (introduced by @henryhchchc, moved by @riesentoaster)
-                fitness = 0.0
 
-            if isinstance(left, DerivationTree) and not left.read_only:
-                assert isinstance(left.symbol, NonTerminal)
-                match self.operator:
-                    case Comparison.EQUAL:
-                        suggestions.append(EqualComparisonSuggestion(left, right))
-
-            if isinstance(right, DerivationTree) and not right.read_only:
-                assert isinstance(right.symbol, NonTerminal)
-                match self.operator:
-                    case Comparison.EQUAL:
-                        suggestions.append(EqualComparisonSuggestion(right, left))
+        match self.operator:
+            case Comparison.EQUAL:
+                if single_left_nt_tree is not None:
+                    suggestions.append(
+                        EqualComparisonSuggestion(single_left_nt_tree, right)
+                    )
+                if single_right_nt_tree is not None:
+                    suggestions.append(
+                        EqualComparisonSuggestion(single_right_nt_tree, left)
+                    )
 
         return fitness, ApplyFirstSuggestion(suggestions)
 

@@ -174,8 +174,12 @@ class RepetitionBoundsSuggestion(Suggestion):
                 repetition_parent = self._ending_rep_tree.parent
                 assert repetition_parent is not None
                 delete_replacement: DerivationTree = delete_replace_pair[1]
-                node_a = _get_first_common_node(repetition_parent, self._starting_rep_value)
-                node_b = _get_first_common_node(repetition_parent, self._ending_rep_value)
+                node_a = _get_first_common_node(
+                    repetition_parent, self._starting_rep_value
+                )
+                node_b = _get_first_common_node(
+                    repetition_parent, self._ending_rep_value
+                )
                 node_c = _get_first_common_node(
                     self._starting_rep_value, self._ending_rep_value
                 )
@@ -194,7 +198,9 @@ class RepetitionBoundsSuggestion(Suggestion):
 
                 read_only_start_idx = len(first_node.get_path()) - 1
                 current_node = replacement
-                for path_node in repetition_parent.get_choices_path()[read_only_start_idx:]:
+                for path_node in repetition_parent.get_choices_path()[
+                    read_only_start_idx:
+                ]:
                     current_node = current_node.children[path_node.index]
                     current_node.read_only = True
                 current_node = replacement
