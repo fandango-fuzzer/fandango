@@ -19,11 +19,9 @@ class PopulationManager:
         self,
         grammar: Grammar,
         start_symbol: str,
-        warnings_are_errors: bool = False,
     ):
         self._grammar = grammar
         self._start_symbol = start_symbol
-        self._warnings_are_errors = warnings_are_errors
 
     def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
         return self._grammar.fuzz(self._start_symbol, max_nodes)
@@ -183,15 +181,43 @@ class PopulationManager:
             individual = individual.replace_multiple(self._grammar, replacements)
         return individual, fixes_made
 
+    @staticmethod
+    def select_elites(
+        evaluation: list[tuple[DerivationTree, float, list[FailingTree]]],
+        elitism_rate: float,
+        population_size: int,
+    ) -> list[DerivationTree]:
+        return [
+            x[0]
+            for x in sorted(evaluation, key=lambda x: x[1], reverse=True)[
+                : int(elitism_rate * population_size)
+            ]
+        ]
+
+    @staticmethod
+    def tournament_selection(
+        evaluation: list[tuple[DerivationTree, float, list[FailingTree]]],
+        tournament_size: int,
+    ) -> tuple[DerivationTree, DerivationTree]:
+        tournament = random.sample(evaluation, k=min(tournament_size, len(evaluation)))
+        tournament.sort(key=lambda x: x[1], reverse=True)
+        parent1 = tournament[0][0]
+        if len(tournament) == 2:
+            parent2 = tournament[1][0] if tournament[1][0] != parent1 else parent1
+        else:
+            parent2 = (
+                tournament[1][0] if tournament[1][0] != parent1 else tournament[2][0]
+            )
+        return parent1, parent2
+
 
 class IoPopulationManager(PopulationManager):
     def __init__(
         self,
         grammar: Grammar,
         start_symbol: str,
-        warnings_are_errors: bool = False,
     ):
-        super().__init__(grammar, start_symbol, warnings_are_errors)
+        super().__init__(grammar, start_symbol)
         self._prev_packet_idx = 0
         self.fuzzable_packets: Optional[list[ForcastingPacket]] = None
 
