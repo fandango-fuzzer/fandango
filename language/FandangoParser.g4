@@ -152,6 +152,7 @@ star_selection_or_dot_selection
 
 star_selection
     : '*' dot_selection
+    | '**' dot_selection
     ;
 
 dot_selection
@@ -804,7 +805,7 @@ type_param_seq
 type_param
     : identifier type_param_bound?
     | '*' identifier
-    | '**' identifier
+    | '**' identifier // deprecated
     ;
 
 type_param_bound
