@@ -805,7 +805,7 @@ type_param_seq
 type_param
     : identifier type_param_bound?
     | '*' identifier
-    | '**' identifier
+    | '**' identifier // deprecated
     ;
 
 type_param_bound

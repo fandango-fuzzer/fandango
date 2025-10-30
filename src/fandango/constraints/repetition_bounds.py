@@ -150,14 +150,12 @@ class RepetitionBoundsConstraint(Constraint):
         self,
         tree: DerivationTree,
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
-        population: Optional[list[DerivationTree]] = None,
         local_variables: Optional[dict[str, Any]] = None,
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the number of repetitions of the pattern.
         :param DerivationTree tree: The tree to evaluate.
         :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
-        :param Optional[list[DerivationTree]] population: The population of trees.
         :param Optional[dict[str, Any]] local_variables: Local variables to use in the evaluation.
         :return ConstraintFitness: The fitness of the tree.
         """
@@ -427,7 +425,7 @@ class RepetitionBoundsConstraint(Constraint):
             print_max = self.search_max.format_as_spec()
         return f"RepetitionBounds({print_min} <= |{self.repetition_node.node.format_as_spec()}| <= {print_max})"
 
-    def accept(self, visitor: "ConstraintVisitor") -> None:
+    def accept(self, visitor: ConstraintVisitor) -> None:
         """Accepts a visitor to traverse the constraint structure."""
         visitor.visit_repetition_bounds_constraint(self)
 

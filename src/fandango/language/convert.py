@@ -38,7 +38,6 @@ from fandango.language.search import (
     RuleSearch,
     SelectiveSearch,
     StarSearch,
-    PopulationSearch,
 )
 from fandango.language.symbols import NonTerminal, Terminal
 from fandango.logger import LOGGER
@@ -715,7 +714,9 @@ class SearchProcessor(FandangoParserVisitor):
         if ctx.STAR():
             search = StarSearch(base)
         elif ctx.POWER():
-            search = PopulationSearch(base)
+            raise NotImplementedError(
+                "Population wide constraints are no longer supported."
+            )
         else:
             raise FandangoValueError(f"Unknown star selection: {ctx.getText()}")
         return ast.Name(id=identifier), [search], {identifier: search}

@@ -1,7 +1,7 @@
 import enum
 from typing import Any, Optional
-from fandango.constraints.base import GeneticBase
 from fandango.language.tree import DerivationTree
+from fandango.constraints.base import GeneticBase
 
 
 class Comparison(enum.Enum):

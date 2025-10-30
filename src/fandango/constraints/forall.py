@@ -43,18 +43,16 @@ class ForallConstraint(Constraint):
         self,
         tree: DerivationTree,
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
-        population: Optional[list[DerivationTree]] = None,
         local_variables: Optional[dict[str, Any]] = None,
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the given forall constraint.
         :param DerivationTree tree: The tree to evaluate.
         :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
-        :param Optional[list[DerivationTree]] population: The population of trees.
         :param Optional[dict[str, Any]] local_variables: Local variables to use in the evaluation.
         :return ConstraintFitness: The fitness of the tree.
         """
-        tree_hash = self.get_hash(tree, scope, population)
+        tree_hash = self.get_hash(tree, scope, local_variables)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
@@ -62,7 +60,7 @@ class ForallConstraint(Constraint):
         scope = scope or dict()
         local_variables = local_variables or dict()
         # Iterate over all containers found by the search
-        for container in self.search.quantify(tree, scope=scope, population=population):
+        for container in self.search.quantify(tree, scope=scope):
             # Update the scope with the bound variable
             if isinstance(self.bound, str):
                 local_variables[self.bound] = container.evaluate()
@@ -70,7 +68,7 @@ class ForallConstraint(Constraint):
                 # If the bound is a NonTerminal, update the scope
                 scope[self.bound] = container.evaluate()
             # Evaluate the statement
-            fitness = self.statement.fitness(tree, scope, population, local_variables)
+            fitness = self.statement.fitness(tree, scope, local_variables)
             # Add the fitness to the list
             fitness_values.append(fitness)
             # If the forall constraint is lazy and the statement is not successful, stop
@@ -103,7 +101,7 @@ class ForallConstraint(Constraint):
         else:
             return f"all({self.statement.format_as_spec()} for {bound} in {self.search.format_as_spec()})"
 
-    def accept(self, visitor: "ConstraintVisitor") -> None:
+    def accept(self, visitor: ConstraintVisitor) -> None:
         """
         Accepts a visitor to traverse the constraint structure.
         :param ConstraintVisitor visitor: The visitor to accept.

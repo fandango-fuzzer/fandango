@@ -32,30 +32,24 @@ class ImplicationConstraint(Constraint):
         self,
         tree: DerivationTree,
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
-        population: Optional[list[DerivationTree]] = None,
         local_variables: Optional[dict[str, Any]] = None,
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the given implication.
         :param DerivationTree tree: The tree to evaluate.
         :param Optional[dict[str, DerivationTree]] scope: The scope of the tree.
-        :param Optional[list[DerivationTree]] population: The population of trees.
         :param Optional[dict[str, Any]] local_variables: Local variables to use in the evaluation.
         :return ConstraintFitness: The fitness of the tree.
         """
-        tree_hash = self.get_hash(tree, scope, population, local_variables)
+        tree_hash = self.get_hash(tree, scope, local_variables)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
         # Evaluate the antecedent
-        antecedent_fitness = self.antecedent.fitness(
-            tree, scope, population, local_variables
-        )
+        antecedent_fitness = self.antecedent.fitness(tree, scope, local_variables)
         if antecedent_fitness.success:
             # If the antecedent is true, evaluate the consequent
-            fitness = copy(
-                self.consequent.fitness(tree, scope, population, local_variables)
-            )
+            fitness = copy(self.consequent.fitness(tree, scope, local_variables))
             fitness.total += 1
             if fitness.success:
                 fitness.solved += 1
@@ -73,7 +67,7 @@ class ImplicationConstraint(Constraint):
     def format_as_spec(self) -> str:
         return f"({self.antecedent.format_as_spec()} -> {self.consequent.format_as_spec()})"
 
-    def accept(self, visitor: "ConstraintVisitor") -> None:
+    def accept(self, visitor: ConstraintVisitor) -> None:
         """
         Accepts a visitor to traverse the constraint structure.
         :param ConstraintVisitor visitor: The visitor to accept.
