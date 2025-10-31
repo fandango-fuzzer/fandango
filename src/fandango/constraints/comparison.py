@@ -265,11 +265,17 @@ class ComparisonConstraint(Constraint):
 
         match self.operator:
             case Comparison.EQUAL:
-                if single_left_nt_tree is not None:
+                # only suggest fixes if there is a single nt on one side and that nt linearizes to exactly the value
+                # otherwise, it is messed with and attempts at parsing it will have unexpected consequences
+                # e.g. <len> % 2 == 0
+                # this will always fix <len> to 0
+                # or <first_name> + "Doe" == "John Doe"
+                # this will try to parse "John Doe" into <first_name>, which is not what we want
+                if single_left_nt_tree is not None and single_left_nt_tree == left:
                     suggestions.append(
                         EqualComparisonSuggestion(single_left_nt_tree, right)
                     )
-                if single_right_nt_tree is not None:
+                if single_right_nt_tree is not None and single_right_nt_tree == right:
                     suggestions.append(
                         EqualComparisonSuggestion(single_right_nt_tree, left)
                     )
