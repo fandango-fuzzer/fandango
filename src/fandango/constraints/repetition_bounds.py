@@ -7,6 +7,7 @@ from fandango.constraints.constraint_visitor import ConstraintVisitor
 from fandango.constraints.failing_tree import (
     ApplyAllSuggestions,
     FailingTree,
+    NopSuggestion,
     Suggestion,
 )
 from fandango.constraints.fitness import ConstraintFitness
@@ -368,7 +369,7 @@ class RepetitionBoundsConstraint(Constraint):
         if len(id_trees) == 0:
             # Assume that the field containing the nr of repetitions is zero.
             # This is the case where we might have deleted all repetitions from the tree.
-            return ConstraintFitness(1, 1, True)
+            return ConstraintFitness(1, 1, True, NopSuggestion())
 
         reference_trees = self.group_by_repetition_id(id_trees)
         failing_trees = []

@@ -91,8 +91,8 @@ class ConstraintFitness(Fitness):
         solved: int,
         total: int,
         success: bool,
+        suggestion: Suggestion,
         failing_trees: list[FailingTree] = [],
-        suggestion: Optional[Suggestion] = None,
     ):
         """
         Initialize the ConstraintFitness with the given solved, total, success, and failing trees.
@@ -140,16 +140,16 @@ class DistanceAwareConstraintFitness(ConstraintFitness):
     def __init__(
         self,
         values: list[float],
+        suggestion: Suggestion,
         success: bool = True,
         failing_trees: list[FailingTree] = [],
-        suggestion: Optional[Suggestion] = None,
     ):
         super().__init__(
             solved=sum(1 for it in values if it == 1.0),
             total=len(values),
             success=success,
-            failing_trees=failing_trees,
             suggestion=suggestion,
+            failing_trees=failing_trees,
         )
         self.values = values
 
@@ -169,7 +169,10 @@ class DistanceAwareConstraintFitness(ConstraintFitness):
 
     def __copy__(self) -> Fitness:
         return DistanceAwareConstraintFitness(
-            self.values[:], self.success, self.failing_trees
+            values=self.values[:],
+            suggestion=self.suggestion,
+            success=self.success,
+            failing_trees=self.failing_trees,
         )
 
     def __repr__(self) -> str:

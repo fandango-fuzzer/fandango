@@ -84,10 +84,10 @@ where f"{<x>!s:03}" == "100"
     for search in constraint.searches:
         tmp_var = search
     assert (
-        eval(constraint.left, {tmp_var: "25"}) == "250"
+        eval(constraint._left, {tmp_var: "25"}) == "250"
     ), "Left side of comparison should evaluate to '250'"
     assert (
-        eval(constraint.right) == "100"
+        eval(constraint._right) == "100"
     ), "Right side of comparison should evaluate to '100'"
     assert constraint.check(VALID), "Constraint should pass for VALID tree"
     assert not constraint.check(INVALID), "Constraint should fail for INVALID tree"

@@ -5,6 +5,7 @@ from fandango.constraints import LEGACY
 from fandango.constraints.base import GeneticBaseInitArgs
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.constraint_visitor import ConstraintVisitor
+from fandango.constraints.failing_tree import ApplyAllSuggestions
 from fandango.constraints.fitness import ConstraintFitness
 from fandango.language.search import NonTerminalSearch
 from fandango.language.symbols.non_terminal import NonTerminal
@@ -83,11 +84,20 @@ class ForallConstraint(Constraint):
                 fitness.failing_trees for fitness in fitness_values
             )
         )
+        suggestion = ApplyAllSuggestions(
+            [fitness.suggestion for fitness in fitness_values]
+        )
         if overall:
             solved = total + 1
         total += 1
         # Create the fitness object
-        fitness = ConstraintFitness(solved, total, overall, failing_trees=failing_trees)
+        fitness = ConstraintFitness(
+            solved=solved,
+            total=total,
+            success=overall,
+            suggestion=suggestion,
+            failing_trees=failing_trees,
+        )
         # Cache the fitness
         self.cache[tree_hash] = fitness
         return fitness
