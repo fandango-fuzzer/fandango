@@ -49,7 +49,11 @@ from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.parser import sa_fandango
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
-from fandango.language.search import DescendantAttributeSearch, ItemSearch
+from fandango.language.search import (
+    AnnotatedSearch,
+    DescendantAttributeSearch,
+    ItemSearch,
+)
 from fandango.language.stdlib import stdlib
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree_value import TreeValueType
@@ -1026,13 +1030,21 @@ def check_constraints_existence(
                 # This handles <parent>[...].<symbol> as <parent>..<symbol>.
                 # We could also interpret the actual [...] contents here,
                 # but slices and chains could make this hard -- AZ
-                recurse = isinstance(value, DescendantAttributeSearch) or isinstance(
-                    value, ItemSearch
+                recurse = (
+                    isinstance(value, DescendantAttributeSearch)
+                    or isinstance(value, ItemSearch)
+                    or (
+                        isinstance(value, AnnotatedSearch)
+                        and (
+                            isinstance(value.inner, DescendantAttributeSearch)
+                            or isinstance(value.inner, ItemSearch)
+                        )
+                    )
                 )
                 if not check_constraints_existence_children(
                     grammar, parent, symbol, recurse, indirect_child
                 ):
-                    msg = f"{constraint!s}: <{parent!s}> has no child <{symbol!s}>"
+                    msg = f"{constraint.format_as_spec()}: <{parent!s}> has no child <{symbol!s}>"
                     raise FandangoValueError(msg)
 
 
