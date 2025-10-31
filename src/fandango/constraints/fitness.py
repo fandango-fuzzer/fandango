@@ -1,6 +1,7 @@
 import abc
+import copy
 from typing import Optional
-from fandango.constraints.failing_tree import FailingTree
+from fandango.constraints.failing_tree import FailingTree, Suggestion
 
 
 class Fitness(abc.ABC):
@@ -90,16 +91,19 @@ class ConstraintFitness(Fitness):
         solved: int,
         total: int,
         success: bool,
-        failing_trees: Optional[list[FailingTree]] = None,
+        suggestion: Suggestion,
+        failing_trees: list[FailingTree] = [],
     ):
         """
         Initialize the ConstraintFitness with the given solved, total, success, and failing trees.
         :param int solved: The number of constraints solved by the tree.
         :param int total: The total number of constraints.
         :param bool success: The success of the fitness.
-        :param Optional[list[FailingTree]] failing_trees: The list of failing trees.
+        :param list[FailingTree] failing_trees: The list of failing trees.
+        :param Optional[Suggestion] suggestion: The suggestion to fix the failing trees.
         """
         super().__init__(success, failing_trees)
+        self.suggestion = suggestion
         self.solved = solved
         self.total = total
 
@@ -120,6 +124,7 @@ class ConstraintFitness(Fitness):
             total=self.total,
             success=self.success,
             failing_trees=self.failing_trees[:],
+            suggestion=copy.deepcopy(self.suggestion),
         )
 
     def __repr__(self) -> str:
@@ -135,13 +140,15 @@ class DistanceAwareConstraintFitness(ConstraintFitness):
     def __init__(
         self,
         values: list[float],
+        suggestion: Suggestion,
         success: bool = True,
-        failing_trees: Optional[list[FailingTree]] = None,
+        failing_trees: list[FailingTree] = [],
     ):
         super().__init__(
             solved=sum(1 for it in values if it == 1.0),
             total=len(values),
             success=success,
+            suggestion=suggestion,
             failing_trees=failing_trees,
         )
         self.values = values
@@ -162,7 +169,10 @@ class DistanceAwareConstraintFitness(ConstraintFitness):
 
     def __copy__(self) -> Fitness:
         return DistanceAwareConstraintFitness(
-            self.values[:], self.success, self.failing_trees
+            values=self.values[:],
+            suggestion=self.suggestion,
+            success=self.success,
+            failing_trees=self.failing_trees,
         )
 
     def __repr__(self) -> str:

@@ -419,12 +419,12 @@ class Fandango:
 
             self.population = []
             for ind in new_population:
-                _fitness, failing_trees = yield from self.evaluator.evaluate_individual(
-                    ind
-                )
-                ind, num_fixes = self.population_manager.fix_individual(
-                    ind, failing_trees
-                )
+                (
+                    _fitness,
+                    _failing_trees,
+                    suggestion,
+                ) = yield from self.evaluator.evaluate_individual(ind)
+                ind, num_fixes = self.population_manager.fix_individual(ind, suggestion)
                 self.population.append(ind)
                 self.fixes_made += num_fixes
 
@@ -573,9 +573,10 @@ class Fandango:
                 assert hookin_option.tree is not None
                 history_tree = hookin_option.tree
                 history_tree.append(hookin_option.path[1:], packet_tree)
-                solutions, (fitness, _failing_trees) = GeneratorWithReturn(
+                gen = GeneratorWithReturn(
                     self.evaluator.evaluate_individual(history_tree)
-                ).collect()
+                )
+                solutions, (fitness, _failing_trees, _suggestion) = gen.collect()
                 if fitness < 0.99:
                     raise FandangoParseError(
                         "Remote response does not match constraints"

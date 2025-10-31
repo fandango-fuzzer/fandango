@@ -6,6 +6,7 @@ import itertools
 import random
 import unittest
 
+from fandango.constraints.failing_tree import Suggestion
 from fandango.constraints.fitness import FailingTree
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.algorithm import Fandango, LoggerLevel
@@ -148,7 +149,12 @@ class GeneticTest(unittest.TestCase):
             self.assertEqual(
                 len(solutions), individual_int, f"Individual: {individual}"
             )
-            fitness, failing_trees = generator.return_value
+            fitness, failing_trees, suggestion = generator.return_value
+            self.assertIsInstance(suggestion, Suggestion)
+            suggested_replacements = suggestion.get_replacements(
+                individual, self.fandango.grammar
+            )
+            self.assertEqual(len(suggested_replacements), 0)
             self.assertIsInstance(fitness, float)
             self.assertGreaterEqual(fitness, 0.0)
             self.assertLessEqual(fitness, 1.0)
@@ -168,13 +174,18 @@ class GeneticTest(unittest.TestCase):
         self.assertEqual(len(solutions), len(set(solutions)))
         evaluation = generator.return_value
         self.assertEqual(len(evaluation), len(self.fandango.population))
-        for ind, fitness, failing_trees in evaluation:
+        for ind, fitness, failing_trees, suggestion in evaluation:
             self.assertIsInstance(fitness, float)
             self.assertGreaterEqual(fitness, 0.0)
             self.assertLessEqual(fitness, 1.0)
             self.assertIsInstance(failing_trees, list)
             for failing_tree in failing_trees:
                 self.assertIsInstance(failing_tree, FailingTree)
+            self.assertIsInstance(suggestion, Suggestion)
+            suggested_replacements = suggestion.get_replacements(
+                ind, self.fandango.grammar
+            )
+            self.assertEqual(len(suggested_replacements), 0)
 
         # Check that the population is valid
         for individual in self.fandango.population:

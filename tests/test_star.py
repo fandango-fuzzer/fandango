@@ -11,6 +11,7 @@ from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.search import (
+    AnnotatedSearch,
     StarSearch,
     RuleSearch,
     AttributeSearch,
@@ -106,13 +107,15 @@ where {str(x) for x in *<c>} == {"e", "f"}
         # Check exists constraint
         assert isinstance(self.any_constraint, ExistsConstraint)
         assert isinstance(self.any_constraint.statement, ComparisonConstraint)
-        self.assertEqual(self.any_constraint.statement.operator, Comparison.EQUAL)
-        tmp_var = self.any_constraint.statement.left
+        self.assertEqual(self.any_constraint.statement._operator, Comparison.EQUAL)
+        tmp_var = self.any_constraint.statement._left
         self.assertIn(tmp_var, self.any_constraint.statement.searches)
-        rule_search = self.any_constraint.statement.searches[tmp_var]
+        annotated_rule_search = self.any_constraint.statement.searches[tmp_var]
+        assert isinstance(annotated_rule_search, AnnotatedSearch)
+        rule_search = annotated_rule_search.inner
         assert isinstance(rule_search, RuleSearch)
         self.assertEqual(rule_search.symbol, NonTerminal("<x>"))
-        self.assertEqual(eval(self.any_constraint.statement.right), "a")
+        self.assertEqual(eval(self.any_constraint.statement._right), "a")
         self.assertEqual(self.any_constraint.bound, NonTerminal("<x>"))
         assert isinstance(self.any_constraint.search, StarSearch)
         assert isinstance(self.any_constraint.search.base, RuleSearch)
@@ -121,13 +124,15 @@ where {str(x) for x in *<c>} == {"e", "f"}
         # Check forall constraint
         assert isinstance(self.all_constraint, ForallConstraint)
         assert isinstance(self.all_constraint.statement, ComparisonConstraint)
-        self.assertEqual(self.all_constraint.statement.operator, Comparison.EQUAL)
-        tmp_var = self.all_constraint.statement.left
+        self.assertEqual(self.all_constraint.statement._operator, Comparison.EQUAL)
+        tmp_var = self.all_constraint.statement._left
         self.assertIn(tmp_var, self.all_constraint.statement.searches)
-        rule_search = self.all_constraint.statement.searches[tmp_var]
+        annotated_rule_search = self.all_constraint.statement.searches[tmp_var]
+        assert isinstance(annotated_rule_search, AnnotatedSearch)
+        rule_search = annotated_rule_search.inner
         assert isinstance(rule_search, RuleSearch)
         self.assertEqual(rule_search.symbol, NonTerminal("<x>"))
-        self.assertEqual(eval(self.all_constraint.statement.right), "c")
+        self.assertEqual(eval(self.all_constraint.statement._right), "c")
         self.assertEqual(self.all_constraint.bound, NonTerminal("<x>"))
         assert isinstance(self.all_constraint.search, StarSearch)
         assert isinstance(self.all_constraint.search.base, RuleSearch)
@@ -135,17 +140,19 @@ where {str(x) for x in *<c>} == {"e", "f"}
 
         # Check expression constraint
         assert isinstance(self.expression_constraint, ComparisonConstraint)
-        self.assertEqual(self.expression_constraint.operator, Comparison.EQUAL)
-        tmp_var = self.expression_constraint.left
+        self.assertEqual(self.expression_constraint._operator, Comparison.EQUAL)
+        tmp_var = self.expression_constraint._left
         self.assertTrue(tmp_var.startswith("{str(x) for x in "))
         self.assertTrue(tmp_var.endswith("}"))
         tmp_var = tmp_var[17:-1]  # Remove the prefix and suffix
         self.assertIn(tmp_var, self.expression_constraint.searches)
-        search = self.expression_constraint.searches[tmp_var]
+        annotated_search = self.expression_constraint.searches[tmp_var]
+        assert isinstance(annotated_search, AnnotatedSearch)
+        search = annotated_search.inner
         assert isinstance(search, StarSearch)
         assert isinstance(search.base, RuleSearch)
         self.assertEqual(search.base.symbol, NonTerminal("<c>"))
-        self.assertEqual(eval(self.expression_constraint.right), {"e", "f"})
+        self.assertEqual(eval(self.expression_constraint._right), {"e", "f"})
 
     def test_star_constraint_valid(self):
         for constraint in self.constraints:
@@ -246,10 +253,10 @@ where {str(x) for x in *<c>} == {"e", "f"}
         # Check exists constraint
         assert isinstance(self.any_constraint, ExistsConstraint)
         assert isinstance(self.any_constraint.statement, ComparisonConstraint)
-        self.assertEqual(self.any_constraint.statement.operator, Comparison.EQUAL)
-        tmp_var = self.any_constraint.statement.left
+        self.assertEqual(self.any_constraint.statement._operator, Comparison.EQUAL)
+        tmp_var = self.any_constraint.statement._left
         self.assertNotIn(tmp_var, self.any_constraint.statement.searches)
-        self.assertEqual(eval(self.any_constraint.statement.right), "a")
+        self.assertEqual(eval(self.any_constraint.statement._right), "a")
         self.assertEqual(self.any_constraint.bound, "x")
         self.assertEqual(tmp_var, self.any_constraint.bound)
         assert isinstance(self.any_constraint.search, StarSearch)
@@ -259,10 +266,10 @@ where {str(x) for x in *<c>} == {"e", "f"}
         # Check forall constraint
         assert isinstance(self.all_constraint, ForallConstraint)
         assert isinstance(self.all_constraint.statement, ComparisonConstraint)
-        self.assertEqual(self.all_constraint.statement.operator, Comparison.EQUAL)
-        tmp_var = self.all_constraint.statement.left
+        self.assertEqual(self.all_constraint.statement._operator, Comparison.EQUAL)
+        tmp_var = self.all_constraint.statement._left
         self.assertNotIn(tmp_var, self.all_constraint.statement.searches)
-        self.assertEqual(eval(self.all_constraint.statement.right), "c")
+        self.assertEqual(eval(self.all_constraint.statement._right), "c")
         self.assertEqual(self.all_constraint.bound, "x")
         self.assertEqual(tmp_var, self.all_constraint.bound)
         assert isinstance(self.all_constraint.search, StarSearch)
@@ -271,17 +278,18 @@ where {str(x) for x in *<c>} == {"e", "f"}
 
         # Check expression constraint
         assert isinstance(self.expression_constraint, ComparisonConstraint)
-        self.assertEqual(self.expression_constraint.operator, Comparison.EQUAL)
-        tmp_var = self.expression_constraint.left
+        self.assertEqual(self.expression_constraint._operator, Comparison.EQUAL)
+        tmp_var = self.expression_constraint._left
         self.assertTrue(tmp_var.startswith("{str(x) for x in "))
         self.assertTrue(tmp_var.endswith("}"))
         tmp_var = tmp_var[17:-1]  # Remove the prefix and suffix
         self.assertIn(tmp_var, self.expression_constraint.searches)
         search = self.expression_constraint.searches[tmp_var]
-        assert isinstance(search, StarSearch)
-        assert isinstance(search.base, RuleSearch)
-        self.assertEqual(search.base.symbol, NonTerminal("<c>"))
-        self.assertEqual(eval(self.expression_constraint.right), {"e", "f"})
+        assert isinstance(search, AnnotatedSearch)
+        assert isinstance(search.inner, StarSearch)
+        assert isinstance(search.inner.base, RuleSearch)
+        self.assertEqual(search.inner.base.symbol, NonTerminal("<c>"))
+        self.assertEqual(eval(self.expression_constraint._right), {"e", "f"})
 
     def test_star_constraint_valid(self):
         for constraint in self.constraints:
@@ -439,8 +447,8 @@ class TestStarInCombination(unittest.TestCase):
         self.assertEqual(constraint.bound, "x")
         statement = constraint.statement
         assert isinstance(statement, ComparisonConstraint)
-        self.assertEqual(statement.left, "str(x)")
-        self.assertEqual(eval(statement.right), "d")
+        self.assertEqual(statement._left, "str(x)")
+        self.assertEqual(eval(statement._right), "d")
         star = constraint.search
         assert isinstance(star, StarSearch)
         base = star.base
@@ -466,8 +474,8 @@ class TestStarInCombination(unittest.TestCase):
         self.assertEqual(constraint.bound, "x")
         statement = constraint.statement
         assert isinstance(statement, ComparisonConstraint)
-        self.assertEqual(statement.left, "str(x)")
-        self.assertEqual(eval(statement.right), "d")
+        self.assertEqual(statement._left, "str(x)")
+        self.assertEqual(eval(statement._right), "d")
         star = constraint.search
         assert isinstance(star, StarSearch)
         base = star.base

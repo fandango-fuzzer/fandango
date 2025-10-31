@@ -21,7 +21,7 @@ from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.parse import parse
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
-from fandango.language.search import RuleSearch
+from fandango.language.search import AnnotatedSearch, RuleSearch
 from fandango.language.symbols import NonTerminal
 from .utils import RESOURCES_ROOT
 
@@ -293,13 +293,14 @@ def test_parsing():
     assert len(constraints) == 1
     constraint = constraints[0]
     assert isinstance(constraint, ComparisonConstraint)
-    assert constraint.right == "0"
-    assert constraint.operator == Comparison.EQUAL
+    assert constraint._right == "0"
+    assert constraint._operator == Comparison.EQUAL
     assert len(constraint.searches) == 1
     placeholder = list(constraint.searches.keys())[0]
-    assert constraint.left == f"f({placeholder}) % 2"
+    assert constraint._left == f"f({placeholder}) % 2"
     assert "f" in constraint.global_variables
     assert eval("f('1')", constraint.global_variables, constraint.local_variables) == 1
     search = constraint.searches[placeholder]
-    assert isinstance(search, RuleSearch)
-    assert NonTerminal("<number>") == search.symbol
+    assert isinstance(search, AnnotatedSearch)
+    assert isinstance(search.inner, RuleSearch)
+    assert NonTerminal("<number>") == search.inner.symbol
