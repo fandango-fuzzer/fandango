@@ -66,6 +66,7 @@ development = [
     "pre-commit>=4.2.0",
     "pygls>=2.0.0a4",           # language server
     "speedy-antlr-tool>=1.4.3",
+    "types-setuptools>=80.9.0", # enable mypy to check setup.py
 ]
 
 book = [
