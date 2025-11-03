@@ -546,6 +546,7 @@ def parse(
             FILES_TO_PARSE.append(("<string>", file, 0))  # TODO: fix
         else:
             FILES_TO_PARSE.append((file.name, file.read(), 0))
+            file.close()
 
     global INCLUDE_DEPTH
     INCLUDE_DEPTH = 0
