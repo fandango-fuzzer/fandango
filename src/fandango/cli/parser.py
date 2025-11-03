@@ -318,7 +318,7 @@ def _get_file_parser() -> argparse.ArgumentParser:
     file_group.add_argument(
         "-f",
         "--fandango-file",
-        type=argparse.FileType("r"),
+        type=lambda fan_file_path: open(fan_file_path, "r"),
         dest="fan_files",
         metavar="FAN_FILE",
         default=None,
@@ -558,7 +558,7 @@ def _populate_convert_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "-o",
         "--output",
-        type=argparse.FileType("w"),
+        type=lambda output_file: open(output_file, "w"),
         dest="output",
         default=None,
         help="Write output to OUTPUT (default: stdout).",
