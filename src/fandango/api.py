@@ -178,7 +178,6 @@ class Fandango(FandangoBase):
         use_cache: bool = True,
         use_stdlib: bool = True,
         lazy: bool = False,
-        start_symbol: Optional[str] = None,
         includes: Optional[list[str]] = None,
     ):
         """
@@ -188,7 +187,6 @@ class Fandango(FandangoBase):
         :param use_cache: If True (default), cache parsing results
         :param use_stdlib: If True (default), use the standard library
         :param lazy: If True, the constraints are evaluated lazily
-        :param start_symbol: The grammar start symbol (default: "<start>")
         :param includes: A list of directories to search for include files
         """
         super().__init__(
@@ -198,7 +196,6 @@ class Fandango(FandangoBase):
             use_cache=use_cache,
             use_stdlib=use_stdlib,
             lazy=lazy,
-            start_symbol=start_symbol,
             includes=includes,
         )
         self.fandango: Optional[FandangoStrategy] = None
@@ -209,7 +206,7 @@ class Fandango(FandangoBase):
         grammar: Grammar,
         constraints: list[Constraint | SoftValue],
         *,
-        start_symbol: Optional[str] = None,
+        start_symbol: Optional[str] = "<start>",
         logging_level: Optional[int] = None,
     ) -> "FandangoBase":
         LOGGER.setLevel(logging_level if logging_level is not None else logging.WARNING)
@@ -217,7 +214,7 @@ class Fandango(FandangoBase):
         obj._grammar = grammar
         obj._constraints = constraints
         obj.fandango = None
-        obj._start_symbol = start_symbol if start_symbol is not None else "<start>"
+        obj._start_symbol = start_symbol
         return obj
 
     def _parse_extra_constraints(
@@ -262,9 +259,7 @@ class Fandango(FandangoBase):
                 )
                 constraints += cast(list[Constraint | SoftValue], extra_constraints)
 
-        self.fandango = FandangoStrategy(
-            self.grammar, constraints, start_symbol=start_symbol, **settings
-        )
+        self.fandango = FandangoStrategy(self.grammar, constraints, **settings)
         LOGGER.info("---------- Done initializing base population ----------")
 
     def generate_solutions(
@@ -358,10 +353,7 @@ class Fandango(FandangoBase):
         if desired_solutions is not None and len(solutions) < desired_solutions:
             warnings_are_errors = settings.get("warnings_are_errors", False)
             best_effort = settings.get("best_effort", False)
-            if (
-                self.fandango.average_population_fitness
-                < self.fandango.evaluator.expected_fitness
-            ):
+            if self.fandango.evaluator.average_population_fitness < 1.0:
                 LOGGER.error("Population did not converge to a perfect population")
                 if warnings_are_errors:
                     raise FandangoFailedError("Failed to find a perfect solution")
