@@ -21,23 +21,30 @@ class ComparisonConstraint(Constraint):
 
     def __init__(
         self,
-        operator: Comparison,
         left: str,
-        right: str,
+        operators: list[Comparison],
+        comparators: list[str],
         **kwargs: Unpack[GeneticBaseInitArgs],
     ) -> None:
         """
         Initializes the comparison constraint with the given operator, left side, and right side.
-        :param Comparison operator: The operator to use.
         :param str left: The left side of the comparison.
-        :param str right: The right side of the comparison.
+        :param list[Comparison] operators: The list of operators for the comparisons
+        :param list[str] comparators: The list of elements after the first value in the comparison
         :param args: Additional arguments.
         :param kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
-        self.operator = operator
+        self.operators = operators
         self.left = left
-        self.right = right
+        self.comparators = comparators
+        self.right = f"{self.comparators[0]}"
+        for i in range(len(self.operators[1:])):
+            self.right += f" {self.operators[i]} {self.comparators[i+1]} "
+        self.right = self.right.strip()
+
+        assert len(self.operators) == len(self.comparators)
+
         self.types_checked = False
 
     def fitness(
@@ -60,47 +67,56 @@ class ComparisonConstraint(Constraint):
         # If the tree is None, the fitness is 0
         if tree is None:
             return DistanceAwareConstraintFitness([], False)
-        # Iterate over all combinations of the tree and the scope
-        for combination in self.combinations(tree, scope):
-            has_combinations = True
-            # Update the local variables to initialize the placeholders with the values of the combination
-            local_vars = self.local_variables.copy()
-            if local_variables:
-                local_vars.update(local_variables)
-            local_vars.update(
-                {name: container.evaluate() for name, container in combination}
-            )
-            # Evaluate the left and right side of the comparison
-            try:
-                left = self.eval(self.left, self.global_variables, local_vars)
-            except Exception as e:
-                print_exception(e, f"Evaluation failed: {self.left}")
-                continue
 
-            try:
-                right = self.eval(self.right, self.global_variables, local_vars)
-            except Exception as e:
-                print_exception(e, f"Evaluation failed: {self.right}")
-                continue
+        left_side = self.left
 
-            if not hasattr(self, "types_checked") or not self.types_checked:
-                self.types_checked = self.check_type_compatibility(left, right)
+        # Iterate over all comparisons
+        for i in range(len(self.operators)):
+            right_side = self.comparators[i]
+            self.operator = self.operators[i]
+            # Iterate over all combinations of the tree and the scope
+            for combination in self.combinations(tree, scope):
+                has_combinations = True
+                # Update the local variables to initialize the placeholders with the values of the combination
+                local_vars = self.local_variables.copy()
+                if local_variables:
+                    local_vars.update(local_variables)
+                local_vars.update(
+                    {name: container.evaluate() for name, container in combination}
+                )
+                # Evaluate the left and right side of the comparison
+                try:
+                    left = self.eval(left_side, self.global_variables, local_vars)
+                except Exception as e:
+                    print_exception(e, f"Evaluation failed: {left_side}")
+                    continue
 
-            # Initialize the suggestions
-            (fitness_value, suggestions) = self._evaluate_comparison(left, right)
-            if fitness_value < 1.0:
-                # If the comparison is not solved, add the failing trees to the list
-                for _, container in combination:
-                    for node in container.get_trees():
-                        ft = FailingTree(node, self, suggestions=suggestions)
-                        # if ft not in failing_trees:
-                        # failing_trees.append(ft)
-                        failing_trees.append(ft)
+                try:
+                    right = self.eval(right_side, self.global_variables, local_vars)
+                except Exception as e:
+                    print_exception(e, f"Evaluation failed: {right_side}")
+                    continue
 
-            fitness_values.append(fitness_value)
+                if not hasattr(self, "types_checked") or not self.types_checked:
+                    self.types_checked = self.check_type_compatibility(left, right)
 
-        if not has_combinations:
-            fitness_values.append(1.0)
+                # Initialize the suggestions
+                (fitness_value, suggestions) = self._evaluate_comparison(left, right, left_side, right_side)
+                if fitness_value < 1.0:
+                    # If the comparison is not solved, add the failing trees to the list
+                    for _, container in combination:
+                        for node in container.get_trees():
+                            ft = FailingTree(node, self, suggestions=suggestions)
+                            # if ft not in failing_trees:
+                            # failing_trees.append(ft)
+                            failing_trees.append(ft)
+
+                fitness_values.append(fitness_value)
+
+            left_side = right_side
+
+            if not has_combinations:
+                fitness_values.append(1.0)
 
         fitness = DistanceAwareConstraintFitness(
             fitness_values,
@@ -142,11 +158,14 @@ class ComparisonConstraint(Constraint):
         return True
 
     def format_as_spec(self) -> str:
-        representation = f"{self.left} {self.operator.value} {self.right}"
+        representation = f"{self.left}"
+        for i in range(len(self.operators)):
+            representation += f"{self.operators[i]} {self.comparators[i]}"
+        
         for identifier in self.searches:
             representation = representation.replace(
                 identifier, self.searches[identifier].format_as_spec()
-            )
+            ) 
         return representation
 
     def accept(self, visitor: ConstraintVisitor) -> None:
@@ -162,16 +181,16 @@ class ComparisonConstraint(Constraint):
         The inverted constraint has the opposite comparison operator.
         """
         return ComparisonConstraint(
-            self.operator.invert(),
-            self.left,
-            self.right,
+            left=self.left,
+            operators=[op.invert() for op in self.operators],
+            comparators=self.comparators,
             searches=self.searches,
             local_variables=self.local_variables,
             global_variables=self.global_variables,
         )
 
     def _evaluate_comparison(
-        self, left: Any, right: Any
+        self, left: Any, right: Any, left_side: str, right_side: str
     ) -> tuple[float, list[tuple[Comparison, Any, ComparisonSide]]]:
         suggestions = []
         is_solved = self.operator.compare(left, right)
@@ -181,11 +200,11 @@ class ComparisonConstraint(Constraint):
             fitness = (1.0 - dist_norm) if dist_norm is not None else 0.0
             match self.operator:
                 case Comparison.EQUAL:
-                    if not self.right.strip().startswith("len("):
+                    if not right_side.strip().startswith("len("):
                         suggestions.append(
                             (Comparison.EQUAL, left, ComparisonSide.RIGHT)
                         )
-                    if not self.left.strip().startswith("len("):
+                    if not left_side.strip().startswith("len("):
                         suggestions.append(
                             (Comparison.EQUAL, right, ComparisonSide.LEFT)
                         )

@@ -392,6 +392,35 @@ where int(<number>) < 100000
                     self.assertEqual(1, len(fitness.failing_trees))
                     self.assertEqual(tree, fitness.failing_trees[0].tree)
 
+    def test_chaining(self):
+        constraint_str = """
+where int(<a>) > int(<b>) == int(<c>) <= int(<d>)
+"""
+        with open(RESOURCES_ROOT / "chaining.fan", "r") as file:
+            grammar, constraint = parse(
+                file, constraints=[constraint_str], use_cache=False, use_stdlib=True
+            )
+        self.assertEqual(1, len(constraint))
+        constraint = constraint[0]
+        
+        examples = [
+            grammar.parse(3223),
+            grammar.parse(6111),
+            grammar.parse(2009)
+        ]
+
+        counter_examples = [
+            grammar.parse(2223),
+            grammar.parse(2122),
+            grammar.parse(2110)
+        ]
+
+        for tree in examples:
+            self.assertTrue(constraint.check(tree))
+        
+        for tree in counter_examples:
+            self.assertFalse(constraint.check(tree))
+
 
 class ConverterTest(unittest.TestCase):
     def test_standards(self):
