@@ -111,7 +111,7 @@ exclude = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "-n auto --timeout 1200 --durations=10 --pythonhashseed=1 --benchmark-max-time=10"
+addopts = "-n auto --timeout 240 --durations=10 --pythonhashseed=1 --benchmark-max-time=10"
 filterwarnings = [
     "error",                                                  # warnings are errors
     "ignore::pytest_benchmark.logger.PytestBenchmarkWarning", # benchmarks don't run with xdist, that's fine, they are run manually in the CI
