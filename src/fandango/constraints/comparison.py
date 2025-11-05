@@ -160,7 +160,7 @@ class ComparisonConstraint(Constraint):
     def format_as_spec(self) -> str:
         representation = f"{self.left}"
         for i in range(len(self.operators)):
-            representation += f"{self.operators[i]} {self.comparators[i]}"
+            representation += f" {self.operators[i].value} {self.comparators[i]}"
         
         for identifier in self.searches:
             representation = representation.replace(
