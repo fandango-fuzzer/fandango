@@ -578,10 +578,52 @@ class ConstraintProcessor(FandangoParserVisitor):
             raise UnsupportedOperation(f"Unknown operator in {ctx.getText()}")
         left, _, left_map = self.searches.visit(ctx.expr(0))
         right, _, right_map = self.searches.visit(ctx.expr(1))
+
+        def _get_op(op):
+            match type(op):
+                case ast.Lt:
+                    return Comparison.LESS
+                case ast.Gt:
+                    return Comparison.GREATER
+                case ast.Eq:
+                    return Comparison.EQUAL
+                case ast.GtE:
+                    return Comparison.GREATER_EQUAL
+                case ast.LtE:
+                    return Comparison.LESS_EQUAL
+                case ast.NotEq:
+                    return Comparison.NOT_EQUAL
+                case _:
+                    raise UnsupportedOperation(f"Unknown operator {op}")
+
+        ops = []
+        values = []
+        if isinstance(left[0], ast.Compare):
+            left = left[0]
+            values.append(ast.unparse(left.left))
+            # print(f"comps {left.comparators}")
+            for i in range(len(left.ops)):
+                ops.append(_get_op(left.ops[i]))
+                values.append(ast.unparse(left.comparators[i]))
+        else:
+            values.append(ast.unparse(left))
+
+        ops.append(op)
+
+        if isinstance(right[0], ast.Compare):
+            right = right[0]
+            values.append(ast.unparse(right.left))
+            # print(f"comps {right.comparators}")
+            for i in range(len(right.ops)):
+                ops.append(_get_op(right.ops[i]))
+                values.append(ast.unparse(right.comparators[i]))
+        else:
+            values.append(ast.unparse(right))
+
         return ComparisonConstraint(
-            op,
-            ast.unparse(left),
-            ast.unparse(right),
+            left=values[0],
+            operators=ops,
+            comparators=values[1:],
             searches={**left_map, **right_map},
             local_variables=self.local_variables,
             global_variables=self.global_variables,

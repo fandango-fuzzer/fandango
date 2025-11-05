@@ -294,7 +294,7 @@ def test_parsing():
     constraint = constraints[0]
     assert isinstance(constraint, ComparisonConstraint)
     assert constraint.right == "0"
-    assert constraint.operator == Comparison.EQUAL
+    assert constraint.operators[0] == Comparison.EQUAL
     assert len(constraint.searches) == 1
     placeholder = list(constraint.searches.keys())[0]
     assert constraint.left == f"f({placeholder}) % 2"
