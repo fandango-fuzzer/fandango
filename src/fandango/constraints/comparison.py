@@ -101,7 +101,9 @@ class ComparisonConstraint(Constraint):
                     self.types_checked = self.check_type_compatibility(left, right)
 
                 # Initialize the suggestions
-                (fitness_value, suggestions) = self._evaluate_comparison(left, right, left_side, right_side)
+                (fitness_value, suggestions) = self._evaluate_comparison(
+                    left, right, left_side, right_side
+                )
                 if fitness_value < 1.0:
                     # If the comparison is not solved, add the failing trees to the list
                     for _, container in combination:
@@ -161,11 +163,11 @@ class ComparisonConstraint(Constraint):
         representation = f"{self.left}"
         for i in range(len(self.operators)):
             representation += f" {self.operators[i].value} {self.comparators[i]}"
-        
+
         for identifier in self.searches:
             representation = representation.replace(
                 identifier, self.searches[identifier].format_as_spec()
-            ) 
+            )
         return representation
 
     def accept(self, visitor: ConstraintVisitor) -> None:

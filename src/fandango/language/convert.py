@@ -595,30 +595,30 @@ class ConstraintProcessor(FandangoParserVisitor):
                     return Comparison.NOT_EQUAL
                 case _:
                     raise UnsupportedOperation(f"Unknown operator {op}")
-        
+
         ops = []
         values = []
         if isinstance(left[0], ast.Compare):
             left = left[0]
             values.append(ast.unparse(left.left))
-            #print(f"comps {left.comparators}")
+            # print(f"comps {left.comparators}")
             for i in range(len(left.ops)):
                 ops.append(_get_op(left.ops[i]))
                 values.append(ast.unparse(left.comparators[i]))
         else:
-            values.append(ast.unparse(left)) 
+            values.append(ast.unparse(left))
 
         ops.append(op)
 
         if isinstance(right[0], ast.Compare):
             right = right[0]
             values.append(ast.unparse(right.left))
-            #print(f"comps {right.comparators}")
+            # print(f"comps {right.comparators}")
             for i in range(len(right.ops)):
                 ops.append(_get_op(right.ops[i]))
                 values.append(ast.unparse(right.comparators[i]))
         else:
-            values.append(ast.unparse(right))        
+            values.append(ast.unparse(right))
 
         return ComparisonConstraint(
             left=values[0],
