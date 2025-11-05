@@ -86,12 +86,11 @@ class ComparisonConstraint(Constraint):
             except Exception as e:
                 print_exception(e, f"Evaluation failed: {left_side}")
                 continue
+
             # Iterate over all comparisons
             for i in range(len(self.operators)):
-                # LOGGER.info("-----")
                 right_side = self.comparators[i]
                 self.operator = self.operators[i]
-                # LOGGER.info(f"Evaluating (Sub-)constraint {right_side} {self.operator.value} {left_side} with combination {combination}")
 
                 # Evaluate the left and right side of the comparison
                 try:
