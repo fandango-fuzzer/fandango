@@ -68,29 +68,32 @@ class ComparisonConstraint(Constraint):
         if tree is None:
             return DistanceAwareConstraintFitness([], False)
 
-        left_side = self.left
+        # Iterate over all combinations of the tree and the scope
+        for combination in self.combinations(tree, scope):
+            # Update the local variables to initialize the placeholders with the values of the combination
+            local_vars = self.local_variables.copy()
+            if local_variables:
+                local_vars.update(local_variables)
+            local_vars.update(
+                {name: container.evaluate() for name, container in combination}
+            )
 
-        # Iterate over all comparisons
-        for i in range(len(self.operators)):
-            right_side = self.comparators[i]
-            self.operator = self.operators[i]
-            # Iterate over all combinations of the tree and the scope
-            for combination in self.combinations(tree, scope):
-                has_combinations = True
-                # Update the local variables to initialize the placeholders with the values of the combination
-                local_vars = self.local_variables.copy()
-                if local_variables:
-                    local_vars.update(local_variables)
-                local_vars.update(
-                    {name: container.evaluate() for name, container in combination}
-                )
+            has_combinations = True
+
+            left_side = self.left
+            try:
+                left = self.eval(left_side, self.global_variables, local_vars)
+            except Exception as e:
+                print_exception(e, f"Evaluation failed: {left_side}")
+                continue
+            # Iterate over all comparisons
+            for i in range(len(self.operators)):
+                # LOGGER.info("-----")
+                right_side = self.comparators[i]
+                self.operator = self.operators[i]
+                # LOGGER.info(f"Evaluating (Sub-)constraint {right_side} {self.operator.value} {left_side} with combination {combination}")
+
                 # Evaluate the left and right side of the comparison
-                try:
-                    left = self.eval(left_side, self.global_variables, local_vars)
-                except Exception as e:
-                    print_exception(e, f"Evaluation failed: {left_side}")
-                    continue
-
                 try:
                     right = self.eval(right_side, self.global_variables, local_vars)
                 except Exception as e:
@@ -114,11 +117,11 @@ class ComparisonConstraint(Constraint):
                             failing_trees.append(ft)
 
                 fitness_values.append(fitness_value)
+                left = right
+                left_side = right_side
 
-            left_side = right_side
-
-            if not has_combinations:
-                fitness_values.append(1.0)
+        if not has_combinations:
+            fitness_values.append(1.0)
 
         fitness = DistanceAwareConstraintFitness(
             fitness_values,

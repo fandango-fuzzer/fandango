@@ -420,6 +420,39 @@ where int(<a>) > int(<b>) == int(<c>) <= int(<d>)
             assert tree is not None
             self.assertFalse(constraint.check(tree))
 
+    def test_chaining_complex(self):
+        complex_spec = """
+<start> ::= <a> <b> <c> <a>
+<a> ::= <digit>
+<b> ::= <digit>
+<c> ::= <digit>
+
+where int(<a>) > int(<b>) == int(<c>)
+"""
+        grammar, constraints = parse(fan_files=complex_spec)
+        assert grammar is not None
+        assert constraints is not None
+
+        self.assertEqual(1, len(constraints))
+
+        constraint = constraints[0]
+
+        examples = [grammar.parse(3223), grammar.parse(6117), grammar.parse(2001)]
+
+        counter_examples = [
+            grammar.parse(2223),
+            grammar.parse(2122),
+            grammar.parse(2110),
+        ]
+
+        for tree in examples:
+            assert tree is not None
+            self.assertTrue(constraint.check(tree))
+
+        for tree in counter_examples:
+            assert tree is not None
+            self.assertFalse(constraint.check(tree))
+
 
 class ConverterTest(unittest.TestCase):
     def test_standards(self):
