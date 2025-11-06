@@ -113,7 +113,7 @@ class NonTerminalNode(Node):
     def __hash__(self):
         return hash(self.symbol)
 
-    def msg_parties(self, *, grammar: "fandango.language.grammar.grammar.Grammar", seen_nts: set[Symbol] = None, include_recipients: bool = False) -> set[str]:
+    def msg_parties(self, *, grammar: "fandango.language.grammar.grammar.Grammar", seen_nts: Optional[set[Symbol]] = None, include_recipients: bool = False) -> set[str]:
         if seen_nts is None:
             seen_nts = set()
         if self.symbol in seen_nts:

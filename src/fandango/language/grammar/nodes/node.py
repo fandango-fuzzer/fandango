@@ -2,7 +2,7 @@ import abc
 import copy
 import enum
 from collections.abc import Iterator, Sequence
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 from fandango.errors import FandangoValueError
 from fandango.language.symbols import Symbol
 from fandango.language.grammar.has_settings import HasSettings
@@ -85,7 +85,7 @@ class Node(abc.ABC):
     def accept(self, visitor: "NodeVisitor"):
         raise NotImplementedError("accept method not implemented")
 
-    def msg_parties(self, *, grammar: "fandango.language.grammar.grammar.Grammar", seen_nts: set[Symbol] = None, include_recipients: bool = False) -> set[str]:
+    def msg_parties(self, *, grammar: "fandango.language.grammar.grammar.Grammar", seen_nts: Optional[set[Symbol]] = None, include_recipients: bool = False) -> set[str]:
         if seen_nts is None:
             seen_nts = set()
         parties: set[str] = set()

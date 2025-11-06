@@ -56,6 +56,7 @@ class GrammarGraphNode(abc.ABC):
             if isinstance(self.node, NonTerminalNode):
                 symbol = self.node.symbol
             else:
+                assert hasattr(self.node, 'id')
                 node_id = self.node.id
                 symbol = NonTerminal(f"<__{node_id}>")
             if tree_node.symbol != symbol:
@@ -108,7 +109,7 @@ class LazyGrammarGraphNode(GrammarGraphNode):
     def __init__(self, node: NonTerminalNode, grammar_rules: dict[NonTerminal, Node]):
         super().__init__(node)
         self.grammar_rules = grammar_rules
-        self._pre_load_reaches = list()
+        self._pre_load_reaches: list[GrammarGraphNode] = list()
         self._loaded_reaches: Optional[list[GrammarGraphNode]] = None
 
     def is_lazy(self):
@@ -156,7 +157,7 @@ class GrammarGraphConverter(NodeVisitor):
     ):
         self.rules = grammar_rules
         self.start_symbol = start_symbol
-        self.current_parent = []
+        self.current_parent: list[GrammarGraphNode] = []
 
     def process(self):
         start_node = EagerGrammarGraphNode(NonTerminalNode(self.start_symbol, []), [])
@@ -183,7 +184,7 @@ class GrammarGraphConverter(NodeVisitor):
             node.add_egress(next_child)
 
     def visitAlternative(self, node: Alternative):
-        chain_start = list()
+        chain_start: list[GrammarGraphNode] = list()
         chain_end = list()
         graph_node = EagerGrammarGraphNode(node, chain_start)
         self.current_parent.append(graph_node)
@@ -199,7 +200,7 @@ class GrammarGraphConverter(NodeVisitor):
         chain_start = None
         chain_end = list()
         intermediate_end = None
-        reaches = []
+        reaches: list[GrammarGraphNode] = list()
         graph_node = EagerGrammarGraphNode(node, reaches)
         self.current_parent.append(graph_node)
 
@@ -223,9 +224,8 @@ class GrammarGraphConverter(NodeVisitor):
         return graph_node, chain_end
 
     def visitConcatenation(self, node: Concatenation):
-        chain_end = list()
-        reaches = []
-        # TODO
+        chain_end: list[GrammarGraphNode] = list()
+        reaches: list[GrammarGraphNode] = list()
         graph_node = EagerGrammarGraphNode(node, reaches)
         self.current_parent.append(graph_node)
         first = True
