@@ -199,18 +199,9 @@ class IoPopulationManager(PopulationManager):
     ):
         super().__init__(grammar, start_symbol, warnings_are_errors)
         self._prev_packet_idx = 0
-        self.fuzzable_packets: list[ForecastingPacket] | None = None
-        self.fallback_packets: list[ForecastingPacket] | None = None
+        self.fuzzable_packets: list[ForecastingPacket] = []
+        self.fallback_packets: list[ForecastingPacket] = []
         self.allow_fallback_packets = False
-
-    #def _generate_population_hashes(self, population: list[DerivationTree]) -> set[int]:
-    #    hashes: set[int] = set()
-    #    for pop_entry in population:
-    #        deduplicate_tree = pop_entry
-    #        if len(pop_entry.protocol_msgs()) != 0:
-    #            deduplicate_tree = pop_entry.protocol_msgs()[-1].msg
-    #        hashes.add(hash(deduplicate_tree))
-    #    return hashes
 
     def _generate_population_entry(self, max_nodes: int):
         if self.fuzzable_packets is None or len(self.fuzzable_packets) == 0:
