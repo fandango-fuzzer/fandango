@@ -376,6 +376,7 @@ class PacketSelector:
         selected_packets = []
         next_packet = self._get_next_packet()
         if next_packet is not None:
+            assert self._guide_path is not None
             packet_idx = self._guide_path.index(next_packet)
             hookin_states = self._guide_path[:packet_idx]
             packet_sender = next_packet.sender
@@ -406,10 +407,9 @@ class PacketSelector:
         packet_symbol: Optional[NonTerminal] = None,
     ) -> list[ForecastingPacket]:
         packets = []
-        if hookin_states is None:
-            hookin_states = tuple()
-        else:
-            hookin_states = tuple(hookin_states)
+        hookin_states_tp: tuple[Symbol, ...] = tuple()
+        if hookin_states is not None:
+            hookin_states_tp = tuple(hookin_states)
 
         for current_sender in self.next_fuzzer_parties():
             if sender is not None and current_sender != sender:
@@ -427,7 +427,7 @@ class PacketSelector:
                         map(lambda y: y[0], filter(lambda x: x[1], hookin_path.path))
                     )
                     if not PacketSelector._tuple_contains(
-                        hookin_states, packet_hookin_states
+                        hookin_states_tp, packet_hookin_states
                     ):
                         continue
                     append_packet.paths.add(hookin_path)
