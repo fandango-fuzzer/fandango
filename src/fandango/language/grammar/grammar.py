@@ -566,17 +566,19 @@ class Grammar(NodeVisitor):
         collect_start_nodes(tree)
         start_nodes.append((None, tree))
 
-        paths = [set() for _ in range(k)]
+        paths: list[set[tuple[Symbol, ...]]] = [set() for _ in range(k)]
 
         def traverse(
             parent_symbol: Optional[NonTerminal], tree_node: DerivationTree, path
         ):
             tree_symbol = tree_node.symbol
+            assert isinstance(tree_symbol, (Terminal, NonTerminal))
             if isinstance(tree_symbol, Terminal):
                 if parent_symbol is None:
                     raise RuntimeError(
                         "Received a Terminal with no parent symbol when computing k-path!"
                     )
+                symbol_value: str | bytes | int
                 if tree_symbol.value().is_type(TreeValueType.STRING):
                     symbol_value = tree_symbol.value().to_string()
                 elif tree_symbol.value().is_type(TreeValueType.BYTES):
@@ -587,11 +589,9 @@ class Grammar(NodeVisitor):
                 parent_rule_nodes = NonTerminalNode(
                     parent_symbol, self.grammar_settings
                 ).descendents(self, filter_controlflow=True)
-                parent_rule_nodes = list(
-                    filter(lambda x: isinstance(x, TerminalNode), parent_rule_nodes)
-                )
-                random.shuffle(parent_rule_nodes)
-                for rule_node in parent_rule_nodes:
+                parent_rule_terminals = [x for x in parent_rule_nodes if isinstance(x, TerminalNode)]
+                random.shuffle(parent_rule_terminals)
+                for rule_node in parent_rule_terminals:
                     if rule_node.symbol.check(symbol_value, False)[0]:
                         paths[len(path)].add(path + (rule_node.symbol,))
                 return
@@ -700,7 +700,7 @@ class Grammar(NodeVisitor):
     def visitTerminalNode(self, node: TerminalNode):
         return []
 
-    def compute_k_paths(self, k: int) -> set[tuple[Node, ...]]:
+    def compute_k_paths(self, k: int) -> set[tuple[Symbol, ...]]:
         """
         Computes all possible k-paths in the grammar.
 
