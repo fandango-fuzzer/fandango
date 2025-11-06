@@ -95,7 +95,7 @@ class Fandango:
         self.current_max_nodes = max_nodes
         self.diversity_k = diversity_k
         self.remote_response_timeout = 15.0
-        self.past_io_derivations = []
+        self.past_io_derivations: list[DerivationTree] = []
 
         # Instantiate managers
         if self.grammar.fuzzing_mode == FuzzingMode.IO:
@@ -104,7 +104,7 @@ class Fandango:
                 start_symbol,
                 warnings_are_errors,
             )
-            self.evaluator = IoEvaluator(
+            self.evaluator: Evaluator = IoEvaluator(
                 grammar,
                 constraints,
                 expected_fitness,
@@ -490,7 +490,7 @@ class Fandango:
             selected_packet_max_generations = 10
             overall_max_generations = max_generations
         else:
-            selected_packet_max_generations = max_generations / 3
+            selected_packet_max_generations = int(max_generations / 3)
             overall_max_generations = max_generations - selected_packet_max_generations
         assert isinstance(self.evaluator, IoEvaluator)
 

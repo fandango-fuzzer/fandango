@@ -267,7 +267,7 @@ class IoEvaluator(Evaluator):
         )
         self._submitted_solutions: set[int] = set()
         self._hold_back_solutions: set[DerivationTree] = set()
-        self._past_trees = []
+        self._past_trees: list[DerivationTree] = []
 
     def get_past_msgs(
         self, packet_type: Optional[PacketNonTerminal] = None
@@ -275,16 +275,14 @@ class IoEvaluator(Evaluator):
         msgs = []
         for tree in self._past_trees:
             msgs.extend(tree.protocol_msgs())
-        msgs = set(map(lambda x: x.msg, msgs))
+        msg_trees = set(map(lambda x: x.msg, msgs))
         if packet_type is None:
-            return msgs
-        return set(
-            filter(
-                lambda msg: PacketNonTerminal(msg.sender, msg.recipient, msg.symbol)
-                == packet_type,
-                msgs,
-            )
-        )
+            return msg_trees
+        return {
+            msg for msg in msg_trees
+                if isinstance(msg.symbol, NonTerminal)
+                   and PacketNonTerminal(msg.sender, msg.recipient, msg.symbol) == packet_type
+        }
 
     def start_next_message(self, past_trees: list[DerivationTree]) -> None:
         self._hold_back_solutions.clear()
@@ -293,8 +291,8 @@ class IoEvaluator(Evaluator):
         self._past_trees = past_trees
         for tree in past_trees:
             for msg in tree.protocol_msgs():
-                msg = msg.msg
-                key = (msg.sender, msg.recipient, msg)
+                tree = msg.msg
+                key = (msg.sender, msg.recipient, tree)
                 self._submitted_solutions.add(hash(key))
 
     def _is_path_start_with(self, state_path: tuple, path: tuple) -> int:
