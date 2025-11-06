@@ -199,7 +199,7 @@ class GrammarGraphConverter(NodeVisitor):
     def visitRepetition(self, node: Repetition):
         chain_start = None
         chain_end = list()
-        intermediate_end = None
+        intermediate_end: Optional[list[GrammarGraphNode]] = None
         reaches: list[GrammarGraphNode] = list()
         graph_node = EagerGrammarGraphNode(node, reaches)
         self.current_parent.append(graph_node)
@@ -208,6 +208,7 @@ class GrammarGraphConverter(NodeVisitor):
             if chain_start is None:
                 chain_start, intermediate_end = self.visit(node.node)
             else:
+                assert intermediate_end is not None
                 next_node, next_end_nodes = self.visit(node.node)
                 for end_node in intermediate_end:
                     self._set_next(end_node, [next_node])
