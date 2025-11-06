@@ -291,6 +291,9 @@ class PacketSelector:
         self._all_past_covered_k_paths.add(path)
 
     def _remember_messages(self):
+        if self.history_tree is None:
+            self._prev_session_msgs = []
+            return
         self._prev_session_msgs = list(
             map(lambda x: x.msg, self.history_tree.protocol_msgs())
         )

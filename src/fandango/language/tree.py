@@ -37,15 +37,6 @@ class ProtocolMessage:
         self.sender = sender
         self.recipient = recipient
 
-    def get_state_nt(self) -> set[NonTerminal]:
-        state_nts = set()
-        current = self.msg.parent
-        nr_parent_msgs = len(current.protocol_msgs())
-        while current is not None and len(current.protocol_msgs()) <= nr_parent_msgs:
-            state_nts.add(current.symbol)
-            current = current.parent
-        return state_nts
-
     def __repr__(self) -> str:
         return str(self)
 
