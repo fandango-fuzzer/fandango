@@ -1,7 +1,7 @@
 import random
 from collections.abc import Generator
 from collections import defaultdict
-from typing import Any, cast, Optional, Union
+from typing import Any, cast, Optional, Union, Callable, TypeGuard, Never
 from collections.abc import Sequence
 import warnings
 
@@ -295,10 +295,13 @@ class Grammar(NodeVisitor):
                     continue
                 seen.add(node)
                 work.add(node)
-        seen = filter(lambda n: isinstance(n, NonTerminalNode), seen)
-        seen = filter(lambda n: n.sender is not None, seen)
-        seen = map(lambda n: (n.sender, n.recipient, n.symbol), seen)
-        return set(seen)
+        seen_nt = {n for n in seen if isinstance(n, NonTerminalNode)}
+        msg_nt: set[NonTerminalNode] = {n for n in seen_nt if n.sender is not None}
+        messages_set: set[tuple[str, Optional[str], NonTerminal]] = set()
+        for n in msg_nt:
+            assert n.sender is not None
+            messages_set.add((n.sender, n.recipient, n.symbol))
+        return messages_set
 
     def parse(
         self,
@@ -429,23 +432,11 @@ class Grammar(NodeVisitor):
     def update_parser(self):
         self._parser = Parser(self.rules)
 
-    def find_missing_k_paths(
-        self,
-        derivation_trees: list[DerivationTree],
-        k: int,
-        non_terminal: Optional[NonTerminal] = None,
-    ) -> set[tuple[Symbol, ...]]:
-        all_k_paths = self._generate_all_k_paths(k, non_terminal)
-        covered_k_paths = set()
-        for tree in derivation_trees:
-            covered_k_paths.update(self._extract_k_paths_from_tree(tree, k))
-        return all_k_paths.difference(covered_k_paths)
-
     def get_uncovered_k_paths(
         self,
         derivation_trees: list[DerivationTree],
         k: int,
-        non_terminal: Optional[NonTerminal] = None,
+        non_terminal: NonTerminal = NonTerminal("<start>"),
         overlap_to_root: bool = False,
     ) -> list[tuple[Symbol, ...]]:
         """
@@ -467,7 +458,7 @@ class Grammar(NodeVisitor):
         self,
         derivation_trees: list[DerivationTree],
         k: int,
-        non_terminal: Optional[NonTerminal] = None,
+        non_terminal: NonTerminal = NonTerminal("<start>"),
         overlap_to_root: bool = False,
     ) -> float:
         """
@@ -529,7 +520,7 @@ class Grammar(NodeVisitor):
 
         symbol_work = []
         for work_k in work:
-            symbol_work_k = set()
+            symbol_work_k: set[tuple[Symbol, ...]] = set()
             symbol_work.append(symbol_work_k)
             for path in work_k:
                 symbol_work_k.add(tuple(node.to_symbol() for node in path))

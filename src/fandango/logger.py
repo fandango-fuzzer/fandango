@@ -186,5 +186,5 @@ def log_message_coverage(
     coverage: list[tuple[NonTerminal, float]],
 ):
     LOGGER.info(f"Current message coverage:")
-    for symbol, coverage in coverage:
-        LOGGER.info(f"{symbol}: {coverage:.2f}")
+    for symbol, coverage_val in coverage:
+        LOGGER.info(f"{symbol}: {coverage_val:.2f}")
