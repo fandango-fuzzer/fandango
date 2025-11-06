@@ -50,9 +50,6 @@ class Repetition(Node):
     def to_symbol(self) -> Symbol:
         return NonTerminal(f"<__{self.id}>")
 
-    def to_symbol(self) -> Symbol:
-        return NonTerminal(f"<__{self.id}>")
-
     @property
     def internal_max(self):
         return self._max
