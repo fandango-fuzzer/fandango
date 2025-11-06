@@ -320,6 +320,7 @@ class IoEvaluator(Evaluator):
 
         if len(individual.protocol_msgs()) != 0:
             msg = individual.protocol_msgs()[-1].msg
+            assert isinstance(msg.symbol, NonTerminal)
             msg_key = PacketNonTerminal(msg.sender, msg.recipient, msg.symbol)
             msg_hash = hash(msg)
         else:
@@ -331,12 +332,18 @@ class IoEvaluator(Evaluator):
             if msg is None:
                 yield individual
             else:
-                state_path = msg.get_path()
-                if len(state_path) > self._diversity_k:
-                    state_path = state_path[-self._diversity_k :]
-                state_path = tuple(map(lambda x: x.symbol, state_path))
+                assert msg_hash is not None and msg_key is not None
+                state_path_tree = msg.get_path()
+                if len(state_path_tree) > self._diversity_k:
+                    state_path_tree = state_path_tree[-self._diversity_k :]
+                state_path = tuple(map(lambda x: x.symbol, state_path_tree))
+                assert isinstance(msg.symbol, NonTerminal)
                 uncovered_paths = self._grammar.get_uncovered_k_paths(list(self.get_past_msgs(msg_key)), self._diversity_k, msg.symbol, True)
-                overlap_to_root = any(filter(lambda path: 0 < self._is_path_start_with(state_path, path) < self._diversity_k, uncovered_paths))
+
+                overlap_to_root = any(
+                    0 < self._is_path_start_with(state_path, path) < self._diversity_k
+                    for path in uncovered_paths
+                )
 
                 old_coverage = self._grammar.compute_kpath_coverage(
                     list(self.get_past_msgs(msg_key)), self._diversity_k, msg.symbol, overlap_to_root=overlap_to_root
