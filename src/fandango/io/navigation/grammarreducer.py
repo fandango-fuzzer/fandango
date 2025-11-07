@@ -27,6 +27,17 @@ class GrammarReducer(NodeVisitor):
         self.seen_keys: set[NonTerminal] = set()
         self.processed_keys: set[NonTerminal] = set()
 
+    @staticmethod
+    def to_packet_non_terminal(symbol: NonTerminal) -> NonTerminal:
+        return NonTerminal(f"<_packet_{symbol.name()[1:]}")
+
+    @staticmethod
+    def to_non_terminal(symbol: NonTerminal) -> NonTerminal:
+        if symbol.name().startswith("<_packet_"):
+            return NonTerminal(f"<{symbol.name()[9:]}")
+        else:
+            return NonTerminal(symbol.name())
+
     def process(
         self,
         rules: dict[NonTerminal, Node],
