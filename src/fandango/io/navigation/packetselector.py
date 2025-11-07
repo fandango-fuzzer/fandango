@@ -57,7 +57,7 @@ class PacketSelector:
         )
         symbols = set(reduced_grammar.keys())
         symbols.update(
-            map(lambda x: x[2], self.grammar.get_protocol_messages(starting_symbol))
+            map(lambda x: x.symbol, self.grammar.get_protocol_messages(starting_symbol))
         )
         symbols = set(filter(lambda x: x in self.grammar.rules, symbols))
         return symbols
@@ -100,7 +100,9 @@ class PacketSelector:
             'all_unique': set(),
             'symbols': set()
         }
-        for sender, receiver, symbol in self.grammar.get_protocol_messages(self.start_symbol):
+        for p_nt in self.grammar.get_protocol_messages(self.start_symbol):
+            sender = p_nt.sender
+            symbol = p_nt.symbol
             if sender not in paths_by_role:
                 paths_by_role[sender] = {
                     'covered': list(),
@@ -265,7 +267,8 @@ class PacketSelector:
             uncovered_paths[list_idx] = remaining_path
         uncovered_paths = list(filter(lambda x: len(x) > 0, uncovered_paths))
         if len(uncovered_paths) == 0:
-            message_nts = self.grammar.get_protocol_messages(self.start_symbol)
+            protocol_msgs = self.grammar.get_protocol_messages(self.start_symbol)
+            message_nts = set(map(lambda x: x.symbol, protocol_msgs))
             message_coverage = dict(
                 filter(lambda x: x[0] in message_nts, self.coverage_scores)
             )
