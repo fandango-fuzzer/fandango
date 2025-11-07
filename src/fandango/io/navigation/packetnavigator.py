@@ -85,11 +85,7 @@ class PacketNavigator(GrammarNavigator):
                     PacketNonTerminal(
                         n.node.sender,
                         n.node.recipient,
-                        NonTerminal(
-                            f"<{n.node.symbol.name()[9:]}"
-                            if n.node.symbol.name().startswith("<_packet_")
-                            else n.node.symbol.name()
-                        ),
+                        GrammarReducer.to_non_terminal(n.node.symbol),
                     )
                 )
             else:
@@ -107,7 +103,7 @@ class PacketNavigator(GrammarNavigator):
             for symbol in k_path:
                 if symbol in self._packet_symbols:
                     assert isinstance(symbol, NonTerminal)
-                    symbol = NonTerminal(f"<_packet_{symbol.name()[1:]}")
+                    symbol = GrammarReducer.to_packet_non_terminal(symbol)
                 packet_path += (symbol,)
             packet_k_paths.add(packet_path)
         k = max(1, max(map(lambda x: len(x), k_paths)))
@@ -144,7 +140,7 @@ class PacketNavigator(GrammarNavigator):
         for symbol in destination_k_path:
             if symbol in self._packet_symbols:
                 search_destination_symbols.append(
-                    NonTerminal(f"<_packet_{symbol.name()[1:-1]}>")
+                    GrammarReducer.to_packet_non_terminal(symbol)
                 )
             else:
                 search_destination_symbols.append(symbol)
