@@ -4,6 +4,7 @@ from astar import AStar
 from fandango.errors import FandangoError
 from fandango.io.navigation.reachability_checker import ReachabilityChecker
 from fandango.language import DerivationTree, Grammar
+from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols import Symbol, NonTerminal
 from fandango.language.grammar.node_visitors.grammar_graph_converter import (
     GrammarGraphNode,
@@ -116,7 +117,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         return self.heuristic_cost_estimate(current, goal) == 0
 
     def check_reachability_w_controlflow(
-        self, *, tree: Optional[DerivationTree] = None, destination_k_path: list[Symbol]
+        self, *, tree: Optional[DerivationTree] = None, destination_k_path: KPath
     ) -> bool:
         checker = ReachabilityChecker(self.grammar)
         return checker.find_reachability(
@@ -124,7 +125,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         )
 
     def astar_tree_w_controlflow(
-        self, *, tree: Optional[DerivationTree]=None, destination_k_path: list[Symbol]
+        self, *, tree: Optional[DerivationTree]=None, destination_k_path: KPath
     ):
         if len(destination_k_path) == 0:
             return []
@@ -161,7 +162,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
             return None
         return list(a_star_path)
 
-    def astar_tree(self, *, tree: DerivationTree, destination_k_path: list[Symbol]):
+    def astar_tree(self, *, tree: DerivationTree, destination_k_path: KPath):
         return self.astar_tree_w_controlflow(
             tree=tree, destination_k_path=destination_k_path
         )
