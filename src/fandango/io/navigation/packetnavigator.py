@@ -33,7 +33,7 @@ class PacketNavigator(GrammarNavigator):
             start_symbol,
         )
         self._packet_symbols: set[NonTerminal] = set(
-            map(lambda x: x[2], grammar.get_protocol_messages(start_symbol))
+            map(lambda x: x.symbol, grammar.get_protocol_messages(start_symbol))
         )
         self._parser = PacketIterativeParser(reduced_rules)
         self.set_message_cost(1)

@@ -380,19 +380,14 @@ class IoEvaluator(Evaluator):
 
         if self._diversity_k > 0 and self._diversity_weight > 0:
             fill_up_by_msg_nt: dict[
-                tuple[str, str, NonTerminal], list[DerivationTree]
+                PacketNonTerminal, list[DerivationTree]
             ] = {}
-            for ind in population:
+            for ind in [*self._past_trees, *population]:
                 msgs = ind.protocol_msgs()
                 for i, msg in enumerate(msgs):
-                    key = (msg.sender, msg.recipient, msg.msg.symbol)
-                    if key not in fill_up_by_msg_nt:
-                        fill_up_by_msg_nt[key] = []
-                    if i != len(msgs) - 1:
-                        fill_up_by_msg_nt[key].append(msg.msg)
-            for ind in self._past_trees:
-                for i, msg in enumerate(ind.protocol_msgs()):
-                    key = (msg.sender, msg.recipient, msg.msg.symbol)
+                    assert msg.sender is not None
+                    assert isinstance(msg.msg.symbol, NonTerminal)
+                    key = PacketNonTerminal(msg.sender, msg.recipient, msg.msg.symbol)
                     if key not in fill_up_by_msg_nt:
                         fill_up_by_msg_nt[key] = []
                     fill_up_by_msg_nt[key].append(msg.msg)
@@ -401,7 +396,8 @@ class IoEvaluator(Evaluator):
                 if len(ind.protocol_msgs()) == 0:
                     continue
                 last_msg = ind.protocol_msgs()[-1]
-                key = (last_msg.sender, last_msg.recipient, last_msg.msg.symbol)
+                assert isinstance(last_msg.msg.symbol, NonTerminal)
+                key = PacketNonTerminal(last_msg.sender, last_msg.recipient, last_msg.msg.symbol)
                 bonuses = self.compute_diversity_bonus([ind], fill_up_by_msg_nt[key])
                 evaluation[i] = (ind, evaluation[i][1] + bonuses[0], evaluation[i][2])
 

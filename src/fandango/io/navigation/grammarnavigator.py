@@ -65,8 +65,9 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
                 return self.non_terminal_cost
         return self.node_cost
 
+    @staticmethod
     def _get_path_symbols(
-        self, node: GrammarGraphNode, include_controlflow: bool
+        node: GrammarGraphNode, include_controlflow: bool
     ) -> list[Symbol]:
         node_chain = [node]
         current = node
@@ -173,7 +174,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         start_node = self.graph.walk(tree)
         if start_node.is_accepting:
             return []
-        self.search_symbol = None
+        self.search_symbols = None
         self.is_search_end_node = True
         a_star_path = self.astar(start_node, start_node)
         if a_star_path is None:

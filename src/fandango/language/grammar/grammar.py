@@ -7,6 +7,7 @@ import warnings
 
 
 from fandango.errors import FandangoValueError, FandangoParseError
+from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.language.symbols import Terminal
 from fandango.language.grammar import FuzzingMode, ParsingMode, closest_match
 from fandango.language.grammar.has_settings import HasSettings
@@ -284,7 +285,7 @@ class Grammar(NodeVisitor):
 
     def get_protocol_messages(
         self, start_symbol=NonTerminal("<start>")
-    ) -> set[tuple[str, Optional[str], NonTerminal]]:
+    ) -> set[PacketNonTerminal]:
         work = set()
         work.add(self.rules[start_symbol])
         seen = set()
@@ -297,10 +298,10 @@ class Grammar(NodeVisitor):
                 work.add(node)
         seen_nt = {n for n in seen if isinstance(n, NonTerminalNode)}
         msg_nt: set[NonTerminalNode] = {n for n in seen_nt if n.sender is not None}
-        messages_set: set[tuple[str, Optional[str], NonTerminal]] = set()
+        messages_set: set[PacketNonTerminal] = set()
         for n in msg_nt:
             assert n.sender is not None
-            messages_set.add((n.sender, n.recipient, n.symbol))
+            messages_set.add(PacketNonTerminal(n.sender, n.recipient, n.symbol))
         return messages_set
 
     def parse(
