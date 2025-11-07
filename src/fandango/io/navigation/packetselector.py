@@ -373,7 +373,7 @@ class PacketSelector:
                     self._confirm_covered_path(self._guide_target)
 
             self._guide_target = self._select_next_target()
-            self._guide_path = self.navigator.astar_tree(
+            self._guide_path = self.navigator.astar_tree_including_k_paths(
                 tree=self.history_tree,
                 destination_k_path=self._guide_target,
                 included_k_paths=self._current_covered_k_paths,

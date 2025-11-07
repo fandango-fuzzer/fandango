@@ -33,6 +33,9 @@ from fandango.language.tree_value import TreeValueType
 from fandango.logger import LOGGER
 
 
+KPath = tuple[Symbol, ...]
+
+
 class Grammar(NodeVisitor):
     """Represent a grammar."""
 

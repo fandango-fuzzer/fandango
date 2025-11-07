@@ -5,6 +5,7 @@ from fandango.io.navigation.grammarnavigator import GrammarNavigator
 from fandango.io.navigation.grammarreducer import GrammarReducer
 from fandango.io.navigation.packetiterativeparser import PacketIterativeParser
 from fandango.language import Grammar, DerivationTree
+from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.symbols.symbol import Symbol
 from fandango.language.grammar import ParsingMode
@@ -93,13 +94,13 @@ class PacketNavigator(GrammarNavigator):
         return symbol_path
 
     def _includes_k_paths(
-        self, k_paths: set[tuple[Symbol, ...]], controlflow_tree: DerivationTree
+        self, k_paths: set[KPath], controlflow_tree: DerivationTree
     ):
         if len(k_paths) == 0:
             return True
         packet_k_paths = set()
         for k_path in k_paths:
-            packet_path: tuple[Symbol, ...] = tuple()
+            packet_path: KPath = tuple()
             for symbol in k_path:
                 if symbol in self._packet_symbols:
                     assert isinstance(symbol, NonTerminal)
@@ -114,7 +115,7 @@ class PacketNavigator(GrammarNavigator):
         return len(packet_k_paths.difference(covered_k_paths)) == 0
 
     def _find_trees_including_k_paths(
-        self, k_paths: set[tuple[Symbol, ...]], tree: DerivationTree
+        self, k_paths: set[KPath], tree: DerivationTree
     ):
         match_k_paths_trees = []
         process_trees = []
@@ -126,16 +127,35 @@ class PacketNavigator(GrammarNavigator):
             return match_k_paths_trees, True
         return process_trees, False
 
+    def astar_tree_including_k_paths(
+            self,
+            *,
+            tree: DerivationTree,
+            destination_k_path: tuple[NonTerminal, ...],
+            included_k_paths: Optional[set[KPath]] = None,
+    ) -> Optional[list[PacketNonTerminal | NonTerminal]]:
+        if included_k_paths is None:
+            included_k_paths = set()
+        paths = []
+        found_trees, include_k_paths = self._find_trees_including_k_paths(included_k_paths, tree)
+        for suggested_tree, is_complete in found_trees:
+            path = self.astar_tree(
+                tree=suggested_tree, destination_k_path=destination_k_path
+            )
+            if path is None:
+                continue
+            paths.append(path)
+        paths.sort(key=lambda path: len(path))
+        if len(paths) == 0:
+            return None
+        return paths[0]
+
     def astar_tree(
         self,
         *,
         tree: DerivationTree,
         destination_k_path: tuple[NonTerminal, ...],
-        included_k_paths: Optional[set[tuple[Symbol, ...]]] = None,
     ) -> Optional[list[PacketNonTerminal | NonTerminal]]:
-        if included_k_paths is None:
-            included_k_paths = set()
-        paths = []
         search_destination_symbols = []
         for symbol in destination_k_path:
             if symbol in self._packet_symbols:
@@ -144,24 +164,14 @@ class PacketNavigator(GrammarNavigator):
                 )
             else:
                 search_destination_symbols.append(symbol)
-        found_trees, include_k_paths = self._find_trees_including_k_paths(included_k_paths, tree)
-        for suggested_tree, is_complete in found_trees:
-            path = super().astar_tree(
-                tree=suggested_tree, destination_k_path=search_destination_symbols
-            )
-            if path is None:
-                continue
-            paths.append(self._to_symbols(list(path)))
-
-        paths.sort(key=lambda path: len(path))
-        if len(paths) == 0:
-            return None
-        return paths[0]
+        return super().astar_tree(
+            tree=tree, destination_k_path=tuple(*search_destination_symbols)
+        )
 
     def astar_search_end(
         self,
         tree: DerivationTree,
-        included_k_paths: Optional[set[tuple[Symbol, ...]]] = None,
+        included_k_paths: Optional[set[KPath]] = None,
     ) -> Optional[list[PacketNonTerminal | NonTerminal]]:
         if included_k_paths is None:
             included_k_paths = set()
