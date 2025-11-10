@@ -39,11 +39,12 @@ class PacketSelector:
         self.diversity_k = diversity_k
         self.parst_derivations: list[DerivationTree] = []
         self.prev_past_derivations_len = 0
-        self.history_tree = None
+        self.history_tree: DerivationTree = DerivationTree(NonTerminal("<start>"))
         self.max_messages_per_tree = 200
-        self._forecasting_result = None
-        self._next_packets = None
-        self._coverage_scores = None
+        self._forecasting_result: Optional[ForecastingResult] = None
+        self._next_packets: Optional[list[ForecastingPacket]] = None
+        self._coverage_scores: Optional[list[tuple[NonTerminal, float]]] = None
+        self._prev_session_msgs: list[DerivationTree] = []
         self._guide_to_end = False
         self._guide_target = None
         self._guide_path = None
@@ -114,10 +115,11 @@ class PacketSelector:
         return nt_coverage_list
 
     def _get_guide_to_end_packet(self) -> list[ForecastingPacket]:
-        assert self.history_tree is not None
         path = self.navigator.astar_search_end(
             self.history_tree, included_k_paths=self._current_covered_k_paths
         )
+        if path is None:
+            return []
         if len(path) > 0:
             next_packet = next(
                 filter(lambda x: isinstance(x, PacketNonTerminal), path), None
@@ -277,7 +279,7 @@ class PacketSelector:
             (x for x in self._guide_path if isinstance(x, PacketNonTerminal)), None
         )
 
-    def _select_next_packet(self):
+    def _select_next_packet(self) -> list[ForecastingPacket]:
         if len(self.next_fuzzer_parties()) == 0:
             return []
 

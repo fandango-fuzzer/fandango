@@ -186,5 +186,8 @@ class PacketNavigator(GrammarNavigator):
                 assert symbol is not None
                 path_symbols.append(symbol)
             paths.append(path_symbols)
+
+        if len(paths) == 0:
+            return None
         paths.sort(key=lambda path: len(path))
         return paths[0]
