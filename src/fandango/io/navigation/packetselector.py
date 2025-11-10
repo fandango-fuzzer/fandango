@@ -15,7 +15,7 @@ from fandango.io.navigation.packetforecaster import (
     ForecastingResult,
 )
 from fandango.io.navigation.packetnavigator import PacketNavigator
-from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar.grammar import Grammar, KPath
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.logger import log_guidance_hint
 
@@ -47,8 +47,8 @@ class PacketSelector:
         self._guide_to_end = False
         self._guide_target = None
         self._guide_path = None
-        self._current_covered_k_paths = set()
-        self._all_past_covered_k_paths = set()
+        self._current_covered_k_paths: set[KPath] = set()
+        self._all_past_covered_k_paths: set[KPath] = set()
         self.compute(history_tree, self.parst_derivations)
 
     def _get_subgrammar_symbols(self, starting_symbol: NonTerminal):
@@ -74,8 +74,9 @@ class PacketSelector:
             for subtree in tree.flatten():
                 if subtree.symbol in non_terminals:
                     messages.append(subtree)
-        messages_by_nt = {}
+        messages_by_nt: dict[NonTerminal, list[DerivationTree]] = {}
         for msg in messages:
+            assert isinstance(msg.symbol, NonTerminal)
             messages_by_nt.setdefault(msg.symbol, []).append(msg)
         return messages_by_nt
 
@@ -88,56 +89,6 @@ class PacketSelector:
             if full[i : i + n] == sub:
                 return True
         return False
-
-    def _compute_coverage_trees(self, overlap_to_root: bool = False) -> dict[NonTerminal, tuple[int, int]]:
-        messages_by_nt = self._group_messages_by_nt(self._all_derivation_trees())
-        paths_by_role = {}
-        roles_by_symbol = dict()
-        paths_by_role['all_party'] = {
-            'covered': list(),
-            'covered_unique': set(),
-            'all': list(),
-            'all_unique': set(),
-            'symbols': set()
-        }
-        for p_nt in self.grammar.get_protocol_messages(self.start_symbol):
-            sender = p_nt.sender
-            symbol = p_nt.symbol
-            if sender not in paths_by_role:
-                paths_by_role[sender] = {
-                    'covered': list(),
-                    'covered_unique': set(),
-                    'all': list(),
-                    'all_unique': set(),
-                    'symbols': set()
-                }
-            paths_by_role[sender]['symbols'].add(symbol)
-            paths_by_role['all_party']['symbols'].add(symbol)
-            roles_by_symbol.setdefault(symbol, set()).add(sender)
-            roles_by_symbol[symbol].add('all_party')
-
-
-        nt_coverage = {}
-        for symbol in self.coverage_symbols:
-            all_k_paths = self.grammar._generate_all_k_paths(self.diversity_k, symbol, overlap_to_root)
-
-            covered_k_paths = set()
-            if symbol in messages_by_nt:
-                for tree in messages_by_nt[symbol]:
-                    covered_k_paths.update(
-                        self.grammar._extract_k_paths_from_tree(tree, self.diversity_k, overlap_to_root)
-                    )
-            if symbol in roles_by_symbol:
-                for role in roles_by_symbol[symbol]:
-                    paths_by_role[role]['all'].extend(all_k_paths)
-                    paths_by_role[role]['all_unique'].update(all_k_paths)
-                    paths_by_role[role]['covered'].extend(covered_k_paths)
-                    paths_by_role[role]['covered_unique'].update(covered_k_paths)
-            nt_coverage[symbol] = (len(covered_k_paths), len(all_k_paths))
-        for role, paths in paths_by_role.items():
-            nt_coverage[NonTerminal("__role_" + role)] = (len(paths['covered']), len(paths['all']))
-            nt_coverage[NonTerminal("__role_unique_" + role)] = (len(paths['covered_unique']), len(paths['all_unique']))
-        return nt_coverage
 
     def _compute_coverage_score(self, k: int, overlap_to_root: bool = False) -> list[tuple[NonTerminal, float]]:
         """
@@ -157,12 +108,13 @@ class PacketSelector:
             nt_coverage[symbol] = self.grammar.compute_kpath_coverage(
                 messages_by_nt[symbol], k, symbol, overlap_to_root
             )
-        nt_coverage = list(
+        nt_coverage_list = list(
             sorted(nt_coverage.items(), key=lambda x: (x[1], x[0].name()))
         )
-        return nt_coverage
+        return nt_coverage_list
 
     def _get_guide_to_end_packet(self) -> list[ForecastingPacket]:
+        assert self.history_tree is not None
         path = self.navigator.astar_search_end(
             self.history_tree, included_k_paths=self._current_covered_k_paths
         )

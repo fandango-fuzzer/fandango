@@ -154,7 +154,7 @@ class PacketNavigator(GrammarNavigator):
         self,
         *,
         tree: DerivationTree,
-        destination_k_path: tuple[NonTerminal, ...],
+        destination_k_path: KPath,
     ) -> Optional[list[PacketNonTerminal | NonTerminal]]:
         search_destination_symbols = []
         for symbol in destination_k_path:
@@ -165,7 +165,7 @@ class PacketNavigator(GrammarNavigator):
             else:
                 search_destination_symbols.append(symbol)
         return super().astar_tree(
-            tree=tree, destination_k_path=tuple(*search_destination_symbols)
+            tree=tree, destination_k_path=tuple(search_destination_symbols)
         )
 
     def astar_search_end(
@@ -175,12 +175,16 @@ class PacketNavigator(GrammarNavigator):
     ) -> Optional[list[PacketNonTerminal | NonTerminal]]:
         if included_k_paths is None:
             included_k_paths = set()
-        paths = []
+        paths: list[list[PacketNonTerminal | NonTerminal]] = []
         found_trees, include_k_paths = self._find_trees_including_k_paths(included_k_paths, tree)
         for suggested_tree, is_complete in found_trees:
             if is_complete:
                 return []
-            path = super().astar_search_end(suggested_tree)
-            paths.append(self._to_symbols(list(path)))
+            node_path = super().astar_search_end(suggested_tree)
+            path_symbols: list[PacketNonTerminal | NonTerminal] = []
+            for symbol in self._to_symbols(list(node_path)):
+                assert symbol is not None
+                path_symbols.append(symbol)
+            paths.append(path_symbols)
         paths.sort(key=lambda path: len(path))
         return paths[0]

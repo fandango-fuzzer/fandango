@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from fandango.errors import FandangoValueError
-from fandango.language import NonTerminal, Terminal
+from fandango.language import NonTerminal, Terminal, Symbol
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
@@ -28,7 +28,9 @@ class GrammarReducer(NodeVisitor):
         self.processed_keys: set[NonTerminal] = set()
 
     @staticmethod
-    def to_packet_non_terminal(symbol: NonTerminal) -> NonTerminal:
+    def to_packet_non_terminal(symbol: Symbol) -> Symbol:
+        if not isinstance(symbol, NonTerminal) or symbol.name().startswith("<_packet_"):
+            return symbol
         return NonTerminal(f"<_packet_{symbol.name()[1:]}")
 
     @staticmethod
