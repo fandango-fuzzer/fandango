@@ -16,6 +16,7 @@ from fandango.errors import FandangoError, FandangoValueError
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
 
+
 class Protocol(enum.Enum):
     TCP = "TCP"
     UDP = "UDP"
@@ -193,7 +194,11 @@ class UdpTcpProtocolDecorator(ProtocolDecorator):
         )
         self._running = False
         assert protocol_type == Protocol.TCP or protocol_type == Protocol.UDP
-        self._buffer_size = UdpTcpProtocolDecorator.BUFFER_SIZE_TCP if protocol_type == Protocol.TCP else UdpTcpProtocolDecorator.BUFFER_SIZE_UDP
+        self._buffer_size = (
+            UdpTcpProtocolDecorator.BUFFER_SIZE_TCP
+            if protocol_type == Protocol.TCP
+            else UdpTcpProtocolDecorator.BUFFER_SIZE_UDP
+        )
         self._protocol_type = protocol_type
         self._sock: Optional[socket.socket] = None
         self._connection: Optional[socket.socket] = None
@@ -365,11 +370,11 @@ class ConnectParty(FandangoParty):
         try:
             info = socket.getaddrinfo(host, None, socket.AF_INET)
             ip = info[0][4][0]
-            ip_type=IpType.IPV4
+            ip_type = IpType.IPV4
         except socket.gaierror:
             info = socket.getaddrinfo(host, None, socket.AF_INET6)
             ip = info[0][4][0]
-            ip_type=IpType.IPV6
+            ip_type = IpType.IPV6
         if isinstance(ip, int):
             raise FandangoValueError(f"Invalid IP address: {ip}")
         if port is None:
@@ -594,13 +599,15 @@ class FandangoIO(object):
         fragments = []
         prev_sender_receiver = (None, None)
         for idx, (sender, recipient, msg_fragment) in enumerate(
-                self.get_received_msgs()
+            self.get_received_msgs()
         ):
             if (sender, recipient) != prev_sender_receiver:
                 prev_sender_receiver = (sender, recipient)
                 fragments.append(prev_sender_receiver + (msg_fragment,))
             else:
-                fragments[-1] = (prev_sender_receiver + ((fragments[-1][2] + msg_fragment),))
+                fragments[-1] = prev_sender_receiver + (
+                    (fragments[-1][2] + msg_fragment),
+                )
         return fragments
 
     def get_received_msgs(self) -> list[tuple[str, str, str | bytes]]:

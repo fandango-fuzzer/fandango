@@ -120,12 +120,10 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         self, *, tree: Optional[DerivationTree] = None, destination_k_path: KPath
     ) -> bool:
         checker = ReachabilityChecker(self.grammar)
-        return checker.find_reachability(
-            tree=tree, k_path_to_reach=destination_k_path
-        )
+        return checker.find_reachability(tree=tree, k_path_to_reach=destination_k_path)
 
     def astar_tree_w_controlflow(
-        self, *, tree: Optional[DerivationTree]=None, destination_k_path: KPath
+        self, *, tree: Optional[DerivationTree] = None, destination_k_path: KPath
     ):
         if len(destination_k_path) == 0:
             return []
@@ -143,9 +141,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
             )
             path.append(None)
             path.extend(
-                self.astar_tree_w_controlflow(
-                    destination_k_path=destination_k_path
-                )
+                self.astar_tree_w_controlflow(destination_k_path=destination_k_path)
             )
             return path
         self.is_search_end_node = False

@@ -27,7 +27,7 @@ class Repetition(Node):
         id: str = "",
         min_: int = 0,
         max_: Optional[int] = None,
-        distance_to_completion: float = float("inf")
+        distance_to_completion: float = float("inf"),
     ):
         self.id = id
         self.min = min_
@@ -45,7 +45,11 @@ class Repetition(Node):
             raise FandangoValueError(
                 f"Maximum repetitions {self.max} must be greater than 0 or greater than min {min_}"
             )
-        super().__init__(NodeType.REPETITION, grammar_settings, distance_to_completion=distance_to_completion)
+        super().__init__(
+            NodeType.REPETITION,
+            grammar_settings,
+            distance_to_completion=distance_to_completion,
+        )
 
     def to_symbol(self) -> Symbol:
         return NonTerminal(f"<__{self.id}>")
@@ -120,8 +124,8 @@ class Repetition(Node):
         filter_controlflow: bool = False,
     ) -> Iterator["Node"]:
         base: list = []
-        #if self.min == 0:
-            #base.append(TerminalNode(Terminal(""), self._grammar_settings))
+        # if self.min == 0:
+        # base.append(TerminalNode(Terminal(""), self._grammar_settings))
         if 0 < self.max:
             if filter_controlflow and self.node.is_controlflow:
                 base.extend(self.node.descendents(grammar, filter_controlflow=True))
@@ -222,7 +226,9 @@ class Option(Repetition):
         grammar_settings: Sequence[HasSettings],
         id: str = "",
     ):
-        super().__init__(node, grammar_settings, id, min_=0, max_=1, distance_to_completion=0.0)
+        super().__init__(
+            node, grammar_settings, id, min_=0, max_=1, distance_to_completion=0.0
+        )
 
     def to_symbol(self) -> Symbol:
         return NonTerminal(f"<__{self.id}>")

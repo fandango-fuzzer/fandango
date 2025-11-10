@@ -1,4 +1,3 @@
-
 def find_longest_suffix(path, suffix_path):
     max_overlap = 0
     search_len = len(suffix_path)

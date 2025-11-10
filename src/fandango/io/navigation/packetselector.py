@@ -46,8 +46,8 @@ class PacketSelector:
         self._coverage_scores: Optional[list[tuple[NonTerminal, float]]] = None
         self._prev_session_msgs: list[DerivationTree] = []
         self._guide_to_end = False
-        self._guide_target = None
-        self._guide_path = None
+        self._guide_target: Optional[tuple[NonTerminal, ...]] = None
+        self._guide_path: Optional[list[PacketNonTerminal | NonTerminal | None]] = None
         self._current_covered_k_paths: set[KPath] = set()
         self._all_past_covered_k_paths: set[KPath] = set()
         self.compute(history_tree, self.parst_derivations)
@@ -91,7 +91,9 @@ class PacketSelector:
                 return True
         return False
 
-    def _compute_coverage_score(self, k: int, overlap_to_root: bool = False) -> list[tuple[NonTerminal, float]]:
+    def _compute_coverage_score(
+        self, k: int, overlap_to_root: bool = False
+    ) -> list[tuple[NonTerminal, float]]:
         """
         Computes the coverage score for each NonTerminal in the given DerivationTrees.
         The score is the ratio of the number of trees containing the NonTerminal to the total number of trees.
@@ -127,7 +129,9 @@ class PacketSelector:
             if next_packet is None:
                 return []
             assert isinstance(next_packet, PacketNonTerminal)
-            return self.find_packets(sender=next_packet.sender, packet_symbol=next_packet.symbol)
+            return self.find_packets(
+                sender=next_packet.sender, packet_symbol=next_packet.symbol
+            )
         return []
 
     def compute(
@@ -240,7 +244,9 @@ class PacketSelector:
     def _is_tree_contains_paths(
         self, paths: set[tuple[Symbol, ...]], tree: DerivationTree
     ) -> bool:
-        found_trees, include_k_paths = self.navigator._find_trees_including_k_paths(paths, tree)
+        found_trees, include_k_paths = self.navigator._find_trees_including_k_paths(
+            paths, tree
+        )
         return include_k_paths
 
     def _confirm_covered_path(self, path: tuple[Symbol, ...]):
@@ -275,6 +281,8 @@ class PacketSelector:
         return new_msgs
 
     def _get_next_packet(self):
+        if self._guide_path is None:
+            return None
         return next(
             (x for x in self._guide_path if isinstance(x, PacketNonTerminal)), None
         )
@@ -332,7 +340,9 @@ class PacketSelector:
                 destination_k_path=self._guide_target,
                 included_k_paths=self._current_covered_k_paths,
             )
-        self._guide_to_end = len(list(filter(lambda p: p is None, self._guide_path))) > 0
+        self._guide_to_end = (
+            len(list(filter(lambda p: p is None, self._guide_path))) > 0
+        )
         selected_packets = []
         next_packet = self._get_next_packet()
         if next_packet is not None:

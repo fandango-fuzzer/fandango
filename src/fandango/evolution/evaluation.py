@@ -279,9 +279,10 @@ class IoEvaluator(Evaluator):
         if packet_type is None:
             return msg_trees
         return {
-            msg for msg in msg_trees
-                if isinstance(msg.symbol, NonTerminal)
-                   and PacketNonTerminal(msg.sender, msg.recipient, msg.symbol) == packet_type
+            msg
+            for msg in msg_trees
+            if isinstance(msg.symbol, NonTerminal)
+            and PacketNonTerminal(msg.sender, msg.recipient, msg.symbol) == packet_type
         }
 
     def start_next_message(self, past_trees: list[DerivationTree]) -> None:
@@ -338,7 +339,12 @@ class IoEvaluator(Evaluator):
                     state_path_tree = state_path_tree[-self._diversity_k :]
                 state_path = tuple(map(lambda x: x.symbol, state_path_tree))
                 assert isinstance(msg.symbol, NonTerminal)
-                uncovered_paths = self._grammar.get_uncovered_k_paths(list(self.get_past_msgs(msg_key)), self._diversity_k, msg.symbol, True)
+                uncovered_paths = self._grammar.get_uncovered_k_paths(
+                    list(self.get_past_msgs(msg_key)),
+                    self._diversity_k,
+                    msg.symbol,
+                    True,
+                )
 
                 overlap_to_root = any(
                     0 < self._is_path_start_with(state_path, path) < self._diversity_k
@@ -346,13 +352,16 @@ class IoEvaluator(Evaluator):
                 )
 
                 old_coverage = self._grammar.compute_kpath_coverage(
-                    list(self.get_past_msgs(msg_key)), self._diversity_k, msg.symbol, overlap_to_root=overlap_to_root
+                    list(self.get_past_msgs(msg_key)),
+                    self._diversity_k,
+                    msg.symbol,
+                    overlap_to_root=overlap_to_root,
                 )
                 new_coverage = self._grammar.compute_kpath_coverage(
                     list(self.get_past_msgs(msg_key)) + [msg],
                     self._diversity_k,
                     msg.symbol,
-                    overlap_to_root=overlap_to_root
+                    overlap_to_root=overlap_to_root,
                 )
                 if old_coverage < new_coverage or new_coverage == 1.0:
                     if new_coverage < 1.0:
@@ -379,9 +388,7 @@ class IoEvaluator(Evaluator):
             evaluation.append((ind, *ind_eval))
 
         if self._diversity_k > 0 and self._diversity_weight > 0:
-            fill_up_by_msg_nt: dict[
-                PacketNonTerminal, list[DerivationTree]
-            ] = {}
+            fill_up_by_msg_nt: dict[PacketNonTerminal, list[DerivationTree]] = {}
             for ind in [*self._past_trees, *population]:
                 msgs = ind.protocol_msgs()
                 for i, msg in enumerate(msgs):
@@ -397,7 +404,9 @@ class IoEvaluator(Evaluator):
                     continue
                 last_msg = ind.protocol_msgs()[-1]
                 assert isinstance(last_msg.msg.symbol, NonTerminal)
-                key = PacketNonTerminal(last_msg.sender, last_msg.recipient, last_msg.msg.symbol)
+                key = PacketNonTerminal(
+                    last_msg.sender, last_msg.recipient, last_msg.msg.symbol
+                )
                 bonuses = self.compute_diversity_bonus([ind], fill_up_by_msg_nt[key])
                 evaluation[i] = (ind, evaluation[i][1] + bonuses[0], evaluation[i][2])
 
