@@ -394,7 +394,9 @@ class Grammar(NodeVisitor):
     def msg_parties(self, *, include_recipients: bool = True) -> set:
         parties: set[str] = set()
         for rule in self.rules.values():
-            parties |= rule.msg_parties(grammar=self, include_recipients=include_recipients)
+            parties |= rule.msg_parties(
+                grammar=self, include_recipients=include_recipients
+            )
         return parties
 
     def get_repr_for_rule(self, symbol: str | NonTerminal):
@@ -452,7 +454,7 @@ class Grammar(NodeVisitor):
             covered_k_paths.update(
                 self._extract_k_paths_from_tree(tree, k, overlap_to_root)
             )
-            #if len(covered_k_paths) == len(all_k_paths):
+            # if len(covered_k_paths) == len(all_k_paths):
             #    return []
 
         uncovered_k_paths = all_k_paths.difference(covered_k_paths)
@@ -593,7 +595,9 @@ class Grammar(NodeVisitor):
                 parent_rule_nodes = NonTerminalNode(
                     parent_symbol, self.grammar_settings
                 ).descendents(self, filter_controlflow=True)
-                parent_rule_terminals = [x for x in parent_rule_nodes if isinstance(x, TerminalNode)]
+                parent_rule_terminals = [
+                    x for x in parent_rule_nodes if isinstance(x, TerminalNode)
+                ]
                 random.shuffle(parent_rule_terminals)
                 for rule_node in parent_rule_terminals:
                     if rule_node.symbol.check(symbol_value, False)[0]:

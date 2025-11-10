@@ -93,9 +93,7 @@ class PacketNavigator(GrammarNavigator):
                 symbol_path.append(NonTerminal(n.node.symbol.name()))
         return symbol_path
 
-    def _includes_k_paths(
-        self, k_paths: set[KPath], controlflow_tree: DerivationTree
-    ):
+    def _includes_k_paths(self, k_paths: set[KPath], controlflow_tree: DerivationTree):
         if len(k_paths) == 0:
             return True
         packet_k_paths = set()
@@ -114,9 +112,7 @@ class PacketNavigator(GrammarNavigator):
         covered_k_paths = self.grammar._extract_k_paths_from_tree(col_tree, k)
         return len(packet_k_paths.difference(covered_k_paths)) == 0
 
-    def _find_trees_including_k_paths(
-        self, k_paths: set[KPath], tree: DerivationTree
-    ):
+    def _find_trees_including_k_paths(self, k_paths: set[KPath], tree: DerivationTree):
         match_k_paths_trees = []
         process_trees = []
         for suggested_tree, is_complete in self.get_controlflow_tree(tree):
@@ -128,16 +124,18 @@ class PacketNavigator(GrammarNavigator):
         return process_trees, False
 
     def astar_tree_including_k_paths(
-            self,
-            *,
-            tree: DerivationTree,
-            destination_k_path: tuple[NonTerminal, ...],
-            included_k_paths: Optional[set[KPath]] = None,
+        self,
+        *,
+        tree: DerivationTree,
+        destination_k_path: tuple[NonTerminal, ...],
+        included_k_paths: Optional[set[KPath]] = None,
     ) -> Optional[list[PacketNonTerminal | NonTerminal]]:
         if included_k_paths is None:
             included_k_paths = set()
         paths = []
-        found_trees, include_k_paths = self._find_trees_including_k_paths(included_k_paths, tree)
+        found_trees, include_k_paths = self._find_trees_including_k_paths(
+            included_k_paths, tree
+        )
         for suggested_tree, is_complete in found_trees:
             path = self.astar_tree(
                 tree=suggested_tree, destination_k_path=destination_k_path
@@ -176,7 +174,9 @@ class PacketNavigator(GrammarNavigator):
         if included_k_paths is None:
             included_k_paths = set()
         paths: list[list[PacketNonTerminal | NonTerminal]] = []
-        found_trees, include_k_paths = self._find_trees_including_k_paths(included_k_paths, tree)
+        found_trees, include_k_paths = self._find_trees_including_k_paths(
+            included_k_paths, tree
+        )
         for suggested_tree, is_complete in found_trees:
             if is_complete:
                 return []

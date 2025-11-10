@@ -100,6 +100,7 @@ class MountingPath:
     def __repr__(self):
         return f"({', '.join([f'({nt.format_as_spec()}, {new_node})' for nt, new_node in self.path])})"
 
+
 class ForecastingPacket:
     def __init__(self, node: NonTerminalNode):
         self.node = node
@@ -226,7 +227,5 @@ class PacketForecaster:
                     if is_complete:
                         collapsed_tree = self.grammar.collapse(suggested_tree)
                         if collapsed_tree is not None:
-                            options.complete_trees.add(
-                                collapsed_tree
-                            )
+                            options.complete_trees.add(collapsed_tree)
         return options

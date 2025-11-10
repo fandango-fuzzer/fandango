@@ -56,7 +56,7 @@ class GrammarGraphNode(abc.ABC):
             if isinstance(self.node, NonTerminalNode):
                 symbol = self.node.symbol
             else:
-                assert hasattr(self.node, 'id')
+                assert hasattr(self.node, "id")
                 node_id = self.node.id
                 symbol = NonTerminal(f"<__{node_id}>")
             if tree_node.symbol != symbol:
