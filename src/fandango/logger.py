@@ -3,11 +3,12 @@ import os
 import sys
 import time
 import traceback
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 from ansi_styles import ansiStyles as styles
 
 if TYPE_CHECKING:
+    import fandango
     from fandango.language.tree import DerivationTree
 else:
     DerivationTree = object  # needs to be defined for beartype
@@ -110,13 +111,20 @@ LINE_IS_CLEAR = True
 def visualize_evaluation(
     generation: int,
     max_generations: Optional[int],
-    evaluation: list[tuple[DerivationTree, float, Any]],
+    evaluation: list[
+        tuple[
+            DerivationTree,
+            float,
+            list["fandango.constraints.failing_tree.FailingTree"],
+            "fandango.constraints.failing_tree.Suggestion",
+        ]
+    ],
 ) -> None:
     """Visualize current evolution while Fandango is running"""
     if not use_visualization() or max_generations is None:
         return
 
-    fitnesses = [fitness for _ind, fitness, _failing_trees in evaluation]
+    fitnesses = [fitness for _ind, fitness, _failing_trees, _suggestion in evaluation]
     fitnesses.sort(reverse=True)
     assert COLUMNS is not None
     columns = COLUMNS

@@ -132,7 +132,10 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
 
         args = [tree]
         for symbol in dependent_gens:
-            generated_param = self.generate(symbol, args)
+            try:
+                generated_param = self.generate(symbol, args)
+            except Exception as e:
+                raise e
             generated_param.sources = []
             generated_param._parent = tree
             for child in generated_param.children:

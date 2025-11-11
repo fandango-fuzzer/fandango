@@ -2,6 +2,7 @@ from copy import copy
 import itertools
 from typing import Any, Optional, Unpack
 from fandango.constraints.base import GeneticBaseInitArgs
+from fandango.constraints.failing_tree import ApplyAllSuggestions
 from fandango.language.tree import DerivationTree
 from fandango.constraints.constraint_visitor import ConstraintVisitor
 from fandango.constraints.constraint import Constraint
@@ -70,12 +71,19 @@ class DisjunctionConstraint(Constraint):
                 fitness.failing_trees for fitness in fitness_values
             )
         )
+        suggestion = ApplyAllSuggestions([e.suggestion for e in fitness_values])
         if len(self.constraints) > 1:
             if overall:
                 solved = total + 1
             total += 1
         # Create the fitness object
-        fitness = ConstraintFitness(solved, total, overall, failing_trees=failing_trees)
+        fitness = ConstraintFitness(
+            solved=solved,
+            total=total,
+            success=overall,
+            suggestion=suggestion,
+            failing_trees=failing_trees,
+        )
         # Cache the fitness
         self.cache[tree_hash] = fitness
         return fitness
