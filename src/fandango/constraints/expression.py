@@ -4,7 +4,7 @@ from fandango.constraints.base import GeneticBaseInitArgs
 from fandango.constraints.constraint_visitor import ConstraintVisitor
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.fitness import ConstraintFitness
-from fandango.constraints.failing_tree import FailingTree
+from fandango.constraints.failing_tree import FailingTree, NopSuggestion
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import print_exception
@@ -84,9 +84,10 @@ class ExpressionConstraint(Constraint):
             total += 1
         # Create the fitness object
         fitness = ConstraintFitness(
-            solved,
-            total,
-            solved == total,
+            solved=solved,
+            total=total,
+            success=(solved == total),
+            suggestion=NopSuggestion(),
             failing_trees=[FailingTree(t, self) for t in failing_trees],
         )
         # Cache the fitness

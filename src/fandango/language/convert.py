@@ -582,7 +582,8 @@ class ConstraintProcessor(FandangoParserVisitor):
             op,
             ast.unparse(left),
             ast.unparse(right),
-            searches={**left_map, **right_map},
+            left_searches=left_map,
+            right_searches=right_map,
             local_variables=self.local_variables,
             global_variables=self.global_variables,
         )
