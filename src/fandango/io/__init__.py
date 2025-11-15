@@ -112,7 +112,7 @@ class FandangoParty(ABC):
         """
         Called when a message has been received by this party.
         :param sender: The sender of the message.
-        :param message: The sender of the message.
+        :param message: The content of the message.
         """
         if sender is None:
             parties = list(
