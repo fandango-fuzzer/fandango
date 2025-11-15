@@ -1141,6 +1141,13 @@ def assign_implicit_party(grammar: Grammar, implicit_party: str) -> None:
             seen_nts.add(c_node.symbol)
             if len(c_node.msg_parties(include_recipients=False)) != 0:
                 continue
+            # Check if the rule definition of this node already contains party definitions
+            if c_node.symbol in grammar.rules:
+                if (
+                    len(grammar[c_node.symbol].msg_parties(include_recipients=False))
+                    != 0
+                ):
+                    continue
             c_node.sender = implicit_party
         for t_node in symbol_finder.terminalNodes:
             terminal_id = 0
