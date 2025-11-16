@@ -230,15 +230,15 @@ class PacketSelector:
             message_coverage = dict(
                 filter(lambda x: x[0] in message_nts, self.coverage_scores)
             )
-            ps = self.msg_power_schedule
-            ps.assign_energy_coverage(message_coverage)
-            target = ps.choose()
-            ps.add_past_target(target)
+            m_ps = self.msg_power_schedule
+            m_ps.assign_energy_coverage(message_coverage)
+            target = m_ps.choose()
+            m_ps.add_past_target(target)
             return target
-        ps = self.state_path_power_schedule
-        ps.assign_energy_k_path(uncovered_paths)
-        selected_path = ps.choose()
-        ps.add_past_target(selected_path)
+        s_ps = self.state_path_power_schedule
+        s_ps.assign_energy_k_path(uncovered_paths)
+        selected_path = s_ps.choose()
+        s_ps.add_past_target(selected_path)
         return selected_path
 
     def _is_tree_contains_paths(
@@ -335,24 +335,34 @@ class PacketSelector:
                     self._confirm_covered_path(self._guide_target)
 
             self._guide_target = self._select_next_target()
-            self._guide_path = self.navigator.astar_tree_including_k_paths(
+            found_guide_path = self.navigator.astar_tree_including_k_paths(
                 tree=self.history_tree,
                 destination_k_path=self._guide_target,
                 included_k_paths=self._current_covered_k_paths,
             )
+            assert found_guide_path is not None
+            self._guide_path = found_guide_path
         self._guide_to_end = (
             len(list(filter(lambda p: p is None, self._guide_path))) > 0
         )
         selected_packets = []
         next_packet = self._get_next_packet()
+        hookin_states: Optional[list[Symbol]] = None
         if next_packet is not None:
             assert self._guide_path is not None
             packet_idx = self._guide_path.index(next_packet)
-            hookin_states = self._guide_path[:packet_idx]
+            hookin_states = []
+            for symbol in self._guide_path[:packet_idx]:
+                assert isinstance(symbol, Symbol)
+                hookin_states.append(symbol)
             packet_sender = next_packet.sender
             packet_symbol = next_packet.symbol
         else:
-            hookin_states = self._guide_path
+            if self._guide_path is not None:
+                hookin_states = []
+                for symbol in self._guide_path:
+                    assert isinstance(symbol, Symbol)
+                    hookin_states.append(symbol)
             packet_sender = None
             packet_symbol = None
 
