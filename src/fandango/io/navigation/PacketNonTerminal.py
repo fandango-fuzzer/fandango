@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fandango.language import NonTerminal
+from fandango.language.symbols.non_terminal import NonTerminal
 
 
 class PacketNonTerminal:

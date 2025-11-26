@@ -162,9 +162,12 @@ class PacketNavigator(GrammarNavigator):
                 )
             else:
                 search_destination_symbols.append(symbol)
-        return super().astar_tree(
+        path = super().astar_tree(
             tree=tree, destination_k_path=tuple(search_destination_symbols)
         )
+        if path is None:
+            return None
+        return self._to_symbols(path)
 
     def astar_search_end(
         self,
