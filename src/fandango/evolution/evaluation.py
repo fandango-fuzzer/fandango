@@ -1,5 +1,5 @@
 import random
-from typing import Counter
+from typing import Counter, Optional, Union
 from collections.abc import Generator, Sequence
 
 from fandango.constraints.constraint import Constraint
@@ -11,6 +11,8 @@ from fandango.constraints.failing_tree import (
     NopSuggestion,
     Suggestion,
 )
+from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
+from fandango.language import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.language.grammar.grammar import Grammar
 from fandango.logger import LOGGER, print_exception
@@ -357,16 +359,16 @@ class IoEvaluator(Evaluator):
     def evaluate_individual(
         self,
         individual: DerivationTree,
-    ) -> Generator[DerivationTree, None, tuple[float, list[FailingTree]]]:
+    ) -> Generator[DerivationTree, None, tuple[float, list[FailingTree], Suggestion]]:
         key = hash(individual)
         if key in self._fitness_cache:
             return self._fitness_cache[key]
 
-        fitness, failing_trees = self.evaluate_constraints(individual)
-        self._fitness_cache[key] = (fitness, failing_trees)
+        fitness, failing_trees, suggestion = self.evaluate_hard_constraints(individual)
+        self._fitness_cache[key] = (fitness, failing_trees, suggestion)
 
         if fitness < self._expected_fitness:
-            return fitness, failing_trees
+            return fitness, failing_trees, suggestion
 
         if len(individual.protocol_msgs()) != 0:
             msg = individual.protocol_msgs()[-1].msg
@@ -423,15 +425,16 @@ class IoEvaluator(Evaluator):
                 ):
                     self._hold_back_solutions.add(individual)
 
-        self._fitness_cache[key] = (fitness, failing_trees)
-        return fitness, failing_trees
+        self._fitness_cache[key] = (fitness, failing_trees, suggestion)
+        return fitness, failing_trees, suggestion
 
     def evaluate_population(
         self, population: list[DerivationTree]
     ) -> Generator[
-        DerivationTree, None, list[tuple[DerivationTree, float, list[FailingTree]]]
+        DerivationTree, None,
+        list[tuple[DerivationTree, float, list[FailingTree], Suggestion]]
     ]:
-        evaluation: list[tuple[DerivationTree, float, list[FailingTree]]] = []
+        evaluation: list[tuple[DerivationTree, float, list[FailingTree], Suggestion]] = []
         for ind in population:
             ind_eval = yield from self.evaluate_individual(ind)
             evaluation.append((ind, *ind_eval))
@@ -457,6 +460,6 @@ class IoEvaluator(Evaluator):
                     last_msg.sender, last_msg.recipient, last_msg.msg.symbol
                 )
                 bonuses = self.compute_diversity_bonus([ind], fill_up_by_msg_nt[key])
-                evaluation[i] = (ind, evaluation[i][1] + bonuses[0], evaluation[i][2])
+                evaluation[i] = (ind, evaluation[i][1] + bonuses[0], evaluation[i][2], evaluation[i][3])
 
         return evaluation

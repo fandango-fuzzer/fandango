@@ -5,8 +5,7 @@ from typing import Optional
 from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.io import FandangoIO
 from fandango.io.navigation.packetforecaster import (
-    ForcastingPacket,
-    ForecastingResult,
+    ForecastingResult, ForecastingPacket,
 )
 from fandango.language import Grammar, NonTerminal, DerivationTree
 from fandango.language.grammar import ParsingMode
@@ -31,7 +30,7 @@ def parse_next_remote_packet(
     grammar: Grammar,
     forecast: ForecastingResult,
     io_instance: FandangoIO,
-) -> tuple[Optional[ForcastingPacket], Optional[DerivationTree]]:
+) -> tuple[Optional[ForecastingPacket], Optional[DerivationTree]]:
     if len(io_instance.get_received_msgs()) == 0:
         return None, None
 
