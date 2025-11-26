@@ -496,10 +496,7 @@ class Fandango:
 
         while True:
             self.packet_selector.compute(history_tree, self.past_io_derivations)
-            current_coverage = dict(self.packet_selector.coverage_scores)[
-                NonTerminal("<start>")
-            ]
-            LOGGER.info(f"Current coverage: {current_coverage:.2f}%")
+            LOGGER.info(f"Current coverage: {self.packet_selector.coverage_percent():.2f}%")
             self.evaluator.start_next_message(
                 [history_tree] + list(self.past_io_derivations)
             )
@@ -521,7 +518,7 @@ class Fandango:
                     self.past_io_derivations.append(history_tree)
                     self._initial_solutions.clear()
                     yield history_tree
-                    if len(self.packet_selector._uncovered_paths()) == 0:
+                    if self.packet_selector.coverage_percent() == 1.0:
                         log_guidance_hint("Full coverage reached, stopping evolution.")
                         return
                     log_guidance_hint("Starting new protocol run.")
