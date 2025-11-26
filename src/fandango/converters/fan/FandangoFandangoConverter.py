@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+from typing import Any, Optional
 
 from fandango.converters.FandangoConverter import FandangoConverter
 from fandango.language.parse import parse_spec
@@ -9,11 +10,11 @@ from fandango.language.parse import parse_spec
 class FandangoFandangoConverter(FandangoConverter):
     """Convert (normalize) Fandango grammar to Fandango format"""
 
-    def __init__(self, filename: str, parties: list[str] | None = None):
+    def __init__(self, filename: str, parties: Optional[list[str]] = None):
         super().__init__(filename)
         self.parties = parties or []
 
-    def to_fan(self, **kw_args) -> str:
+    def to_fan(self, **_kwargs: Any) -> str:
         """Convert the grammar spec to Fandango format"""
         contents = open(self.filename, "r").read()
         parsed_spec = parse_spec(

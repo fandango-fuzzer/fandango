@@ -1,7 +1,6 @@
 import random
 import re
-from types import NoneType
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from collections.abc import Sequence
 import exrex
 from fandango.errors import FandangoValueError
@@ -40,7 +39,7 @@ class TerminalNode(Node):
         grammar: "fandango.language.grammar.grammar.Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
-    ):
+    ) -> None:
         repetitions = 1
         # Gmutator mutation (1a)
         if random.random() < self.settings.get("terminal_should_repeat"):
@@ -59,7 +58,8 @@ class TerminalNode(Node):
                     if random.random() < self.settings.get("invert_regex"):
                         attempts = 0
                         while attempts < self.settings.get("max_out_of_regex_tries"):
-                            attempt = exrex.getone(".*")
+                            attempt = exrex.getone(".*")  # type: ignore [no-untyped-call] # exrex doesn't provide types
+                            assert isinstance(attempt, str)
                             if not re.match(pattern, attempt):
                                 return attempt
                             attempts += 1
@@ -67,7 +67,9 @@ class TerminalNode(Node):
                             f"Failed to generate a non-matching regex: {pattern}, falling back to matching regex"
                         )
 
-                    return exrex.getone(pattern)
+                    res = exrex.getone(pattern)  # type: ignore [no-untyped-call] # exrex doesn't provide types
+                    assert isinstance(res, str)
+                    return res
 
                 instance: str | bytes
                 if self.symbol.is_type(TreeValueType.BYTES):
@@ -84,15 +86,15 @@ class TerminalNode(Node):
 
     def accept(
         self,
-        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor",
-    ):
+        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor[fandango.language.grammar.node_visitors.node_visitor.AggregateType, fandango.language.grammar.node_visitors.node_visitor.ResultType]",
+    ) -> Any:  # should be ResultType, beartype falls on its face
         return visitor.visitTerminalNode(self)
 
     def format_as_spec(self) -> str:
         return self.symbol.format_as_spec()
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         return isinstance(other, TerminalNode) and self.symbol == other.symbol
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.symbol)

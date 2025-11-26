@@ -11,9 +11,9 @@ class ParserDerivationTree(DerivationTree):
         *,
         parent: Optional[DerivationTree] = None,
         sender: Optional[str] = None,
-        recipient=None,
+        recipient: Optional[str] = None,
         read_only: bool = False,
-        origin_repetitions: list[tuple[str, int, int]] | None = None,
+        origin_repetitions: Optional[list[tuple[str, int, int]]] = None,
     ):
         super().__init__(
             symbol,
@@ -26,6 +26,6 @@ class ParserDerivationTree(DerivationTree):
             origin_repetitions=origin_repetitions,
         )
 
-    def set_children(self, children: list[DerivationTree]):
+    def set_children(self, children: list[DerivationTree]) -> None:
         self._children = children
-        self.invalidate_hash()
+        self.invalidate_hash(update_size=False)

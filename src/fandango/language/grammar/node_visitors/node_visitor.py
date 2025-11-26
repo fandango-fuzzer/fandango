@@ -1,6 +1,7 @@
 import abc
-from typing import Generic, Optional, TypeVar
+from typing import Generic, TypeVar, cast
 from fandango.language.grammar.nodes.alternative import Alternative
+from fandango.language.grammar.nodes.char_set import CharSet
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
@@ -9,17 +10,18 @@ from fandango.language.grammar.nodes.terminal import TerminalNode
 
 
 AggregateType = TypeVar("AggregateType")
+ResultType = TypeVar("ResultType")
 
 
-class NodeVisitor(abc.ABC, Generic[AggregateType]):
-    def visit(self, node: Node):
+class NodeVisitor(abc.ABC, Generic[AggregateType, ResultType]):
+    def visit(self, node: Node) -> ResultType:
         return node.accept(self)
 
     def default_result(self) -> AggregateType:
         return None  # type: ignore[return-value]
 
     def aggregate_results(
-        self, aggregate: AggregateType, result: Optional[Node]
+        self, aggregate: AggregateType, result: ResultType
     ) -> AggregateType:
         return aggregate
 
@@ -31,28 +33,29 @@ class NodeVisitor(abc.ABC, Generic[AggregateType]):
             result = self.aggregate_results(result, self.visit(child))
         return result
 
-    def visitAlternative(self, node: Alternative):
-        return self.visitChildren(node)
+    def visitAlternative(self, node: Alternative) -> ResultType:
+        return cast(ResultType, self.visitChildren(node))
 
-    def visitConcatenation(self, node: Concatenation):
-        return self.visitChildren(node)
+    def visitConcatenation(self, node: Concatenation) -> ResultType:
+        return cast(ResultType, self.visitChildren(node))
 
-    def visitRepetition(self, node: Repetition):
+    def visitRepetition(self, node: Repetition) -> ResultType:
         return self.visit(node.node)
 
-    def visitStar(self, node: Star):
+    def visitStar(self, node: Star) -> ResultType:
         return self.visit(node.node)
 
-    def visitPlus(self, node: Plus):
+    def visitPlus(self, node: Plus) -> ResultType:
         return self.visit(node.node)
 
-    def visitOption(self, node: Option):
+    def visitOption(self, node: Option) -> ResultType:
         return self.visit(node.node)
 
-    # noinspection PyUnusedLocal
-    def visitNonTerminalNode(self, node: NonTerminalNode):
-        return self.default_result()
+    def visitNonTerminalNode(self, _node: NonTerminalNode) -> ResultType:
+        return cast(ResultType, self.default_result())
 
-    # noinspection PyUnusedLocal
-    def visitTerminalNode(self, node: TerminalNode):
-        return self.default_result()
+    def visitTerminalNode(self, _node: TerminalNode) -> ResultType:
+        return cast(ResultType, self.default_result())
+
+    def visitCharSet(self, _node: CharSet) -> ResultType:
+        return cast(ResultType, self.default_result())

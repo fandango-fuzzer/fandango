@@ -1,6 +1,7 @@
 import abc
 import enum
 from typing import Any
+import warnings
 
 from fandango.language.tree_value import TreeValue, TreeValueType
 
@@ -18,7 +19,9 @@ class Symbol(abc.ABC):
         self._type = type_
         self._is_regex = False
 
-    def check(self, word: str | int | bytes, incomplete=False) -> tuple[bool, int]:
+    def check(
+        self, word: str | int | bytes, incomplete: bool = False
+    ) -> tuple[bool, int]:
         """Return (True, # of characters matched by `word`), or (False, 0)"""
         return False, 0
 
@@ -53,15 +56,20 @@ class Symbol(abc.ABC):
 
     @abc.abstractmethod
     def __hash__(self) -> int:
-        return NotImplemented
+        raise NotImplementedError
 
-    def _repr(self) -> str:
-        return str(self.value())
+    @abc.abstractmethod
+    def format_as_spec(self) -> str:
+        raise NotImplementedError
 
     def __str__(self) -> str:
-        return self._repr()
+        warnings.warn(
+            f"Don't rely on the __str__ impl on {self.__class__.__name__}, use method specific to your usecase. Report this as a bug if this is called from within Fandango."
+        )
+        return self.format_as_spec()
 
     def __repr__(self) -> str:
-        raise KeyError(
-            f"repr() not implemented for {type(self)}, use specific function"
+        warnings.warn(
+            f"Don't rely on the __repr__ impl on {self.__class__.__name__}, use method specific to your usecase. Report this as a bug if this is called from within Fandango."
         )
+        return f"{self.__class__.__name__}({self.format_as_spec()})"

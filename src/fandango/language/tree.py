@@ -1,6 +1,6 @@
 import copy
 from typing import Any, Optional, TYPE_CHECKING, TypeVar, cast
-from collections.abc import Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 import warnings
 
 from fandango.language.symbols import NonTerminal, Slice, Symbol, Terminal
@@ -31,7 +31,7 @@ class ProtocolMessage:
     """
 
     def __init__(
-        self, sender: str, recipient: str | None, msg: "DerivationTree"
+        self, sender: str, recipient: Optional[str], msg: "DerivationTree"
     ) -> None:
         self.msg = msg
         self.sender = sender
@@ -82,18 +82,18 @@ def index_by_reference(lst: Iterable[T], target: T) -> Optional[int]:
 
 def forward_to_tree_value_methods(
     function_names: list[str],
-):
+) -> Callable[[type], type]:
     """
     Decorator to add methods to a class, delegating to the result of `value().method(self)`.
     """
 
-    def make_method(name):
-        def method(self, *args, **kwargs):
+    def make_method(name: str) -> Callable[[Any], Any]:
+        def method(self: "DerivationTree", *args: Any, **kwargs: Any) -> Any:
             return getattr(self.value(), name)(*args, **kwargs)
 
         return method
 
-    def decorator(cls):
+    def decorator(cls: type) -> type:
         for name in function_names:
             # Check if the method is actually implemented on the class itself, not inherited
             if name in cls.__dict__:
@@ -154,9 +154,8 @@ class DerivationTree:
             origin_repetitions = []
         self.origin_repetitions: list[tuple[str, int, int]] = origin_repetitions
         self.read_only = read_only
-        self._size = 1
+        self._size: int  # no need to set it, it will be set in invalidate_hash, which is called in set_children
         self.set_children(children or [])
-        self.invalidate_hash()
 
     def __len__(self) -> int:
         return len(self._children)
@@ -218,8 +217,10 @@ class DerivationTree:
         """
         return self.symbol.is_non_terminal
 
-    def invalidate_hash(self) -> None:
+    def invalidate_hash(self, update_size: bool = True) -> None:
         self.hash_cache = None
+        if update_size:
+            self._size = 1 + sum(child.size() for child in self._children)
         if self._parent is not None:
             self._parent.invalidate_hash()
 
@@ -299,7 +300,6 @@ class DerivationTree:
 
     def set_children(self, children: list["DerivationTree"]) -> None:
         self._children = children
-        self._update_size(1 + sum(child.size() for child in self._children))
         for child in self._children:
             child._parent = self
         self.invalidate_hash()
@@ -319,14 +319,8 @@ class DerivationTree:
 
     def add_child(self, child: "DerivationTree") -> None:
         self._children.append(child)
-        self._update_size(self.size() + child.size())
         child._parent = self
         self.invalidate_hash()
-
-    def _update_size(self, new_val: int) -> None:
-        if self._parent is not None:
-            self._parent._update_size(self._parent.size() + new_val - self._size)
-        self._size = new_val
 
     def find_all_trees(self, symbol: NonTerminal) -> list["DerivationTree"]:
         trees = sum(
@@ -370,6 +364,7 @@ class DerivationTree:
         if isinstance(items, list):
             return SliceTree(items)
         else:
+            assert isinstance(items, DerivationTree)
             return items
 
     def get_last_by_path(self, path: list[NonTerminal]) -> "DerivationTree":
@@ -533,7 +528,7 @@ class DerivationTree:
         """
         return self.value().to_bytes(str_to_bytes_encoding=encoding)
 
-    def to_int(self, encoding: str = STRING_TO_BYTES_ENCODING) -> Optional[int]:
+    def to_int(self, encoding: str = STRING_TO_BYTES_ENCODING) -> int:
         return self.value().to_int(str_to_bytes_encoding=encoding)
 
     def to_tree(self, indent: int = 0, start_indent: int = 0) -> str:
@@ -749,8 +744,10 @@ class DerivationTree:
         self,
         grammar: "fandango.language.grammar.grammar.Grammar",  # full path to avoid circular import
         replacements: list[tuple["DerivationTree", "DerivationTree"]],
-        path_to_replacement: Optional[dict[tuple, "DerivationTree"]] = None,
-        current_path: Optional[tuple] = None,
+        path_to_replacement: Optional[
+            dict[tuple[PathStep, ...], "DerivationTree"]
+        ] = None,
+        current_path: Optional[tuple[PathStep, ...]] = None,
     ) -> "DerivationTree":
         """
         Replace the subtree rooted at the given node with the new subtree.
@@ -966,7 +963,7 @@ class DerivationTree:
         if isinstance(other, DerivationTree):
             return hash(self) == hash(other)
         else:
-            return self.value() == other
+            return self.value().__eq__(other)
 
     def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)

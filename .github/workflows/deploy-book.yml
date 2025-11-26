@@ -1,11 +1,10 @@
 name: GitHub Pages
 
 on:
-  push:
-    branches: [main]
   pull_request:
-    branches: [dev, main]
   workflow_dispatch: # Allows manual triggering from the Actions tab
+  push:
+    branches: [ release ]
 
 permissions:
   contents: write
@@ -15,15 +14,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # Step 1: Checkout the source repository
-      - name: Checkout the source repository
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      # Step 2: Set up Python
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v4
+      # Step 2: Install Fandango
+      - name: Install Fandango
+        uses: ./.github/workflows/setup-fandango
         with:
           python-version: 3.13
-          cache: "pip"
+          needs-sudo: true
+          target: book
 
       # Step 3: Ensure Graphviz system package is installed
       - name: Install Graphviz system package
@@ -31,24 +31,19 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y graphviz
 
-      # Step 4: Install dependencies
-      - name: Install dependencies
-        run: |
-          pip install -e ".[book]"
-
-      # Step 5: Locate Fandango and add to PATH
+      # Step 4: Locate Fandango and add to PATH
       - name: Locate Fandango and add to PATH
         run: |
           which fandango
           echo "/opt/hostedtoolcache/Python/3.13.1/x64/bin/fandango" >> $GITHUB_PATH
           fandango --help
 
-      # Step 6: Build the documentation
+      # Step 5: Build the documentation
       - name: Build the book
         run: |
           make html
 
-      # Step 7: Upload built book as artifact
+      # Step 6: Upload built book as artifact
       - name: Upload built book as artifact
         uses: actions/upload-artifact@v4
         with:
@@ -56,13 +51,14 @@ jobs:
           path: docs/_build/html/
 
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Only deploy on pushes to the release branch
+    if: github.event_name == 'push' && github.ref == 'refs/heads/release'
     needs: build
     runs-on: ubuntu-latest
     steps:
       # Step 1: Checkout the source repository
-      - name: Checkout the source repository
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       # Step 2: Download built book artifact
       - name: Download built book artifact

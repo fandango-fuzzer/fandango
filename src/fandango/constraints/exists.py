@@ -1,9 +1,11 @@
 from copy import copy
 import itertools
-from typing import Any, Optional
+from typing import Any, Optional, Unpack
 from fandango.constraints import LEGACY
+from fandango.constraints.base import GeneticBaseInitArgs
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.constraint_visitor import ConstraintVisitor
+from fandango.constraints.failing_tree import ApplyAllSuggestions
 from fandango.constraints.fitness import ConstraintFitness
 from fandango.language.search import NonTerminalSearch
 from fandango.language.symbols.non_terminal import NonTerminal
@@ -21,8 +23,7 @@ class ExistsConstraint(Constraint):
         bound: NonTerminal | str,
         search: NonTerminalSearch,
         lazy: bool = False,
-        *args,
-        **kwargs,
+        **kwargs: Unpack[GeneticBaseInitArgs],
     ):
         """
         Initializes the exists-constraint with the given statement, bound, and search.
@@ -33,7 +34,7 @@ class ExistsConstraint(Constraint):
         :param args: Additional arguments.
         :param kwargs: Additional keyword arguments.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
         self.statement = statement
         self.bound = bound
         self.search = search
@@ -43,18 +44,16 @@ class ExistsConstraint(Constraint):
         self,
         tree: DerivationTree,
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
-        population: Optional[list[DerivationTree]] = None,
         local_variables: Optional[dict[str, Any]] = None,
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the given exists-constraint.
         :param DerivationTree tree: The tree to evaluate.
         :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
-        :param Optional[list[DerivationTree]] population: The population of trees.
         :param Optional[dict[str, Any]] local_variables: Local variables to use in the evaluation.
         :return ConstraintFitness: The fitness of the tree.
         """
-        tree_hash = self.get_hash(tree, scope, population, local_variables)
+        tree_hash = self.get_hash(tree, scope, local_variables)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
@@ -62,14 +61,14 @@ class ExistsConstraint(Constraint):
         scope = scope or dict()
         local_variables = local_variables or dict()
         # Iterate over all containers found by the search
-        for container in self.search.quantify(tree, scope=scope, population=population):
+        for container in self.search.quantify(tree, scope=scope):
             # Update the scope with the bound variable
             if isinstance(self.bound, str):
                 local_variables[self.bound] = container.evaluate()
             else:
                 scope[self.bound] = container.evaluate()
             # Evaluate the statement
-            fitness = self.statement.fitness(tree, scope, population, local_variables)
+            fitness = self.statement.fitness(tree, scope, local_variables)
             # Add the fitness to the list
             fitness_values.append(fitness)
             # If the exists-constraint is lazy and the statement is successful, stop
@@ -84,11 +83,18 @@ class ExistsConstraint(Constraint):
                 fitness.failing_trees for fitness in fitness_values
             )
         )
+        suggestion = ApplyAllSuggestions([e.suggestion for e in fitness_values])
         if overall:
             solved = total + 1
         total += 1
         # Create the fitness object
-        fitness = ConstraintFitness(solved, total, overall, failing_trees=failing_trees)
+        fitness = ConstraintFitness(
+            solved=solved,
+            total=total,
+            success=overall,
+            suggestion=suggestion,
+            failing_trees=failing_trees,
+        )
         # Cache the fitness
         self.cache[tree_hash] = fitness
         return fitness
@@ -102,7 +108,7 @@ class ExistsConstraint(Constraint):
         else:
             return f"any({self.statement.format_as_spec()} for {bound} in {self.search.format_as_spec()})"
 
-    def accept(self, visitor: "ConstraintVisitor"):
+    def accept(self, visitor: ConstraintVisitor) -> None:
         """
         Accepts a visitor to traverse the constraint structure.
         :param ConstraintVisitor visitor: The visitor to accept.
@@ -110,3 +116,24 @@ class ExistsConstraint(Constraint):
         visitor.visit_exists_constraint(self)
         if visitor.do_continue(self):
             self.statement.accept(visitor)
+
+    def invert(self) -> "Constraint":
+        """
+        Return an inverted version of this exists constraint.
+        Using logical equivalence: not exists x: P(x) = forall x: not P(x)
+        """
+        from fandango.constraints.forall import ForallConstraint
+
+        # Invert the statement
+        inverted_statement = self.statement.invert()
+
+        # Return a forall constraint with the inverted statement
+        return ForallConstraint(
+            inverted_statement,
+            self.bound,
+            self.search,
+            lazy=self.lazy,
+            searches=self.searches,
+            local_variables=self.local_variables,
+            global_variables=self.global_variables,
+        )

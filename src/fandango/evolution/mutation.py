@@ -3,7 +3,7 @@ import random
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Generator
 
-from fandango.constraints.fitness import FailingTree
+from fandango.constraints.failing_tree import FailingTree, Suggestion
 from fandango.language import DerivationTree, Grammar
 from fandango.language.symbols import NonTerminal
 
@@ -16,7 +16,9 @@ class MutationOperator(ABC):
         grammar: Grammar,
         evaluate_func: Callable[
             [DerivationTree],
-            Generator[DerivationTree, None, tuple[float, list[FailingTree]]],
+            Generator[
+                DerivationTree, None, tuple[float, list[FailingTree], Suggestion]
+            ],
         ],
     ) -> Generator[DerivationTree, None, DerivationTree]:
         """
@@ -37,7 +39,9 @@ class SimpleMutation(MutationOperator):
         grammar: Grammar,
         evaluate_func: Callable[
             [DerivationTree],
-            Generator[DerivationTree, None, tuple[float, list[FailingTree]]],
+            Generator[
+                DerivationTree, None, tuple[float, list[FailingTree], Suggestion]
+            ],
         ],
         max_nodes: int = 50,
     ) -> Generator[DerivationTree, None, DerivationTree]:
@@ -46,7 +50,7 @@ class SimpleMutation(MutationOperator):
         (if any), and replaces it with a newly fuzzed subtree generated from the grammar.
         """
         # Get fitness and failing trees from the evaluation function
-        _, failing_trees = yield from evaluate_func(individual)
+        _, failing_trees, _suggestion = yield from evaluate_func(individual)
 
         # Collect the failing subtrees
         failing_subtrees = [ft.tree for ft in failing_trees]
@@ -80,7 +84,9 @@ class SimpleMutation(MutationOperator):
         else:
             prefix_node = None
         new_subtree = grammar.fuzz(
-            node_to_mutate.symbol, prefix_node=prefix_node, max_nodes=max_nodes
+            node_to_mutate.symbol,
+            prefix_node=prefix_node,
+            max_nodes=node_to_mutate.size() + (max_nodes - individual.size()),
         )
         mutated = individual.replace(grammar, node_to_mutate, new_subtree)
         return mutated

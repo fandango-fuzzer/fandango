@@ -1,0 +1,48 @@
+name: "Benchmarks: Run on Main Branch"
+
+on:
+  push:
+    branches: [main, release]
+  workflow_dispatch:
+
+jobs:
+  benchmark_base_branch:
+    name: Run Benchmarks
+    runs-on: ubuntu-latest
+
+    permissions:
+      checks: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Install Fandango
+        uses: ./.github/workflows/setup-fandango
+        with:
+          python-version: 3.13
+          needs-sudo: true
+          target: test
+
+      - name: Set up Bencher
+        uses: bencherdev/bencher@main
+
+      - name: Track base branch benchmarks with Bencher
+        env:
+          FANDANGO_FORCE_SKIP_BEARTYPE: "1"
+        run: |
+          bencher run \
+          --project fandango-394f926-x0wdsa1zilqt3 \
+          --token '${{ secrets.BENCHER_API_TOKEN }}' \
+          --branch "${{ github.ref_name }}" \
+          --testbed ubuntu-latest \
+          --threshold-measure latency \
+          --threshold-test t_test \
+          --threshold-max-sample-size 64 \
+          --threshold-upper-boundary 0.98 \
+          --thresholds-reset \
+          --err \
+          --adapter python_pytest \
+          --file results.json \
+          --github-actions '${{ secrets.GITHUB_TOKEN }}' \
+          "pytest -n 0 --timeout 1200 --benchmark-json results.json --benchmark-enable --benchmark-only"
+    

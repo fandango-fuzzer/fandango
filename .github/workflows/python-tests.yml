@@ -1,10 +1,7 @@
 name: Tests
 
 on:
-  push:
-    branches: [dev, main]
   pull_request:
-    branches: [dev, main]
   workflow_dispatch:
 
 jobs:
@@ -15,72 +12,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.11]
+        python-version: [3.13]
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/checkout@v4
+        
+      - name: Install Fandango
+        uses: ./.github/workflows/setup-fandango
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-
-      - name: Install system dependencies
-        env:
-          NEEDS_SUDO: ${{ matrix.os == 'ubuntu-latest' }}
-        shell: bash
-        run: |
-          if [ "$NEEDS_SUDO" = "true" ]; then
-            sudo make test-tools
-          else
-            make test-tools
-          fi
-
-      - name: Install Python dependencies
-        run: |
-          pip install -e ".[test]"
+          needs-sudo: ${{ matrix.os == 'ubuntu-latest' }}
+          target: test
 
       # Run tests or coverage depending on branch and OS
       - name: Run tests (dev or non-Ubuntu)
-        if: github.ref != 'refs/heads/main' || matrix.os != 'ubuntu-latest'
         run: |
           pytest -v
-
-      - name: Install system dependencies for coverage (main + Ubuntu only)
-        if: github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-dev graphviz libgraphviz-dev pkg-config libarchive-tools llvm
-          pip install pygraphviz
-
-      - name: Run coverage (main + Ubuntu only)
-        if: github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'
-        run: |
-          make coverage
-          python3 -m coverage lcov
-
-      - name: Upload HTML report (main + Ubuntu only)
-        if: github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: Test Report
-          path: report.html
-
-      - name: Cache pygraphviz site-packages (main + Ubuntu only)
-        if: github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'
-        uses: actions/cache@v3
-        with:
-          path: /usr/local/lib/python3.11/dist-packages
-          key: pygraphviz-${{ runner.os }}-python3.11
-          restore-keys: |
-            pygraphviz-${{ runner.os }}-
-
-      - name: Upload to Coveralls (main + Ubuntu only)
-        if: github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: coverage.lcov

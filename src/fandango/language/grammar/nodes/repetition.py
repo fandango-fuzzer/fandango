@@ -1,10 +1,9 @@
 import random
 from collections.abc import Iterator, Sequence
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import fandango.language.grammar.nodes as nodes
 from fandango.errors import FandangoValueError
-from fandango.language.symbols import Symbol, NonTerminal
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
@@ -55,19 +54,19 @@ class Repetition(Node):
         return NonTerminal(f"<__{self.id}>")
 
     @property
-    def internal_max(self):
+    def internal_max(self) -> Optional[int]:
         return self._max
 
     @property
-    def max(self):
+    def max(self) -> int:
         if self._max is None:
             return nodes.MAX_REPETITIONS
         return self._max
 
     def accept(
         self,
-        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor",
-    ):
+        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor[fandango.language.grammar.node_visitors.node_visitor.AggregateType, fandango.language.grammar.node_visitors.node_visitor.ResultType]",
+    ) -> Any:  # should be ResultType, beartype falls on its face
         return visitor.visitRepetition(self)
 
     def fuzz(
@@ -79,7 +78,7 @@ class Repetition(Node):
         override_current_iteration: Optional[int] = None,
         override_starting_repetition: int = 0,
         override_iterations_to_perform: Optional[int] = None,
-    ):
+    ) -> None:
         prev_parent_size = parent.size()
         prev_children_len = len(parent.children)
         if override_current_iteration is None:
@@ -97,7 +96,7 @@ class Repetition(Node):
         for rep in range(rep_goal):
             current_rep = rep + override_starting_repetition
             if self.node.distance_to_completion >= max_nodes:
-                if rep > self.min and override_iterations_to_perform is None:
+                if rep >= self.min and override_iterations_to_perform is None:
                     break
                 self.node.fuzz(parent, grammar, 0, in_message)
             else:
@@ -123,7 +122,7 @@ class Repetition(Node):
         grammar: "fandango.language.grammar.grammar.Grammar",
         filter_controlflow: bool = False,
     ) -> Iterator["Node"]:
-        base: list = []
+        base: list[Node] = []
         # if self.min == 0:
         # base.append(TerminalNode(Terminal(""), self._grammar_settings))
         if 0 < self.max:
@@ -144,7 +143,7 @@ class Repetition(Node):
             self._grammar_settings,
         )
 
-    def children(self):
+    def children(self) -> list[Node]:
         return [self.node]
 
     def in_parties(self, parties: list[str]) -> bool:
@@ -165,8 +164,8 @@ class Star(Repetition):
 
     def accept(
         self,
-        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor",
-    ):
+        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor[fandango.language.grammar.node_visitors.node_visitor.AggregateType, fandango.language.grammar.node_visitors.node_visitor.ResultType]",
+    ) -> Any:  # should be ResultType, beartype falls on its face
         return visitor.visitStar(self)
 
     def format_as_spec(self) -> str:
@@ -194,7 +193,7 @@ class Plus(Repetition):
         override_current_iteration: Optional[int] = None,
         override_starting_repetition: int = 0,
         override_iterations_to_perform: Optional[int] = None,
-    ):
+    ) -> None:
         # Gmutator mutation (1b)
         if random.random() < self.settings.get("plus_should_return_nothing"):
             return  # nop, don't add a node
@@ -211,8 +210,8 @@ class Plus(Repetition):
 
     def accept(
         self,
-        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor",
-    ):
+        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor[fandango.language.grammar.node_visitors.node_visitor.AggregateType, fandango.language.grammar.node_visitors.node_visitor.ResultType]",
+    ) -> Any:  # should be ResultType, beartype falls on its face
         return visitor.visitPlus(self)
 
     def format_as_spec(self) -> str:
@@ -242,7 +241,7 @@ class Option(Repetition):
         override_current_iteration: Optional[int] = None,
         override_starting_repetition: int = 0,
         override_iterations_to_perform: Optional[int] = None,
-    ):
+    ) -> None:
         # Gmutator mutation (1c)
         should_return_multiple = random.random() < self.settings.get(
             "option_should_return_multiple"
@@ -274,8 +273,8 @@ class Option(Repetition):
 
     def accept(
         self,
-        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor",
-    ):
+        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor[fandango.language.grammar.node_visitors.node_visitor.AggregateType, fandango.language.grammar.node_visitors.node_visitor.ResultType]",
+    ) -> Any:  # should be ResultType, beartype falls on its face
         return visitor.visitOption(self)
 
     def format_as_spec(self) -> str:

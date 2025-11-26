@@ -197,7 +197,7 @@ To access the `n`th _character_ of `<SYMBOL>`, use `str(<SYMBOL>)[n]`.
 
 ### Accessing Parents
 
-`<SYMBOL>.parent() -> DerivationTree | None`
+`<SYMBOL>.parent() -> Optional[DerivationTree]`
 : Return the parent of the current node, or `None` for the root node.
 
 

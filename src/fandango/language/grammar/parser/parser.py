@@ -10,7 +10,6 @@ from fandango.language.tree import DerivationTree
 
 
 class Parser:
-
     def __init__(self, grammar_rules: dict[NonTerminal, Node]):
         self._iter_parser = IterativeParser(grammar_rules)
         self._cache: dict[
@@ -30,8 +29,8 @@ class Parser:
         *,
         mode: ParsingMode = ParsingMode.COMPLETE,
         hookin_parent: Optional[DerivationTree] = None,
-        starter_bit=-1,
-    ):
+        starter_bit: int = -1,
+    ) -> Generator[DerivationTree, None, None]:
         """
         Parse a forest of input trees from `word`.
         `start` is the start symbol (default: `<start>`).
@@ -48,7 +47,7 @@ class Parser:
         mode: ParsingMode = ParsingMode.COMPLETE,
         hookin_parent: Optional[DerivationTree] = None,
         include_controlflow: bool = False,
-    ) -> Generator[Optional[DerivationTree], None, None]:
+    ) -> Generator[DerivationTree, None, None]:
         """
         Yield multiple parse alternatives, using a cache.
         """
@@ -77,7 +76,9 @@ class Parser:
             for tree in forest:
                 tree = deepcopy(tree)
                 if not include_controlflow:
-                    yield self.collapse(tree)
+                    collapsed = self.collapse(tree)
+                    if collapsed is not None:
+                        yield collapsed
             return
 
         for tree in self._parse_forest(
@@ -92,7 +93,12 @@ class Parser:
                 self._cache[cache_key].append(tree)
             else:
                 self._cache[cache_key] = [tree]
-            yield self.collapse(tree) if not include_controlflow else tree
+            if include_controlflow:
+                yield tree
+            else:
+                collapsed = self.collapse(tree)
+                if collapsed is not None:
+                    yield collapsed
 
     def parse_multiple(
         self,
@@ -101,7 +107,7 @@ class Parser:
         mode: ParsingMode = ParsingMode.COMPLETE,
         hookin_parent: Optional[DerivationTree] = None,
         include_controlflow: bool = False,
-    ):
+    ) -> Generator[DerivationTree, None, None]:
         """
         Yield multiple parse alternatives,
         even for incomplete inputs
@@ -121,7 +127,7 @@ class Parser:
         mode: ParsingMode = ParsingMode.COMPLETE,
         hookin_parent: Optional[DerivationTree] = None,
         include_controlflow: bool = False,
-    ):
+    ) -> Optional[DerivationTree]:
         """
         Return the first parse alternative,
         or `None` if no parse is possible
