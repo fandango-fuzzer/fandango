@@ -663,7 +663,7 @@ class Fandango:
                     for hookin_option in forecast.paths:
                         history_tree = hookin_option.tree
                         history_tree.append(hookin_option.path[1:-1], packet_tree)
-                        solutions, (fitness, failing_trees) = GeneratorWithReturn(
+                        solutions, (fitness, failing_trees, suggestion) = GeneratorWithReturn(
                             self.evaluator.evaluate_individual(history_tree)
                         ).collect()
                         failing_trees = list(
