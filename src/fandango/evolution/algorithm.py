@@ -652,6 +652,7 @@ class Fandango:
                         self.packet_selector.forecasting_result,
                         io_instance,
                     )
+                    assert packet_tree is not None
                     log_message_transfer(
                         packet_tree.sender,
                         packet_tree.recipient,

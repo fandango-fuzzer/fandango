@@ -28,6 +28,7 @@ class PathFinder(ContinuingNodeVisitor):
         self.result = ForecastingResult()
 
     def add_option(self, node: NonTerminalNode) -> None:
+        assert self.collapsed_tree is not None
         mounting_path = MountingPath(self.collapsed_tree, tuple(self.current_path))
         f_packet = ForecastingPacket(node)
         f_packet.add_path(mounting_path)
@@ -66,7 +67,7 @@ class PathFinder(ContinuingNodeVisitor):
 class MountingPath:
     def __init__(
         self,
-        tree: Optional[DerivationTree],
+        tree: DerivationTree,
         controlflow_path: tuple[tuple[NonTerminal, bool], ...],
     ):
         """
