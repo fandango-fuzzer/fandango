@@ -3,6 +3,7 @@ import copy
 import enum
 from collections.abc import Iterator, Sequence
 from typing import TYPE_CHECKING, Any, Optional
+import warnings
 from fandango.errors import FandangoValueError
 from fandango.language.symbols import Symbol
 from fandango.language.grammar.has_settings import HasSettings
@@ -11,7 +12,11 @@ from fandango.logger import LOGGER
 
 if TYPE_CHECKING:
     import fandango
-    from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
+    from fandango.language.grammar.node_visitors.node_visitor import (
+        NodeVisitor,
+        AggregateType,
+        ResultType,
+    )
 
 
 class NodeType(enum.Enum):
@@ -23,11 +28,12 @@ class NodeType(enum.Enum):
     OPTION = "option"
     NON_TERMINAL = "non_terminal"
     TERMINAL = "terminal"
+    CHAR_SET = "char_set"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.value
 
 
@@ -46,7 +52,7 @@ class Node(abc.ABC):
             self._settings.update(setting.settings_for(self))
 
     @property
-    def node_type(self):
+    def node_type(self) -> NodeType:
         return self._node_type
 
     @property
@@ -78,11 +84,14 @@ class Node(abc.ABC):
         grammar: "fandango.language.grammar.grammar.Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
-    ):
+    ) -> None:
         return
 
     @abc.abstractmethod
-    def accept(self, visitor: "NodeVisitor"):
+    def accept(
+        self,
+        visitor: "NodeVisitor[AggregateType, ResultType]",
+    ) -> "ResultType":
         raise NotImplementedError("accept method not implemented")
 
     def msg_parties(
@@ -111,16 +120,20 @@ class Node(abc.ABC):
     def in_parties(self, parties: list[str]) -> bool:
         return True
 
-    def children(self):
+    def children(self) -> list["Node"]:
         return []
 
-    def __repr__(self):
-        return f"{type(self).__name__}({self.to_symbol()})"
-
-    def __str__(self):
-        raise NotImplementedError(
-            "__str__ not implemented, use method specific to your usecase"
+    def __repr__(self) -> str:
+        warnings.warn(
+            f"Don't rely on the __repr__ impl on {self.__class__.__name__}, use method specific to your usecase. Report this as a bug if this is called from within Fandango."
         )
+        return f"{self.__class__.__name__}({self.format_as_spec()})"
+
+    def __str__(self) -> str:
+        warnings.warn(
+            f"Don't rely on the __str__ impl on {self.__class__.__name__}, use method specific to your usecase. Report this as a bug if this is called from within Fandango."
+        )
+        return self.format_as_spec()
 
     @abc.abstractmethod
     def format_as_spec(self) -> str:
@@ -182,7 +195,7 @@ class NodeSettings:
     def __deepcopy__(self, memo: dict[int, Any]) -> "NodeSettings":
         return NodeSettings(copy.deepcopy(self._settings))
 
-    def update(self, other: "NodeSettings | None") -> "NodeSettings":
+    def update(self, other: Optional["NodeSettings"]) -> "NodeSettings":
         if other is None:
             return self
 

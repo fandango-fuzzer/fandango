@@ -5,11 +5,9 @@ from typing import TextIO, Optional
 
 # noinspection PyUnresolvedReferences
 from fandango.language.parser.FandangoParser import FandangoParser
-from antlr4 import Lexer, InputStream, Token
-from antlr4.Token import CommonToken
-
-# Current lexer instance, set by the generated lexer code
-lexer: Optional["FandangoLexerBase"] = None
+from antlr4.InputStream import InputStream
+from antlr4.Lexer import Lexer
+from antlr4.Token import CommonToken, Token
 
 
 class FandangoLexerBase(Lexer):
@@ -28,15 +26,15 @@ class FandangoLexerBase(Lexer):
         global lexer
         lexer = self
 
-    def reset(self):
+    def reset(self) -> None:
         self.tokens = []
         self.indents = []
         self.opened = 0
         self.in_python = 0
         self.in_fstring = False
-        super().reset()
+        super().reset()  # type: ignore[no-untyped-call] # antlr4 doesn't provide types
 
-    def emitToken(self, token: Token):
+    def emitToken(self, token: Token) -> None:
         self._token = token  # type: ignore[assignment] # library seems to be wrong here?
         self.tokens.append(token)
 
@@ -59,7 +57,7 @@ class FandangoLexerBase(Lexer):
             # Put the EOF back on the token stream.
             self.emitToken(self.commonToken(FandangoParser.EOF, "<EOF>"))
 
-        next_ = super().nextToken()
+        next_ = super().nextToken()  # type: ignore[no-untyped-call] # antlr4 doesn't provide types
         token = next_ if len(self.tokens) == 0 else self.tokens.pop(0)
         # print(
         #     f"nextToken(): {token.text!r} ({token.type}) at {token.start}..{token.stop}", file=sys.stderr
@@ -70,7 +68,7 @@ class FandangoLexerBase(Lexer):
         return self.commonToken(FandangoParser.DEDENT, "")
 
     def commonToken(self, type_: int, text: str) -> Token:
-        stop = self.getCharIndex() - 1
+        stop = self.getCharIndex() - 1  # type: ignore[no-untyped-call] # antlr4 doesn't provide types
         start = stop if text == "" else stop - len(text) + 1
         token = CommonToken(
             self._tokenFactorySourcePair,
@@ -93,7 +91,8 @@ class FandangoLexerBase(Lexer):
         return count
 
     def at_start_of_input(self) -> bool:
-        return self.getCharIndex() == 0
+        char_index = self.getCharIndex()  # type: ignore[no-untyped-call] # antlr4 doesn't provide types
+        return isinstance(char_index, int) and char_index == 0
 
     def open_brace(self) -> None:
         self.opened += 1
@@ -108,13 +107,13 @@ class FandangoLexerBase(Lexer):
         self.in_python = 0
 
     # while f-string do not consider the string token
-    def fstring_start(self):
+    def fstring_start(self) -> None:
         self.in_fstring = True
 
-    def fstring_end(self):
+    def fstring_end(self) -> None:
         self.in_fstring = False
 
-    def is_not_fstring(self):
+    def is_not_fstring(self) -> bool:
         return not self.in_fstring
 
     def on_newline(self) -> None:
@@ -125,14 +124,14 @@ class FandangoLexerBase(Lexer):
         next_next = self._input.LA(2)
 
         if self.opened > 0 or (next_next != -1 and next_ in (10, 13, 35)):
-            self.skip()
+            self.skip()  # type: ignore[no-untyped-call] # antlr4 doesn't provide types
         else:
             self.emitToken(self.commonToken(FandangoParser.NEWLINE, new_line))
             indent = self.get_indentation_count(spaces)
             previous = 0 if len(self.indents) == 0 else self.indents[-1]
 
             if indent == previous:
-                self.skip()
+                self.skip()  # type: ignore[no-untyped-call] # antlr4 doesn't provide types
             elif indent > previous:
                 self.indents.append(indent)
                 self.emitToken(self.commonToken(FandangoParser.INDENT, spaces))
@@ -144,6 +143,8 @@ class FandangoLexerBase(Lexer):
 
 
 # These are called from the generated lexer code
+
+lexer: Optional[FandangoLexerBase] = None
 
 
 def at_start_of_input() -> None:
@@ -185,16 +186,16 @@ def on_newline() -> None:
 def fstring_start() -> None:
     global lexer
     assert lexer is not None
-    return lexer.fstring_start()
+    lexer.fstring_start()
 
 
 def fstring_end() -> None:
     global lexer
     assert lexer is not None
-    return lexer.fstring_end()
+    lexer.fstring_end()
 
 
-def is_not_fstring() -> None:
+def is_not_fstring() -> bool:
     global lexer
     assert lexer is not None
-    return lexer.is_not_fstring()
+    return bool(lexer.is_not_fstring())

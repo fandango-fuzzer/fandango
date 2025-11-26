@@ -487,7 +487,7 @@ $ fandango fuzz -f fandango.fan -n 1
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f fandango.fan --random-seed 9 -n 1
+!PYTHONHASHSEED=0 fandango fuzz -f fandango.fan --random-seed 9 -n 1
 assert _exit_code == 0
 ```
 

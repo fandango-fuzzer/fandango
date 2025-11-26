@@ -6,6 +6,8 @@ from typing import Optional
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.nodes.alternative import Alternative
+from fandango.language.grammar.nodes.concatenation import Concatenation
+from fandango.language.grammar.nodes.repetition import Star
 from fandango.language.grammar.parser.iterative_parser import IterativeParser
 from fandango.language.grammar.parser.parser import Parser
 from fandango.language.parse import parse
@@ -55,7 +57,9 @@ class ParserTests(unittest.TestCase):
         alt_3 = self.grammar.rules[NonTerminal("<digit>")]
         assert isinstance(alt_3, Alternative)
         concat_1 = alt_1.children()[0]
+        assert isinstance(concat_1, Concatenation)
         star_1 = concat_1.children()[1]
+        assert isinstance(star_1, Star)
 
         self.assertEqual(
             {((NonTerminal(f"<__{alt_1.id}>"), frozenset()),)},
@@ -419,7 +423,6 @@ class TestEmptyParsing(unittest.TestCase):
 
 
 class TestCanContinueParsing(unittest.TestCase):
-
     def setUp(self):
         with open(RESOURCES_ROOT / "rgb.fan") as file:
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)

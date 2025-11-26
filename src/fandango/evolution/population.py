@@ -1,15 +1,13 @@
 import random
 from collections.abc import Callable, Generator
+from typing import Optional
 
-from fandango.constraints.failing_tree import Comparison, ComparisonSide
-from fandango.constraints.failing_tree import FailingTree, BoundsFailingTree
-from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
+from fandango.constraints.failing_tree import FailingTree, Suggestion
 from fandango.errors import FandangoValueError
 from fandango.evolution import GeneratorWithReturn
 from fandango.io.navigation.packetforecaster import ForecastingPacket
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.symbols import NonTerminal
-from fandango.language.symbols import Slice
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
 
@@ -25,21 +23,22 @@ class PopulationManager:
         self._start_symbol = start_symbol
         self._warnings_are_errors = warnings_are_errors
 
-    def _generate_population_entry(self, max_nodes: int):
+    def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
         return self._grammar.fuzz(self._start_symbol, max_nodes)
 
+    @staticmethod
     def _generate_population_hashes(
-        self, current_population: list[DerivationTree]
+        current_population: list[DerivationTree]
     ) -> set[int]:
         return {hash(ind) for ind in current_population}
 
+    @staticmethod
     def add_unique_individual(
-        self,
         population: list[DerivationTree],
         candidate: DerivationTree,
         unique_set: set[int],
     ) -> bool:
-        new_hashes = self._generate_population_hashes([candidate])
+        new_hashes = PopulationManager._generate_population_hashes([candidate])
         if len(new_hashes.intersection(unique_set)) == 0:
             # If the candidate has a new hash, we can add it to the population
             unique_set.update(new_hashes)
@@ -57,7 +56,9 @@ class PopulationManager:
         current_population: list[DerivationTree],
         eval_individual: Callable[
             [DerivationTree],
-            Generator[DerivationTree, None, tuple[float, list[FailingTree]]],
+            Generator[
+                DerivationTree, None, tuple[float, list[FailingTree], Suggestion]
+            ],
         ],
         max_nodes: int,
         target_population_size: int,
@@ -85,18 +86,18 @@ class PopulationManager:
             and attempts < max_attempts
         ):
             individual = self._generate_population_entry(max_nodes)
-            found_solution, (_fitness, failing_trees) = GeneratorWithReturn(
+            found_solution, (_fitness, failing_trees, suggestion) = GeneratorWithReturn(
                 eval_individual(individual)
             ).collect()
             candidate, _fixes_made = self.fix_individual(
                 individual,
                 failing_trees,
             )
-            new_found_solution, (_new_fitness, _new_failing_trees) = (
+            new_found_solution, (_new_fitness, _new_failing_trees, suggestion) = (
                 GeneratorWithReturn(eval_individual(candidate)).collect()
             )
             if attempts < max_attempts:
-                if self.add_unique_individual(
+                if PopulationManager.add_unique_individual(
                     current_population, candidate, unique_hashes
                 ):
                     yield from found_solution
@@ -112,81 +113,18 @@ class PopulationManager:
     def fix_individual(
         self,
         individual: DerivationTree,
-        failing_trees: list[FailingTree],
+        suggestion: Optional[Suggestion] = None,
     ) -> tuple[DerivationTree, int]:
         fixes_made = 0
-        replacements: list[tuple[DerivationTree, DerivationTree]] = list()
-
-        allow_repetition_full_delete = (
-            len(
-                list(
-                    filter(
-                        lambda x: not isinstance(x.cause, RepetitionBoundsConstraint),
-                        failing_trees,
-                    )
-                )
+        if suggestion:
+            suggested_replacements = suggestion.get_replacements(
+                individual, self._grammar
             )
-            == 0
-        )
-        # We only allow BoundsConstraints to delete all iterations of a repetition if all other non-boundconstraints constraints are satisfied.
-        # Otherwise, we would lose the reference point to re-add the repetitions in the tree, which might be needed,
-        # if the referenced length field changes its value.
-        # This is a workaround for the fact that we cannot delete all repetitions in a tree, if there
+            individual = individual.replace_multiple(
+                self._grammar, suggested_replacements
+            )
+            fixes_made += len(suggested_replacements)
 
-        for failing_tree in failing_trees:
-            if failing_tree.tree.read_only:
-                continue
-
-            if isinstance(failing_tree, BoundsFailingTree):
-                assert isinstance(failing_tree.cause, RepetitionBoundsConstraint)
-                bounds_constraint: RepetitionBoundsConstraint = failing_tree.cause
-                replacements.extend(
-                    bounds_constraint.fix_individual(
-                        self._grammar,
-                        failing_tree,
-                        allow_repetition_full_delete=allow_repetition_full_delete,
-                    )
-                )
-                continue
-
-            for operator, value, side in failing_tree.suggestions:
-                if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
-                    # LOGGER.debug(f"Parsing {value} into {failing_tree.tree.symbol.symbol!s}")
-                    symbol = failing_tree.tree.symbol
-                    suggested_tree = None
-                    if isinstance(value, DerivationTree) and symbol == value.symbol:
-                        suggested_tree = value.deepcopy(
-                            copy_children=True, copy_params=False, copy_parent=False
-                        )
-                        suggested_tree.set_all_read_only(False)
-                    elif isinstance(symbol, NonTerminal):
-                        suggested_tree = self._grammar.parse(value, start=symbol)
-                    elif isinstance(symbol, Slice):
-                        # slices don't have a symbol associated with them — I think
-                        suggested_tree = self._grammar.parse(value, start="")
-                    if suggested_tree is None:
-                        continue
-                    replacements.append((failing_tree.tree, suggested_tree))
-                    fixes_made += 1
-        if len(replacements) > 0:
-            # Prevent circular replacements
-            # deleted = set()
-            # for value in set(replacements.values()):
-            #    if value in deleted:
-            #        continue
-            #    if value in replacements.keys():
-            #        if replacements[value] not in replacements.keys():
-            #            deleted.add(replacements[value])
-            #            del replacements[value]
-            #            continue
-            #        if random.random() < 0.5:
-            #            deleted.add(replacements[value])
-            #            del replacements[value]
-            #        else:
-            #            deleted.add(replacements[replacements[value]])
-            #            del replacements[replacements[value]]
-
-            individual = individual.replace_multiple(self._grammar, replacements)
         return individual, fixes_made
 
 
@@ -203,7 +141,7 @@ class IoPopulationManager(PopulationManager):
         self.fallback_packets: list[ForecastingPacket] = []
         self.allow_fallback_packets = False
 
-    def _generate_population_entry(self, max_nodes: int):
+    def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
         if self.fuzzable_packets is None or len(self.fuzzable_packets) == 0:
             return DerivationTree(NonTerminal(self._start_symbol))
         packet_selection = list(self.fuzzable_packets)

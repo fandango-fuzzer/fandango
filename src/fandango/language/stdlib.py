@@ -16,7 +16,7 @@ stdlib = """# Standard library for Fandango
 """
 
 
-def make_def(symbol: str, chars: str, force_binary=False) -> str:
+def make_def(symbol: str, chars: str, force_binary: bool = False) -> str:
     expansions = []
     for c in chars:
         if c in string.printable and not force_binary:

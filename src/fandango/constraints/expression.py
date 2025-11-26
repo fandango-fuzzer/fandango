@@ -1,8 +1,10 @@
 from copy import copy
-from typing import Any, Optional
+from typing import Any, Optional, Unpack
+from fandango.constraints.base import GeneticBaseInitArgs
 from fandango.constraints.constraint_visitor import ConstraintVisitor
 from fandango.constraints.constraint import Constraint
-from fandango.constraints.fitness import ConstraintFitness, FailingTree
+from fandango.constraints.fitness import ConstraintFitness
+from fandango.constraints.failing_tree import FailingTree, NopSuggestion
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import print_exception
@@ -13,32 +15,30 @@ class ExpressionConstraint(Constraint):
     Represents a python expression constraint that can be used for fitness evaluation.
     """
 
-    def __init__(self, expression: str, *args, **kwargs):
+    def __init__(self, expression: str, **kwargs: Unpack[GeneticBaseInitArgs]) -> None:
         """
         Initializes the expression constraint with the given expression.
         :param str expression: The expression to evaluate.
         :param args: Additional arguments.
         :param kwargs: Additional keyword arguments.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
         self.expression = expression
 
     def fitness(
         self,
         tree: DerivationTree,
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
-        population: Optional[list[DerivationTree]] = None,
         local_variables: Optional[dict[str, Any]] = None,
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on whether the given expression evaluates to True.
         :param DerivationTree tree: The tree to evaluate.
         :param Optional[dict[str, DerivationTree]] scope: The scope of the tree.
-        :param Optional[list[DerivationTree]] population: The population of trees.
         :param Optional[dict[str, Any]] local_variables: Local variables to use in the evaluation.
         :return ConstraintFitness: The fitness of the tree.
         """
-        tree_hash = self.get_hash(tree, scope, population, local_variables)
+        tree_hash = self.get_hash(tree, scope, local_variables)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
@@ -51,7 +51,7 @@ class ExpressionConstraint(Constraint):
             return ConstraintFitness(0, 0, False)
         has_combinations = False
         # Iterate over all combinations of the tree and the scope
-        for combination in self.combinations(tree, scope, population):
+        for combination in self.combinations(tree, scope):
             has_combinations = True
             # Update the local variables to initialize the placeholders with the values of the combination
             local_vars = self.local_variables.copy()
@@ -84,9 +84,10 @@ class ExpressionConstraint(Constraint):
             total += 1
         # Create the fitness object
         fitness = ConstraintFitness(
-            solved,
-            total,
-            solved == total,
+            solved=solved,
+            total=total,
+            success=(solved == total),
+            suggestion=NopSuggestion(),
             failing_trees=[FailingTree(t, self) for t in failing_trees],
         )
         # Cache the fitness
@@ -101,9 +102,25 @@ class ExpressionConstraint(Constraint):
             )
         return representation
 
-    def accept(self, visitor: "ConstraintVisitor"):
+    def accept(self, visitor: ConstraintVisitor) -> None:
         """
         Accepts a visitor to traverse the constraint structure.
         :param ConstraintVisitor visitor: The visitor to accept.
         """
         visitor.visit_expression_constraint(self)
+
+    def invert(self) -> "ExpressionConstraint":
+        """
+        Return an inverted version of this expression constraint.
+        The inverted constraint negates the expression using "not".
+        """
+        # Negate the expression by wrapping it with "not"
+        inverted_expression = f"not ({self.expression})"
+
+        # Create a new ExpressionConstraint with the negated expression
+        return ExpressionConstraint(
+            inverted_expression,
+            searches=self.searches,
+            local_variables=self.local_variables,
+            global_variables=self.global_variables,
+        )

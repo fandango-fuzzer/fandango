@@ -1,7 +1,7 @@
 import math
 from typing import Optional
 
-from fandango.constraints.fitness import FailingTree
+from fandango.constraints.failing_tree import FailingTree, Suggestion
 from fandango.evolution.evaluation import Evaluator
 from fandango.language import DerivationTree
 from fandango.logger import LOGGER
@@ -52,7 +52,6 @@ class AdaptiveTuner:
         evaluator: Evaluator,
         current_max_repetition: int,
     ) -> tuple[float, float]:
-
         diversities = evaluator.compute_diversity_bonus(population)
         avg_diversity = sum(diversities) / len(diversities) if diversities else 0
 
@@ -142,11 +141,13 @@ class AdaptiveTuner:
     def log_generation_statistics(
         self,
         generation: int,
-        evaluation: list[tuple[DerivationTree, float, list[FailingTree]]],
+        evaluation: list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
         population: list[DerivationTree],
         evaluator: Evaluator,
-    ):
-        fitnesses = [fitness for _ind, fitness, _failing_trees in evaluation]
+    ) -> None:
+        fitnesses = [
+            fitness for _ind, fitness, _failing_trees, _suggestion in evaluation
+        ]
         best_fitness = max(fitnesses)
         avg_fitness = sum(fitnesses) / len(fitnesses)
         diversities = evaluator.compute_diversity_bonus(population)

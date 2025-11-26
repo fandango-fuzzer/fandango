@@ -1,6 +1,4 @@
-from typing import TYPE_CHECKING
-
-from fandango.language.symbols import NonTerminal, Symbol
+from typing import TYPE_CHECKING, Any
 from collections.abc import Iterable, Iterator, Sequence
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.node import Node, NodeType
@@ -32,7 +30,7 @@ class Concatenation(Node):
         grammar: "fandango.language.grammar.grammar.Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
-    ):
+    ) -> None:
         prev_parent_size = parent.size()
         for node in self.nodes:
             if node.distance_to_completion >= max_nodes:
@@ -51,21 +49,21 @@ class Concatenation(Node):
 
     def accept(
         self,
-        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor",
-    ):
+        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor[fandango.language.grammar.node_visitors.node_visitor.AggregateType, fandango.language.grammar.node_visitors.node_visitor.ResultType]",
+    ) -> Any:  # should be ResultType, beartype falls on its face
         return visitor.visitConcatenation(self)
 
-    def children(self):
+    def children(self) -> list[Node]:
         return self.nodes
 
     def slice_parties(self, parties: list[str]) -> None:
         self.nodes = [node for node in self.nodes if node.in_parties(parties)]
         super().slice_parties(parties)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: int) -> Node:
         return self.nodes.__getitem__(item)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.nodes)
 
     def format_as_spec(self) -> str:

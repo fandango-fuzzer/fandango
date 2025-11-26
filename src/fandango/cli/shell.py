@@ -3,7 +3,7 @@ import atexit
 import os
 import shlex
 import sys
-from typing import Any
+from typing import Any, Optional
 
 from fandango.cli.commands import COMMANDS, help_command, run, version_command
 from fandango.cli.complete import complete
@@ -15,21 +15,21 @@ from fandango.logger import LOGGER, print_exception
 if "readline" not in globals():
     try:
         # Linux and Mac. This should do the trick.
-        import gnureadline as readline  # type: ignore [import-not-found] # types not always available
+        import gnureadline as readline  # type: ignore [import-not-found] # types not available
     except Exception:
         pass
 
 if "readline" not in globals():
     try:
         # Windows. This should do the trick.
-        import pyreadline3 as readline  # type: ignore [import-not-found] # types not always available
+        import pyreadline3 as readline  # type: ignore [import-not-found, unused-ignore] # types not always but sometimes available
     except Exception:
         pass
 
 if "readline" not in globals():
     try:
         # Another Windows alternative
-        import pyreadline as readline  # type: ignore [import-not-found] # types not always available
+        import pyreadline as readline  # type: ignore [import-not-found] # types not available
     except Exception:
         pass
 
@@ -64,7 +64,7 @@ def shell_command(args: argparse.Namespace) -> None:
 
         atexit.register(readline.write_history_file, histfile)
 
-    def _complete(text: str, state: int) -> str | None:
+    def _complete(text: str, state: int) -> Optional[str]:
         if "readline" not in globals():
             return None
 

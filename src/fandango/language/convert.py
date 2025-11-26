@@ -1,7 +1,9 @@
+# mypy: disable-error-code="no-untyped-call, no-untyped-def"
+
 import ast
 from collections.abc import Sequence
 from io import UnsupportedOperation
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 from fandango.constraints.soft import SoftValue
 from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
@@ -35,18 +37,17 @@ from fandango.language.search import (
     RuleSearch,
     SelectiveSearch,
     StarSearch,
-    PopulationSearch,
 )
 from fandango.language.symbols import NonTerminal, Terminal
 from fandango.logger import LOGGER
 
 
 class FandangoSplitter(FandangoParserVisitor):
-    def __init__(self):
-        self.productions = []
-        self.constraints = []
+    def __init__(self) -> None:
+        self.productions: list[FandangoParser.ProductionContext] = []
+        self.constraints: list[FandangoParser.ConstraintContext] = []
         self.grammar_settings: list[FandangoParser.Grammar_setting_contentContext] = []
-        self.python_code = []
+        self.python_code: list[FandangoParser.PythonContext] = []
 
     def visitFandango(self, ctx: FandangoParser.FandangoContext):
         self.productions = []
@@ -274,7 +275,10 @@ class GrammarProcessor(FandangoParserVisitor):
                 bounds_constraint.repetition_node = rep_node
             return rep_node
         reps_visit = self.searches.visit(ctx.expression(0))
-        reps: tuple[str, list, dict] = (ast.unparse(reps_visit[0]), *reps_visit[1:])
+        reps: tuple[str, list[NonTerminalSearch], dict[str, NonTerminalSearch]] = (
+            ast.unparse(reps_visit[0]),
+            *reps_visit[1:],
+        )
         if reps[0].isdigit():
             return Repetition(
                 node, self._grammar_settings, nid, int(reps[0]), int(reps[0])
@@ -571,7 +575,8 @@ class ConstraintProcessor(FandangoParserVisitor):
             op,
             ast.unparse(left),
             ast.unparse(right),
-            searches={**left_map, **right_map},
+            left_searches=left_map,
+            right_searches=right_map,
             local_variables=self.local_variables,
             global_variables=self.global_variables,
         )
@@ -703,7 +708,9 @@ class SearchProcessor(FandangoParserVisitor):
         if ctx.STAR():
             search = StarSearch(base)
         elif ctx.POWER():
-            search = PopulationSearch(base)
+            raise NotImplementedError(
+                "Population wide constraints are no longer supported."
+            )
         else:
             raise FandangoValueError(f"Unknown star selection: {ctx.getText()}")
         return ast.Name(id=identifier), [search], {identifier: search}
@@ -978,7 +985,10 @@ class SearchProcessor(FandangoParserVisitor):
         elif ctx.strings():
             return self.visitStrings(ctx.strings())
         elif ctx.NUMBER():
-            return ast.parse(ctx.NUMBER().getText(), mode="eval").body, [], {}
+            # for some reason mypy expects ast.parse to return AST, but in fact, ast.Expression is returned
+            # so we cast to ast.Expression
+            ast_ = cast(ast.Expression, ast.parse(ctx.NUMBER().getText(), mode="eval"))
+            return ast_.body, [], {}
         elif ctx.tuple_():
             return self.visitTuple(ctx.tuple_())
         elif ctx.group():
@@ -1219,7 +1229,7 @@ class SearchProcessor(FandangoParserVisitor):
         return ast.Set(elts=trees), searches, search_map
 
     def visitDict(self, ctx: FandangoParser.DictContext):
-        keys: list[ast.expr | None] = list()
+        keys: list[Optional[ast.expr]] = list()
         values: list[ast.expr] = list()
         if ctx.double_starred_kvpairs():
             kvpairs, searches, search_map = self.visitDouble_starred_kvpairs(
@@ -1334,7 +1344,16 @@ class SearchProcessor(FandangoParserVisitor):
         if ctx.kwargs() and not ctx.arg():
             return self.visitKwargs(ctx.kwargs())
 
-        result: tuple[list, Any, dict] = list(), list(), dict()
+        # result: tuple[
+        #     list[ast.Name], list[NonTerminalSearch], dict[str, NonTerminalSearch]
+        # ] = (
+        #     list(),
+        #     list(),
+        #     dict(),
+        # )
+        result: tuple[
+            list[str], list[NonTerminalSearch], dict[str, NonTerminalSearch]
+        ] = (list(), list(), dict())
         for arg in ctx.arg():
             result = self.aggregateResult(result, self.visitArg(arg))
         if ctx.kwargs():
@@ -1354,7 +1373,9 @@ class SearchProcessor(FandangoParserVisitor):
             raise FandangoValueError(f"Unknown argument: {ctx.getText()}")
 
     def visitKwargs(self, ctx: FandangoParser.KwargsContext):
-        result: tuple[list, Any, dict] = list(), list(), dict()
+        result: tuple[
+            list[ast.keyword], list[NonTerminalSearch], dict[str, NonTerminalSearch]
+        ] = (list(), list(), dict())
 
         for kwarg in ctx.kwarg_or_starred():
             result = self.aggregateResult(result, self.visitKwarg_or_starred(kwarg))
@@ -1366,7 +1387,15 @@ class SearchProcessor(FandangoParserVisitor):
         return result
 
     def visitFor_if_clauses(self, ctx: FandangoParser.For_if_clausesContext):
-        result: tuple[list, Any, dict] = list(), list(), dict()
+        result: tuple[
+            list[ast.comprehension],
+            list[NonTerminalSearch],
+            dict[str, NonTerminalSearch],
+        ] = (
+            list(),
+            list(),
+            dict(),
+        )
         for clause in ctx.for_if_clause():
             result = self.aggregateResult(result, self.visitFor_if_clause(clause))
         return result
@@ -1725,10 +1754,10 @@ class SearchProcessor(FandangoParserVisitor):
 
 
 class PythonProcessor(FandangoParserVisitor):
-    def __init__(self):
+    def __init__(self) -> None:
         self.search_processor = SearchProcessor(Grammar.dummy())
 
-    def get_code(self, stmts: list[FandangoParser.PythonContext]):
+    def get_code(self, stmts: list[FandangoParser.PythonContext]) -> ast.Module:
         return ast.Module(body=[self.visit(stmt) for stmt in stmts], type_ignores=[])
 
     def get_expression(self, expression):

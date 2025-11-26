@@ -2,11 +2,12 @@ import argparse
 import os
 import sys
 import textwrap
+from typing import Optional
 
 import fandango
 
 
-def terminal_link(url: str, text: str | None = None) -> str:
+def terminal_link(url: str, text: Optional[str] = None) -> str:
     """Output URL as a link"""
     if text is None:
         text = url
@@ -212,7 +213,7 @@ def _get_algorithm_parser() -> argparse.ArgumentParser:
     algorithm_group.add_argument(
         "--random-seed",
         type=int,
-        help="Random seed to use for the algorithm.",
+        help="Random seed to use for the algorithm. You probably also want to specify 'PYTHONHASHSEED=<some-value>' to achieve full reproducability.",
         default=None,
     )
     algorithm_group.add_argument(
@@ -317,7 +318,7 @@ def _get_file_parser() -> argparse.ArgumentParser:
     file_group.add_argument(
         "-f",
         "--fandango-file",
-        type=argparse.FileType("r"),
+        type=lambda fan_file_path: open(fan_file_path, "r"),
         dest="fan_files",
         metavar="FAN_FILE",
         default=None,
@@ -557,7 +558,7 @@ def _populate_convert_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "-o",
         "--output",
-        type=argparse.FileType("w"),
+        type=lambda output_file: open(output_file, "w"),
         dest="output",
         default=None,
         help="Write output to OUTPUT (default: stdout).",

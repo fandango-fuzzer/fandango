@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 from collections.abc import Iterator, Sequence
 from fandango.errors import FandangoValueError
 from fandango.language.symbols import Symbol
@@ -36,7 +36,7 @@ class NonTerminalNode(Node):
         grammar: "fandango.language.grammar.grammar.Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
-    ):
+    ) -> None:
         if self.symbol not in grammar:
             raise FandangoValueError(f"Symbol {self.symbol} not found in grammar")
 
@@ -94,8 +94,8 @@ class NonTerminalNode(Node):
 
     def accept(
         self,
-        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor",
-    ):
+        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor[fandango.language.grammar.node_visitors.node_visitor.AggregateType, fandango.language.grammar.node_visitors.node_visitor.ResultType]",
+    ) -> Any:  # should be ResultType, beartype falls on its face
         return visitor.visitNonTerminalNode(self)
 
     def format_as_spec(self) -> str:
@@ -107,10 +107,10 @@ class NonTerminalNode(Node):
         else:
             return self.symbol.format_as_spec()
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         return isinstance(other, NonTerminalNode) and self.symbol == other.symbol
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.symbol)
 
     def msg_parties(

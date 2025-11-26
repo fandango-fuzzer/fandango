@@ -75,7 +75,16 @@ def test_append_with_empty():
     assert str(tree_value) == "a"
     assert bytes(tree_value) == b"a"
     with pytest.raises(ValueError):
-        assert int(tree_value) == 1
+        int(tree_value)
+
+
+def test_append_empty_with_empty():
+    tree_value = TreeValue.empty()
+    tree_value = tree_value.append(TreeValue.empty())
+    assert str(tree_value) == ""
+    assert bytes(tree_value) == b""
+    assert int(tree_value) == 0
+    assert tree_value.to_bits() == ""
 
 
 def test_tree_value_cross_conversion_from_int():
@@ -171,7 +180,7 @@ def test_tree_value_combine_with_str():
     # from int
     tree_value = TreeValue(1)
     with pytest.raises(FandangoConversionError):
-        tree_value = tree_value.append(TreeValue("a"))
+        tree_value.append(TreeValue("a"))
 
 
 def test_tree_value_combine_with_bytes():
@@ -190,7 +199,7 @@ def test_tree_value_combine_with_bytes():
     # from int
     tree_value = TreeValue(1)
     with pytest.raises(FandangoConversionError):
-        tree_value = tree_value.append(TreeValue(b"a"))
+        tree_value.append(TreeValue(b"a"))
 
 
 def test_tree_value_combine_with_int():

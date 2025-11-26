@@ -2,13 +2,15 @@ import argparse
 import difflib
 import logging
 import os
-from typing import IO, Any
+from typing import IO, Any, Optional
 import zipfile
 
+
+from fandango.api import Fandango
 from fandango.constraints.soft import SoftValue
 from fandango.constraints.constraint import Constraint
 from fandango.errors import FandangoError, FandangoParseError
-from fandango.language.grammar import ParsingMode
+from fandango.evolution import GeneratorWithReturn
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.parse import parse
 from fandango.language.tree import DerivationTree
@@ -65,7 +67,7 @@ def _copy_setting(
     settings: dict[str, Any],
     name: str,
     *,
-    args_name: str | None = None,
+    args_name: Optional[str] = None,
 ) -> None:
     if args_name is None:
         args_name = name
@@ -132,8 +134,8 @@ def get_file_mode(
     args: argparse.Namespace,
     settings: dict[str, Any],
     *,
-    grammar: Grammar | None = None,
-    tree: DerivationTree | None = None,
+    grammar: Optional[Grammar] = None,
+    tree: Optional[DerivationTree] = None,
 ) -> str:
     if (
         hasattr(args, "file_mode")
@@ -163,7 +165,7 @@ def parse_contents_from_args(
     args: argparse.Namespace,
     given_grammars: list[Grammar] = [],
     check: bool = True,
-) -> tuple[Grammar | None, list[Constraint | SoftValue]]:
+) -> tuple[Optional[Grammar], list[Constraint | SoftValue]]:
     """Parse .fan content as given in args"""
     max_constraints = [f"maximizing {c}" for c in (args.maxconstraints or [])]
     min_constraints = [f"minimizing {c}" for c in (args.minconstraints or [])]
@@ -240,7 +242,7 @@ def parse_constraints_from_args(
     args: argparse.Namespace,
     given_grammars: list[Grammar] = [],
     check: bool = True,
-) -> tuple[Grammar | None, list[Constraint | SoftValue]]:
+) -> tuple[Optional[Grammar], list[Constraint | SoftValue]]:
     """Parse .fan constraints as given in args"""
     max_constraints = [f"maximizing {c}" for c in (args.maxconstraints or [])]
     min_constraints = [f"minimizing {c}" for c in (args.minconstraints or [])]
@@ -301,59 +303,39 @@ def parse_file(
     LOGGER.info(f"Parsing {fd.name!r}")
     individual = fd.read()
     start_symbol = settings.get("start_symbol", "<start>")
-
     allow_incomplete = hasattr(args, "prefix") and args.prefix
-    parsing_mode = ParsingMode.COMPLETE
-    if allow_incomplete:
-        parsing_mode = ParsingMode.INCOMPLETE
-    tree_gen = grammar.parse_forest(individual, start=start_symbol, mode=parsing_mode)
+    fan = Fandango._with_parsed(
+        grammar,
+        constraints,
+        start_symbol=start_symbol,
+        logging_level=LOGGER.getEffectiveLevel(),
+    )
 
-    alternative_counter = 1
-    passing_tree = None
-    last_tree = None
-    while tree := next(tree_gen, None):
-        LOGGER.debug(f"Checking parse alternative #{alternative_counter}")
-        last_tree = tree
-        grammar.populate_sources(last_tree)
-
-        passed = True
-        for constraint in constraints:
-            fitness = constraint.fitness(tree).fitness()
-            LOGGER.debug(f"Fitness: {fitness}")
-            if fitness == 0:
-                passed = False
-                break
-
-        if passed:
-            passing_tree = tree
-            break
-
-        # Try next parsing alternative
-        alternative_counter += 1
-
-    if passing_tree:
-        # Found an alternative that satisfies all constraints
-
-        # Validate tree
+    gen = GeneratorWithReturn(fan.parse(individual, prefix=allow_incomplete))
+    for tree in gen:
         if args.validate:
-            validate(individual, passing_tree, filename=fd.name)
+            validate(individual, tree, filename=fd.name)
+        return tree
 
-        return passing_tree
+    # so no tree matched everything (we would have returned above)
+    last_tree = gen.return_value
 
-    # Tried all alternatives
-    if last_tree is None:
-        error_pos = grammar.max_position() + 1
+    if last_tree is not None:
+        # check if any tree matched the grammar and failed constraints
+        grammar.populate_sources(last_tree)
+        failed_constraints = [
+            c.format_as_spec() for c in constraints if not c.check(last_tree)
+        ]
         raise FandangoParseError(
-            report_syntax_error(fd.name, error_pos, individual, binary=("b" in fd.mode))
+            f"Did not match the following constraints: {', '.join(failed_constraints)}"
         )
-
-    # Report error for the last tree
-    for constraint in constraints:
-        fitness = constraint.fitness(last_tree).fitness()
-        if fitness == 0:
-            raise FandangoError(f"{fd.name!r}: constraint {constraint} not satisfied")
-
-    raise FandangoError("This should not happen")
+    else:
+        # no tree matched the grammar
+        raise FandangoParseError(
+            report_syntax_error(
+                fd.name, len(individual), individual, binary=("b" in fd.mode)
+            )
+        )
 
 
 def exec_single(

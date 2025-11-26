@@ -6,6 +6,7 @@ import itertools
 import random
 import unittest
 
+from fandango.constraints.failing_tree import Suggestion
 from fandango.constraints.fitness import FailingTree
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.algorithm import Fandango, LoggerLevel
@@ -75,7 +76,7 @@ class GeneticTest(unittest.TestCase):
         generator = manager.refill_population(
             current_population=population,
             eval_individual=self.fandango.evaluator.evaluate_individual,
-            max_nodes=self.fandango.current_max_nodes,
+            max_nodes=self.fandango.adaptive_tuner.current_max_nodes,
             target_population_size=expected_count,
         )
         solutions = list(generator)
@@ -104,7 +105,7 @@ class GeneticTest(unittest.TestCase):
         generator = manager.refill_population(
             current_population=population,
             eval_individual=self.fandango.evaluator.evaluate_individual,
-            max_nodes=self.fandango.current_max_nodes,
+            max_nodes=self.fandango.adaptive_tuner.current_max_nodes,
             target_population_size=initial_count,
         )
 
@@ -116,7 +117,7 @@ class GeneticTest(unittest.TestCase):
         generator = manager.refill_population(
             current_population=population,
             eval_individual=self.fandango.evaluator.evaluate_individual,
-            max_nodes=self.fandango.current_max_nodes,
+            max_nodes=self.fandango.adaptive_tuner.current_max_nodes,
             target_population_size=initial_count + additional_count,
         )
         solutions = list(generator)
@@ -148,7 +149,12 @@ class GeneticTest(unittest.TestCase):
             self.assertEqual(
                 len(solutions), individual_int, f"Individual: {individual}"
             )
-            fitness, failing_trees = generator.return_value
+            fitness, failing_trees, suggestion = generator.return_value
+            self.assertIsInstance(suggestion, Suggestion)
+            suggested_replacements = suggestion.get_replacements(
+                individual, self.fandango.grammar
+            )
+            self.assertEqual(len(suggested_replacements), 0)
             self.assertIsInstance(fitness, float)
             self.assertGreaterEqual(fitness, 0.0)
             self.assertLessEqual(fitness, 1.0)
@@ -163,18 +169,23 @@ class GeneticTest(unittest.TestCase):
             self.fandango.evaluator.evaluate_population(self.fandango.population)
         )
         solutions = list(generator)
-        self.assertTrue(all(s.to_int() % 2 == 0) for s in solutions)
+        self.assertTrue(all(s.to_int() % 2 == 0 for s in solutions))
 
         self.assertEqual(len(solutions), len(set(solutions)))
         evaluation = generator.return_value
         self.assertEqual(len(evaluation), len(self.fandango.population))
-        for ind, fitness, failing_trees in evaluation:
+        for ind, fitness, failing_trees, suggestion in evaluation:
             self.assertIsInstance(fitness, float)
             self.assertGreaterEqual(fitness, 0.0)
             self.assertLessEqual(fitness, 1.0)
             self.assertIsInstance(failing_trees, list)
             for failing_tree in failing_trees:
                 self.assertIsInstance(failing_tree, FailingTree)
+            self.assertIsInstance(suggestion, Suggestion)
+            suggested_replacements = suggestion.get_replacements(
+                ind, self.fandango.grammar
+            )
+            self.assertEqual(len(suggested_replacements), 0)
 
         # Check that the population is valid
         for individual in self.fandango.population:
@@ -235,6 +246,8 @@ class GeneticTest(unittest.TestCase):
             self.fandango.grammar, parent1, parent2
         )
 
+        assert children is not None
+
         # Check that the children are of the correct type
         for child in children:
             self.assertIsInstance(child, DerivationTree)
@@ -258,6 +271,8 @@ class GeneticTest(unittest.TestCase):
         children = self.fandango.crossover_operator.crossover(
             self.fandango.grammar, parent1, parent2
         )
+
+        assert children is not None
 
         # Perform mutation
         gen1 = GeneratorWithReturn(
@@ -308,7 +323,7 @@ class GeneticTest(unittest.TestCase):
 
 
 class DeterminismTests(unittest.TestCase):
-    # fandango fuzz -f tests/resources/determinism.fan -n 100 --random-seed 1
+    # PYTHONHASHSEED=0 fandango fuzz -f tests/resources/determinism.fan -n 100 --random-seed 1
     @staticmethod
     def get_solutions(
         specification_file,

@@ -3,46 +3,41 @@ from collections.abc import Sequence
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
+from fandango.language.grammar.nodes.char_set import CharSet
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Repetition, Star, Plus, Option
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.symbols import NonTerminal, Terminal, Slice
-from fandango.language.symbols.symbol import Symbol
 
 if TYPE_CHECKING:
     import fandango
 
+DisambiguationValue = dict[
+    tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]
+]
 
-class Disambiguator(NodeVisitor):
+
+class Disambiguator(NodeVisitor[DisambiguationValue, DisambiguationValue]):
     def __init__(
         self,
         grammar: "fandango.language.grammar.grammar.Grammar",
         grammar_settings: Sequence[HasSettings],
     ):
-        self.known_disambiguations: dict[
-            Node,
-            dict[tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]],
-        ] = {}
+        self.known_disambiguations: dict[Node, DisambiguationValue] = {}
         self.grammar = grammar
         self._grammar_settings = grammar_settings
 
-    def visit(
-        self, node: Node
-    ) -> dict[tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]]:
+    def visit(self, node: Node) -> DisambiguationValue:
         if node in self.known_disambiguations:
             return self.known_disambiguations[node]
         result = super().visit(node)
         self.known_disambiguations[node] = result
         return result
 
-    def visitAlternative(
-        self, node: Alternative
-    ) -> dict[tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]]:
-        child_endpoints: dict[
-            tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]
-        ] = {}
+    def visitAlternative(self, node: Alternative) -> DisambiguationValue:
+        child_endpoints: DisambiguationValue = {}
         for child in node.children():
             endpoints = self.visit(child)
             for children in endpoints:
@@ -56,16 +51,10 @@ class Disambiguator(NodeVisitor):
 
         return child_endpoints
 
-    def visitConcatenation(
-        self, node: Concatenation
-    ) -> dict[tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]]:
-        child_endpoints: dict[
-            tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]
-        ] = {(): []}
+    def visitConcatenation(self, node: Concatenation) -> DisambiguationValue:
+        child_endpoints: DisambiguationValue = {(): []}
         for child in node.children():
-            next_endpoints: dict[
-                tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]
-            ] = {}
+            next_endpoints: DisambiguationValue = {}
             endpoints = self.visit(child)
             for children in endpoints:
                 for existing in child_endpoints:
@@ -81,26 +70,18 @@ class Disambiguator(NodeVisitor):
             for children in child_endpoints
         }
 
-    def visitRepetition(
-        self, node: Repetition
-    ) -> dict[tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]]:
+    def visitRepetition(self, node: Repetition) -> DisambiguationValue:
         # repetitions are alternatives over concatenations
         implicit_alternative = next(node.descendents(self.grammar))
         return self.visit(implicit_alternative)
 
-    def visitStar(
-        self, node: Star
-    ) -> dict[tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]]:
+    def visitStar(self, node: Star) -> DisambiguationValue:
         return self.visitRepetition(node)
 
-    def visitPlus(
-        self, node: Plus
-    ) -> dict[tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]]:
+    def visitPlus(self, node: Plus) -> DisambiguationValue:
         return self.visitRepetition(node)
 
-    def visitOption(
-        self, node: Option
-    ) -> dict[tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]]:
+    def visitOption(self, node: Option) -> DisambiguationValue:
         implicit_alternative = Alternative(
             [
                 Concatenation([], self._grammar_settings),
@@ -110,12 +91,14 @@ class Disambiguator(NodeVisitor):
         )
         return self.visit(implicit_alternative)
 
-    def visitNonTerminalNode(
-        self, node: NonTerminalNode
-    ) -> dict[tuple[Symbol, ...], list[tuple[Node, ...]]]:
+    def visitNonTerminalNode(self, node: NonTerminalNode) -> DisambiguationValue:
         return {(node.symbol,): [(node,)]}
 
-    def visitTerminalNode(
-        self, node: TerminalNode
-    ) -> dict[tuple[Symbol, ...], list[tuple[Node, ...]]]:
+    def visitTerminalNode(self, node: TerminalNode) -> DisambiguationValue:
         return {(node.symbol,): [(node,)]}
+
+    def visitCharSet(self, node: CharSet) -> DisambiguationValue:
+        return {
+            (Terminal(c),): [(node, TerminalNode(Terminal(c), self._grammar_settings))]
+            for c in node.chars
+        }

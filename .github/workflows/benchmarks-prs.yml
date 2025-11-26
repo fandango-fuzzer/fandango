@@ -1,0 +1,36 @@
+name: "Benchmarks: Run for PR"
+
+on:
+  pull_request:
+    types: [opened, reopened, edited, synchronize]
+
+jobs:
+  run_benchmarks:
+    name: Run PR Benchmarks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Fandango
+        uses: ./.github/workflows/setup-fandango
+        with:
+          python-version: 3.13
+          needs-sudo: true
+          target: test
+
+      - name: Run Benchmarks
+        env:
+          FANDANGO_FORCE_SKIP_BEARTYPE: "1"
+        run: |
+          pytest -n 0 --timeout 1200 --benchmark-json results.json --benchmark-enable --benchmark-only
+      - name: Upload Benchmark Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: results.json
+          path: ./results.json
+      - name: Upload GitHub Pull Request Event
+        uses: actions/upload-artifact@v4
+        with:
+          name: event.json
+          path: ${{ github.event_path }}

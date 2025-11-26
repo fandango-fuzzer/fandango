@@ -1,5 +1,5 @@
 from __future__ import annotations
-from types import NoneType
+from collections.abc import Callable
 from typing import Any, Optional
 import warnings
 import enum
@@ -82,7 +82,7 @@ def _get_exclusive_base_type_method_is_implemented_for(name: str) -> Optional[ty
 
 def _attach_to_first_arg(
     function_names: list[str],
-):
+) -> Callable[[type], type]:
     """
     Decorator to add methods to a class, where self is transformed to either
     (a) the only base type it is implemented on,
@@ -92,8 +92,8 @@ def _attach_to_first_arg(
     If the first argument is a DerivationTree or TreeValue, it is converted to the underlying type. This is deprecated.
     """
 
-    def make_method(name):
-        def method(self, *args, **kwargs):
+    def make_method(name: str) -> Callable[[Any], Any]:
+        def method(self: TreeValue, *args: Any, **kwargs: Any) -> Any:
             base_type = _get_exclusive_base_type_method_is_implemented_for(name)
             if base_type is None:
                 message = (
@@ -142,7 +142,7 @@ def _attach_to_first_arg(
 
         return method
 
-    def decorator(cls):
+    def decorator(cls: type) -> type:
         for name in function_names:
             # Check if the method is actually implemented on the class itself, not inherited
             if name in cls.__dict__:
@@ -159,15 +159,15 @@ def _attach_to_first_arg(
 
 def _attach_to_underlying(
     function_names: list[str],
-):
+) -> Callable[[type], type]:
     """
     Decorator to add methods to a class, where self is transformed to either (a) the only base type it is implemented on or (b) the underlying type and then the method is called on that.
 
     (b) is deprecated.
     """
 
-    def make_method(name):
-        def method(self: TreeValue, *args, **kwargs):
+    def make_method(name: str) -> Callable[[Any], Any]:
+        def method(self: TreeValue, *args: Any, **kwargs: Any) -> Any:
             base_type = _get_exclusive_base_type_method_is_implemented_for(name)
             if base_type is not None:
                 base = base_type(self)
@@ -182,7 +182,7 @@ def _attach_to_underlying(
 
         return method
 
-    def decorator(cls):
+    def decorator(cls: type) -> type:
         for name in function_names:
             # Check if the method is actually implemented on the class itself, not inherited
             if name in cls.__dict__:
@@ -339,12 +339,12 @@ DIRECT_ACCESS_METHODS_BASE_TO_UNDERLYING_TYPE = [
 class TreeValue:
     def __init__(
         self,
-        value: str | bytes | int | None,
+        value: Optional[str | bytes | int],
         *,
         trailing_bits: list[int] = [],
         allow_empty: bool = False,
     ):
-        self._value: str | bytes | None
+        self._value: Optional[str | bytes]
         assert all(
             bit & 1 == bit for bit in trailing_bits
         ), "trailing bits must be 0 or 1, got " + str(trailing_bits)
@@ -441,7 +441,9 @@ class TreeValue:
         """
 
         if self.is_type(TreeValueType.EMPTY):
-            return TreeValue(other._value, trailing_bits=other._trailing_bits)
+            return TreeValue(
+                other._value, trailing_bits=other._trailing_bits, allow_empty=True
+            )
 
         if other._value is None:
             trailing_bits = self._trailing_bits + other._trailing_bits

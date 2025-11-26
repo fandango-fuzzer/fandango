@@ -4,7 +4,8 @@ search criteria.
 """
 
 import abc
-from typing import Optional, Any
+from typing import Generic, Optional, Any, TypeVar
+import warnings
 
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
@@ -53,17 +54,17 @@ class Tree(Container):
         """
         return [self.tree]
 
-    def evaluate(self):
+    def evaluate(self) -> DerivationTree:
         """
         Evaluate the container. The evaluation of a Tree container is the tree itself.
         :return DerivationTree: The derivation tree.
         """
         return self.tree
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Tree(" + repr(self.tree.value()) + ")"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.tree)
 
 
@@ -86,7 +87,7 @@ class TreeList(Container):
         """
         return self.trees
 
-    def evaluate(self):
+    def evaluate(self) -> list[DerivationTree]:
         """
         Evaluate the container. The evaluation of a TreeList container is the list of trees itself.
         :return list[DerivationTree]: The list of derivation trees.
@@ -113,18 +114,45 @@ class Length(Container):
         """
         return self.trees
 
-    def evaluate(self):
+    def evaluate(self) -> int:
         """
         Evaluate the container. The evaluation of a Length container is the length of the list of trees.
         :return int: The length of the list of trees.
         """
         return len(self.trees)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Length([" + ", ".join(repr(tree.value()) for tree in self.trees) + "])"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return repr(self)
+
+
+Annotation = TypeVar("Annotation")
+
+
+class AnnotatedContainer(Container, Generic[Annotation]):
+    def __init__(self, annotation: Annotation, inner: Container):
+        self._annotation = annotation
+        self._inner = inner
+
+    @property
+    def annotation(self) -> Annotation:
+        return self._annotation
+
+    def get_trees(self) -> list[DerivationTree]:
+        """
+        Get the list of derivation trees in the container.
+        :return list[DerivationTree]: The list of derivation trees.
+        """
+        return self._inner.get_trees()
+
+    def evaluate(self) -> Any:
+        """
+        Evaluate the container.
+        :return Any: The evaluation of the container.
+        """
+        return self._inner.evaluate()
 
 
 class NonTerminalSearch(abc.ABC):
@@ -198,15 +226,17 @@ class NonTerminalSearch(abc.ABC):
             targets.extend(self.find(tree, scope=scope, population=population))
         return targets
 
-    def __repr__(self):
-        raise NotImplementedError(
-            "Repr not implemented, use method specific to your usecase"
+    def __repr__(self) -> str:
+        warnings.warn(
+            f"Don't rely on the __repr__ impl on {self.__class__.__name__}, use method specific to your usecase. Report this as a bug if this is called from within Fandango."
         )
+        return f"{self.__class__.__name__}({self.format_as_spec()})"
 
-    def __str__(self):
-        raise NotImplementedError(
-            "Repr not implemented, use method specific to your usecase"
+    def __str__(self) -> str:
+        warnings.warn(
+            f"Don't rely on the __str__ impl on {self.__class__.__name__}, use method specific to your usecase. Report this as a bug if this is called from within Fandango."
         )
+        return self.format_as_spec()
 
     @abc.abstractmethod
     def format_as_spec(self) -> str:
@@ -277,7 +307,7 @@ class LengthSearch(NonTerminalSearch):
     def format_as_spec(self) -> str:
         return f"|{self.value.format_as_spec()}|"
 
-    def get_access_points(self):
+    def get_access_points(self) -> list[NonTerminal]:
         return self.value.get_access_points()
 
 
@@ -315,7 +345,7 @@ class RuleSearch(NonTerminalSearch):
         else:
             return list(map(Tree, tree.find_direct_trees(self.symbol)))
 
-    def get_access_points(self):
+    def get_access_points(self) -> list[NonTerminal]:
         return [self.symbol]
 
     def format_as_spec(self) -> str:
@@ -370,7 +400,7 @@ class AttributeSearch(NonTerminalSearch):
     def format_as_spec(self) -> str:
         return f"{self.base.format_as_spec()}.{self.attribute.format_as_spec()}"
 
-    def get_access_points(self):
+    def get_access_points(self) -> list[NonTerminal]:
         return self.attribute.get_access_points()
 
 
@@ -422,7 +452,7 @@ class DescendantAttributeSearch(NonTerminalSearch):
     def format_as_spec(self) -> str:
         return f"{self.base.format_as_spec()}..{self.attribute.format_as_spec()}"
 
-    def get_access_points(self):
+    def get_access_points(self) -> list[NonTerminal]:
         return self.attribute.get_access_points()
 
 
@@ -444,7 +474,7 @@ class ItemSearch(NonTerminalSearch):
         self.base = base
         self.slices = slices
 
-    def _find(self, bases: list[Container]):
+    def _find(self, bases: list[Container]) -> list[Container]:
         return list(
             map(
                 Tree,
@@ -491,7 +521,7 @@ class ItemSearch(NonTerminalSearch):
                 slice_reprs.append(repr(slice_))
         return f"{self.base.format_as_spec()}[{', '.join(slice_reprs)}]"
 
-    def get_access_points(self):
+    def get_access_points(self) -> list[NonTerminal]:
         return self.base.get_access_points()
 
 
@@ -516,7 +546,7 @@ class SelectiveSearch(NonTerminalSearch):
         self.symbols = symbols
         self.slices = slices or [None] * len(symbols)
 
-    def _find(self, bases: list[Container]):
+    def _find(self, bases: list[Container]) -> list[Container]:
         result = []
         for symbol, is_direct, items in zip(*zip(*self.symbols), self.slices):
             if is_direct:
@@ -573,7 +603,7 @@ class SelectiveSearch(NonTerminalSearch):
             slice_reprs.append(slice_repr)
         return f"{self.base.format_as_spec()}{{{', '.join(slice_reprs)}}}"
 
-    def get_access_points(self):
+    def get_access_points(self) -> list[NonTerminal]:
         return [symbol for symbol, _ in self.symbols]
 
 
@@ -652,36 +682,22 @@ class StarSearch(NonTerminalSearch):
         return self.base.get_access_points()
 
 
-class PopulationSearch(NonTerminalSearch):
+class AnnotatedSearch(NonTerminalSearch, Generic[Annotation]):
     """
-    Non-terminal search that finds the non-terminals that match the star search criteria in the entire population.
+    Wrapper search that annotates its results
     """
 
-    IS_STAR = True
+    def __init__(self, annotation: Annotation, inner: NonTerminalSearch):
+        self._annotation = annotation
+        self._inner = inner
 
-    def __init__(self, base: NonTerminalSearch):
-        """
-        Initialize the PopulationSearch with the given base non-terminal search.
-        :param NonTerminalSearch base: The base non-terminal search.
-        """
-        self.base = base
+    @property
+    def annotation(self) -> Annotation:
+        return self._annotation
 
-    def _find(
-        self,
-        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
-        population: Optional[list[DerivationTree]] = None,
-    ) -> list[DerivationTree]:
-        if population is None:
-            raise ValueError("Population is required for PopulationSearch")
-        return sum(
-            [
-                r.get_trees()
-                for r in self.base.find_all(
-                    population, scope=scope, population=population
-                )
-            ],
-            [],
-        )
+    @property
+    def inner(self) -> NonTerminalSearch:
+        return self._inner
 
     def find(
         self,
@@ -689,7 +705,37 @@ class PopulationSearch(NonTerminalSearch):
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
         population: Optional[list[DerivationTree]] = None,
     ) -> list[Container]:
-        return [TreeList(self._find(scope=scope, population=population))]
+        """
+        Find all the non-terminals in the derivation tree that match the search criteria.
+        :param DerivationTree tree: The derivation tree.
+        :param Optional[Dict[NonTerminal, list[DerivationTree]]] scope: The scope of non-terminals matching to trees.
+        :param Optional[list[DerivationTree]] population: The population of derivation trees to search in.
+        :return list[Container]: The list of containers that hold the matching derivation trees.
+        """
+        return [
+            AnnotatedContainer(self._annotation, c)
+            for c in self._inner.find(tree=tree, scope=scope, population=population)
+        ]
+
+    def find_direct(
+        self,
+        tree: DerivationTree,
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
+        population: Optional[list[DerivationTree]] = None,
+    ) -> list[Container]:
+        """
+        Find the direct-child non-terminals in the derivation tree that match the search criteria.
+        :param DerivationTree tree: The derivation tree.
+        :param Optional[Dict[NonTerminal, list[DerivationTree]]] scope: The scope of non-terminals matching to trees.
+        :param Optional[list[DerivationTree]] population: The population of derivation trees to search in.
+        :return list[Container]: The list of containers that hold the matching derivation trees.
+        """
+        return [
+            AnnotatedContainer(self._annotation, c)
+            for c in self._inner.find_direct(
+                tree=tree, scope=scope, population=population
+            )
+        ]
 
     def quantify(
         self,
@@ -698,35 +744,23 @@ class PopulationSearch(NonTerminalSearch):
         population: Optional[list[DerivationTree]] = None,
     ) -> list[Container]:
         """
-        Quantify the number of non-terminals in the derivation tree that match the star search criteria.
+        Quantify the number of non-terminals in the derivation tree that match the search criteria.
         :param DerivationTree tree: The derivation tree.
         :param Optional[Dict[NonTerminal, list[DerivationTree]]] scope: The scope of non-terminals matching to trees.
         :param Optional[list[DerivationTree]] population: The population of derivation trees to search in.
         :return int: The number of matching non-terminals.
         """
-        return [Tree(tree) for tree in self._find(scope=scope, population=population)]
-
-    def find_direct(
-        self,
-        tree: DerivationTree,
-        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
-        population: Optional[list[DerivationTree]] = None,
-    ) -> list[Container]:
-        if population is None:
-            raise ValueError("Population is required for PopulationSearch")
-        trees = sum(
-            [
-                r.get_trees()
-                for r in self.base.find_all(
-                    population, scope=scope, population=population
-                )
-            ],
-            [],
-        )
-        return [TreeList(trees)]
+        return self._inner.quantify(tree, scope, population)
 
     def format_as_spec(self) -> str:
-        return f"**{self.base.format_as_spec()}"
+        """
+        Format as a string that can be used in a spec file.
+        """
+        return self._inner.format_as_spec()
 
     def get_access_points(self) -> list[NonTerminal]:
-        return self.base.get_access_points()
+        """
+        Get the access points of the non-terminal search, i.e., the non-terminal that are considered in this search.
+        :return list[NonTerminal]: The list of access points.
+        """
+        return self._inner.get_access_points()
