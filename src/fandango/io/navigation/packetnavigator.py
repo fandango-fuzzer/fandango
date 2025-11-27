@@ -7,7 +7,6 @@ from fandango.io.navigation.packetiterativeparser import PacketIterativeParser
 from fandango.language import Grammar, DerivationTree
 from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols.non_terminal import NonTerminal
-from fandango.language.symbols.symbol import Symbol
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.node_visitors.grammar_graph_converter import (
     GrammarGraphNode,
@@ -129,7 +128,7 @@ class PacketNavigator(GrammarNavigator):
         tree: DerivationTree,
         destination_k_path: tuple[NonTerminal, ...],
         included_k_paths: Optional[set[KPath]] = None,
-    ) -> Optional[list[PacketNonTerminal | NonTerminal]]:
+    ) -> Optional[list[Optional[PacketNonTerminal | NonTerminal]]]:
         if included_k_paths is None:
             included_k_paths = set()
         paths = []
