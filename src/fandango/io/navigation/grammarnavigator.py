@@ -1,4 +1,5 @@
-from typing import Union, Iterable, Optional
+from collections.abc import Iterable
+from typing import Union, Optional
 
 from astar import AStar
 from fandango.errors import FandangoError
@@ -95,7 +96,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         for i in range(1, min(search_len, chain_len) + 1):
             if current_chain[-i:] == self.search_symbols[:i]:
                 max_overlap = i
-        return search_len - max_overlap
+        return float(search_len - max_overlap)
 
     def heuristic_cost_estimate(
         self, current: GrammarGraphNode, goal: GrammarGraphNode

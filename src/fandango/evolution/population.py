@@ -91,7 +91,7 @@ class PopulationManager:
             ).collect()
             candidate, _fixes_made = self.fix_individual(
                 individual,
-                failing_trees,
+                suggestion,
             )
             new_found_solution, (_new_fitness, _new_failing_trees, suggestion) = (
                 GeneratorWithReturn(eval_individual(candidate)).collect()
