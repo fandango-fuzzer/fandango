@@ -28,7 +28,7 @@ class PopulationManager:
 
     @staticmethod
     def _generate_population_hashes(
-        current_population: list[DerivationTree]
+        current_population: list[DerivationTree],
     ) -> set[int]:
         return {hash(ind) for ind in current_population}
 

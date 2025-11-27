@@ -246,9 +246,7 @@ class Evaluator:
         self._fitness_cache[key] = (fitness, failing_trees, suggestion)
         return fitness, failing_trees, suggestion
 
-    def evaluate_population(
-        self, population: list[DerivationTree]
-    ) -> Generator[
+    def evaluate_population(self, population: list[DerivationTree]) -> Generator[
         DerivationTree,
         None,
         list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
@@ -428,13 +426,14 @@ class IoEvaluator(Evaluator):
         self._fitness_cache[key] = (fitness, failing_trees, suggestion)
         return fitness, failing_trees, suggestion
 
-    def evaluate_population(
-        self, population: list[DerivationTree]
-    ) -> Generator[
-        DerivationTree, None,
-        list[tuple[DerivationTree, float, list[FailingTree], Suggestion]]
+    def evaluate_population(self, population: list[DerivationTree]) -> Generator[
+        DerivationTree,
+        None,
+        list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
     ]:
-        evaluation: list[tuple[DerivationTree, float, list[FailingTree], Suggestion]] = []
+        evaluation: list[
+            tuple[DerivationTree, float, list[FailingTree], Suggestion]
+        ] = []
         for ind in population:
             ind_eval = yield from self.evaluate_individual(ind)
             evaluation.append((ind, *ind_eval))
@@ -460,6 +459,11 @@ class IoEvaluator(Evaluator):
                     last_msg.sender, last_msg.recipient, last_msg.msg.symbol
                 )
                 bonuses = self.compute_diversity_bonus([ind], fill_up_by_msg_nt[key])
-                evaluation[i] = (ind, evaluation[i][1] + bonuses[0], evaluation[i][2], evaluation[i][3])
+                evaluation[i] = (
+                    ind,
+                    evaluation[i][1] + bonuses[0],
+                    evaluation[i][2],
+                    evaluation[i][3],
+                )
 
         return evaluation
