@@ -2,7 +2,7 @@ from typing import Optional
 
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.grammarnavigator import GrammarNavigator
-from fandango.io.navigation.grammarreducer import GrammarReducer
+from fandango.io.navigation.grammarreducer import StateGrammarConverter
 from fandango.io.navigation.packetiterativeparser import PacketIterativeParser
 from fandango.language import Grammar, DerivationTree
 from fandango.language.grammar.grammar import KPath
@@ -19,7 +19,7 @@ class PacketNavigator(GrammarNavigator):
     def __init__(
         self, grammar: Grammar, start_symbol: NonTerminal = NonTerminal("<start>")
     ):
-        reduced_rules = GrammarReducer(grammar.grammar_settings).process(
+        reduced_rules = StateGrammarConverter(grammar.grammar_settings).process(
             grammar.rules, start_symbol
         )
         super().__init__(
@@ -85,7 +85,7 @@ class PacketNavigator(GrammarNavigator):
                     PacketNonTerminal(
                         n.node.sender,
                         n.node.recipient,
-                        GrammarReducer.to_non_terminal(n.node.symbol),
+                        StateGrammarConverter.to_non_terminal(n.node.symbol),
                     )
                 )
             else:
@@ -101,7 +101,7 @@ class PacketNavigator(GrammarNavigator):
             for symbol in k_path:
                 if symbol in self._packet_symbols:
                     assert isinstance(symbol, NonTerminal)
-                    symbol = GrammarReducer.to_packet_non_terminal(symbol)
+                    symbol = StateGrammarConverter.to_packet_non_terminal(symbol)
                 packet_path += (symbol,)
             packet_k_paths.add(packet_path)
         k = max(1, max(map(lambda x: len(x), k_paths)))
@@ -157,7 +157,7 @@ class PacketNavigator(GrammarNavigator):
         for symbol in destination_k_path:
             if symbol in self._packet_symbols:
                 search_destination_symbols.append(
-                    GrammarReducer.to_packet_non_terminal(symbol)
+                    StateGrammarConverter.to_packet_non_terminal(symbol)
                 )
             else:
                 search_destination_symbols.append(symbol)

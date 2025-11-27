@@ -12,7 +12,7 @@ from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.tree_value import TreeValueType
 
 
-class GrammarReducer(NodeVisitor):
+class StateGrammarConverter(NodeVisitor):
     """
     Converts a grammar into a reduced form, where all protocol message defining NonTerminalNodes are replaced with
     a TerminalNode that describes the protocol message type.
