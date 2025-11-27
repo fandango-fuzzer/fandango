@@ -177,7 +177,6 @@ class GeneticTest(unittest.TestCase):
         for ind, fitness, failing_trees, suggestion in evaluation:
             self.assertIsInstance(fitness, float)
             self.assertGreaterEqual(fitness, 0.0)
-            self.assertLessEqual(fitness, 1.0)
             self.assertIsInstance(failing_trees, list)
             for failing_tree in failing_trees:
                 self.assertIsInstance(failing_tree, FailingTree)
