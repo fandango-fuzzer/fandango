@@ -503,7 +503,9 @@ class Fandango:
 
         while True:
             self.packet_selector.compute(history_tree, self.past_io_derivations)
-            LOGGER.info(f"Current coverage: {self.packet_selector.coverage_percent():.2f}%")
+            LOGGER.info(
+                f"Current coverage: {self.packet_selector.coverage_percent():.2f}%"
+            )
             self.evaluator.start_next_message(
                 [history_tree] + list(self.past_io_derivations)
             )
@@ -664,9 +666,11 @@ class Fandango:
                     for hookin_option in forecast.paths:
                         history_tree = hookin_option.tree
                         history_tree.append(hookin_option.path[1:-1], packet_tree)
-                        solutions, (fitness, failing_trees, suggestion) = GeneratorWithReturn(
-                            self.evaluator.evaluate_individual(history_tree)
-                        ).collect()
+                        solutions, (fitness, failing_trees, suggestion) = (
+                            GeneratorWithReturn(
+                                self.evaluator.evaluate_individual(history_tree)
+                            ).collect()
+                        )
                         failing_trees = list(
                             filter(
                                 lambda x: not isinstance(x.cause, SoftValue),
