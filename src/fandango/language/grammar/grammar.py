@@ -34,6 +34,7 @@ from fandango.logger import LOGGER
 
 KPath = tuple[Symbol, ...]
 
+
 class Grammar(NodeVisitor[list[Node], list[Node]]):
     """Represent a grammar."""
 

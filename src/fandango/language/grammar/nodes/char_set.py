@@ -35,7 +35,9 @@ class CharSet(Node):
         return visitor.visitCharSet(self)
 
     def descendents(
-        self, grammar: "fandango.language.grammar.grammar.Grammar", filter_controlflow: bool = False
+        self,
+        grammar: "fandango.language.grammar.grammar.Grammar",
+        filter_controlflow: bool = False,
     ) -> Iterator["Node"]:
         for char in self.chars:
             yield TerminalNode(Terminal(char), self._grammar_settings)
