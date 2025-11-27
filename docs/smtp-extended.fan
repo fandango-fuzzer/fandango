@@ -8,8 +8,7 @@
     (<Server:hello> <mail_from> | <Server:error>)
 <HELO> ::= 'HELO ' <hostname> '\r\n'
 
-<hello> ::= '250 Hello ' <hostname> ', glad to meet you\r\n' \
-    <mail_from>
+<hello> ::= '250 Hello ' <hostname> ', glad to meet you\r\n'
 
 <error> ::= '5' <digit> <digit> ' ' <error_message> '\r\n'
 <error_message> ::= r'[^\r]*' := "Error"
