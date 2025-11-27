@@ -69,7 +69,7 @@ class PacketNavigator(GrammarNavigator):
 
     @staticmethod
     def _to_symbols(
-        path: list[GrammarGraphNode],
+        path: list[Optional[GrammarGraphNode]],
     ) -> list[Optional[PacketNonTerminal | NonTerminal]]:
         path = list(
             filter(lambda n: n is None or isinstance(n.node, NonTerminalNode), path)
