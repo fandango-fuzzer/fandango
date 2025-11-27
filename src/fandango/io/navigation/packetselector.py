@@ -3,7 +3,7 @@ from typing import Optional
 
 from fandango.io import FandangoIO
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.io.navigation.grammarreducer import GrammarReducer
+from fandango.io.navigation.grammarreducer import StateGrammarConverter
 from fandango.io.navigation.powerschedule import (
     PowerScheduleCoverage,
     PowerScheduleKPath,
@@ -30,7 +30,7 @@ class PacketSelector:
     ):
         self.start_symbol = NonTerminal("<start>")
         self.grammar = grammar
-        self.coverage_symbols = self._get_subgrammar_symbols(self.start_symbol)
+        self.coverage_symbols = self._get_state_grammar_symbols(self.start_symbol)
         self.msg_power_schedule = PowerScheduleCoverage()
         self.state_path_power_schedule = PowerScheduleKPath()
         self.io_instance = io_instance
@@ -52,11 +52,11 @@ class PacketSelector:
         self._all_past_covered_k_paths: set[KPath] = set()
         self.compute(history_tree, self.parst_derivations)
 
-    def _get_subgrammar_symbols(self, starting_symbol: NonTerminal):
-        reduced_grammar = GrammarReducer(self.grammar.grammar_settings).process(
+    def _get_state_grammar_symbols(self, starting_symbol: NonTerminal):
+        state_grammar = StateGrammarConverter(self.grammar.grammar_settings).process(
             self.grammar.rules, starting_symbol
         )
-        symbols = set(reduced_grammar.keys())
+        symbols = set(state_grammar.keys())
         symbols.update(
             map(lambda x: x.symbol, self.grammar.get_protocol_messages(starting_symbol))
         )

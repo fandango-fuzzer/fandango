@@ -3,7 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Optional
 from fandango.errors import FandangoValueError
-from fandango.io.navigation.grammarreducer import GrammarReducer
+from fandango.io.navigation.grammarreducer import StateGrammarConverter
 from fandango.io.navigation.packetiterativeparser import PacketIterativeParser
 from fandango.io.navigation.visitor.continuing_nodevisitor import ContinuingNodeVisitor
 from fandango.language.grammar import ParsingMode
@@ -182,7 +182,7 @@ class ForecastingResult:
 class PacketForecaster:
 
     def __init__(self, grammar: Grammar):
-        reduced_rules = GrammarReducer(grammar.grammar_settings).process(grammar.rules)
+        reduced_rules = StateGrammarConverter(grammar.grammar_settings).process(grammar.rules)
         self.grammar = grammar
         self._parser = PacketIterativeParser(reduced_rules)
 
