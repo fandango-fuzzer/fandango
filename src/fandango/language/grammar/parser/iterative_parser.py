@@ -764,7 +764,9 @@ class IterativeParser(
         self._hookin_parent = deepcopy(hookin_parent)
         self._clear_tmp()
 
-    def consume(self, char: str | bytes | int) -> Generator[tuple[DerivationTree, bool], None, None]:
+    def consume(
+        self, char: str | bytes | int
+    ) -> Generator[tuple[DerivationTree, bool], None, None]:
         for tree, is_complete in self._consume(char):
             yield self.to_derivation_tree(tree), is_complete
 
