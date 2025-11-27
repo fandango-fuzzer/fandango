@@ -4,6 +4,7 @@ from typing import Any
 
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.language import Symbol
+from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols.non_terminal import NonTerminal
 
 
@@ -13,7 +14,7 @@ class PowerSchedule:
         self._past_targets = []
         self.exponent = 0.7
 
-    def _normalize_energy(self) -> dict[NonTerminal, float]:
+    def _normalize_energy(self) -> dict[KPath, float]:
         sum_energy = sum(self.energy.values())
         if sum_energy == 0:
             n = len(self.energy)
