@@ -153,7 +153,7 @@ class PacketNavigator(GrammarNavigator):
         *,
         tree: DerivationTree,
         destination_k_path: KPath,
-    ) -> Optional[list[PacketNonTerminal | NonTerminal]]:
+    ) -> Optional[list[Optional[PacketNonTerminal | NonTerminal]]]:
         search_destination_symbols = []
         for symbol in destination_k_path:
             if symbol in self._packet_symbols:

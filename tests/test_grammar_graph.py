@@ -1,6 +1,7 @@
 import unittest
 
 from fandango.api import Fandango
+from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.grammarnavigator import GrammarNavigator
 from fandango.io.navigation.packetnavigator import PacketNavigator
 from fandango.language import NonTerminal, DerivationTree
@@ -35,7 +36,7 @@ class TestGrammarGraph(unittest.TestCase):
             "ping\npong\n", mode=ParsingMode.INCOMPLETE, include_controlflow=True
         )
         navigator = GrammarNavigator(grammar)
-        path = navigator.astar_tree(tree=tree_to_continue, symbol=NonTerminal("<paff>"))
+        path = navigator.astar_tree(tree=tree_to_continue, destination_k_path=(NonTerminal("<paff>"),))
         path = filter(
             lambda n: isinstance(n.node, NonTerminalNode) and n.node.sender is not None,
             path,
@@ -52,17 +53,21 @@ class TestGrammarGraph(unittest.TestCase):
             mode=ParsingMode.INCOMPLETE,
             include_controlflow=True,
         )
-        path = navigator.astar_tree(tree=tree_to_continue, symbol=NonTerminal("<end_data>"))
+        packet_tree, _ = next(navigator.get_controlflow_tree(tree=tree_to_continue))
+        path = navigator.astar_tree(tree=packet_tree, destination_k_path=(NonTerminal("<end_data>"),))
         self.assertEqual(
             path,
             [
-                ('StdOut', None, NonTerminal("<hello>")),
-                ('StdOut', None, NonTerminal("<MAIL_FROM>")),
-                ('StdOut', None, NonTerminal("<ok>")),
-                ('StdOut', None, NonTerminal("<RCPT_TO>")),
-                ('StdOut', None, NonTerminal("<ok>")),
-                ('StdOut', None, NonTerminal("<DATA>")),
-                ('StdOut', None, NonTerminal("<end_data>")),
+                PacketNonTerminal('StdOut', None, NonTerminal("<hello>")),
+                NonTerminal('<mail_from>'),
+                PacketNonTerminal('StdOut', None, NonTerminal("<MAIL_FROM>")),
+                PacketNonTerminal('StdOut', None, NonTerminal("<ok>")),
+                NonTerminal('<mail_to>'),
+                PacketNonTerminal('StdOut', None, NonTerminal("<RCPT_TO>")),
+                PacketNonTerminal('StdOut', None, NonTerminal("<ok>")),
+                NonTerminal('<data>'),
+                PacketNonTerminal('StdOut', None, NonTerminal("<DATA>")),
+                PacketNonTerminal('StdOut', None, NonTerminal("<end_data>")),
             ],
         )
 
@@ -74,5 +79,7 @@ class TestGrammarGraph(unittest.TestCase):
             mode=ParsingMode.INCOMPLETE,
             include_controlflow=True,
         )
-        path = navigator.astar_tree(tree=tree_to_continue, symbol=NonTerminal("<helo>"))
-        self.assertIsNone(path)
+        packet_tree, _ = next(navigator.get_controlflow_tree(tree=tree_to_continue))
+        path = navigator.astar_tree(tree=packet_tree, destination_k_path=(NonTerminal("<helo>"),))
+        if None not in path:
+            self.assertFalse("Expected symbol to be not reachable")
