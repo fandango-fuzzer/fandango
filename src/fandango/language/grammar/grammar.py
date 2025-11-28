@@ -461,7 +461,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         """
         Returns a list of uncovered k-paths in the grammar given a set of derivation trees.
         """
-        all_k_paths = self._generate_all_k_paths(k, non_terminal, overlap_to_root)
+        all_k_paths = self.generate_all_k_paths(k, non_terminal, overlap_to_root)
         covered_k_paths = set()
         for tree in derivation_trees:
             covered_k_paths.update(
@@ -483,7 +483,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         Returns a score between 0 and 1 representing the fraction of k-paths covered.
         """
         # Generate all possible k-paths in the grammar
-        all_k_paths = self._generate_all_k_paths(k, non_terminal, overlap_to_root)
+        all_k_paths = self.generate_all_k_paths(k, non_terminal, overlap_to_root)
 
         # Extract k-paths from the derivation trees
         covered_k_paths = set()
@@ -499,7 +499,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             return 1.0  # If there are no k-paths, coverage is 100%
         return len(covered_k_paths) / len(all_k_paths)
 
-    def _generate_all_k_paths(
+    def generate_all_k_paths(
         self,
         k: int,
         non_terminal: NonTerminal = NonTerminal("<start>"),
@@ -509,6 +509,8 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         Computes the *k*-paths for this grammar, constructively. See: doi.org/10.1109/ASE.2019.00027
 
         :param k: The length of the paths.
+        :param non_terminal: The non-terminal from which to start generating paths.
+        :param overlap_to_root: Whether to include paths that contain the starting symbol but are overlapping with symbols towards the root direction.
         :return: All paths of length up to *k* within this grammar.
         """
         if (non_terminal, overlap_to_root) in self._k_path_cache:
@@ -543,7 +545,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                 symbol_work_k.add(tuple(node.to_symbol() for node in path))
 
         if overlap_to_root:
-            all_k_paths = self._generate_all_k_paths(k)
+            all_k_paths = self.generate_all_k_paths(k)
             for k_path in all_k_paths:
                 if non_terminal in k_path:
                     for idx in range(len(k_path) - 1, k):
@@ -724,15 +726,6 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
     def visitCharSet(self, node: CharSet) -> list[Node]:
         return []
 
-    def compute_k_paths(self, k: int) -> set[tuple[Symbol, ...]]:
-        """
-        Computes all possible k-paths in the grammar.
-
-        :param k: The length of the paths.
-        :return: A set of tuples, each tuple representing a k-path as a sequence of symbols.
-        """
-        return self._generate_all_k_paths(k)
-
     def traverse_derivation(
         self,
         tree: DerivationTree,
@@ -775,7 +768,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         """
 
         # Compute all possible k-paths in the grammar
-        all_k_paths = self.compute_k_paths(k)
+        all_k_paths = self.generate_all_k_paths(k)
 
         disambiguator = Disambiguator(self, self._grammar_settings)
 

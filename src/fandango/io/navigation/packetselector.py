@@ -1,3 +1,4 @@
+import enum
 from typing import Optional
 
 from fandango.io import FandangoIO
@@ -18,6 +19,10 @@ from fandango.language.grammar.grammar import Grammar, KPath
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.logger import log_guidance_hint
 
+class CoverageGoal(enum.Enum):
+    INPUTS = 0
+    STATE_INPUTS = 1
+    STATE_INPUTS_OUTPUTS = 2
 
 class PacketSelector:
     def __init__(
@@ -28,8 +33,10 @@ class PacketSelector:
         diversity_k: int,
     ):
         self.start_symbol = NonTerminal("<start>")
+        self.coverage_goal = CoverageGoal.STATE_INPUTS_OUTPUTS
         self.grammar = grammar
         self.state_grammar_symbols = self._get_state_grammar_symbols(self.start_symbol)
+        self.k_path_starters = self.compute_k_path_starters(self.coverage_goal)
         self.msg_power_schedule = PowerScheduleCoverage()
         self.state_path_power_schedule = PowerScheduleKPath()
         self.io_instance = io_instance
@@ -452,7 +459,7 @@ class PacketSelector:
 
         nt_coverage = {}
         for symbol in self.state_grammar_symbols:
-            all_k_paths = self.grammar._generate_all_k_paths(
+            all_k_paths = self.grammar.generate_all_k_paths(
                 self.diversity_k, symbol, overlap_to_root
             )
 
@@ -481,3 +488,36 @@ class PacketSelector:
                 len(paths["all_unique"]),
             )
         return nt_coverage
+
+    def set_coverage_goal(self, goal: CoverageGoal):
+        self.coverage_goal = goal
+        self.k_path_starters = self.compute_k_path_starters(self.coverage_goal)
+
+    def compute_k_path_starters(self, coverage_goal: CoverageGoal) -> set[NonTerminal]:
+        input_starters = set()
+        output_starters = set()
+        state_starters = set()
+        p_nts = self.grammar.get_protocol_messages(self.start_symbol)
+        for p_nt in p_nts:
+            msg_starters = self.grammar[p_nt.symbol].descendents(self.grammar, filter_controlflow=True)
+            if self.io_instance.parties[p_nt.sender].is_fuzzer_controlled():
+                input_starters.add(p_nt.symbol)
+                input_starters.update(msg_starters)
+            else:
+                output_starters.add(p_nt.symbol)
+                input_starters.update(msg_starters)
+        for nt in self.state_grammar_symbols:
+            if nt not in input_starters and nt not in output_starters:
+                state_starters.add(nt)
+
+        starters = set()
+        if coverage_goal == CoverageGoal.INPUTS:
+            starters.update(input_starters)
+        elif coverage_goal == CoverageGoal.STATE_INPUTS:
+            starters.update(input_starters)
+            starters.update(state_starters)
+        elif coverage_goal == CoverageGoal.STATE_INPUTS_OUTPUTS:
+            starters.update(input_starters)
+            starters.update(output_starters)
+            starters.update(state_starters)
+        return starters
