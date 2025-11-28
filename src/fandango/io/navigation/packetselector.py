@@ -1,9 +1,8 @@
-import random
 from typing import Optional
 
 from fandango.io import FandangoIO
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.io.navigation.grammarreducer import StateGrammarConverter
+from fandango.io.navigation.stategrammarconverter import StateGrammarConverter
 from fandango.io.navigation.powerschedule import (
     PowerScheduleCoverage,
     PowerScheduleKPath,
@@ -30,7 +29,7 @@ class PacketSelector:
     ):
         self.start_symbol = NonTerminal("<start>")
         self.grammar = grammar
-        self.coverage_symbols = self._get_state_grammar_symbols(self.start_symbol)
+        self.state_grammar_symbols = self._get_state_grammar_symbols(self.start_symbol)
         self.msg_power_schedule = PowerScheduleCoverage()
         self.state_path_power_schedule = PowerScheduleKPath()
         self.io_instance = io_instance
@@ -69,7 +68,7 @@ class PacketSelector:
         non_terminals: Optional[set[NonTerminal]] = None,
     ):
         if non_terminals is None:
-            non_terminals = self.coverage_symbols
+            non_terminals = self.state_grammar_symbols
         messages: list[DerivationTree] = []
         for tree in trees:
             for subtree in tree.flatten():
@@ -104,7 +103,7 @@ class PacketSelector:
         """
         messages_by_nt = self._group_messages_by_nt(self._all_derivation_trees())
         nt_coverage = {}
-        for symbol in self.coverage_symbols:
+        for symbol in self.state_grammar_symbols:
             if symbol not in messages_by_nt:
                 nt_coverage[symbol] = 0.0
                 continue
@@ -218,7 +217,7 @@ class PacketSelector:
         for list_idx, path in enumerate(list(uncovered_paths)):
             remaining_path = path
             for path_idx, symbol in enumerate(path[::-1]):
-                if symbol in self.coverage_symbols:
+                if symbol in self.state_grammar_symbols:
                     break
                 last_idx = len(path) - path_idx - 1
                 remaining_path = remaining_path[:last_idx]
@@ -452,7 +451,7 @@ class PacketSelector:
             roles_by_symbol[p_nt.symbol].add("all_party")
 
         nt_coverage = {}
-        for symbol in self.coverage_symbols:
+        for symbol in self.state_grammar_symbols:
             all_k_paths = self.grammar._generate_all_k_paths(
                 self.diversity_k, symbol, overlap_to_root
             )
