@@ -502,7 +502,8 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
     @staticmethod
     def filter_k_paths(
         included_symbols: set[NonTerminal],
-        k_paths: Iterable[KPath]
+        k_paths: Iterable[KPath],
+        allow_partial_matches: bool = True,
     ) -> set[KPath]:
         filtered_k_paths: set[KPath] = set()
         for k_path in k_paths:
@@ -511,12 +512,14 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             end_idx = len(k_path)
             for idx, symbol in enumerate(remaining_path):
                 if symbol not in included_symbols:
+                    if not allow_partial_matches:
+                        break
                     if idx == start_idx:
                         start_idx += 1
                     else:
                         end_idx = idx
                         break
-            if start_idx != len(k_path):
+            if start_idx != len(k_path) and (not allow_partial_matches or start_idx == 0 and end_idx == len(k_path)):
                 filtered_k_paths.add(k_path[start_idx:end_idx])
         return filtered_k_paths
 
