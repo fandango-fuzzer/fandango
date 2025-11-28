@@ -218,7 +218,7 @@ class PacketSelector:
     def _uncovered_paths(self):
         return list(Grammar.filter_k_paths(self.k_path_symbols, self.grammar.get_uncovered_k_paths(
             self._all_derivation_trees(), self.diversity_k, self.start_symbol
-        )))
+        ), False))
 
     def _select_next_target(self) -> tuple[NonTerminal, ...]:
         uncovered_paths = self._uncovered_paths()
@@ -426,7 +426,7 @@ class PacketSelector:
         u_paths = self._uncovered_paths()
         if len(u_paths) == 0:
             return 1.0
-        all_paths = Grammar.filter_k_paths(self.k_path_symbols, self.grammar.generate_all_k_paths(k=self.diversity_k))
+        all_paths = Grammar.filter_k_paths(self.k_path_symbols, self.grammar.generate_all_k_paths(k=self.diversity_k), False)
         if len(all_paths) == 0:
             return 1.0
         return 1.0 - (len(u_paths) / len(all_paths))
