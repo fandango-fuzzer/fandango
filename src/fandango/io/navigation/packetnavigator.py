@@ -2,7 +2,7 @@ from typing import Optional
 
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.grammarnavigator import GrammarNavigator
-from fandango.io.navigation.grammarreducer import StateGrammarConverter
+from fandango.io.navigation.stategrammarconverter import StateGrammarConverter
 from fandango.io.navigation.packetiterativeparser import PacketIterativeParser
 from fandango.language import Grammar, DerivationTree
 from fandango.language.grammar.grammar import KPath

@@ -8,6 +8,7 @@ from fandango.io.navigation.powerschedule import (
     PowerScheduleCoverage,
     PowerScheduleKPath,
 )
+from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.tree import DerivationTree
 from fandango.io.navigation.packetforecaster import (
     ForecastingPacket,
@@ -36,10 +37,10 @@ class PacketSelector:
         self.coverage_goal = CoverageGoal.STATE_INPUTS_OUTPUTS
         self.grammar = grammar
         self.state_grammar_symbols = self._get_state_grammar_symbols(self.start_symbol)
-        self.k_path_starters = self.compute_k_path_starters(self.coverage_goal)
+        self.io_instance = io_instance
+        self.k_path_symbols = self.compute_k_path_symbols(self.coverage_goal)
         self.msg_power_schedule = PowerScheduleCoverage()
         self.state_path_power_schedule = PowerScheduleKPath()
-        self.io_instance = io_instance
         self.navigator = PacketNavigator(grammar, self.start_symbol)
         self.forecaster = PacketForecaster(self.grammar)
         self.diversity_k = diversity_k
@@ -215,9 +216,9 @@ class PacketSelector:
         return all_derivation_trees
 
     def _uncovered_paths(self):
-        return self.grammar.get_uncovered_k_paths(
+        return list(Grammar.filter_k_paths(self.k_path_symbols, self.grammar.get_uncovered_k_paths(
             self._all_derivation_trees(), self.diversity_k, self.start_symbol
-        )
+        )))
 
     def _select_next_target(self) -> tuple[NonTerminal, ...]:
         uncovered_paths = self._uncovered_paths()
@@ -425,7 +426,7 @@ class PacketSelector:
         u_paths = self._uncovered_paths()
         if len(u_paths) == 0:
             return 1.0
-        all_paths = self.grammar.compute_k_paths(self.diversity_k)
+        all_paths = Grammar.filter_k_paths(self.k_path_symbols, self.grammar.generate_all_k_paths(k=self.diversity_k))
         if len(all_paths) == 0:
             return 1.0
         return 1.0 - (len(u_paths) / len(all_paths))
@@ -491,21 +492,30 @@ class PacketSelector:
 
     def set_coverage_goal(self, goal: CoverageGoal):
         self.coverage_goal = goal
-        self.k_path_starters = self.compute_k_path_starters(self.coverage_goal)
+        self.k_path_symbols = self.compute_k_path_symbols(self.coverage_goal)
 
-    def compute_k_path_starters(self, coverage_goal: CoverageGoal) -> set[NonTerminal]:
+    def compute_k_path_symbols(self, coverage_goal: CoverageGoal) -> set[NonTerminal]:
         input_starters = set()
         output_starters = set()
         state_starters = set()
         p_nts = self.grammar.get_protocol_messages(self.start_symbol)
         for p_nt in p_nts:
-            msg_starters = self.grammar[p_nt.symbol].descendents(self.grammar, filter_controlflow=True)
+            work = set(NonTerminalNode(p_nt.symbol, {}).descendents(self.grammar, filter_controlflow=True))
+            msg_starters: set[Symbol] = set()
+            while len(work) > 0:
+                current = work.pop()
+                current_symbol = current.to_symbol()
+                if current_symbol in msg_starters:
+                    continue
+                msg_starters.add(current_symbol)
+                work.update(current.descendents(self.grammar, filter_controlflow=True))
+
             if self.io_instance.parties[p_nt.sender].is_fuzzer_controlled():
                 input_starters.add(p_nt.symbol)
                 input_starters.update(msg_starters)
             else:
                 output_starters.add(p_nt.symbol)
-                input_starters.update(msg_starters)
+                output_starters.update(msg_starters)
         for nt in self.state_grammar_symbols:
             if nt not in input_starters and nt not in output_starters:
                 state_starters.add(nt)

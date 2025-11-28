@@ -1,7 +1,7 @@
 import random
 from collections.abc import Generator, Iterator
 from collections import defaultdict
-from typing import Any, cast, Optional
+from typing import Any, cast, Optional, Iterable
 from collections.abc import Sequence
 import warnings
 
@@ -461,7 +461,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         """
         Returns a list of uncovered k-paths in the grammar given a set of derivation trees.
         """
-        all_k_paths = self.generate_all_k_paths(k, non_terminal, overlap_to_root)
+        all_k_paths = self.generate_all_k_paths(k=k, non_terminal=non_terminal, overlap_to_root=overlap_to_root)
         covered_k_paths = set()
         for tree in derivation_trees:
             covered_k_paths.update(
@@ -483,7 +483,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         Returns a score between 0 and 1 representing the fraction of k-paths covered.
         """
         # Generate all possible k-paths in the grammar
-        all_k_paths = self.generate_all_k_paths(k, non_terminal, overlap_to_root)
+        all_k_paths = self.generate_all_k_paths(k=k, non_terminal=non_terminal, overlap_to_root=overlap_to_root)
 
         # Extract k-paths from the derivation trees
         covered_k_paths = set()
@@ -499,12 +499,34 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             return 1.0  # If there are no k-paths, coverage is 100%
         return len(covered_k_paths) / len(all_k_paths)
 
+    @staticmethod
+    def filter_k_paths(
+        included_symbols: set[NonTerminal],
+        k_paths: Iterable[KPath]
+    ) -> set[KPath]:
+        filtered_k_paths: set[KPath] = set()
+        for k_path in k_paths:
+            remaining_path = k_path
+            start_idx = 0
+            end_idx = len(k_path)
+            for idx, symbol in enumerate(remaining_path):
+                if symbol not in included_symbols:
+                    if idx == start_idx:
+                        start_idx += 1
+                    else:
+                        end_idx = idx
+                        break
+            if start_idx != len(k_path):
+                filtered_k_paths.add(k_path[start_idx:end_idx])
+        return filtered_k_paths
+
     def generate_all_k_paths(
         self,
+        *,
         k: int,
         non_terminal: NonTerminal = NonTerminal("<start>"),
         overlap_to_root: bool = False,
-    ) -> set[tuple[Symbol, ...]]:
+    ) -> set[KPath]:
         """
         Computes the *k*-paths for this grammar, constructively. See: doi.org/10.1109/ASE.2019.00027
 
@@ -518,7 +540,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             if len(cache_work) >= k:
                 return cache_work[k - 1]
 
-        initial = set()
+        initial: set[Node] = set()
         initial_work: list[Node] = [
             NonTerminalNode(non_terminal, self._grammar_settings)
         ]
@@ -545,7 +567,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                 symbol_work_k.add(tuple(node.to_symbol() for node in path))
 
         if overlap_to_root:
-            all_k_paths = self.generate_all_k_paths(k)
+            all_k_paths = self.generate_all_k_paths(k=k)
             for k_path in all_k_paths:
                 if non_terminal in k_path:
                     for idx in range(len(k_path) - 1, k):
