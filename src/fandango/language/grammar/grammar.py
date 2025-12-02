@@ -461,7 +461,9 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         """
         Returns a list of uncovered k-paths in the grammar given a set of derivation trees.
         """
-        all_k_paths = self.generate_all_k_paths(k=k, non_terminal=non_terminal, overlap_to_root=overlap_to_root)
+        all_k_paths = self.generate_all_k_paths(
+            k=k, non_terminal=non_terminal, overlap_to_root=overlap_to_root
+        )
         covered_k_paths = set()
         for tree in derivation_trees:
             covered_k_paths.update(
@@ -483,7 +485,9 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         Returns a score between 0 and 1 representing the fraction of k-paths covered.
         """
         # Generate all possible k-paths in the grammar
-        all_k_paths = self.generate_all_k_paths(k=k, non_terminal=non_terminal, overlap_to_root=overlap_to_root)
+        all_k_paths = self.generate_all_k_paths(
+            k=k, non_terminal=non_terminal, overlap_to_root=overlap_to_root
+        )
 
         # Extract k-paths from the derivation trees
         covered_k_paths = set()
@@ -519,7 +523,9 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                     else:
                         end_idx = idx
                         break
-            if start_idx != len(k_path) and (not allow_partial_matches or start_idx == 0 and end_idx == len(k_path)):
+            if start_idx != len(k_path) and (
+                not allow_partial_matches or start_idx == 0 and end_idx == len(k_path)
+            ):
                 filtered_k_paths.add(k_path[start_idx:end_idx])
         return filtered_k_paths
 
