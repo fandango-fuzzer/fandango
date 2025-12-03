@@ -13,7 +13,7 @@ from fandango.language.tree_value import TreeValueType
 from fandango.logger import LOGGER
 
 if TYPE_CHECKING:
-    import fandango
+    import fandango.language.grammar.node_visitors
 
 
 class TerminalNode(Node):
