@@ -8,7 +8,7 @@ from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 
 if TYPE_CHECKING:
-    import fandango
+    import fandango.language.grammar.node_visitors
 
 
 class NonTerminalNode(Node):

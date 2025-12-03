@@ -8,7 +8,7 @@ from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.tree import DerivationTree
 
 if TYPE_CHECKING:
-    import fandango
+    import fandango.language.grammar.node_visitors.node_visitor
 
 
 class Alternative(Node):

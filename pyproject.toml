@@ -40,7 +40,7 @@ dependencies = [
     "tdigest>=0.5.2.2",
     "thefuzz>=0.22",
     "xdg-base-dirs>=6.0.2",
-    "beartype>=0.21.0",
+    "beartype>=0.21.0,!=0.22.6,!=0.22.7",
 ]
 
 [project.optional-dependencies]
