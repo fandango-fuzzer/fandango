@@ -13,7 +13,7 @@ from fandango.language.symbols.terminal import Terminal
 from fandango.language.tree import DerivationTree
 
 if TYPE_CHECKING:
-    import fandango
+    import fandango.language.grammar.node_visitors
 
 
 class Repetition(Node):
