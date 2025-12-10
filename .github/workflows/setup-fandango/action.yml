@@ -36,10 +36,19 @@ runs:
         else
           make test-tools
         fi
+    - name: Install uv and set the Python version
+      uses: astral-sh/setup-uv@v7
+      with:
+        python-version: ${{ inputs.python-version }}
 
     - name: Install Python dependencies
       shell: bash
       run: |
-        pip install -e ".[${{ inputs.target }}]"
+        EXTRAS=""
+        IFS=',' read -ra TARGETS <<< "${{ inputs.target }}"
+        for target in "${TARGETS[@]}"; do
+          EXTRAS="$EXTRAS --extra ${target}"
+        done
+        uv sync --locked $EXTRAS
       env:
         FANDANGO_SKIP_CPP_PARSER: ${{ inputs.skip-parser }}
