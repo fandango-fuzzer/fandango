@@ -30,6 +30,7 @@ jobs:
         env:
           FANDANGO_FORCE_SKIP_BEARTYPE: "1"
         run: |
+          source .venv/bin/activate
           bencher run \
           --project fandango-394f926-x0wdsa1zilqt3 \
           --token '${{ secrets.BENCHER_API_TOKEN }}' \
@@ -45,4 +46,3 @@ jobs:
           --file results.json \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
           "pytest -n 0 --timeout 1200 --benchmark-json results.json --benchmark-enable --benchmark-only"
-    
