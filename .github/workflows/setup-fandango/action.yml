@@ -24,7 +24,7 @@ runs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ inputs.python-version }}
-        cache: 'pip'
+        cache: "pip"
 
     - name: Install system dependencies
       env:
@@ -50,5 +50,6 @@ runs:
           EXTRAS="$EXTRAS --extra ${target}"
         done
         uv sync --locked $EXTRAS
+        uv pip install --editable ".[${{ inputs.target }}]" --no-deps
       env:
         FANDANGO_SKIP_CPP_PARSER: ${{ inputs.skip-parser }}
