@@ -7,7 +7,7 @@ from fandango.language.symbols.symbol import Symbol
 from fandango.language.symbols.non_terminal import NonTerminal
 
 if TYPE_CHECKING:
-    import fandango
+    import fandango.language.grammar.node_visitors
 
 
 class Concatenation(Node):

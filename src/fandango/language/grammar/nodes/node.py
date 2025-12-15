@@ -11,12 +11,7 @@ from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
 
 if TYPE_CHECKING:
-    import fandango
-    from fandango.language.grammar.node_visitors.node_visitor import (
-        NodeVisitor,
-        AggregateType,
-        ResultType,
-    )
+    import fandango.language.grammar.node_visitors.node_visitor
 
 
 class NodeType(enum.Enum):
@@ -90,8 +85,8 @@ class Node(abc.ABC):
     @abc.abstractmethod
     def accept(
         self,
-        visitor: "NodeVisitor[AggregateType, ResultType]",
-    ) -> "ResultType":
+        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor[fandango.language.grammar.node_visitors.node_visitor.AggregateType, fandango.language.grammar.node_visitors.node_visitor.ResultType]",
+    ) -> "fandango.language.grammar.node_visitors.node_visitor.ResultType":
         raise NotImplementedError("accept method not implemented")
 
     def msg_parties(
