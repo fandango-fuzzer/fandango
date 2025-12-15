@@ -602,13 +602,23 @@ class FandangoIO(object):
         for idx, (sender, recipient, msg_fragment) in enumerate(
             self.get_received_msgs()
         ):
-            if prev_sender != sender or prev_recipient != recipient or (type(fragments[-1][2]) != type(msg_fragment) if fragments else False):
+            if (
+                prev_sender != sender
+                or prev_recipient != recipient
+                or (
+                    type(fragments[-1][2]) != type(msg_fragment) if fragments else False
+                )
+            ):
                 fragments.append((sender, recipient, msg_fragment))
-            elif isinstance(fragments[-1][2], bytes) and isinstance(msg_fragment, bytes):
+            elif isinstance(fragments[-1][2], bytes) and isinstance(
+                msg_fragment, bytes
+            ):
                 new_constructed_msg_bytes = fragments[-1][2] + msg_fragment
                 fragments[-1] = (sender, recipient, new_constructed_msg_bytes)
             else:
-                assert isinstance(fragments[-1][2], str) and isinstance(msg_fragment, str)
+                assert isinstance(fragments[-1][2], str) and isinstance(
+                    msg_fragment, str
+                )
                 new_constructed_msg_str = fragments[-1][2] + msg_fragment
                 fragments[-1] = (sender, recipient, new_constructed_msg_str)
         return fragments

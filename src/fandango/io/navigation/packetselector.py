@@ -20,10 +20,12 @@ from fandango.language.grammar.grammar import Grammar, KPath
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.logger import log_guidance_hint
 
+
 class CoverageGoal(enum.Enum):
     INPUTS = 0
     STATE_INPUTS = 1
     STATE_INPUTS_OUTPUTS = 2
+
 
 class PacketSelector:
     def __init__(
@@ -216,9 +218,15 @@ class PacketSelector:
         return all_derivation_trees
 
     def _uncovered_paths(self):
-        return list(Grammar.filter_k_paths(self.k_path_symbols, self.grammar.get_uncovered_k_paths(
-            self._all_derivation_trees(), self.diversity_k, self.start_symbol
-        ), False))
+        return list(
+            Grammar.filter_k_paths(
+                self.k_path_symbols,
+                self.grammar.get_uncovered_k_paths(
+                    self._all_derivation_trees(), self.diversity_k, self.start_symbol
+                ),
+                False,
+            )
+        )
 
     def _select_next_target(self) -> tuple[NonTerminal, ...]:
         uncovered_paths = self._uncovered_paths()
@@ -426,7 +434,11 @@ class PacketSelector:
         u_paths = self._uncovered_paths()
         if len(u_paths) == 0:
             return 1.0
-        all_paths = Grammar.filter_k_paths(self.k_path_symbols, self.grammar.generate_all_k_paths(k=self.diversity_k), False)
+        all_paths = Grammar.filter_k_paths(
+            self.k_path_symbols,
+            self.grammar.generate_all_k_paths(k=self.diversity_k),
+            False,
+        )
         if len(all_paths) == 0:
             return 1.0
         return 1.0 - (len(u_paths) / len(all_paths))
@@ -502,7 +514,11 @@ class PacketSelector:
         state_starters: set[Symbol] = set()
         p_nts = self.grammar.get_protocol_messages(self.start_symbol)
         for p_nt in p_nts:
-            work = set(NonTerminalNode(p_nt.symbol, []).descendents(self.grammar, filter_controlflow=True))
+            work = set(
+                NonTerminalNode(p_nt.symbol, []).descendents(
+                    self.grammar, filter_controlflow=True
+                )
+            )
             msg_starters: set[Symbol] = set()
             while len(work) > 0:
                 current = work.pop()
