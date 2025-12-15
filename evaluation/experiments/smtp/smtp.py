@@ -2,7 +2,6 @@ import os
 import time
 
 from fandango.language.grammar import FuzzingMode
-from utils import write_coverage_log
 from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.parse import parse
 
@@ -14,7 +13,7 @@ def main():
             f,
             use_stdlib=False,
         )
-
+    assert grammar is not None
     time_start = time.time()
     fandango = Fandango(
         grammar=grammar,

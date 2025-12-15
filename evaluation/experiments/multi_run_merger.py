@@ -34,7 +34,7 @@ for f in files:
 all_times = np.unique(np.concatenate([df["time"].values for df in dataframes]))
 all_times.sort()
 
-aligned_values = {col: [] for col in column_names}
+aligned_values: dict[str, list] = {col: [] for col in column_names}
 
 for df in dataframes:
     df_aligned = pd.DataFrame({"time": all_times})

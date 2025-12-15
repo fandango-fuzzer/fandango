@@ -1,4 +1,4 @@
-from fandango.io.navigation.packetforecaster import PacketForecaster
+from fandango.io.navigation.packetforecaster import PacketForecaster, ForecastingResult
 from fandango.language.grammar import ParsingMode
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree

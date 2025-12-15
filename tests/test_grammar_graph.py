@@ -26,10 +26,10 @@ class TestGrammarGraph(unittest.TestCase):
             lambda n: isinstance(n.node, NonTerminalNode) and n.node.sender is not None,
             path,
         )
-        path = map(lambda n: n.node.symbol, path)
-        path = list(path)
+        path_symbols = map(lambda n: n.node.to_symbol(), path)
+        path_symbols_list = list(path_symbols)
         self.assertEqual(
-            path,
+            path_symbols_list,
             [
                 NonTerminal("<ping>"),
                 NonTerminal("<pong>"),
@@ -95,5 +95,6 @@ class TestGrammarGraph(unittest.TestCase):
         path = navigator.astar_tree(
             tree=packet_tree, destination_k_path=(NonTerminal("<helo>"),)
         )
+        assert path is not None
         if None not in path:
             self.assertFalse("Expected symbol to be not reachable")
