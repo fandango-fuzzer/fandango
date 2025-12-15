@@ -24,13 +24,12 @@ def main():
 
     solutions = []
     for solution in fandango.generate(mode=FuzzingMode.IO):
-            print(str(solution))
-            solutions.append(solution)
+        print(str(solution))
+        solutions.append(solution)
     time_end = time.time()
     print(f"Time taken: {time_end - time_start}")
     print(f"Nr. msg: {sum(len(x.protocol_msgs()) for x in solutions)}")
     print(f"Trees: {len(solutions)}")
-
 
 
 if __name__ == "__main__":

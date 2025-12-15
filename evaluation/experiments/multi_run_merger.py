@@ -13,8 +13,7 @@ column_names = [col.strip() for col in sys.argv[3].split(",")]
 time_col = "time_elapsed"
 
 
-
-#csv_pattern = "run_*_grammar_coverage.csv"
+# csv_pattern = "run_*_grammar_coverage.csv"
 csv_pattern = "run_*_grammar_coverage_overlap.csv"
 
 files = glob.glob(f"{input_folder}/{csv_pattern}")
@@ -27,7 +26,9 @@ for f in files:
         print(f"Spalte(n) {missing} nicht gefunden in {f}")
         sys.exit(1)
     cols = [time_col] + column_names
-    df = df[cols].rename(columns={time_col: "time", **{col: col for col in column_names}})
+    df = df[cols].rename(
+        columns={time_col: "time", **{col: col for col in column_names}}
+    )
     dataframes.append(df)
 
 all_times = np.unique(np.concatenate([df["time"].values for df in dataframes]))
@@ -59,7 +60,7 @@ merged_df = pd.DataFrame(merged)
 
 first_max_idx = merged_df[[f"mean_{col}" for col in column_names]].max(axis=1).idxmax()
 if not np.isnan(first_max_idx):
-    merged_df = merged_df.iloc[:first_max_idx + 1]
+    merged_df = merged_df.iloc[: first_max_idx + 1]
 
 max_points = 100
 if len(merged_df) > max_points:

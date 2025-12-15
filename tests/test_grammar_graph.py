@@ -28,7 +28,15 @@ class TestGrammarGraph(unittest.TestCase):
         )
         path = map(lambda n: n.node.symbol, path)
         path = list(path)
-        self.assertEqual(path, [NonTerminal('<ping>'), NonTerminal('<pong>'), NonTerminal('<puff>'), NonTerminal('<paff>')])
+        self.assertEqual(
+            path,
+            [
+                NonTerminal("<ping>"),
+                NonTerminal("<pong>"),
+                NonTerminal("<puff>"),
+                NonTerminal("<paff>"),
+            ],
+        )
 
     def test_grammar_walk(self):
         grammar = self.get_grammar(RESOURCES_ROOT / "minimal_io.fan")
@@ -36,14 +44,16 @@ class TestGrammarGraph(unittest.TestCase):
             "ping\npong\n", mode=ParsingMode.INCOMPLETE, include_controlflow=True
         )
         navigator = GrammarNavigator(grammar)
-        path = navigator.astar_tree(tree=tree_to_continue, destination_k_path=(NonTerminal("<paff>"),))
+        path = navigator.astar_tree(
+            tree=tree_to_continue, destination_k_path=(NonTerminal("<paff>"),)
+        )
         path = filter(
             lambda n: isinstance(n.node, NonTerminalNode) and n.node.sender is not None,
             path,
         )
         path = map(lambda n: n.node.symbol, path)
         path = list(path)
-        self.assertEqual(path, [NonTerminal('<puff>'), NonTerminal('<paff>')])
+        self.assertEqual(path, [NonTerminal("<puff>"), NonTerminal("<paff>")])
 
     def test_packet_navigator(self):
         grammar = self.get_grammar(DOCS_ROOT / "smtp-extended.fan")
@@ -54,20 +64,22 @@ class TestGrammarGraph(unittest.TestCase):
             include_controlflow=True,
         )
         packet_tree, _ = next(navigator.get_controlflow_tree(tree=tree_to_continue))
-        path = navigator.astar_tree(tree=packet_tree, destination_k_path=(NonTerminal("<end_data>"),))
+        path = navigator.astar_tree(
+            tree=packet_tree, destination_k_path=(NonTerminal("<end_data>"),)
+        )
         self.assertEqual(
             path,
             [
-                PacketNonTerminal('StdOut', None, NonTerminal("<hello>")),
-                NonTerminal('<mail_from>'),
-                PacketNonTerminal('StdOut', None, NonTerminal("<MAIL_FROM>")),
-                PacketNonTerminal('StdOut', None, NonTerminal("<ok>")),
-                NonTerminal('<mail_to>'),
-                PacketNonTerminal('StdOut', None, NonTerminal("<RCPT_TO>")),
-                PacketNonTerminal('StdOut', None, NonTerminal("<ok>")),
-                NonTerminal('<data>'),
-                PacketNonTerminal('StdOut', None, NonTerminal("<DATA>")),
-                PacketNonTerminal('StdOut', None, NonTerminal("<end_data>")),
+                PacketNonTerminal("StdOut", None, NonTerminal("<hello>")),
+                NonTerminal("<mail_from>"),
+                PacketNonTerminal("StdOut", None, NonTerminal("<MAIL_FROM>")),
+                PacketNonTerminal("StdOut", None, NonTerminal("<ok>")),
+                NonTerminal("<mail_to>"),
+                PacketNonTerminal("StdOut", None, NonTerminal("<RCPT_TO>")),
+                PacketNonTerminal("StdOut", None, NonTerminal("<ok>")),
+                NonTerminal("<data>"),
+                PacketNonTerminal("StdOut", None, NonTerminal("<DATA>")),
+                PacketNonTerminal("StdOut", None, NonTerminal("<end_data>")),
             ],
         )
 
@@ -80,6 +92,8 @@ class TestGrammarGraph(unittest.TestCase):
             include_controlflow=True,
         )
         packet_tree, _ = next(navigator.get_controlflow_tree(tree=tree_to_continue))
-        path = navigator.astar_tree(tree=packet_tree, destination_k_path=(NonTerminal("<helo>"),))
+        path = navigator.astar_tree(
+            tree=packet_tree, destination_k_path=(NonTerminal("<helo>"),)
+        )
         if None not in path:
             self.assertFalse("Expected symbol to be not reachable")
