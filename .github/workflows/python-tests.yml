@@ -28,13 +28,5 @@ jobs:
 
       # Run tests or coverage depending on branch and OS
       - name: Run tests
-        if: matrix.os != 'windows-latest'
         run: |
-          source .venv/bin/activate
-          pytest -v
-
-      - name: Run tests (Windows)
-        if: matrix.os == 'windows-latest'
-        run: |
-          .venv\Scripts\activate
           pytest -v
