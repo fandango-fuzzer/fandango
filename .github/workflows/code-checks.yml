@@ -43,7 +43,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           needs-sudo: ${{ matrix.os == 'ubuntu-latest' }}
-          target: "development,book"
           skip-parser: 1
 
       - name: Run mypy
