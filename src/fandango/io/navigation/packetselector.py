@@ -124,7 +124,7 @@ class PacketSelector:
         return nt_coverage_list
 
     def _get_guide_to_end_packet(self) -> list[ForecastingPacket]:
-        path = self.navigator.astar_search_end(
+        path = self.navigator.astar_search_end_including_k_paths(
             self.history_tree, included_k_paths=self._current_covered_k_paths
         )
         if path is None:

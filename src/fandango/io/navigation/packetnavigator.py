@@ -168,7 +168,7 @@ class PacketNavigator(GrammarNavigator):
             return None
         return self._to_symbols(path)
 
-    def astar_search_end(
+    def astar_search_end_including_k_paths(
         self,
         tree: DerivationTree,
         included_k_paths: Optional[set[KPath]] = None,
