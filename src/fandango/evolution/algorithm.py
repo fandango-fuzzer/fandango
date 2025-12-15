@@ -655,6 +655,8 @@ class Fandango:
                         io_instance,
                     )
                     assert packet_tree is not None
+                    assert forecast is not None
+                    assert packet_tree.sender is not None
                     log_message_transfer(
                         packet_tree.sender,
                         packet_tree.recipient,

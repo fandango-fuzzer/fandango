@@ -581,33 +581,36 @@ class FandangoIO(object):
         """
         with self.receive_lock:
             if isinstance(message, bytes):
-                for fragment in message:
-                    self.receive.append((sender, receiver, bytes([fragment])))
+                for fragment_int in message:
+                    self.receive.append((sender, receiver, bytes([fragment_int])))
             else:
-                for fragment in message:
-                    self.receive.append((sender, receiver, fragment))
+                for fragment_str in message:
+                    self.receive.append((sender, receiver, fragment_str))
 
     def received_msg(self) -> bool:
         """Checks if there are any received messages from external parties."""
         with self.receive_lock:
             return len(self.receive) != 0
 
-    def get_full_fragements(
+    def get_full_fragments(
         self,
     ) -> list[tuple[str, str, str | bytes]]:
         """Returns a list of all received messages from external parties, combining consecutive fragments from the same sender to the same receiver."""
-        fragments = []
-        prev_sender_receiver = (None, None)
+        fragments: list[tuple[str, str, str | bytes]] = []
+        prev_sender: Optional[str] = None
+        prev_recipient: Optional[str] = None
         for idx, (sender, recipient, msg_fragment) in enumerate(
             self.get_received_msgs()
         ):
-            if (sender, recipient) != prev_sender_receiver:
-                prev_sender_receiver = (sender, recipient)
-                fragments.append(prev_sender_receiver + (msg_fragment,))
+            if prev_sender != sender or prev_recipient != recipient or (type(fragments[-1][2]) != type(msg_fragment) if fragments else False):
+                fragments.append((sender, recipient, msg_fragment))
+            elif isinstance(fragments[-1][2], bytes) and isinstance(msg_fragment, bytes):
+                new_constructed_msg_bytes = fragments[-1][2] + msg_fragment
+                fragments[-1] = (sender, recipient, new_constructed_msg_bytes)
             else:
-                fragments[-1] = prev_sender_receiver + (
-                    (fragments[-1][2] + msg_fragment),
-                )
+                assert isinstance(fragments[-1][2], str) and isinstance(msg_fragment, str)
+                new_constructed_msg_str = fragments[-1][2] + msg_fragment
+                fragments[-1] = (sender, recipient, new_constructed_msg_str)
         return fragments
 
     def get_received_msgs(self) -> list[tuple[str, str, str | bytes]]:

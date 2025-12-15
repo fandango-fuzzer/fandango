@@ -50,7 +50,7 @@ def parse_next_remote_packet(
                     "Unexpected party sent message. Expected: "
                     + " | ".join(forecast.get_msg_parties())
                     + f". Received: {set(received_parties)}."
-                    + f" Messages: {io_instance.get_full_fragements()}"
+                    + f" Messages: {io_instance.get_full_fragments()}"
                 )
         time.sleep(0.025)
         received_parties = list(map(lambda x: x[0], io_instance.get_received_msgs()))
@@ -111,7 +111,7 @@ def parse_next_remote_packet(
                         f"Timeout while waiting for next message fragment from {msg_sender}. "
                         + f"Incompletely parsed NonTerminals: {incomplete_nt_str} "
                         + f"Applicable NonTerminals: {applicable_nt_str} "
-                        + f"Received messages: {io_instance.get_full_fragements()}"
+                        + f"Received messages: {io_instance.get_full_fragments()}"
                     )
                 else:
                     continue_parse = False
@@ -166,7 +166,7 @@ def parse_next_remote_packet(
                 + "Predicted NonTerminals: "
                 + str(" | ".join(nt_list))
                 + " Messages: "
-                + str(io_instance.get_full_fragements())
+                + str(io_instance.get_full_fragments())
             )
 
     max_parse_idx = -1
