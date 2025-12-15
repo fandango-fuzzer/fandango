@@ -1,7 +1,6 @@
 import os
 import time
 
-from utils import write_coverage_log
 from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.grammar import FuzzingMode
 from fandango.language.parse import parse
@@ -11,7 +10,7 @@ def main():
     # Parse grammar and constraints
     with open("dns.fan") as f:
         grammar, constraints = parse(f, use_stdlib=False)
-
+    assert grammar is not None
     fandango = Fandango(
         grammar=grammar,
         constraints=constraints,
@@ -19,10 +18,10 @@ def main():
         max_nodes=600 * 8,
         logger_level=LoggerLevel.INFO,
     )
-    fandango.enable_guidance(False)
+    is_enable_guidance = True
     output_folder_name = (
         "coverage_w_guidance"
-        if fandango._is_enable_guidance
+        if is_enable_guidance
         else "coverage_wo_guidance"
     )
 
@@ -36,7 +35,6 @@ def main():
             f"{output_folder_name}/run_{current_id}_grammar_coverage.csv"
         ):
             current_id += 1
-        write_coverage_log(fandango, output_folder_name, current_id, time_start)
 
 
 if __name__ == "__main__":
