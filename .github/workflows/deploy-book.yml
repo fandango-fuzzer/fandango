@@ -23,7 +23,6 @@ jobs:
         with:
           python-version: 3.13
           needs-sudo: true
-          target: book
 
       # Step 3: Ensure Graphviz system package is installed
       - name: Install Graphviz system package

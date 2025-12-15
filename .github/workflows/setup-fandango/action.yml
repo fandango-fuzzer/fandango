@@ -8,10 +8,6 @@ inputs:
   needs-sudo:
     description: "Whether to use sudo"
     required: true
-  target:
-    description: "Which dependency list to target"
-    required: false
-    default: "test"
   skip-parser:
     description: "Whether to skip the parser"
     required: false
@@ -43,12 +39,6 @@ runs:
     - name: Install Python dependencies
       shell: bash
       run: |
-        EXTRAS=""
-        IFS=',' read -ra TARGETS <<< "${{ inputs.target }}"
-        for target in "${TARGETS[@]}"; do
-          EXTRAS="$EXTRAS --extra ${target}"
-        done
-        uv sync --locked $EXTRAS
-        uv pip install --editable ".[${{ inputs.target }}]" --no-deps
+        uv sync --all-extras --locked
       env:
         FANDANGO_SKIP_CPP_PARSER: ${{ inputs.skip-parser }}
