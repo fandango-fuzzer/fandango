@@ -505,7 +505,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
 
     @staticmethod
     def filter_k_paths(
-        included_symbols: set[NonTerminal],
+        included_symbols: set[Symbol],
         k_paths: Iterable[KPath],
         allow_partial_matches: bool = True,
     ) -> set[KPath]:

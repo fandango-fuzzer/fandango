@@ -54,7 +54,7 @@ class PacketSelector:
         self._prev_session_msgs: list[DerivationTree] = []
         self._guide_to_end = False
         self._guide_target: Optional[tuple[NonTerminal, ...]] = None
-        self._guide_path: Optional[list[PacketNonTerminal | NonTerminal | None]] = None
+        self._guide_path: list[PacketNonTerminal | NonTerminal | None] = []
         self._current_covered_k_paths: set[KPath] = set()
         self._all_past_covered_k_paths: set[KPath] = set()
         self.compute(history_tree, self.parst_derivations)
@@ -320,7 +320,7 @@ class PacketSelector:
             return self._get_guide_to_end_packet()
 
         left_path = True
-        if self._guide_path is not None:
+        if len(self._guide_path) != 0:
             left_path = False
             for msg in self._new_msgs(is_new_tree):
                 old_next_packet = self._get_next_packet()
@@ -431,6 +431,7 @@ class PacketSelector:
             return 1.0
         return 1.0 - (len(u_paths) / len(all_paths))
 
+    """
     def _compute_coverage_trees(
         self, overlap_to_root: bool = False
     ) -> dict[NonTerminal, tuple[int, int]]:
@@ -489,18 +490,19 @@ class PacketSelector:
                 len(paths["all_unique"]),
             )
         return nt_coverage
+    """
 
     def set_coverage_goal(self, goal: CoverageGoal):
         self.coverage_goal = goal
         self.k_path_symbols = self.compute_k_path_symbols(self.coverage_goal)
 
-    def compute_k_path_symbols(self, coverage_goal: CoverageGoal) -> set[NonTerminal]:
-        input_starters = set()
-        output_starters = set()
-        state_starters = set()
+    def compute_k_path_symbols(self, coverage_goal: CoverageGoal) -> set[Symbol]:
+        input_starters: set[Symbol] = set()
+        output_starters: set[Symbol] = set()
+        state_starters: set[Symbol] = set()
         p_nts = self.grammar.get_protocol_messages(self.start_symbol)
         for p_nt in p_nts:
-            work = set(NonTerminalNode(p_nt.symbol, {}).descendents(self.grammar, filter_controlflow=True))
+            work = set(NonTerminalNode(p_nt.symbol, []).descendents(self.grammar, filter_controlflow=True))
             msg_starters: set[Symbol] = set()
             while len(work) > 0:
                 current = work.pop()
@@ -510,6 +512,7 @@ class PacketSelector:
                 msg_starters.add(current_symbol)
                 work.update(current.descendents(self.grammar, filter_controlflow=True))
 
+            assert p_nt.sender is not None
             if self.io_instance.parties[p_nt.sender].is_fuzzer_controlled():
                 input_starters.add(p_nt.symbol)
                 input_starters.update(msg_starters)
@@ -520,7 +523,7 @@ class PacketSelector:
             if nt not in input_starters and nt not in output_starters:
                 state_starters.add(nt)
 
-        starters = set()
+        starters: set[Symbol] = set()
         if coverage_goal == CoverageGoal.INPUTS:
             starters.update(input_starters)
         elif coverage_goal == CoverageGoal.STATE_INPUTS:
