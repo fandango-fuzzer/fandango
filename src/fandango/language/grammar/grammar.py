@@ -799,7 +799,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         """
 
         # Compute all possible k-paths in the grammar
-        all_k_paths = self.generate_all_k_paths(k)
+        all_k_paths = self.generate_all_k_paths(k=k)
 
         disambiguator = Disambiguator(self, self._grammar_settings)
 
