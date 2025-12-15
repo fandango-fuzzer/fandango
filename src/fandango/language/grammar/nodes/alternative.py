@@ -11,7 +11,7 @@ from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.tree import DerivationTree
 
 if TYPE_CHECKING:
-    import fandango
+    import fandango.language.grammar.node_visitors.node_visitor
 
 
 class Alternative(Node):
