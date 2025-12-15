@@ -16,11 +16,15 @@ def main():
         grammar=grammar,
         constraints=constraints,
         population_size=10,
-        max_nodes=600*8,
+        max_nodes=600 * 8,
         logger_level=LoggerLevel.INFO,
     )
     fandango.enable_guidance(False)
-    output_folder_name = "coverage_w_guidance" if fandango._is_enable_guidance else "coverage_wo_guidance"
+    output_folder_name = (
+        "coverage_w_guidance"
+        if fandango._is_enable_guidance
+        else "coverage_wo_guidance"
+    )
 
     time_start = time.time()
     try:
@@ -28,7 +32,9 @@ def main():
             pass
     finally:
         current_id = 1
-        while os.path.exists(f"{output_folder_name}/run_{current_id}_grammar_coverage.csv"):
+        while os.path.exists(
+            f"{output_folder_name}/run_{current_id}_grammar_coverage.csv"
+        ):
             current_id += 1
         write_coverage_log(fandango, output_folder_name, current_id, time_start)
 
