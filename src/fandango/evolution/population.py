@@ -32,8 +32,8 @@ class PopulationManager:
     ) -> set[int]:
         return {hash(ind) for ind in current_population}
 
-    @staticmethod
     def add_unique_individual(
+        self,
         population: list[DerivationTree],
         candidate: DerivationTree,
         unique_set: set[int],
@@ -97,7 +97,7 @@ class PopulationManager:
                 GeneratorWithReturn(eval_individual(candidate)).collect()
             )
             if attempts < max_attempts:
-                if PopulationManager.add_unique_individual(
+                if self.add_unique_individual(
                     current_population, candidate, unique_hashes
                 ):
                     yield from found_solution
