@@ -23,7 +23,6 @@ jobs:
         env:
           FANDANGO_FORCE_SKIP_BEARTYPE: "1"
         run: |
-          source .venv/bin/activate
           pytest -n 0 --timeout 1200 --benchmark-json results.json --benchmark-enable --benchmark-only
       - name: Upload Benchmark Results
         uses: actions/upload-artifact@v4

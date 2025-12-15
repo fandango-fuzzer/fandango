@@ -38,6 +38,7 @@ runs:
       uses: astral-sh/setup-uv@v7
       with:
         python-version: ${{ inputs.python-version }}
+        activate-environment: true
 
     - name: Install Python dependencies
       shell: bash

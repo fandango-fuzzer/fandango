@@ -34,7 +34,6 @@ jobs:
       # Step 4: Locate Fandango and add to PATH
       - name: Locate Fandango and add to PATH
         run: |
-          source .venv/bin/activate
           which fandango
           echo "$(dirname $(which fandango))" >> $GITHUB_PATH
           fandango --help
