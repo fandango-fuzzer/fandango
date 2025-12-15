@@ -28,7 +28,7 @@ class ConstraintTest(unittest.TestCase):
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
 
-        k_paths = grammar.generate_all_k_paths(3)
+        k_paths = grammar.generate_all_k_paths(k=3)
         print(len(k_paths))
 
     def test_derivation_k_paths(self):
