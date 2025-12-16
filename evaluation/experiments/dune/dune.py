@@ -19,9 +19,7 @@ def main():
 
     is_enable_guidance = True
     output_folder_name = (
-        "coverage_w_guidance"
-        if is_enable_guidance
-        else "coverage_wo_guidance"
+        "coverage_w_guidance" if is_enable_guidance else "coverage_wo_guidance"
     )
 
     time_start = time.time()
