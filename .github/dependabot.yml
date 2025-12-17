@@ -10,8 +10,12 @@ updates:
     directory: /
     versioning-strategy: auto
     multi-ecosystem-group: python
+    patterns:
+      - "*"
     
   - package-ecosystem: uv
     directory: /
     versioning-strategy: auto
     multi-ecosystem-group: python
+    patterns:
+      - "*"
