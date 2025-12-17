@@ -28,7 +28,11 @@ class BuildCMakeWithCopy(_build_cmake):
         project_dir = Path(__file__).parent.resolve()
         target_dir = project_dir / "src" / "fandango" / "language" / "parser"
 
-        so_files = list(Path(self.build_lib).rglob(f"{CXX_PARSER_NAME}*.{LIB_EXT}"))
+        so_files = (
+            list(Path(self.build_lib).rglob(f"{CXX_PARSER_NAME}*.{LIB_EXT}"))
+            if self.build_lib
+            else []
+        )
 
         if os.environ.get("FANDANGO_REQUIRE_BINARY_BUILD", "0") == "1" and not so_files:
             raise BuildFailed()

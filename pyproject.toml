@@ -71,6 +71,7 @@ development = [
     "pygls>=2.0.0a4",           # language server
     "speedy-antlr-tool>=1.4.3",
     "types-setuptools>=73.0.1", # enable mypy to check setup.py
+    "scikit-build-core>=0.11.6", # For type checking
 ]
 
 book = [
