@@ -35,16 +35,16 @@ $ cd fandango
 ### Step 3: Create, then activate a virtual environment
 
 ```shell
-$ python3 -m venv venv
+$ python3 -m venv .venv
 ```
 
 ```shell
-$ source venv/bin/activate
+$ source .venv/bin/activate
 ```
 
 For Windows, use
 ```shell
-$ python -m venv venv
+$ python -m venv .venv
 ```
 
 ```shell
@@ -75,6 +75,11 @@ To install additional dependencies for unit tests, code checks, running the eval
 
 ```shell
 $ python -m pip install -e ".[test,development,evaluation,book]"
+```
+
+```{info}
+If subsequent tests fails due to dependency breakage, use `uv` to create the virtual environment with `uv.lock`, which provides a snapshot of the dependencies that are tested on our CI.
+`uv sync --locked --all-extras && uv pip install -e ".[test,development,evaluation,book]" --no-deps`
 ```
 
 If you don't need the (much faster) C++ parser, build Fandango without:
