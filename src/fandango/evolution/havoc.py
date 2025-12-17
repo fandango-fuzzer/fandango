@@ -65,7 +65,7 @@ INTERESTING_VALUES = {
 }
 
 
-def _wrapping_add(a: int, b: int, byte_size: int = 1) -> int:
+def _wrapping_add(a: int, b: str, byte_size: int = 1) -> int:
     return (a + b) % int(256**byte_size)
 
 
