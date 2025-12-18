@@ -45,4 +45,3 @@ jobs:
           --file results.json \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
           "pytest -n 0 --timeout 1200 --benchmark-json results.json --benchmark-enable --benchmark-only"
-    

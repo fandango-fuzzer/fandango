@@ -6,10 +6,14 @@ import platform
 import re
 import string
 import sys
+import warnings
 from enum import Enum
 from typing import Optional
 
-from py010parser import c_ast, parse_file
+# `py010parser` is using very old regular expression syntax which can raise `SyntaxWarning`
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", "", SyntaxWarning)
+    from py010parser import c_ast, parse_file
 
 from fandango.converters.FandangoConverter import FandangoConverter
 
