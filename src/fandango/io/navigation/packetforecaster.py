@@ -34,7 +34,7 @@ class PathFinder(ContinuingNodeVisitor):
         f_packet.add_path(mounting_path)
         self.result.add_packet(node.sender, f_packet)
 
-    def find(self, tree: Optional[DerivationTree] = None) -> ForecastingResult:
+    def forecast(self, tree: Optional[DerivationTree] = None) -> ForecastingResult:
         """
         Finds all possible protocol messages that can be mounted to the given DerivationTree.
         :param tree: The DerivationTree to base the search on. The DerivationTree must contain controlflow nodes
@@ -58,7 +58,7 @@ class PathFinder(ContinuingNodeVisitor):
                 return True, False
         return True, True
 
-    def onTerminalNodeVisit(self, node: TerminalNode, is_exploring: bool):
+    def onTerminalNodeVisit(self, node: TerminalNode, is_exploring: bool) -> bool:
         raise FandangoValueError(
             "PacketForecaster reached TerminalNode! This is a bug."
         )
@@ -203,7 +203,7 @@ class PacketForecaster:
         finder = PathFinder(self.grammar)
         options = ForecastingResult()
         if history_nts == "":
-            options = options.union(finder.find())
+            options = options.union(finder.forecast())
         else:
             self._parser.reference_tree = tree
             self._parser.new_parse(NonTerminal("<start>"), ParsingMode.INCOMPLETE)
@@ -226,7 +226,7 @@ class PacketForecaster:
                     else:
                         break
                 else:
-                    options = options.union(finder.find(suggested_tree))
+                    options = options.union(finder.forecast(suggested_tree))
                     if is_complete:
                         collapsed_tree = self.grammar.collapse(suggested_tree)
                         if collapsed_tree is not None:
