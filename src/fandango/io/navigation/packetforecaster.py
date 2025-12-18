@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Optional
+from typing import Optional, Any
 from fandango.errors import FandangoValueError
 from fandango.io.navigation.stategrammarconverter import StateGrammarConverter
 from fandango.io.navigation.packetiterativeparser import PacketIterativeParser
@@ -80,7 +80,7 @@ class MountingPath:
         )
 
     @staticmethod
-    def _collapsed_path(path: tuple[tuple[NonTerminal, bool], ...]):
+    def _collapsed_path(path: tuple[tuple[NonTerminal, bool], ...]) -> tuple[tuple[NonTerminal, bool], ...]:
         new_path = []
         for nt, new_node in path:
             if nt.is_type(TreeValueType.STRING) and str(nt.value()).startswith("<__"):
@@ -92,13 +92,13 @@ class MountingPath:
             new_path.append((nt, new_node))
         return tuple(new_path)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((hash(self.tree), hash(self.path)))
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return hash(self) == hash(other)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"({', '.join([f'({nt.format_as_spec()}, {new_node})' for nt, new_node in self.path])})"
 
 
@@ -118,7 +118,7 @@ class ForecastingNonTerminals:
     def get_non_terminals(self) -> set[NonTerminal]:
         return set(self.nt_to_packet.keys())
 
-    def __getitem__(self, item: NonTerminal):
+    def __getitem__(self, item: NonTerminal) -> ForecastingPacket:
         return self.nt_to_packet[item]
 
     def add_packet(self, packet: ForecastingPacket) -> None:
@@ -140,7 +140,7 @@ class ForecastingResult:
     def get_msg_parties(self) -> set[str]:
         return set(self.parties_to_packets.keys())
 
-    def contains_any_party(self, parties: list[str]):
+    def contains_any_party(self, parties: list[str]) -> bool:
         """
         Checks if the ForecastingResult contains any of the specified parties.
         :param parties: List of party names to check.
@@ -148,7 +148,7 @@ class ForecastingResult:
         """
         return any(party in self.parties_to_packets for party in parties)
 
-    def __getitem__(self, item: str):
+    def __getitem__(self, item: str) -> ForecastingNonTerminals:
         return self.parties_to_packets[item]
 
     def __contains__(self, item: str) -> bool:

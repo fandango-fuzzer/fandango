@@ -55,7 +55,7 @@ class PacketSelector:
         self._coverage_scores: Optional[list[tuple[NonTerminal, float]]] = None
         self._prev_session_msgs: list[DerivationTree] = []
         self._guide_to_end = False
-        self._guide_target: Optional[tuple[NonTerminal, ...]] = None
+        self._guide_target: Optional[KPath] = None
         self._guide_path: list[PacketNonTerminal | NonTerminal | None] = []
         self._current_covered_k_paths: set[KPath] = set()
         self._all_past_covered_k_paths: set[KPath] = set()
@@ -249,7 +249,7 @@ class PacketSelector:
             m_ps.assign_energy_coverage(message_coverage)
             target = m_ps.choose()
             m_ps.add_past_target(target)
-            return target
+            return (target,)
         s_ps = self.state_path_power_schedule
         s_ps.assign_energy_k_path(uncovered_paths)
         selected_path = s_ps.choose()
@@ -264,11 +264,11 @@ class PacketSelector:
         )
         return include_k_paths
 
-    def _confirm_covered_path(self, path: tuple[Symbol, ...]):
+    def _confirm_covered_path(self, path: KPath) -> None:
         self._current_covered_k_paths.add(path)
         self._all_past_covered_k_paths.add(path)
 
-    def _remember_messages(self):
+    def _remember_messages(self) -> None:
         if self.history_tree is None:
             self._prev_session_msgs = []
             return
@@ -295,7 +295,7 @@ class PacketSelector:
             return all_current_msgs[len(self._prev_session_msgs) :]
         return new_msgs
 
-    def _get_next_packet(self):
+    def _get_next_packet(self) -> Optional[PacketNonTerminal]:
         if self._guide_path is None:
             return None
         return next(
@@ -504,7 +504,7 @@ class PacketSelector:
         return nt_coverage
     """
 
-    def set_coverage_goal(self, goal: CoverageGoal):
+    def set_coverage_goal(self, goal: CoverageGoal) -> None:
         self.coverage_goal = goal
         self.k_path_symbols = self.compute_k_path_symbols(self.coverage_goal)
 

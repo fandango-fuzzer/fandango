@@ -125,7 +125,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
 
     def astar_tree_w_controlflow(
         self, *, tree: Optional[DerivationTree] = None, destination_k_path: KPath
-    ):
+    ) -> Optional[list[GrammarGraphNode | None]]:
         if len(destination_k_path) == 0:
             return []
         if not self.check_reachability_w_controlflow(
@@ -159,7 +159,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
             return None
         return list(a_star_path)
 
-    def astar_tree(self, *, tree: DerivationTree, destination_k_path: KPath):
+    def astar_tree(self, *, tree: DerivationTree, destination_k_path: KPath) -> Optional[list[GrammarGraphNode | None]]:
         return self.astar_tree_w_controlflow(
             tree=tree, destination_k_path=destination_k_path
         )
