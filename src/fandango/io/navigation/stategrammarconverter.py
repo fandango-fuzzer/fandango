@@ -12,7 +12,7 @@ from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.tree_value import TreeValueType
 
 
-class StateGrammarConverter(NodeVisitor):
+class StateGrammarConverter(NodeVisitor[list[Node], Node]):
     """
     Converts a grammar into a reduced form, where all protocol message defining NonTerminalNodes are replaced with
     a TerminalNode that describes the protocol message type.
@@ -60,31 +60,31 @@ class StateGrammarConverter(NodeVisitor):
             diff_keys = self.seen_keys - self.processed_keys
         return self._reduced
 
-    def default_result(self):
+    def default_result(self) -> list[Node]:
         return []
 
-    def aggregate_results(self, aggregate, result):
+    def aggregate_results(self, aggregate: list[Node], result: Node) -> list[Node]:
         aggregate.append(result)
         return aggregate
 
-    def visitConcatenation(self, node: Concatenation):
+    def visitConcatenation(self, node: Concatenation) -> Concatenation:
         return Concatenation(
             self.visitChildren(node),
             self._grammar_settings,
             node.id,
         )
 
-    def visitTerminalNode(self, node: TerminalNode):
+    def visitTerminalNode(self, node: TerminalNode) -> TerminalNode:
         return TerminalNode(node.symbol, self._grammar_settings)
 
-    def visitAlternative(self, node: Alternative):
+    def visitAlternative(self, node: Alternative) -> Alternative:
         return Alternative(
             self.visitChildren(node),
             self._grammar_settings,
             node.id,
         )
 
-    def visitRepetition(self, node: Repetition):
+    def visitRepetition(self, node: Repetition) -> Repetition:
         repetition = Repetition(
             self.visit(node.node),
             self._grammar_settings,
@@ -95,24 +95,24 @@ class StateGrammarConverter(NodeVisitor):
         repetition.bounds_constraint = node.bounds_constraint
         return repetition
 
-    def visitOption(self, node: Option):
+    def visitOption(self, node: Option) -> Option:
         return Option(
             self.visit(node.node),
             self._grammar_settings,
             node.id,
         )
 
-    def visitPlus(self, node: Plus):
+    def visitPlus(self, node: Plus) -> Plus:
         return Plus(self.visit(node.node), self._grammar_settings, node.id)
 
-    def visitStar(self, node: Star):
+    def visitStar(self, node: Star) -> Star:
         return Star(
             self.visit(node.node),
             self._grammar_settings,
             node.id,
         )
 
-    def visitNonTerminalNode(self, node: NonTerminalNode):
+    def visitNonTerminalNode(self, node: NonTerminalNode) -> NonTerminalNode:
         if node.sender is None and node.recipient is None:
             self.seen_keys.add(node.symbol)
             return node

@@ -47,19 +47,19 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         self.comparisons = 0
         return super().astar(start, goal, reverse_path)
 
-    def neighbors(self, n: GrammarGraphNode):
+    def neighbors(self, n: GrammarGraphNode) -> list[GrammarGraphNode]:
         return n.reaches
 
-    def set_message_cost(self, cost: int):
+    def set_message_cost(self, cost: int) -> None:
         self.message_cost = cost
 
-    def set_non_terminal_cost(self, cost: int):
+    def set_non_terminal_cost(self, cost: int) -> None:
         self.non_terminal_cost = cost
 
-    def set_node_costs(self, cost: int):
+    def set_node_costs(self, cost: int) -> None:
         self.node_cost = cost
 
-    def distance_between(self, n1: GrammarGraphNode, n2: GrammarGraphNode):
+    def distance_between(self, n1: GrammarGraphNode, n2: GrammarGraphNode) -> int:
         if isinstance(n2.node, NonTerminalNode):
             if n2.node.sender is not None:
                 return self.message_cost
@@ -87,7 +87,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
                 deleted += 1
         return chain
 
-    def heuristic_path_symbols(self, current_chain: list[Symbol]) -> float:
+    def heuristic_path_symbols(self, current_chain: list[Symbol]) -> int:
         if not self.search_symbols or not current_chain:
             return 1
         max_overlap = 0
@@ -96,17 +96,17 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         for i in range(1, min(search_len, chain_len) + 1):
             if current_chain[-i:] == self.search_symbols[:i]:
                 max_overlap = i
-        return float(search_len - max_overlap)
+        return int(search_len - max_overlap)
 
     def heuristic_cost_estimate(
         self, current: GrammarGraphNode, goal: GrammarGraphNode
-    ):
+    ) -> int:
         if self.search_symbols is not None and len(self.search_symbols) > 0:
             chain = self._get_path_symbols(current, False)
             return self.heuristic_path_symbols(chain)
         return 1
 
-    def is_goal_reached(self, current: GrammarGraphNode, goal: GrammarGraphNode):
+    def is_goal_reached(self, current: GrammarGraphNode, goal: GrammarGraphNode) -> bool:
         self.comparisons += 1
         if self.comparisons > self.max_comparisons:
             raise NavigatorTimedOutError(

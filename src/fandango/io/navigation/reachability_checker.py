@@ -27,7 +27,7 @@ class ReachabilityChecker(ContinuingNodeVisitor):
         *,
         k_path_to_reach: KPath,
         tree: Optional[DerivationTree] = None,
-    ):
+    ) -> bool:
         if not k_path_to_reach:
             return False
         self.path_reached = False
@@ -38,7 +38,7 @@ class ReachabilityChecker(ContinuingNodeVisitor):
 
     def test_reachability_from_node(
         self, node: NonTerminalNode, k_path_to_reach: KPath
-    ):
+    ) -> bool:
         current_nodes: list[Node] = [node]
         chain_found = True
         for symbol in k_path_to_reach:
@@ -55,7 +55,7 @@ class ReachabilityChecker(ContinuingNodeVisitor):
             current_nodes = list(current.descendents(self.grammar, True))
         return chain_found
 
-    def onNonTerminalNodeVisit(self, node: NonTerminalNode, is_exploring: bool):
+    def onNonTerminalNodeVisit(self, node: NonTerminalNode, is_exploring: bool) -> tuple[bool, bool]:
         if not is_exploring:
             return True, True
         first = self.k_path_to_reach[0]
@@ -77,7 +77,7 @@ class ReachabilityChecker(ContinuingNodeVisitor):
             self.path_reached = True
         return False, False
 
-    def onTerminalNodeVisit(self, node: TerminalNode, is_exploring: bool):
+    def onTerminalNodeVisit(self, node: TerminalNode, is_exploring: bool) -> bool:
         if is_exploring:
             self.seen_symbols.add(node.symbol)
         return True

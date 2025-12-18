@@ -37,7 +37,7 @@ class AdaptiveTuner:
         self.max_safe_repetition = max_safe_repetition
         self.max_safe_nodes = max_safe_nodes
 
-    def reset_parameters(self):
+    def reset_parameters(self) -> None:
         self.mutation_rate = self.initial_mutation_rate
         self.crossover_rate = self.initial_crossover_rate
         self.current_max_repetition = self.initial_max_repetition
