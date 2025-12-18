@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Generator
 
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.grammarnavigator import GrammarNavigator
@@ -38,7 +38,7 @@ class PacketNavigator(GrammarNavigator):
         self._parser = PacketIterativeParser(reduced_rules)
         self.set_message_cost(1)
 
-    def get_controlflow_tree(self, tree: DerivationTree):
+    def get_controlflow_tree(self, tree: DerivationTree) -> Generator[tuple[DerivationTree, bool], None, None]:
         history_nts = ""
         for r_msg in tree.protocol_msgs():
             assert isinstance(r_msg.msg.symbol, NonTerminal)
@@ -92,7 +92,7 @@ class PacketNavigator(GrammarNavigator):
                 symbol_path.append(NonTerminal(n.node.symbol.name()))
         return symbol_path
 
-    def _includes_k_paths(self, k_paths: set[KPath], controlflow_tree: DerivationTree):
+    def _includes_k_paths(self, k_paths: set[KPath], controlflow_tree: DerivationTree) -> bool:
         if len(k_paths) == 0:
             return True
         packet_k_paths = set()
@@ -111,7 +111,7 @@ class PacketNavigator(GrammarNavigator):
         covered_k_paths = self.grammar._extract_k_paths_from_tree(col_tree, k)
         return len(packet_k_paths.difference(covered_k_paths)) == 0
 
-    def _find_trees_including_k_paths(self, k_paths: set[KPath], tree: DerivationTree):
+    def _find_trees_including_k_paths(self, k_paths: set[KPath], tree: DerivationTree) -> tuple[list[tuple[DerivationTree, bool]], bool]:
         match_k_paths_trees = []
         process_trees = []
         for suggested_tree, is_complete in self.get_controlflow_tree(tree):
@@ -126,7 +126,7 @@ class PacketNavigator(GrammarNavigator):
         self,
         *,
         tree: DerivationTree,
-        destination_k_path: tuple[NonTerminal, ...],
+        destination_k_path: KPath,
         included_k_paths: Optional[set[KPath]] = None,
     ) -> Optional[list[Optional[PacketNonTerminal | NonTerminal]]]:
         if included_k_paths is None:

@@ -14,7 +14,7 @@ from fandango.constraints.failing_tree import (
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.language import NonTerminal
 from fandango.language.tree import DerivationTree
-from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar.grammar import Grammar, KPath
 from fandango.logger import LOGGER, print_exception
 
 
@@ -345,7 +345,7 @@ class IoEvaluator(Evaluator):
                 key = (msg.sender, msg.recipient, tree)
                 self._submitted_solutions.add(hash(key))
 
-    def _is_path_start_with(self, state_path: tuple, path: tuple) -> int:
+    def _is_path_start_with(self, state_path: KPath, path: KPath) -> int:
         n = len(state_path)
         m = len(path)
         max_overlap = min(n, m)
