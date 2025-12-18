@@ -1,4 +1,5 @@
 import unittest
+from typing import TypeGuard
 
 from fandango.api import Fandango
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
@@ -6,6 +7,7 @@ from fandango.io.navigation.grammarnavigator import GrammarNavigator
 from fandango.io.navigation.packetnavigator import PacketNavigator
 from fandango.language import NonTerminal, DerivationTree
 from fandango.language.grammar import ParsingMode
+from fandango.language.grammar.node_visitors.grammar_graph_converter import GrammarGraphNode
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from tests.utils import RESOURCES_ROOT, DOCS_ROOT
 
@@ -44,16 +46,24 @@ class TestGrammarGraph(unittest.TestCase):
             "ping\npong\n", mode=ParsingMode.INCOMPLETE, include_controlflow=True
         )
         navigator = GrammarNavigator(grammar)
+
+        def _is_valid_sender_node(n: GrammarGraphNode | None) -> TypeGuard[GrammarGraphNode]:
+            return (
+                    n is not None
+                    and isinstance(n.node, NonTerminalNode)
+                    and n.node.sender is not None
+            )
+
         path = navigator.astar_tree(
             tree=tree_to_continue, destination_k_path=(NonTerminal("<paff>"),)
         )
-        path = filter(
-            lambda n: isinstance(n.node, NonTerminalNode) and n.node.sender is not None,
-            path,
-        )
-        path = map(lambda n: n.node.symbol, path)
-        path = list(path)
-        self.assertEqual(path, [NonTerminal("<puff>"), NonTerminal("<paff>")])
+
+        path_iter: list[GrammarGraphNode | None] = path or []
+
+        path_filtered: list[GrammarGraphNode] = list(filter(_is_valid_sender_node, path_iter))
+
+        path_list = [n.node.to_symbol() for n in path_filtered]
+        self.assertEqual(path_list, [NonTerminal("<puff>"), NonTerminal("<paff>")])
 
     def test_packet_navigator(self):
         grammar = self.get_grammar(DOCS_ROOT / "smtp-extended.fan")
