@@ -80,7 +80,9 @@ class MountingPath:
         )
 
     @staticmethod
-    def _collapsed_path(path: tuple[tuple[NonTerminal, bool], ...]) -> tuple[tuple[NonTerminal, bool], ...]:
+    def _collapsed_path(
+        path: tuple[tuple[NonTerminal, bool], ...],
+    ) -> tuple[tuple[NonTerminal, bool], ...]:
         new_path = []
         for nt, new_node in path:
             if nt.is_type(TreeValueType.STRING) and str(nt.value()).startswith("<__"):

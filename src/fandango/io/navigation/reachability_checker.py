@@ -55,7 +55,9 @@ class ReachabilityChecker(ContinuingNodeVisitor):
             current_nodes = list(current.descendents(self.grammar, True))
         return chain_found
 
-    def onNonTerminalNodeVisit(self, node: NonTerminalNode, is_exploring: bool) -> tuple[bool, bool]:
+    def onNonTerminalNodeVisit(
+        self, node: NonTerminalNode, is_exploring: bool
+    ) -> tuple[bool, bool]:
         if not is_exploring:
             return True, True
         first = self.k_path_to_reach[0]
@@ -82,7 +84,9 @@ class ReachabilityChecker(ContinuingNodeVisitor):
             self.seen_symbols.add(node.symbol)
         return True
 
-    def find_longest_suffix(self, path: tuple[Symbol, ...], suffix_path: tuple[Symbol, ...]) -> tuple[Symbol, ...]:
+    def find_longest_suffix(
+        self, path: tuple[Symbol, ...], suffix_path: tuple[Symbol, ...]
+    ) -> tuple[Symbol, ...]:
         max_overlap = 0
         search_len = len(suffix_path)
         chain_len = len(path)

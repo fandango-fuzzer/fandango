@@ -150,7 +150,9 @@ class GrammarGraph:
         return self.start.walk(tree_root)
 
 
-class GrammarGraphConverter(NodeVisitor[None, tuple[GrammarGraphNode, list[GrammarGraphNode]]]):
+class GrammarGraphConverter(
+    NodeVisitor[None, tuple[GrammarGraphNode, list[GrammarGraphNode]]]
+):
 
     def __init__(
         self, grammar_rules: dict[NonTerminal, Node], start_symbol: NonTerminal
@@ -183,7 +185,9 @@ class GrammarGraphConverter(NodeVisitor[None, tuple[GrammarGraphNode, list[Gramm
         for next_child in next_nodes:
             node.add_egress(next_child)
 
-    def visitAlternative(self, node: Alternative) -> tuple[GrammarGraphNode, list[GrammarGraphNode]]:
+    def visitAlternative(
+        self, node: Alternative
+    ) -> tuple[GrammarGraphNode, list[GrammarGraphNode]]:
         chain_start: list[GrammarGraphNode] = list()
         chain_end = list()
         graph_node = EagerGrammarGraphNode(node, chain_start)
@@ -196,7 +200,9 @@ class GrammarGraphConverter(NodeVisitor[None, tuple[GrammarGraphNode, list[Gramm
         self.current_parent.pop()
         return graph_node, chain_end
 
-    def visitRepetition(self, node: Repetition) -> tuple[GrammarGraphNode, list[GrammarGraphNode]]:
+    def visitRepetition(
+        self, node: Repetition
+    ) -> tuple[GrammarGraphNode, list[GrammarGraphNode]]:
         chain_start = None
         chain_end = list()
         intermediate_end: Optional[list[GrammarGraphNode]] = None
@@ -224,7 +230,9 @@ class GrammarGraphConverter(NodeVisitor[None, tuple[GrammarGraphNode, list[Gramm
         self.current_parent.pop()
         return graph_node, chain_end
 
-    def visitConcatenation(self, node: Concatenation) -> tuple[GrammarGraphNode, list[GrammarGraphNode]]:
+    def visitConcatenation(
+        self, node: Concatenation
+    ) -> tuple[GrammarGraphNode, list[GrammarGraphNode]]:
         chain_end: list[GrammarGraphNode] = list()
         reaches: list[GrammarGraphNode] = list()
         graph_node = EagerGrammarGraphNode(node, reaches)
@@ -243,18 +251,24 @@ class GrammarGraphConverter(NodeVisitor[None, tuple[GrammarGraphNode, list[Gramm
         self.current_parent.pop()
         return graph_node, chain_end
 
-    def visitTerminalNode(self, node: TerminalNode) -> tuple[GrammarGraphNode, list[GrammarGraphNode]]:
+    def visitTerminalNode(
+        self, node: TerminalNode
+    ) -> tuple[GrammarGraphNode, list[GrammarGraphNode]]:
         graph_node = EagerGrammarGraphNode(node, list())
         return graph_node, [graph_node]
 
-    def visitNonTerminalNode(self, node: NonTerminalNode) -> tuple[GrammarGraphNode, list[GrammarGraphNode]]:
+    def visitNonTerminalNode(
+        self, node: NonTerminalNode
+    ) -> tuple[GrammarGraphNode, list[GrammarGraphNode]]:
         graph_node = LazyGrammarGraphNode(node, self.rules)
         return graph_node, [graph_node]
 
     def visitPlus(self, node: Plus) -> tuple[GrammarGraphNode, list[GrammarGraphNode]]:
         return self.visitRepetition(node)
 
-    def visitOption(self, node: Option) -> tuple[GrammarGraphNode, list[GrammarGraphNode]]:
+    def visitOption(
+        self, node: Option
+    ) -> tuple[GrammarGraphNode, list[GrammarGraphNode]]:
         return self.visitRepetition(node)
 
     def visitStar(self, node: Star) -> tuple[GrammarGraphNode, list[GrammarGraphNode]]:
