@@ -12,7 +12,7 @@ class PacketNonTerminal:
         self.recipient = recipient
         self.symbol = symbol
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         non_terminal_str = str(self.symbol)
         if self.sender is not None:
             sender_str = self.sender
@@ -24,10 +24,10 @@ class PacketNonTerminal:
             recipient_str = ""
         return f"<{sender_str}:{recipient_str}:{non_terminal_str[1:-1]}>"
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.sender, self.recipient, self.symbol.name()))
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if not isinstance(other, PacketNonTerminal):
             return False
         return (

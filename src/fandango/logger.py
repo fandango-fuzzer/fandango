@@ -189,13 +189,13 @@ def log_message_transfer(
     LOGGER.info(f"{info}: {msg.symbol} {print_msg!r}")
 
 
-def log_guidance_hint(message: str):
+def log_guidance_hint(message: str) -> None:
     LOGGER.info(f"{message}")
 
 
 def log_message_coverage(
     coverage: list[tuple[NonTerminal, float]],
-):
+) -> None:
     LOGGER.info(f"Current message coverage:")
     for symbol, coverage_val in coverage:
         LOGGER.info(f"{symbol}: {coverage_val:.2f}")
