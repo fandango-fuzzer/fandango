@@ -1,6 +1,5 @@
 from typing import Optional, Set
 
-from fandango.io.navigation.pathutils import find_longest_suffix
 from fandango.io.navigation.visitor.continuing_nodevisitor import ContinuingNodeVisitor
 from fandango.language.grammar.grammar import KPath
 from fandango.language.grammar.nodes.node import Node
@@ -69,7 +68,7 @@ class ReachabilityChecker(ContinuingNodeVisitor):
             return False, False
 
         current_path = tuple(map(lambda x: x[0], self.current_path_collapsed))
-        match = find_longest_suffix(current_path, tuple(self.k_path_to_reach))
+        match = self.find_longest_suffix(current_path, tuple(self.k_path_to_reach))
         if len(match) == 0:
             return True, True
         if self.test_reachability_from_node(
@@ -82,3 +81,12 @@ class ReachabilityChecker(ContinuingNodeVisitor):
         if is_exploring:
             self.seen_symbols.add(node.symbol)
         return True
+
+    def find_longest_suffix(self, path: tuple[Symbol, ...], suffix_path: tuple[Symbol, ...]) -> tuple[Symbol, ...]:
+        max_overlap = 0
+        search_len = len(suffix_path)
+        chain_len = len(path)
+        for i in range(1, min(search_len, chain_len) + 1):
+            if path[-i:] == suffix_path[:i]:
+                max_overlap = i
+        return suffix_path[:max_overlap]

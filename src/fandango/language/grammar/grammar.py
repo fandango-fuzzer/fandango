@@ -297,7 +297,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             self.prime()
 
     def get_protocol_messages(
-        self, start_symbol=NonTerminal("<start>")
+        self, start_symbol: NonTerminal = NonTerminal("<start>")
     ) -> set[PacketNonTerminal]:
         work = set()
         work.add(self.rules[start_symbol])
@@ -606,7 +606,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
 
         start_nodes: list[tuple[Optional[NonTerminal], DerivationTree]] = []
 
-        def collect_start_nodes(tree_root: DerivationTree):
+        def collect_start_nodes(tree_root: DerivationTree) -> None:
             if not isinstance(tree_root.symbol, NonTerminal):
                 return
             for child in tree_root.children:
@@ -619,8 +619,8 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         paths: list[set[tuple[Symbol, ...]]] = [set() for _ in range(k)]
 
         def traverse(
-            parent_symbol: Optional[NonTerminal], tree_node: DerivationTree, path
-        ):
+            parent_symbol: Optional[NonTerminal], tree_node: DerivationTree, path: tuple[Symbol, ...]
+        ) -> None:
             tree_symbol = tree_node.symbol
             assert isinstance(tree_symbol, (Terminal, NonTerminal))
             if isinstance(tree_symbol, Terminal):
