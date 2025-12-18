@@ -61,7 +61,9 @@ class PacketSelector:
         self._all_past_covered_k_paths: set[KPath] = set()
         self.compute(history_tree, self.parst_derivations)
 
-    def _get_state_grammar_symbols(self, starting_symbol: NonTerminal) -> set[NonTerminal]:
+    def _get_state_grammar_symbols(
+        self, starting_symbol: NonTerminal
+    ) -> set[NonTerminal]:
         state_grammar = StateGrammarConverter(self.grammar.grammar_settings).process(
             self.grammar.rules, starting_symbol
         )

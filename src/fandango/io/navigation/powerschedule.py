@@ -8,6 +8,7 @@ from fandango.language.grammar.grammar import KPath
 
 ScheduleType = TypeVar("ScheduleType")
 
+
 class PowerSchedule(abc.ABC, Generic[ScheduleType]):
     def __init__(self) -> None:
         self.energy: dict[ScheduleType, float] = dict()

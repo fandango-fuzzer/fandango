@@ -619,7 +619,9 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         paths: list[set[tuple[Symbol, ...]]] = [set() for _ in range(k)]
 
         def traverse(
-            parent_symbol: Optional[NonTerminal], tree_node: DerivationTree, path: tuple[Symbol, ...]
+            parent_symbol: Optional[NonTerminal],
+            tree_node: DerivationTree,
+            path: tuple[Symbol, ...],
         ) -> None:
             tree_symbol = tree_node.symbol
             assert isinstance(tree_symbol, (Terminal, NonTerminal))

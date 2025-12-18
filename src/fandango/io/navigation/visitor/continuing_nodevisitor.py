@@ -13,6 +13,7 @@ from fandango.language.grammar.nodes.terminal import TerminalNode
 class GrammarKeyError(KeyError):
     pass
 
+
 class ContinuingNodeVisitor(NodeVisitor[None, bool]):
     """
     For a given grammar and DerivationTree, this class

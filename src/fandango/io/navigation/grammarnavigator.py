@@ -106,7 +106,9 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
             return self.heuristic_path_symbols(chain)
         return 1
 
-    def is_goal_reached(self, current: GrammarGraphNode, goal: GrammarGraphNode) -> bool:
+    def is_goal_reached(
+        self, current: GrammarGraphNode, goal: GrammarGraphNode
+    ) -> bool:
         self.comparisons += 1
         if self.comparisons > self.max_comparisons:
             raise NavigatorTimedOutError(
@@ -141,11 +143,11 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
                 self.astar_search_end_w_controlflow(tree)
             )
             path.append(None)
-            from_start_path = self.astar_tree_w_controlflow(destination_k_path=destination_k_path)
-            assert from_start_path is not None
-            path.extend(
-                from_start_path
+            from_start_path = self.astar_tree_w_controlflow(
+                destination_k_path=destination_k_path
             )
+            assert from_start_path is not None
+            path.extend(from_start_path)
             return path
         self.is_search_end_node = False
         if tree is not None:
@@ -161,7 +163,9 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
             return None
         return list(a_star_path)
 
-    def astar_tree(self, *, tree: DerivationTree, destination_k_path: KPath) -> Optional[list[GrammarGraphNode | None]]:
+    def astar_tree(
+        self, *, tree: DerivationTree, destination_k_path: KPath
+    ) -> Optional[list[GrammarGraphNode | None]]:
         return self.astar_tree_w_controlflow(
             tree=tree, destination_k_path=destination_k_path
         )
