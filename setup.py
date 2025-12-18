@@ -3,8 +3,8 @@ import platform
 import shutil
 from pathlib import Path
 
-import setuptools
 from scikit_build_core.setuptools.build_cmake import BuildCMake
+from scikit_build_core.setuptools.wrapper import setup
 
 CXX_PARSER_NAME = "sa_fandango_cpp_parser"
 LIB_EXT = "pyd" if platform.system().lower() == "windows" else "so"
@@ -64,4 +64,14 @@ class BuildCMakeWithCopy(BuildCMake):
                 raise BuildFailed(f"Failed to copy extension: {e}")
 
 
-setuptools.setup(cmake_source_dir=".", cmdclass={"build_cmake": BuildCMakeWithCopy})
+setup(
+    cmake_source_dir=".",
+    package_dir={"": "src"},
+    package_data={
+        "fandango": ["../../CMakeLists.txt"],
+        "fandango.language.cpp_parser": ["**/*.cpp", "**/*.h"],
+        "fandango.language.parser": ["*.so", "*.pyd"],
+    },
+    cmake_args=[],
+    cmdclass={"build_cmake": BuildCMakeWithCopy},
+)
