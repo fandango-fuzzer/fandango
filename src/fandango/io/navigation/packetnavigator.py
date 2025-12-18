@@ -1,4 +1,5 @@
-from typing import Optional, Generator
+from typing import Optional
+from collections.abc import Generator
 
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.grammarnavigator import GrammarNavigator
