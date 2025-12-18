@@ -9,7 +9,7 @@ from fandango.language.grammar.grammar import KPath
 ScheduleType = TypeVar("ScheduleType")
 
 class PowerSchedule(abc.ABC, Generic[ScheduleType]):
-    def __init__(self):
+    def __init__(self) -> None:
         self.energy: dict[ScheduleType, float] = dict()
         self._past_targets: list[ScheduleType] = []
         self.exponent = 0.7
@@ -35,7 +35,7 @@ class PowerSchedule(abc.ABC, Generic[ScheduleType]):
 
 
 class PowerScheduleKPath(PowerSchedule[KPath]):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
     def assign_energy_k_path(self, k_paths: list[tuple[Symbol, ...]]) -> None:
@@ -50,7 +50,7 @@ class PowerScheduleKPath(PowerSchedule[KPath]):
 
 
 class PowerScheduleCoverage(PowerSchedule[Symbol]):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
     def assign_energy_coverage(self, coverage: dict[Symbol, float]) -> None:
