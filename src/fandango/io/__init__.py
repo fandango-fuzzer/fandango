@@ -132,10 +132,10 @@ class FandangoParty(ABC):
                 )
         FandangoIO.instance().add_receive(sender, self.party_name, message)
 
-    def start(self):
+    def start(self) -> None:
         raise FandangoError("start() method not implemented!")
 
-    def stop(self):
+    def stop(self) -> None:
         raise FandangoError("stop() method not implemented!")
 
 
@@ -454,10 +454,10 @@ class StdOut(FandangoParty):
         """
         self.stream.write(message.to_string())
 
-    def start(self):
+    def start(self) -> None:
         pass
 
-    def stop(self):
+    def stop(self) -> None:
         pass
 
 

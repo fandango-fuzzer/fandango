@@ -61,7 +61,7 @@ class PacketSelector:
         self._all_past_covered_k_paths: set[KPath] = set()
         self.compute(history_tree, self.parst_derivations)
 
-    def _get_state_grammar_symbols(self, starting_symbol: NonTerminal):
+    def _get_state_grammar_symbols(self, starting_symbol: NonTerminal) -> set[NonTerminal]:
         state_grammar = StateGrammarConverter(self.grammar.grammar_settings).process(
             self.grammar.rules, starting_symbol
         )
@@ -76,7 +76,7 @@ class PacketSelector:
         self,
         trees: list[DerivationTree],
         non_terminals: Optional[set[NonTerminal]] = None,
-    ):
+    ) -> dict[NonTerminal, list[DerivationTree]]:
         if non_terminals is None:
             non_terminals = self.state_grammar_symbols
         messages: list[DerivationTree] = []
@@ -91,7 +91,7 @@ class PacketSelector:
         return messages_by_nt
 
     @staticmethod
-    def _tuple_contains(sub: tuple, full: tuple) -> bool:
+    def _tuple_contains(sub: tuple[Symbol, ...], full: tuple[Symbol, ...]) -> bool:
         n, m = len(sub), len(full)
         if n == 0:
             return True
@@ -145,7 +145,7 @@ class PacketSelector:
 
     def compute(
         self, history_tree: DerivationTree, parst_derivations: list[DerivationTree]
-    ):
+    ) -> None:
         self.history_tree = history_tree
         self.parst_derivations = parst_derivations
         self._forecasting_result = None
@@ -190,7 +190,7 @@ class PacketSelector:
             )
         )
 
-    def get_fuzzer_packets(self):
+    def get_fuzzer_packets(self) -> list[ForecastingPacket]:
         assert self.forecasting_result is not None
         return [
             packet
@@ -212,12 +212,12 @@ class PacketSelector:
     def get_next_parties(self) -> list[str]:
         return list(self.forecasting_result.get_msg_parties())
 
-    def _all_derivation_trees(self):
+    def _all_derivation_trees(self) -> list[DerivationTree]:
         all_derivation_trees = list(self.parst_derivations)
         all_derivation_trees.append(self.history_tree)
         return all_derivation_trees
 
-    def _uncovered_paths(self):
+    def _uncovered_paths(self) -> list[KPath]:
         return list(
             Grammar.filter_k_paths(
                 self.k_path_symbols,
@@ -228,7 +228,7 @@ class PacketSelector:
             )
         )
 
-    def _select_next_target(self) -> tuple[NonTerminal, ...]:
+    def _select_next_target(self) -> KPath:
         uncovered_paths = self._uncovered_paths()
         for list_idx, path in enumerate(list(uncovered_paths)):
             remaining_path = path

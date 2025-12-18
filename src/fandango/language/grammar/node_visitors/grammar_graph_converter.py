@@ -19,7 +19,7 @@ class GrammarWalkError(FandangoError):
 class GrammarGraphNode(abc.ABC):
     def __init__(self, node: Node):
         self.node = node
-        self.parent = None
+        self.parent: Optional["GrammarGraphNode"] = None
 
     def consumes(self) -> Optional[Terminal]:
         if isinstance(self.node, TerminalNode):

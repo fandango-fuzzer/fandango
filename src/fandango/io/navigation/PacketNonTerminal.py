@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Any
 
 from fandango.language.symbols.non_terminal import NonTerminal
 
@@ -27,7 +27,7 @@ class PacketNonTerminal:
     def __hash__(self) -> int:
         return hash((self.sender, self.recipient, self.symbol.name()))
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, PacketNonTerminal):
             return False
         return (
