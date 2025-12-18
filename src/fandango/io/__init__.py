@@ -562,7 +562,7 @@ class FandangoIO(object):
         self.parties: dict[str, FandangoParty] = {}
         self.receive_lock = threading.Lock()
 
-    def reset_parties(self):
+    def reset_parties(self) -> None:
         with self.receive_lock:
             for party in self.parties.values():
                 party.stop()

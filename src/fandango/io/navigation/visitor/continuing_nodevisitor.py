@@ -14,7 +14,7 @@ class GrammarKeyError(KeyError):
     pass
 
 
-class ContinuingNodeVisitor(NodeVisitor):
+class ContinuingNodeVisitor(NodeVisitor[None, bool]):
     """
     For a given grammar and DerivationTree, this class
     finds possible upcoming message types, the nonterminals that generate them and the paths where the messages
@@ -28,7 +28,7 @@ class ContinuingNodeVisitor(NodeVisitor):
         self.current_path: list[tuple[NonTerminal, bool]] = []
         self.current_path_collapsed: list[tuple[NonTerminal, bool]] = []
 
-    def find(self, tree: Optional[DerivationTree] = None):
+    def find(self, tree: Optional[DerivationTree] = None) -> None:
         self.tree = tree
         self.current_path = []
         self.current_tree = [None]
@@ -44,7 +44,7 @@ class ContinuingNodeVisitor(NodeVisitor):
         self.current_tree.pop()
         self.current_path.pop()
 
-    def on_enter_controlflow(self, expected_nt: str):
+    def on_enter_controlflow(self, expected_nt: str) -> None:
         tree = self.current_tree[-1]
         cf_nt = (NonTerminal(expected_nt), True)
         if tree is not None:
@@ -60,11 +60,11 @@ class ContinuingNodeVisitor(NodeVisitor):
         self.current_tree.append(None if tree is None else tree[0].children)
         self.current_path.append(cf_nt)
 
-    def on_leave_controlflow(self):
+    def on_leave_controlflow(self) -> None:
         self.current_tree.pop()
         self.current_path.pop()
 
-    def visitNonTerminalNode(self, node: NonTerminalNode):
+    def visitNonTerminalNode(self, node: NonTerminalNode) -> bool:
         tree = self.current_tree[-1]
         if tree is not None:
             if tree[0].symbol != node.symbol:
@@ -92,14 +92,14 @@ class ContinuingNodeVisitor(NodeVisitor):
     ) -> tuple[bool, bool]:
         raise NotImplementedError()
 
-    def onTerminalNodeVisit(self, node: TerminalNode, is_exploring: bool):
+    def onTerminalNodeVisit(self, node: TerminalNode, is_exploring: bool) -> bool:
         raise NotImplementedError()
 
-    def visitTerminalNode(self, node: TerminalNode):
+    def visitTerminalNode(self, node: TerminalNode) -> bool:
         tree = self.current_tree[-1]
         return self.onTerminalNodeVisit(node, tree is None)
 
-    def visitConcatenation(self, node: Concatenation):
+    def visitConcatenation(self, node: Concatenation) -> bool:
         self.on_enter_controlflow(f"<__{node.id}>")
         tree = self.current_tree[-1]
         child_idx = 0 if tree is None else (len(tree) - 1)
@@ -124,7 +124,7 @@ class ContinuingNodeVisitor(NodeVisitor):
         self.on_leave_controlflow()
         return continue_exploring
 
-    def visitAlternative(self, node: Alternative):
+    def visitAlternative(self, node: Alternative) -> bool:
         self.on_enter_controlflow(f"<__{node.id}>")
         tree = self.current_tree[-1]
 
@@ -156,13 +156,13 @@ class ContinuingNodeVisitor(NodeVisitor):
             self.on_leave_controlflow()
             return continue_exploring
 
-    def visitRepetition(self, node: Repetition):
+    def visitRepetition(self, node: Repetition) -> bool:
         self.on_enter_controlflow(f"<__{node.id}>")
         ret = self.visitRepetitionType(node)
         self.on_leave_controlflow()
         return ret
 
-    def visitRepetitionType(self, node: Repetition):
+    def visitRepetitionType(self, node: Repetition) -> bool:
         tree = self.current_tree[-1]
         continue_exploring = True
         tree_len = 0
@@ -195,19 +195,19 @@ class ContinuingNodeVisitor(NodeVisitor):
             return True
         return continue_exploring
 
-    def visitStar(self, node: Star):
+    def visitStar(self, node: Star) -> bool:
         self.on_enter_controlflow(f"<__{node.id}>")
         ret = self.visitRepetitionType(node)
         self.on_leave_controlflow()
         return ret
 
-    def visitPlus(self, node: Plus):
+    def visitPlus(self, node: Plus) -> bool:
         self.on_enter_controlflow(f"<__{node.id}>")
         ret = self.visitRepetitionType(node)
         self.on_leave_controlflow()
         return ret
 
-    def visitOption(self, node: Option):
+    def visitOption(self, node: Option) -> bool:
         self.on_enter_controlflow(f"<__{node.id}>")
         ret = self.visitRepetitionType(node)
         self.on_leave_controlflow()

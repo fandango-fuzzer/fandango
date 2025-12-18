@@ -1,20 +1,20 @@
 import random
 from collections import Counter
-from typing import Any
+from typing import TypeVar, Generic
+import abc
 
-from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.language import Symbol
+from fandango.language import Symbol, NonTerminal
 from fandango.language.grammar.grammar import KPath
-from fandango.language.symbols.non_terminal import NonTerminal
 
+ScheduleType = TypeVar("ScheduleType")
 
-class PowerSchedule:
+class PowerSchedule(abc.ABC, Generic[ScheduleType]):
     def __init__(self):
-        self.energy = dict()
-        self._past_targets = []
+        self.energy: dict[ScheduleType, float] = dict()
+        self._past_targets: list[ScheduleType] = []
         self.exponent = 0.7
 
-    def _normalize_energy(self) -> dict[KPath, float]:
+    def _normalize_energy(self) -> dict[ScheduleType, float]:
         sum_energy = sum(self.energy.values())
         if sum_energy == 0:
             n = len(self.energy)
@@ -24,21 +24,21 @@ class PowerSchedule:
         )
         return norm_energy
 
-    def choose(self):
+    def choose(self) -> ScheduleType:
         energy_list = list(self.energy.items())
         key_list = list(map(lambda item: item[0], energy_list))
         value_list = list(map(lambda item: item[1], energy_list))
         return random.choices(key_list, weights=value_list, k=1)[0]
 
-    def add_past_target(self, new_target):
+    def add_past_target(self, new_target: ScheduleType) -> None:
         self._past_targets.append(new_target)
 
 
-class PowerScheduleKPath(PowerSchedule):
+class PowerScheduleKPath(PowerSchedule[KPath]):
     def __init__(self):
         super().__init__()
 
-    def assign_energy_k_path(self, k_paths: list[tuple[Symbol, ...]]):
+    def assign_energy_k_path(self, k_paths: list[tuple[Symbol, ...]]) -> None:
         frequencies = Counter(self._past_targets)
         self.energy = dict()
         for path in k_paths:
@@ -49,11 +49,11 @@ class PowerScheduleKPath(PowerSchedule):
         self.energy = self._normalize_energy()
 
 
-class PowerScheduleCoverage(PowerSchedule):
+class PowerScheduleCoverage(PowerSchedule[Symbol]):
     def __init__(self):
         super().__init__()
 
-    def assign_energy_coverage(self, coverage: dict[NonTerminal, float]):
+    def assign_energy_coverage(self, coverage: dict[Symbol, float]) -> None:
         frequencies = Counter(self._past_targets)
         self.energy = dict()
         for p_type, freq in frequencies.items():
