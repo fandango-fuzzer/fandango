@@ -7,7 +7,9 @@ from fandango.io.navigation.grammarnavigator import GrammarNavigator
 from fandango.io.navigation.packetnavigator import PacketNavigator
 from fandango.language import NonTerminal, DerivationTree
 from fandango.language.grammar import ParsingMode
-from fandango.language.grammar.node_visitors.grammar_graph_converter import GrammarGraphNode
+from fandango.language.grammar.node_visitors.grammar_graph_converter import (
+    GrammarGraphNode,
+)
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from tests.utils import RESOURCES_ROOT, DOCS_ROOT
 
@@ -47,11 +49,13 @@ class TestGrammarGraph(unittest.TestCase):
         )
         navigator = GrammarNavigator(grammar)
 
-        def _is_valid_sender_node(n: GrammarGraphNode | None) -> TypeGuard[GrammarGraphNode]:
+        def _is_valid_sender_node(
+            n: GrammarGraphNode | None,
+        ) -> TypeGuard[GrammarGraphNode]:
             return (
-                    n is not None
-                    and isinstance(n.node, NonTerminalNode)
-                    and n.node.sender is not None
+                n is not None
+                and isinstance(n.node, NonTerminalNode)
+                and n.node.sender is not None
             )
 
         path = navigator.astar_tree(
@@ -60,7 +64,9 @@ class TestGrammarGraph(unittest.TestCase):
 
         path_iter: list[GrammarGraphNode | None] = path or []
 
-        path_filtered: list[GrammarGraphNode] = list(filter(_is_valid_sender_node, path_iter))
+        path_filtered: list[GrammarGraphNode] = list(
+            filter(_is_valid_sender_node, path_iter)
+        )
 
         path_list = [n.node.to_symbol() for n in path_filtered]
         self.assertEqual(path_list, [NonTerminal("<puff>"), NonTerminal("<paff>")])
