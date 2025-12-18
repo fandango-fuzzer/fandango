@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.18)
 
-project(fandango-fuzzer VERSION 1.0.6 LANGUAGES CXX)
+project(${SKBUILD_PROJECT_NAME}
+    VERSION ${SKBUILD_PROJECT_VERSION}
+    LANGUAGES CXX
+)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
