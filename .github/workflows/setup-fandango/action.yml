@@ -26,16 +26,14 @@ runs:
         else
           make test-tools
         fi
-    - name: Set up Python ${{ inputs.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ inputs.python-version }}
     - name: Install uv and set the Python version
       uses: astral-sh/setup-uv@v7
       with:
         python-version: ${{ inputs.python-version }}
         activate-environment: true
-
+        cache-dependency-glob: |
+          pyproject.toml
+          uv.lock
     - name: Install Python dependencies
       shell: bash
       run: |
