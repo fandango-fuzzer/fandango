@@ -4,24 +4,37 @@ import shutil
 from pathlib import Path
 
 import setuptools
-from scikit_build_core.setuptools.build_cmake import BuildCMake as _build_cmake
+from scikit_build_core.setuptools.build_cmake import BuildCMake
 
 CXX_PARSER_NAME = "sa_fandango_cpp_parser"
 LIB_EXT = "pyd" if platform.system().lower() == "windows" else "so"
 
 
 class BuildFailed(Exception):
-    pass
+    def __init__(self, message: str):
+        self.message = message
+
+    def __str__(self):
+        return self.message
 
 
-class BuildCMakeWithCopy(_build_cmake):
+def get_boolish_env_flag(name: str) -> bool:
+    return bool(os.environ.get(name, ""))
+
+
+class BuildCMakeWithCopy(BuildCMake):
     """Custom build_cmake that copies extensions to source tree after CMake build."""
 
     def run(self):
-        # Run the parent build_cmake command first (this does the actual CMake build)
-        super().run()
-        # After CMake build completes, copy the extension to source tree
-        self.copy_extension_to_source()
+        should_compile_cxx_parser: bool = get_boolish_env_flag(
+            "FANDANGO_REQUIRE_BINARY_BUILD"
+        ) or not get_boolish_env_flag("FANDANGO_SKIP_CPP_PARSER")
+
+        if should_compile_cxx_parser:
+            # Run the parent build_cmake command first (this does the actual CMake build)
+            super().run()
+            # After CMake build completes, copy the extension to source tree
+            self.copy_extension_to_source()
 
     def copy_extension_to_source(self):
         """Copy built extensions to the source tree for editable/redirect mode."""
@@ -34,28 +47,19 @@ class BuildCMakeWithCopy(_build_cmake):
             else []
         )
 
-        if os.environ.get("FANDANGO_REQUIRE_BINARY_BUILD", "0") == "1" and not so_files:
-            raise BuildFailed()
+        if not so_files:
+            raise BuildFailed("Cannot find the C++ parser produced by CMake")
 
         target_dir.mkdir(parents=True, exist_ok=True)
         for src_file in so_files:
             target_file = target_dir / src_file.name
-
-            print("Copying C++ parser to source tree:")
-            print(f"  From: {src_file}")
-            print(f"  To:   {target_file}")
-
+            print(f"Copying C++ parser to source tree: {src_file} -> {target_file}")
             try:
                 shutil.copy2(src_file, target_file)
-                print("✓ C++ parser extension successfully installed!")
+                print("C++ parser extension successfully installed")
                 return
             except Exception as e:
-                print(f"⚠ Warning: Failed to copy extension: {e}")
-                return
+                raise BuildFailed(f"Failed to copy extension: {e}")
 
 
-# Use our custom command
-cmdclass = {"build_cmake": BuildCMakeWithCopy}
-
-
-setuptools.setup(cmake_source_dir=".", cmdclass=cmdclass)
+setuptools.setup(cmake_source_dir=".", cmdclass={"build_cmake": BuildCMakeWithCopy})
