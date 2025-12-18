@@ -64,7 +64,7 @@ class TestGrammarGraph(unittest.TestCase):
             include_controlflow=True,
         )
         packet_tree, _ = next(navigator.get_controlflow_tree(tree=tree_to_continue))
-        path = navigator.astar_tree(
+        path = navigator.astar_tree_symbols(
             tree=packet_tree, destination_k_path=(NonTerminal("<end_data>"),)
         )
         self.assertEqual(
@@ -92,7 +92,7 @@ class TestGrammarGraph(unittest.TestCase):
             include_controlflow=True,
         )
         packet_tree, _ = next(navigator.get_controlflow_tree(tree=tree_to_continue))
-        path = navigator.astar_tree(
+        path = navigator.astar_tree_symbols(
             tree=packet_tree, destination_k_path=(NonTerminal("<helo>"),)
         )
         assert path is not None

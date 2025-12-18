@@ -142,7 +142,7 @@ class PacketNavigator(GrammarNavigator):
             included_k_paths, tree
         )
         for suggested_tree, is_complete in found_trees:
-            path = self.astar_tree(
+            path = self.astar_tree_symbols(
                 tree=suggested_tree, destination_k_path=destination_k_path
             )
             if path is None:
@@ -158,7 +158,7 @@ class PacketNavigator(GrammarNavigator):
         *,
         tree: DerivationTree,
         destination_k_path: KPath,
-    ) -> Optional[list[Optional[PacketNonTerminal | NonTerminal]]]:
+    ) -> Optional[list[GrammarGraphNode | None]]:
         search_destination_symbols = []
         for symbol in destination_k_path:
             if symbol in self._packet_symbols:
@@ -170,6 +170,15 @@ class PacketNavigator(GrammarNavigator):
         path = super().astar_tree(
             tree=tree, destination_k_path=tuple(search_destination_symbols)
         )
+        return path
+
+    def astar_tree_symbols(
+        self,
+        *,
+        tree: DerivationTree,
+        destination_k_path: KPath,
+    ) -> Optional[list[PacketNonTerminal | NonTerminal | None]]:
+        path = self.astar_tree(tree=tree, destination_k_path=destination_k_path)
         if path is None:
             return None
         return self._to_symbols(path)
