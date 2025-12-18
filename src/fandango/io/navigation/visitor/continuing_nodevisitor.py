@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Generic, TypeVar
 
 from fandango.language.tree import DerivationTree
 from fandango.language import Grammar, NonTerminal
@@ -12,7 +12,6 @@ from fandango.language.grammar.nodes.terminal import TerminalNode
 
 class GrammarKeyError(KeyError):
     pass
-
 
 class ContinuingNodeVisitor(NodeVisitor[None, bool]):
     """

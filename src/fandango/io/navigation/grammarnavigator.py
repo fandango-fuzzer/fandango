@@ -141,8 +141,10 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
                 self.astar_search_end_w_controlflow(tree)
             )
             path.append(None)
+            from_start_path = self.astar_tree_w_controlflow(destination_k_path=destination_k_path)
+            assert from_start_path is not None
             path.extend(
-                self.astar_tree_w_controlflow(destination_k_path=destination_k_path)
+                from_start_path
             )
             return path
         self.is_search_end_node = False
