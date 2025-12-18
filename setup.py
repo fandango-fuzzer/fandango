@@ -35,6 +35,8 @@ class BuildCMakeWithCopy(BuildCMake):
             super().run()
             # After CMake build completes, copy the extension to source tree
             self.copy_extension_to_source()
+        else:
+            print("Skipping C++ parser compilation")
 
     def copy_extension_to_source(self):
         """Copy built extensions to the source tree for editable/redirect mode."""
