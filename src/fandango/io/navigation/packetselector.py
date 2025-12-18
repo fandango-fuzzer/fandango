@@ -242,7 +242,7 @@ class PacketSelector:
         if len(uncovered_paths) == 0:
             protocol_msgs = self.grammar.get_protocol_messages(self.start_symbol)
             message_nts = set(map(lambda x: x.symbol, protocol_msgs))
-            message_coverage = dict(
+            message_coverage: dict[Symbol, float] = dict(
                 filter(lambda x: x[0] in message_nts, self.coverage_scores)
             )
             m_ps = self.msg_power_schedule
