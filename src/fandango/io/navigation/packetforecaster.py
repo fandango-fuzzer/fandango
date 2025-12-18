@@ -112,7 +112,7 @@ class ForecastingPacket:
 
 
 class ForecastingNonTerminals:
-    def __init__(self):
+    def __init__(self) -> None:
         self.nt_to_packet = dict[NonTerminal, ForecastingPacket]()
 
     def get_non_terminals(self) -> set[NonTerminal]:
@@ -133,7 +133,7 @@ class ForecastingNonTerminals:
 
 
 class ForecastingResult:
-    def __init__(self):
+    def __init__(self) -> None:
         self.parties_to_packets = dict[str, ForecastingNonTerminals]()
         self.complete_trees = set[DerivationTree]()
 
