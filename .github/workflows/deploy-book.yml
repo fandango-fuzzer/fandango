@@ -35,12 +35,13 @@ jobs:
       - name: Locate Fandango and add to PATH
         run: |
           which fandango
-          echo "/opt/hostedtoolcache/Python/3.13.1/x64/bin/fandango" >> $GITHUB_PATH
+          echo "$(dirname $(which fandango))" >> $GITHUB_PATH
           fandango --help
 
       # Step 5: Build the documentation
       - name: Build the book
         run: |
+          source .venv/bin/activate
           make html
 
       # Step 6: Upload built book as artifact

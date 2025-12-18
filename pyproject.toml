@@ -76,7 +76,7 @@ book = [
     "docutils>=0.20.1",             # Jupyter-book needs docutils<=0.20
     "ghp-import>=2.1.0",
     "graphviz>=0.20.3",
-    "jupyter-book>=1.0.4",
+    "jupyter-book>=1.0.4,<2.0.0",
     "pagelabels>=1.2.1",
     "pyppeteer>=2.0.0",
     "sphinxcontrib-mermaid>=1.0.0",
