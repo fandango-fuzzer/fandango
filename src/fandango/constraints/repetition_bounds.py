@@ -1,3 +1,4 @@
+from copy import copy
 from typing import Optional, Any, Unpack
 from itertools import zip_longest
 import random
@@ -365,11 +366,18 @@ class RepetitionBoundsConstraint(Constraint):
         :param Optional[dict[str, Any]] local_variables: Local variables to use in the evaluation.
         :return ConstraintFitness: The fitness of the tree.
         """
+        tree_hash = self.get_hash(tree, scope, local_variables)
+        # If the fitness has already been calculated, return the cached value
+        if tree_hash in self.cache:
+            return copy(self.cache[tree_hash])
+
         id_trees = tree.find_by_origin(self.repetition_id)
         if len(id_trees) == 0:
             # Assume that the field containing the nr of repetitions is zero.
             # This is the case where we might have deleted all repetitions from the tree.
-            return ConstraintFitness(1, 1, True, NopSuggestion())
+            fitness = ConstraintFitness(1, 1, True, NopSuggestion())
+            self.cache[tree_hash] = fitness
+            return fitness
 
         reference_trees = self.group_by_repetition_id(id_trees)
         failing_trees = []
@@ -428,13 +436,15 @@ class RepetitionBoundsConstraint(Constraint):
                     )
                 failing_trees.append(FailingTree(first_iteration.parent, self))
 
-        return ConstraintFitness(
+        fitness = ConstraintFitness(
             solved,
             total,
             solved == total,
             failing_trees=failing_trees,
             suggestion=ApplyAllSuggestions(suggestions),
         )
+        self.cache[tree_hash] = fitness
+        return fitness
 
     def format_as_spec(self) -> str:
         if self.search_min is None:
