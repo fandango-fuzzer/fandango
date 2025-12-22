@@ -24,7 +24,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           needs-sudo: ${{ matrix.os == 'ubuntu-latest' }}
-          target: test
 
       # Run tests or coverage depending on branch and OS
       - name: Run tests

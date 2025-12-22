@@ -21,7 +21,6 @@ jobs:
         with:
           python-version: 3.13
           needs-sudo: true
-          target: test
 
       - name: Set up Bencher
         uses: bencherdev/bencher@main
