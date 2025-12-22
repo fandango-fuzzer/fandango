@@ -140,6 +140,9 @@ This will run code formatting and type checking before every commit.
 The [tests](sec:running-tests)= aren't run as part of pre-commit, because they take significant time to complete. Run them manually.
 ```
 
+`uv.lock` is a snapshot of the (actual) dependencies used in this project.
+After updating the dependencies in `pyproject.toml`, make sure `uv.lock` is up-to-date with `uv lock`.
+
 (sec:first-time-contributors)=
 ## First Time Contributors
 
