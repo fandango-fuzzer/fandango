@@ -31,7 +31,13 @@ $(EGG_INFO)/PKG-INFO: pyproject.toml
 	$(PIP) install -e .
 
 # Install tools for development
+UNAME_DETECTED := $(OS)
+ifdef UNAME_DETECTED
+UNAME := $(UNAME_DETECTED)
+else
 UNAME := $(shell uname)
+endif
+
 ifeq ($(UNAME), Darwin)
 # Mac
 SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli
