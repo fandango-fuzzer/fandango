@@ -86,7 +86,7 @@ class TestSoftValue(TestSoft):
             "--population-size",
             "10",
             "--random-seed",
-            "1",
+            "10",
         ]
         out, err, code = run_command(command)
         lines = [line for line in out.split("\n") if line.strip()]
