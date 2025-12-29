@@ -60,10 +60,18 @@ class Node(abc.ABC):
 
     @abc.abstractmethod
     def to_symbol(self) -> Symbol:
+        """
+        Convert the node to a symbol representation.
+        Controlflow nodes are converted to Nonterminal-Symbols with the form <__type:id>
+        """
         raise NotImplementedError("to_symbol method not implemented")
 
     @property
     def is_controlflow(self) -> bool:
+        """
+        Returns True if the node is a control flow node (i.e., not terminal or non-terminal).
+        Controlflow nodes are nodes that affect the structure of the derivation tree, such as alternatives, concatenations, and repetitions...
+        """
         return self.node_type not in {
             NodeType.TERMINAL,
             NodeType.NON_TERMINAL,

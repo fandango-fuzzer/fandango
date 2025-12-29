@@ -506,9 +506,7 @@ class Fandango:
             LOGGER.info(
                 f"Current coverage: {self.packet_selector.coverage_percent():.2f}%"
             )
-            self.evaluator.start_next_message(
-                [history_tree] + list(self.past_io_derivations)
-            )
+            self.evaluator.start_next_message([history_tree] + self.past_io_derivations)
 
             try:
                 if (

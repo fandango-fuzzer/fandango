@@ -3,7 +3,7 @@ from collections import Counter
 from typing import TypeVar, Generic
 import abc
 
-from fandango.language import Symbol, NonTerminal
+from fandango.language.symbols import Symbol
 from fandango.language.grammar.grammar import KPath
 
 ScheduleType = TypeVar("ScheduleType")
