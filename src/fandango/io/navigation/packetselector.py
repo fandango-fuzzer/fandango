@@ -1,14 +1,13 @@
-import enum
 from typing import Optional
 
 from fandango.io import FandangoIO
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
+from fandango.io.navigation.coverage_goal import CoverageGoal
 from fandango.io.navigation.stategrammarconverter import StateGrammarConverter
 from fandango.io.navigation.powerschedule import (
     PowerScheduleCoverage,
     PowerScheduleKPath,
 )
-from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.tree import DerivationTree
 from fandango.io.navigation.packetforecaster import (
     ForecastingPacket,
@@ -19,12 +18,6 @@ from fandango.io.navigation.packetnavigator import PacketNavigator
 from fandango.language.grammar.grammar import Grammar, KPath
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.logger import log_guidance_hint
-
-
-class CoverageGoal(enum.Enum):
-    INPUTS = 0
-    STATE_INPUTS = 1
-    STATE_INPUTS_OUTPUTS = 2
 
 
 class PacketSelector:
@@ -231,6 +224,7 @@ class PacketSelector:
             self.diversity_k,
             self.start_symbol,
             coverage_goal=self.coverage_goal,
+            input_parties=self._input_parties(),
         )
 
     def _select_next_target(self) -> KPath:

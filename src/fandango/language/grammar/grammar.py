@@ -7,9 +7,9 @@ import warnings
 
 
 from fandango.errors import FandangoValueError, FandangoParseError
-from fandango.io import FandangoIO
+from fandango.io.navigation import coverage_goal
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.io.navigation.packetselector import CoverageGoal
+from fandango.io.navigation.coverage_goal import CoverageGoal
 from fandango.language.grammar import FuzzingMode, ParsingMode, closest_match
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.literal_generator import LiteralGenerator
@@ -556,7 +556,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                 for node in initial
                 if isinstance(node, NonTerminalNode) and node.sender in input_parties
             ]
-
+        initial.clear()
         while initial_work:
             node = initial_work.pop(0)
             if node in initial:
@@ -566,10 +566,12 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                 if isinstance(descendent, NonTerminalNode):
                     if coverage_goal == CoverageGoal.STATE_INPUTS_OUTPUTS:
                         initial_work.append(descendent)
-                    elif coverage_goal == CoverageGoal.STATE_INPUTS and (
-                        descendent.sender is None or descendent.sender in input_parties
-                    ):
-                        initial_work.append(descendent)
+                    elif coverage_goal == CoverageGoal.STATE_INPUTS:
+                        if (
+                            descendent.sender is None
+                            or descendent.sender in input_parties
+                        ):
+                            initial_work.append(descendent)
                     elif coverage_goal == CoverageGoal.INPUTS:
                         initial_work.append(descendent)
                     else:
@@ -644,7 +646,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             if not isinstance(tree_root.symbol, NonTerminal):
                 return
             for child in tree_root.children:
-                if coverage_goal == CoverageGoal.STATE_INPUTS:
+                if coverage_goal == CoverageGoal.INPUTS:
                     if child.sender is not None and child.sender not in input_parties:
                         continue
                 start_nodes.append((tree_root.symbol, child))
@@ -658,7 +660,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                 (parent, child)
                 for parent, child in start_nodes
                 if isinstance(child.symbol, NonTerminal)
-                and child.symbol in input_parties
+                and child.sender in input_parties
             ]
             start_nodes.clear()
             for parent, child in input_symbol_starters:

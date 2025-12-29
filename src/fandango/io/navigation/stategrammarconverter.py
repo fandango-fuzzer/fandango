@@ -1,6 +1,8 @@
 from collections.abc import Sequence
 from fandango.errors import FandangoValueError
-from fandango.language import NonTerminal, Terminal, Symbol
+from fandango.language.symbols.symbol import Symbol
+from fandango.language.symbols.non_terminal import NonTerminal
+from fandango.language.symbols.terminal import Terminal
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative

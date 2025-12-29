@@ -32,8 +32,8 @@ class PopulationManager:
     ) -> set[int]:
         return {hash(ind) for ind in current_population}
 
+    @staticmethod
     def add_unique_individual(
-        self,
         population: list[DerivationTree],
         candidate: DerivationTree,
         unique_set: set[int],
@@ -77,7 +77,9 @@ class PopulationManager:
         :param target_population_size: The target size of the population.
         :return: A generator that yields solutions. The population is modified in place.
         """
-        unique_hashes = self._generate_population_hashes(current_population)
+        unique_hashes = PopulationManager._generate_population_hashes(
+            current_population
+        )
         attempts = 0
         max_attempts = (target_population_size - len(current_population)) * 10
 
@@ -97,7 +99,7 @@ class PopulationManager:
                 GeneratorWithReturn(eval_individual(candidate)).collect()
             )
             if attempts < max_attempts:
-                if self.add_unique_individual(
+                if PopulationManager.add_unique_individual(
                     current_population, candidate, unique_hashes
                 ):
                     yield from found_solution
@@ -168,17 +170,3 @@ class IoPopulationManager(PopulationManager):
 
         self._prev_packet_idx = current_idx
         return tree
-
-    def add_unique_individual(
-        self,
-        population: list[DerivationTree],
-        candidate: DerivationTree,
-        unique_set: set[int],
-    ) -> bool:
-        new_hashes = self._generate_population_hashes([candidate])
-        if len(new_hashes.intersection(unique_set)) == 0:
-            # If the candidate has is new, we can add it to the population
-            unique_set.update(new_hashes)
-            population.append(candidate)
-            return True
-        return False
