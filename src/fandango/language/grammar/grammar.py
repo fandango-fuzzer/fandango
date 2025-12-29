@@ -7,7 +7,9 @@ import warnings
 
 
 from fandango.errors import FandangoValueError, FandangoParseError
+from fandango.io import FandangoIO
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
+from fandango.io.navigation.packetselector import CoverageGoal
 from fandango.language.grammar import FuzzingMode, ParsingMode, closest_match
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.literal_generator import LiteralGenerator
@@ -54,7 +56,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         self._global_variables = global_variables or {}
         self._parser = Parser(self.rules)
         self._k_path_cache: dict[
-            tuple[NonTerminal, bool], list[set[tuple[Symbol, ...]]]
+            tuple[NonTerminal, bool, CoverageGoal], list[set[tuple[Symbol, ...]]]
         ] = dict()
         self._tree_k_path_cache: dict[int, set[tuple[Symbol, ...]]] = dict()
 
@@ -457,17 +459,25 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         k: int,
         non_terminal: NonTerminal = NonTerminal("<start>"),
         overlap_to_root: bool = False,
+        coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
+        input_parties: Optional[set[str]] = None,
     ) -> list[tuple[Symbol, ...]]:
         """
         Returns a list of uncovered k-paths in the grammar given a set of derivation trees.
         """
         all_k_paths = self.generate_all_k_paths(
-            k=k, non_terminal=non_terminal, overlap_to_root=overlap_to_root
+            k=k,
+            non_terminal=non_terminal,
+            overlap_to_root=overlap_to_root,
+            coverage_goal=coverage_goal,
+            input_parties=input_parties,
         )
         covered_k_paths = set()
         for tree in derivation_trees:
             covered_k_paths.update(
-                self._extract_k_paths_from_tree(tree, k, overlap_to_root)
+                self._extract_k_paths_from_tree(
+                    tree, k, overlap_to_root, coverage_goal, input_parties=input_parties
+                )
             )
 
         uncovered_k_paths = all_k_paths.difference(covered_k_paths)
@@ -503,38 +513,14 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             return 1.0  # If there are no k-paths, coverage is 100%
         return len(covered_k_paths) / len(all_k_paths)
 
-    @staticmethod
-    def filter_k_paths(
-        included_symbols: set[Symbol],
-        k_paths: Iterable[KPath],
-        allow_partial_matches: bool = True,
-    ) -> set[KPath]:
-        filtered_k_paths: set[KPath] = set()
-        for k_path in k_paths:
-            remaining_path = k_path
-            start_idx = 0
-            end_idx = len(k_path)
-            for idx, symbol in enumerate(remaining_path):
-                if symbol not in included_symbols:
-                    if not allow_partial_matches:
-                        break
-                    if idx == start_idx:
-                        start_idx += 1
-                    else:
-                        end_idx = idx
-                        break
-            if start_idx != len(k_path) and (
-                not allow_partial_matches or start_idx == 0 and end_idx == len(k_path)
-            ):
-                filtered_k_paths.add(k_path[start_idx:end_idx])
-        return filtered_k_paths
-
     def generate_all_k_paths(
         self,
         *,
         k: int,
         non_terminal: NonTerminal = NonTerminal("<start>"),
         overlap_to_root: bool = False,
+        coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
+        input_parties: Optional[set[str]] = None,
     ) -> set[KPath]:
         """
         Computes the *k*-paths for this grammar, constructively. See: doi.org/10.1109/ASE.2019.00027
@@ -542,29 +528,68 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         :param k: The length of the paths.
         :param non_terminal: The non-terminal from which to start generating paths.
         :param overlap_to_root: Whether to include paths that contain the starting symbol but are overlapping with symbols towards the root direction.
+        :param coverage_goal: The coverage goal to consider when generating paths.
         :return: All paths of length up to *k* within this grammar.
         """
-        if (non_terminal, overlap_to_root) in self._k_path_cache:
-            cache_work = self._k_path_cache[(non_terminal, overlap_to_root)]
+        if input_parties is None:
+            input_parties = set()
+        cache_key = (non_terminal, overlap_to_root, coverage_goal)
+        if cache_key in self._k_path_cache:
+            cache_work = self._k_path_cache[cache_key]
             if len(cache_work) >= k:
                 return cache_work[k - 1]
 
         initial: set[Node] = set()
-        initial_work: list[Node] = [
-            NonTerminalNode(non_terminal, self._grammar_settings)
-        ]
+        starter_node = NonTerminalNode(non_terminal, self._grammar_settings)
+
+        initial_work: list[Node] = [starter_node]
+        if coverage_goal == CoverageGoal.INPUTS:
+            initial_work.append(starter_node)
+            while initial_work:
+                node = initial_work.pop(0)
+                if node in initial:
+                    continue
+                initial.add(node)
+                initial_work.extend(node.descendents(self, filter_controlflow=True))
+            initial_work = [
+                node
+                for node in initial
+                if isinstance(node, NonTerminalNode) and node.sender in input_parties
+            ]
+
         while initial_work:
             node = initial_work.pop(0)
             if node in initial:
                 continue
             initial.add(node)
-            initial_work.extend(node.descendents(self, filter_controlflow=True))
+            for descendent in node.descendents(self, filter_controlflow=True):
+                if isinstance(descendent, NonTerminalNode):
+                    if coverage_goal == CoverageGoal.STATE_INPUTS_OUTPUTS:
+                        initial_work.append(descendent)
+                    elif coverage_goal == CoverageGoal.STATE_INPUTS and (
+                        descendent.sender is None or descendent.sender in input_parties
+                    ):
+                        initial_work.append(descendent)
+                    elif coverage_goal == CoverageGoal.INPUTS:
+                        initial_work.append(descendent)
+                    else:
+                        raise ValueError(f"Unknown coverage goal: {coverage_goal}")
+                else:
+                    initial_work.append(descendent)
+
         work: list[set[tuple[Node, ...]]] = [set((x,) for x in initial)]
 
         for _ in range(len(work), k):
             next_work = set(work[-1])
             for base in work[-1]:
                 for descendent in base[-1].descendents(self, filter_controlflow=True):
+                    if isinstance(descendent, NonTerminalNode):
+                        if coverage_goal == CoverageGoal.STATE_INPUTS:
+                            if (
+                                descendent.sender is not None
+                                and descendent.sender not in input_parties
+                            ):
+                                continue
                     next_work.add(base + (descendent,))
             work.append(next_work)
 
@@ -576,22 +601,31 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                 symbol_work_k.add(tuple(node.to_symbol() for node in path))
 
         if overlap_to_root:
-            all_k_paths = self.generate_all_k_paths(k=k)
+            all_k_paths = self.generate_all_k_paths(
+                k=k, coverage_goal=coverage_goal, input_parties=input_parties
+            )
             for k_path in all_k_paths:
                 if non_terminal in k_path:
                     for idx in range(len(k_path) - 1, k):
                         symbol_work[idx].add(k_path)
 
-        self._k_path_cache[(non_terminal, overlap_to_root)] = symbol_work
+        self._k_path_cache[cache_key] = symbol_work
 
         return symbol_work[k - 1]
 
     def _extract_k_paths_from_tree(
-        self, tree: DerivationTree, k: int, overlap_to_root: bool = False
+        self,
+        tree: DerivationTree,
+        k: int,
+        overlap_to_root: bool = False,
+        coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
+        input_parties: Optional[set[str]] = None,
     ) -> set[tuple[Symbol, ...]]:
         """
         Extracts all k-length paths (k-paths) from a derivation tree.
         """
+        if input_parties is None:
+            input_parties = set()
 
         overlap_parent = tree
         if overlap_to_root:
@@ -599,7 +633,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                 if overlap_parent.parent is not None:
                     overlap_parent = overlap_parent.parent
 
-        hash_key = hash((tree, overlap_parent, k, overlap_to_root))
+        hash_key = hash((tree, overlap_parent, k, overlap_to_root, coverage_goal))
         if hash_key in self._tree_k_path_cache:
             k_paths = self._tree_k_path_cache[hash_key]
             return k_paths
@@ -610,11 +644,26 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             if not isinstance(tree_root.symbol, NonTerminal):
                 return
             for child in tree_root.children:
+                if coverage_goal == CoverageGoal.STATE_INPUTS:
+                    if child.sender is not None and child.sender not in input_parties:
+                        continue
                 start_nodes.append((tree_root.symbol, child))
                 collect_start_nodes(child)
 
         collect_start_nodes(tree)
         start_nodes.append((None, tree))
+
+        if coverage_goal == CoverageGoal.INPUTS:
+            input_symbol_starters = [
+                (parent, child)
+                for parent, child in start_nodes
+                if isinstance(child.symbol, NonTerminal)
+                and child.symbol in input_parties
+            ]
+            start_nodes.clear()
+            for parent, child in input_symbol_starters:
+                collect_start_nodes(child)
+                start_nodes.append((parent, child))
 
         paths: list[set[tuple[Symbol, ...]]] = [set() for _ in range(k)]
 
@@ -655,6 +704,9 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                 if len(new_path) == k:
                     return
             for child in tree_node.children:
+                if coverage_goal == CoverageGoal.STATE_INPUTS:
+                    if child.sender is not None and child.sender not in input_parties:
+                        continue
                 traverse(tree_symbol, child, new_path)
 
         for parent, node in start_nodes:
@@ -665,7 +717,13 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             k_paths.update(path_set)
 
         if overlap_to_root:
-            for path in self._extract_k_paths_from_tree(overlap_parent, k, False):
+            for path in self._extract_k_paths_from_tree(
+                overlap_parent,
+                k,
+                False,
+                coverage_goal=coverage_goal,
+                input_parties=input_parties,
+            ):
                 if tree.symbol in path:
                     k_paths.add(path)
 
