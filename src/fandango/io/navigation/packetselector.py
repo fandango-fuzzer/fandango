@@ -29,7 +29,7 @@ class PacketSelector:
         diversity_k: int,
     ):
         self.start_symbol = NonTerminal("<start>")
-        self.coverage_goal = CoverageGoal.STATE_INPUTS_OUTPUTS
+        self.coverage_goal = CoverageGoal.STATE_INPUTS
         self.grammar = grammar
         self.state_grammar_symbols = self._get_state_grammar_symbols(self.start_symbol)
         self.io_instance = io_instance
@@ -434,7 +434,9 @@ class PacketSelector:
         if len(u_paths) == 0:
             return 1.0
         all_paths = self.grammar.generate_all_k_paths(
-            k=self.diversity_k, coverage_goal=self.coverage_goal
+            k=self.diversity_k,
+            coverage_goal=self.coverage_goal,
+            input_parties=self._input_parties(),
         )
         if len(all_paths) == 0:
             return 1.0
