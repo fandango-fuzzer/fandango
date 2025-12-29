@@ -40,7 +40,6 @@ class PacketSelector:
         self.grammar = grammar
         self.state_grammar_symbols = self._get_state_grammar_symbols(self.start_symbol)
         self.io_instance = io_instance
-        self.k_path_symbols = self.compute_k_path_symbols(self.coverage_goal)
         self.msg_power_schedule = PowerScheduleCoverage()
         self.state_path_power_schedule = PowerScheduleKPath()
         self.navigator = PacketNavigator(grammar, self.start_symbol)
@@ -60,6 +59,13 @@ class PacketSelector:
         self._current_covered_k_paths: set[KPath] = set()
         self._all_past_covered_k_paths: set[KPath] = set()
         self.compute(history_tree, self.parst_derivations)
+
+    def _input_parties(self) -> set[str]:
+        parties: set[str] = set()
+        for party in self.io_instance.parties.values():
+            if party.is_fuzzer_controlled():
+                parties.add(party.party_name)
+        return parties
 
     def _get_state_grammar_symbols(
         self, starting_symbol: NonTerminal
@@ -220,14 +226,11 @@ class PacketSelector:
         return all_derivation_trees
 
     def _uncovered_paths(self) -> list[KPath]:
-        return list(
-            Grammar.filter_k_paths(
-                self.k_path_symbols,
-                self.grammar.get_uncovered_k_paths(
-                    self._all_derivation_trees(), self.diversity_k, self.start_symbol
-                ),
-                False,
-            )
+        return self.grammar.get_uncovered_k_paths(
+            self._all_derivation_trees(),
+            self.diversity_k,
+            self.start_symbol,
+            coverage_goal=self.coverage_goal,
         )
 
     def _select_next_target(self) -> KPath:
@@ -436,10 +439,8 @@ class PacketSelector:
         u_paths = self._uncovered_paths()
         if len(u_paths) == 0:
             return 1.0
-        all_paths = Grammar.filter_k_paths(
-            self.k_path_symbols,
-            self.grammar.generate_all_k_paths(k=self.diversity_k),
-            False,
+        all_paths = self.grammar.generate_all_k_paths(
+            k=self.diversity_k, coverage_goal=self.coverage_goal
         )
         if len(all_paths) == 0:
             return 1.0
@@ -508,47 +509,3 @@ class PacketSelector:
 
     def set_coverage_goal(self, goal: CoverageGoal) -> None:
         self.coverage_goal = goal
-        self.k_path_symbols = self.compute_k_path_symbols(self.coverage_goal)
-
-    def compute_k_path_symbols(self, coverage_goal: CoverageGoal) -> set[Symbol]:
-        input_starters: set[Symbol] = set()
-        output_starters: set[Symbol] = set()
-        state_starters: set[Symbol] = set()
-        p_nts = self.grammar.get_protocol_messages(self.start_symbol)
-        for p_nt in p_nts:
-            work = set(
-                NonTerminalNode(p_nt.symbol, []).descendents(
-                    self.grammar, filter_controlflow=True
-                )
-            )
-            msg_starters: set[Symbol] = set()
-            while len(work) > 0:
-                current = work.pop()
-                current_symbol = current.to_symbol()
-                if current_symbol in msg_starters:
-                    continue
-                msg_starters.add(current_symbol)
-                work.update(current.descendents(self.grammar, filter_controlflow=True))
-
-            assert p_nt.sender is not None
-            if self.io_instance.parties[p_nt.sender].is_fuzzer_controlled():
-                input_starters.add(p_nt.symbol)
-                input_starters.update(msg_starters)
-            else:
-                output_starters.add(p_nt.symbol)
-                output_starters.update(msg_starters)
-        for nt in self.state_grammar_symbols:
-            if nt not in input_starters and nt not in output_starters:
-                state_starters.add(nt)
-
-        starters: set[Symbol] = set()
-        if coverage_goal == CoverageGoal.INPUTS:
-            starters.update(input_starters)
-        elif coverage_goal == CoverageGoal.STATE_INPUTS:
-            starters.update(input_starters)
-            starters.update(state_starters)
-        elif coverage_goal == CoverageGoal.STATE_INPUTS_OUTPUTS:
-            starters.update(input_starters)
-            starters.update(output_starters)
-            starters.update(state_starters)
-        return starters
