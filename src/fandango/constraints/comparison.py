@@ -63,6 +63,8 @@ class EqualComparisonSuggestion(Suggestion):
             ]
 
         elif suggested_tree := grammar.parse(self._source, start=symbol):
+            suggested_tree.sender = self._target.sender
+            suggested_tree.recipient = self._target.recipient
             return [(self._target, suggested_tree)]
 
         return []
