@@ -19,6 +19,7 @@ from fandango.evolution.mutation import MutationOperator, SimpleMutation
 from fandango.evolution.population import IoPopulationManager, PopulationManager
 from fandango.evolution.profiler import Profiler
 from fandango.io import FandangoIO
+from fandango.io.navigation.coverage_goal import CoverageGoal
 from fandango.io.navigation.packetselector import PacketSelector
 from fandango.io.packetparser import parse_next_remote_packet
 from fandango.language.symbols import NonTerminal
@@ -72,6 +73,7 @@ class Fandango:
         max_nodes: int = 200,
         max_nodes_rate: float = 0.5,
         profiling: bool = False,
+        coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
     ):
         if tournament_size > 1:
             raise FandangoValueError(
@@ -96,6 +98,7 @@ class Fandango:
         self.diversity_k = diversity_k
         self.remote_response_timeout = 15.0
         self.past_io_derivations: list[DerivationTree] = []
+        self.coverage_goal = coverage_goal
 
         # Instantiate managers
         if self.grammar.fuzzing_mode == FuzzingMode.IO:
@@ -493,6 +496,7 @@ class Fandango:
         self.packet_selector = PacketSelector(
             self.grammar, io_instance, history_tree, self.diversity_k
         )
+        self.packet_selector.set_coverage_goal(self.coverage_goal)
         if max_generations is None:
             selected_packet_max_generations = 10
             overall_max_generations = max_generations
