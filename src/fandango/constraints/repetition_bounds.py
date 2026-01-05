@@ -318,7 +318,7 @@ class RepetitionBoundsConstraint(Constraint):
 
         if len(nodes) == 0:
             raise FandangoValueError(
-                f"Couldn't find search target ({search}) in prefixed DerivationTree for computed repetition"
+                f"Couldn't find search target ({search.format_as_spec()}) in prefixed DerivationTree for computed repetition"
             )
 
         target = nodes[-1]
