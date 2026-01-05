@@ -367,6 +367,8 @@ class PacketSelector:
             packet_idx = self._guide_path.index(next_packet)
             hookin_states = []
             for symbol in self._guide_path[:packet_idx]:
+                if symbol is None:
+                    continue
                 assert isinstance(symbol, Symbol)
                 hookin_states.append(symbol)
             packet_sender = next_packet.sender
@@ -375,6 +377,8 @@ class PacketSelector:
             if self._guide_path is not None:
                 hookin_states = []
                 for symbol in self._guide_path:
+                    if symbol is None:
+                        continue
                     assert isinstance(symbol, Symbol)
                     hookin_states.append(symbol)
             packet_sender = None
