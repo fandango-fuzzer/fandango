@@ -643,6 +643,29 @@ class TreeValue:
                 f"Cannot compare TreeValue of type {type(self)} with {type(other)}"
             )
 
+    def parseable_from(self, other: object) -> bool:
+        """
+        Check if an object of type other can be parsed into self, type-wise.
+
+        :param other: The value to be parsed
+        :return: True if an object of type other can be parsed into self, False otherwise
+        """
+        if isinstance(other, int):
+            if self.is_type(TreeValueType.STRING):
+                stringified = str(self)
+                return stringified.isdigit() or (
+                    stringified.startswith("-") and stringified[1:].isdigit()
+                )
+            return self.is_type(TreeValueType.TRAILING_BITS_ONLY) or self.is_type(
+                TreeValueType.STRING
+            )  # we can parse ints to strings
+        elif isinstance(other, str):
+            return self.is_type(TreeValueType.STRING)
+        elif isinstance(other, bytes):
+            return self.is_type(TreeValueType.BYTES)
+        else:
+            return False
+
     def __hash__(self) -> int:
         return hash((self._value, tuple(self._trailing_bits)))
 

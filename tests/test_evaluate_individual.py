@@ -1,3 +1,4 @@
+from itertools import islice
 import pytest
 from fandango import DerivationTree
 from fandango.evolution import GeneratorWithReturn
@@ -255,3 +256,22 @@ def test_does_not_provide_suggestion_with_altered_nt_and_nt(constraint):
     else:
         assert target.symbol == NonTerminal("<first_name>")
         assert source.to_string() == "Lasthello"
+
+
+def test_with_non_matching_types_eq_constraint():
+    with open(RESOURCES_ROOT / "non_matching_types_eq_constraint.fan", "r") as file:
+        grammar, constraints = parse(file)
+
+    assert grammar is not None
+    fan = Fandango(grammar, constraints)
+    gen = fan.generate(
+        max_generations=0
+    )  # if we need any generational mutation, autofixing is broken
+
+    solutions = list(islice(gen, 20))  # take the first 20 solutions only
+    assert len(solutions) == 20
+
+    for solution in solutions:
+        length, content = str(solution).split(";")
+        assert int(length) > 0
+        assert int(length) == content.count("-") + 1
