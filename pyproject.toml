@@ -58,7 +58,7 @@ test = [
     "pytest-timeout>=2.4.0",
     "pytest-xdist>=3.7.0",
     "python-dateutil>=2.9.0.post0",
-    "docutils==0.22.3",
+    "docutils>=0.20.1",
     "tccbox>=2025.6.6",             # We have upgraded from ==2024.7.1 (the version ISLa used) because it is not compatible with Python 3.12 anymore :(
 ]
 
