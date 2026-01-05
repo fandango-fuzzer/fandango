@@ -609,6 +609,8 @@ class FandangoIO(object):
                     type(fragments[-1][2]) != type(msg_fragment) if fragments else False
                 )
             ):
+                prev_sender = sender
+                prev_recipient = recipient
                 fragments.append((sender, recipient, msg_fragment))
             elif isinstance(fragments[-1][2], bytes) and isinstance(
                 msg_fragment, bytes
