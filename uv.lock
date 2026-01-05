@@ -743,7 +743,7 @@ requires-dist = [
     { name = "cachedir-tag", specifier = ">=0.0.3" },
     { name = "dill", specifier = ">=0.3.7" },
     { name = "docutils", marker = "extra == 'book'", specifier = ">=0.20.1" },
-    { name = "docutils", marker = "extra == 'test'", specifier = "==0.21.2" },
+    { name = "docutils", marker = "extra == 'test'", specifier = ">=0.20.1" },
     { name = "exrex", specifier = ">=0.12.0" },
     { name = "faker", marker = "extra == 'test'", specifier = ">=30.4.0" },
     { name = "fandango-fuzzer", extras = ["development"], marker = "extra == 'book'" },
