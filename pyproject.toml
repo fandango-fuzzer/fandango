@@ -1,6 +1,9 @@
 [build-system]
-requires = ["setuptools>=73.0.1", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["scikit-build-core>=0.11.6", "setuptools>=73.0.1"]
+build-backend = "scikit_build_core.setuptools.build_meta"
+
+[tool.scikit-build]
+wheel.packages = ["src/fandango"]
 
 # If you update this info, please also update the version in setup.py
 [project]
@@ -67,6 +70,7 @@ development = [
     "pygls>=2.0.0a4",           # language server
     "speedy-antlr-tool>=1.4.3",
     "types-setuptools>=73.0.1", # enable mypy to check setup.py
+    "scikit-build-core>=0.11.6", # For type checking
 ]
 
 book = [
@@ -80,9 +84,6 @@ book = [
     "pyppeteer>=2.0.0",
     "sphinxcontrib-mermaid>=1.0.0",
 ]
-
-[tool.setuptools.packages.find]
-where = ["src"]
 
 [project.urls]
 homepage = "https://fandango-fuzzer.github.io/"
