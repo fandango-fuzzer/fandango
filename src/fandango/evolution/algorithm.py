@@ -496,7 +496,10 @@ class Fandango:
         self.packet_selector = PacketSelector(
             self.grammar, io_instance, history_tree, self.diversity_k
         )
-        self.packet_selector.set_coverage_goal(self.coverage_goal)
+        if self.coverage_goal == CoverageGoal.SINGLE_DERIVATION:
+            self.packet_selector.set_coverage_goal(CoverageGoal.STATE_INPUTS_OUTPUTS)
+        else:
+            self.packet_selector.set_coverage_goal(self.coverage_goal)
         if max_generations is None:
             selected_packet_max_generations = 10
             overall_max_generations = max_generations
@@ -522,6 +525,7 @@ class Fandango:
                 if (
                     len(self.packet_selector.get_next_parties()) == 0
                     or self.packet_selector.is_guide_to_end()
+                    or self.coverage_goal == CoverageGoal.SINGLE_DERIVATION
                 ) and self.packet_selector.is_complete():
                     history_tree = random.choice(
                         list(self.packet_selector.forecasting_result.complete_trees)
@@ -529,6 +533,8 @@ class Fandango:
                     self.past_io_derivations.append(history_tree)
                     self._initial_solutions.clear()
                     yield history_tree
+                    if self.coverage_goal == CoverageGoal.SINGLE_DERIVATION:
+                        return
                     if self.packet_selector.coverage_percent() == 1.0:
                         log_guidance_hint("Full coverage reached, stopping evolution.")
                         return
