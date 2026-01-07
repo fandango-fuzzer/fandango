@@ -131,7 +131,7 @@ The idea would now be to use the `telnet` program for this very purpose.
 By invoking
 
 ```shell
-$ fandango talk -f smtp-telnet.fan telnet 8025
+$ fandango talk -f smtp-telnet.fan telnet localhost 8025
 ```
 
 we could interact with the `telnet` program as described above.
@@ -174,7 +174,7 @@ Again, note that `In` and `Out` describe the interaction from the _perspective o
 With this, we can now connect to our (hopefully still running) SMTP server and actually send it a `QUIT` command:
 
 ```shell
-$ fandango talk -f smtp-telnet.fan telnet 8025
+$ fandango talk -f smtp-telnet.fan telnet localhost 8025
 ```
 
 % FIXME: Add output
@@ -183,7 +183,7 @@ To track the data that is actually exchanged, use the verbose `-v` flag.
 The `In:` and `Out:` log messages show the data that is being exchanged.
 
 ```shell
-$ fandango -v talk -f smtp-telnet.fan telnet 8025
+$ fandango -v talk -f smtp-telnet.fan telnet localhost 8025
 ```
 
 % FIXME: Add output
