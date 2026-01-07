@@ -11,14 +11,7 @@ kernelspec:
 ---
 
 (sec:tutorial)=
-# Fandango Tutorial
-
-Welcome to Fandango! In this tutorial, you will learn how to
-
-* write *Fandango specs*
-* use the `fandango` *command-line tool*
-* *test programs* with Fandango.
-
+# Tutorial Conventions
 
 (sec:conventions)=
 ## Conventions in this Documentation
