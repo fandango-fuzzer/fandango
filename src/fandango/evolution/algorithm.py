@@ -511,7 +511,7 @@ class Fandango:
         while True:
             self.packet_selector.compute(history_tree, self.past_io_derivations)
             LOGGER.info(
-                f"Current coverage: {self.packet_selector.coverage_percent():.2f}%"
+                f"Current coverage: {self.packet_selector.coverage_percent() * 100:.2f}%"
             )
             self.evaluator.start_next_message([history_tree] + self.past_io_derivations)
 
