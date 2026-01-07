@@ -77,21 +77,23 @@ $ python -m aiosmtpd -d -n &
 ```{code-cell}
 :tags: ["remove-input"]
 import os
+import time
+
 os.system("pkill -f aiosmtpd")
-os.system("python -m aiosmtpd -n &");
+os.system("python -m aiosmtpd -n &")
+time.sleep(1);  # Wait for server to be ready
 ```
 
 % Check if everything works
-% Doesn't work (yet?) -- "ConnectionRefusedError"
-% Fandango (below) can connect, though
 ```{code-cell}
-:tags: ["remove-input"]
-# import socket
-# 
-# client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# client_socket.connect(('localhost', 8025))
-# client_socket.send('QUIT\n')
-# client_socket.close()
+:tags: ["remove-input", "remove-output"]
+from minitelnet import telnet
+
+commands = [
+    "HELO relay.example.org\r\n",
+    "QUIT\r\n"
+]
+telnet(commands)
 ```
 
 We can now connect to the server on the given port and send it commands.
@@ -107,31 +109,27 @@ $ telnet localhost 8025
 
 ```{code-cell}
 :tags: ["remove-input"]
-print("""Trying ::1...
-Connected to localhost.
-Escape character is '^]'.
-220 localhost.example.com Python SMTP 1.4.6
-QUIT
-221 Bye
-Connection closed by foreign host.""")
+from minitelnet import telnet
+
+telnet(["QUIT\r\n"])
 ```
 
-Try this for yourself! What happens if you invoke `telnet`, introducing yourself with `HELO client.example.com`?
+Try this for yourself! What happens if you invoke `telnet`, introducing yourself with `HELO client.example.org`?
 
 :::{admonition} Solution
 :class: tip, dropdown
-When sending `HELO client.example.com`, the server replies with its own hostname.
-This is the name of the local computer, in our example `localhost.example.com`.
+When sending `HELO client.example.org`, the server replies with its own hostname.
+This is the name of the local computer, in our example `smtp.example.com`.
 
 % Can't have code cells in admonitions :-(
 ```shell
 $ telnet localhost 8025
-Trying ::1...
+Trying localhost...
 Connected to localhost.
 Escape character is '^]'.
-220 localhost.example.com Python SMTP 1.4.6
-HELO client.example.com
-250 localhost.example.com
+220 smtp.example.com Python SMTP 1.4.6
+HELO client.example.org
+250 smtp.example.com
 QUIT
 221 Bye
 Connection closed by foreign host.
@@ -269,7 +267,7 @@ assert _exit_code == 0
 ```{mermaid}
 sequenceDiagram
     Fandango->>SMTP Server: (connect)
-    SMTP Server->>Fandango: 220 host.example.com <more data>
+    SMTP Server->>Fandango: 220 smtp.example.com <more data>
     Fandango->>SMTP Server: QUIT
     SMTP Server->>Fandango: 221 <more data>
     SMTP Server->>Fandango: (closes connection)
@@ -290,25 +288,37 @@ So if we invoke
 $ fandango talk -f smtp-simple.fan --server 8125
 ```
 
+```{code-cell}
+:tags: ["remove-input"]
+
+import os
+import time
+
+os.system("pkill -f smtp-simple.fan")
+os.system("fandango talk -f smtp-simple.fan --server 8125 &")
+time.sleep(1);  # Wait for server to be ready
+```
+
 we can then connect to our running Fandango "SMTP Server" and interact with it according to the `smtp-simple.fan` spec:
 
 ```shell
 $ telnet localhost 8125
-Trying ::1...
-Connected to localhost.
-Escape character is '^]'.
-220 host.example.com 26%
-QUIT
-221 26yn
 ```
 
-Note that as server, Fandango produces its own `220` and `221` messages (`26%` and `26yn`, respectively), effectively _fuzzing the client_.
+```{code-cell}
+:tags: ["remove-input"]
+from minitelnet import telnet
+
+telnet(["QUIT\r\n"], port=8125)
+```
+
+Note that as server, Fandango produces its own `220` and `221` messages, effectively _fuzzing the client_.
 Note how the interaction diagram reflects how Fandango is now taking the role of the client:
 
 ```{mermaid}
 sequenceDiagram
     SMTP Client (or telnet)->>Fandango: (connect)
-    Fandango->>SMTP Client (or telnet): 220 host.example.com <random data>
+    Fandango->>SMTP Client (or telnet): 220 smtp.example.com <random data>
     SMTP Client (or telnet)->>Fandango: QUIT
     Fandango->>SMTP Client (or telnet): 221 <random data>
     Fandango->>SMTP Client (or telnet): (closes connection)
@@ -395,8 +405,9 @@ assert _exit_code == 0
 
 That's it for now. GO and thoroughly test your programs!
 
-% Let's kill our server
+% Let's kill our server(s)
 ```{code-cell}
 :tags: ["remove-input"]
-!pkill -f aiosmtpd
+os.system("pkill -f aiosmtpd")
+os.system("pkill -f smtp-simple.fan")
 ```
