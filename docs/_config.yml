@@ -1,7 +1,7 @@
 title: Fuzzing with Fandango
-author: José Antonio Zamudio Amaya, Marius Smytzek, and Andreas Zeller
+author: José Antonio Zamudio Amaya, Valentin Huber, Alexander Liggesmeyer, Marius Smytzek, and Andreas Zeller
 logo: fandango.png
-copyright: 2024-2025 CISPA Helmholtz Center for Information Security (www.cispa.de). All Rights Reserved.
+copyright: 2024-2026 CISPA Helmholtz Center for Information Security (www.cispa.de). All Rights Reserved.
 exclude_patterns: [BookIntro.md]
 
 bibtex_bibfiles:
