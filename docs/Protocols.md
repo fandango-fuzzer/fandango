@@ -17,14 +17,9 @@ In [the chapter on checking outputs](sec:outputs), we already have seen how to i
 In this chapter, we will extend this concept to full _protocol testing_ across networks.
 This includes:
 
-* Acting as a network _client_ and interacting with network servers  using generated inputs
-* Acting as a network _server_ and interacting with network clients using generated inputs.
+* Acting as a network _client_ and interacting with network _servers_; and
+* Acting as a network _server_ and interacting with network _clients_.
 
-```{admonition} Under Construction
-:class: attention
-Protocol testing is currently in beta.
-Check out [the list of open issues](https://github.com/fandango-fuzzer/fandango/issues).
-```
 
 ## Interacting with an SMTP server
 
@@ -72,11 +67,31 @@ The Python `aiosmtpd` server will do the trick:
 $ pip install aiosmtpd
 ```
 
-Once installed, we can run the server locally; normally, it runs on port 8025:
+Once installed, we can run the server locally.
+Normally, it runs on port 8025:
 
 ```shell
-$ python -m aiosmtpd -d -n
-INFO:mail.log:Server is listening on localhost:8025
+$ python -m aiosmtpd -d -n &
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+import os
+os.system("pkill -f aiosmtpd")
+os.system("python -m aiosmtpd -n &");
+```
+
+% Check if everything works
+% Doesn't work (yet?) -- "ConnectionRefusedError"
+% Fandango (below) can connect, though
+```{code-cell}
+:tags: ["remove-input"]
+# import socket
+# 
+# client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# client_socket.connect(('localhost', 8025))
+# client_socket.send('QUIT\n')
+# client_socket.close()
 ```
 
 We can now connect to the server on the given port and send it commands.
@@ -88,22 +103,27 @@ For instance, a `QUIT` command (followed by Return) will terminate the connectio
 
 ```shell
 $ telnet localhost 8025
-Trying ::1...
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+print("""Trying ::1...
 Connected to localhost.
 Escape character is '^]'.
 220 localhost.example.com Python SMTP 1.4.6
 QUIT
 221 Bye
-Connection closed by foreign host.
+Connection closed by foreign host.""")
 ```
 
-Try this for yourself! What happens if you invoke `telnet`, introducing yourself with  `HELO client.example.com`?
+Try this for yourself! What happens if you invoke `telnet`, introducing yourself with `HELO client.example.com`?
 
 :::{admonition} Solution
 :class: tip, dropdown
 When sending `HELO client.example.com`, the server replies with its own hostname.
 This is the name of the local computer, in our example `localhost.example.com`.
 
+% Can't have code cells in admonitions :-(
 ```shell
 $ telnet localhost 8025
 Trying ::1...
@@ -114,6 +134,7 @@ HELO client.example.com
 250 localhost.example.com
 QUIT
 221 Bye
+Connection closed by foreign host.
 ```
 :::
 
@@ -150,7 +171,7 @@ sequenceDiagram
     telnet->>Fandango: Trying ::1...
     telnet->>Fandango: Connected to localhost.
     telnet->>Fandango: Escape character is '^]'.
-    SMTP Server (via telnet)->>Fandango: 220 localhost.example.com Python SMTP 1.4.6
+    SMTP Server (via telnet)->>Fandango: 220 smtp.example.com Python SMTP 1.4.6
     Fandango->>SMTP Server (via telnet): QUIT
     SMTP Server (via telnet)->>Fandango: 221 Bye
     SMTP Server (via telnet)->>telnet: (closes connection)
@@ -177,7 +198,11 @@ With this, we can now connect to our (hopefully still running) SMTP server and a
 $ fandango talk -f smtp-telnet.fan telnet localhost 8025
 ```
 
-% FIXME: Add output
+```{code-cell}
+:tags: ["remove-input"]
+!fandango talk -f smtp-telnet.fan telnet localhost 8025
+assert _exit_code == 0
+```
 
 To track the data that is actually exchanged, use the verbose `-v` flag.
 The `In:` and `Out:` log messages show the data that is being exchanged.
@@ -186,7 +211,12 @@ The `In:` and `Out:` log messages show the data that is being exchanged.
 $ fandango -v talk -f smtp-telnet.fan telnet localhost 8025
 ```
 
-% FIXME: Add output
+```{code-cell}
+:tags: ["remove-input"]
+!fandango -v talk -f smtp-telnet.fan telnet localhost 8025
+assert _exit_code == 0
+```
+
 
 
 ## Interacting as Network Client
@@ -199,12 +229,8 @@ Fortunately, Fandango offers a means to be invoked _directly as a network client
 The `fandango talk` option `--client` allows Fandango to be used as a network client.
 The argument to `--client` is a network address to connect to.
 In the simplest form, it is just a port number on the local machine.
-
-Hence, to have Fandango act as an SMTP client for the local server, we can enter
-
-```shell
-$ fandango talk -f SPEC.fan --client 8025
-```
+Hence, to have Fandango act as an SMTP client for the local server, we would use
+the option `--client 8025`.
 
 Since Fandango directly talks to the SMTP server now, we can also simplify the grammar by removing the `<telnet_intro>` part.
 Also, there is no more `In` and `Out` parties, since we do not interact with the standard input and output of an invoked program.
@@ -234,7 +260,11 @@ With this, we have Fandango act as client and connect to the (hopefully still ru
 $ fandango talk -f smtp-simple.fan --client 8025
 ```
 
-% FIXME: Describe output
+```{code-cell}
+:tags: ["remove-input"]
+!fandango talk -f smtp-simple.fan --client 8025
+assert _exit_code == 0
+```
 
 ```{mermaid}
 sequenceDiagram
@@ -272,7 +302,7 @@ QUIT
 221 26yn
 ```
 
-As server, Fandango produces its own `220` and `221` messages, effectively _fuzzing the client_.
+Note that as server, Fandango produces its own `220` and `221` messages (`26%` and `26yn`, respectively), effectively _fuzzing the client_.
 Note how the interaction diagram reflects how Fandango is now taking the role of the client:
 
 ```{mermaid}
@@ -290,6 +320,7 @@ Fandango can actually create and mock an arbitrary number of clients and servers
 The interface for this is currently under construction.
 ```
 
+% Got things running up to here -- AZ
 
 ## A Bigger Protocol Spec
 
@@ -349,7 +380,7 @@ $ fandango fuzz --party=Client -f smtp-extended.fan
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz --party=Client -f smtp-extended.fan -n 1
-assert _exit_code == 0 
+assert _exit_code == 0
 ```
 
 ```shell
@@ -363,3 +394,9 @@ assert _exit_code == 0
 ```
 
 That's it for now. GO and thoroughly test your programs!
+
+% Let's kill our server
+```{code-cell}
+:tags: ["remove-input"]
+!pkill -f aiosmtpd
+```
