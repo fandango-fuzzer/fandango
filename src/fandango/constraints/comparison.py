@@ -35,6 +35,7 @@ class EqualComparisonSuggestion(Suggestion):
         :param target: The target to parse into.
         :param source: What to parse.
         """
+        assert isinstance(target.symbol, NonTerminal)
         self._target = target
         self._source = source
 
@@ -308,11 +309,19 @@ class ComparisonConstraint(Constraint):
                 # this will always fix <len> to 0
                 # or <first_name> + "Doe" == "John Doe"
                 # this will try to parse "John Doe" into <first_name>, which is not what we want
-                if single_left_tree is not None and single_left_tree == left:
+                if (
+                    single_left_tree is not None
+                    and isinstance(single_left_tree.symbol, NonTerminal)
+                    and single_left_tree == left
+                ):
                     suggestions.append(
                         EqualComparisonSuggestion(single_left_tree, right)
                     )
-                if single_right_tree is not None and single_right_tree == right:
+                if (
+                    single_right_tree is not None
+                    and isinstance(single_right_tree.symbol, NonTerminal)
+                    and single_right_tree == right
+                ):
                     suggestions.append(
                         EqualComparisonSuggestion(single_right_tree, left)
                     )
