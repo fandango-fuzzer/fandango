@@ -41,6 +41,7 @@ parts:
   - caption: Testing Protocols
     chapters:
     - file: Protocols
+    - file: Parties
     # - file: Whitebox
   - caption: Fandango Reference
     chapters:
