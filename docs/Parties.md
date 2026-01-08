@@ -10,10 +10,15 @@ kernelspec:
   name: python3
 ---
 
-(sec:diversity)=
-# Achieving Diversity
+(sec:parties)=
+# Defining Network Parties
 
 ```{admonition} Under Construction
 :class: attention
 This chapter is under construction.
 ```
+
+```{code-cell}
+!cat ../src/io/__init__.py
+```
+
