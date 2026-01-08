@@ -169,7 +169,7 @@ def open_data_port(port):
     FandangoIO.instance().parties["ServerData"].start()
     return port
 
-class ClientControl(ConnectParty):
+class ClientControl(NetworkParty):
     def __init__(self):
         super().__init__(
             ownership=Ownership.FANDANGO_PARTY if fandango_is_client else Ownership.EXTERNAL_PARTY,
@@ -183,7 +183,7 @@ class ClientControl(ConnectParty):
             FandangoIO.instance().parties["ClientData"].start()
         super().receive_msg("ServerControl", message.decode("utf-8"))
 
-class ServerControl(ConnectParty):
+class ServerControl(NetworkParty):
     def __init__(self):
         super().__init__(
             ownership=Ownership.EXTERNAL_PARTY if fandango_is_client else Ownership.FANDANGO_PARTY,
@@ -200,7 +200,7 @@ class ServerControl(ConnectParty):
         if message.to_string().startswith("226"):
             FandangoIO.instance().parties['ServerData'].stop()
 
-class ClientData(ConnectParty):
+class ClientData(NetworkParty):
     def __init__(self):
         super().__init__(
             ownership=Ownership.FANDANGO_PARTY if fandango_is_client else Ownership.EXTERNAL_PARTY,
@@ -211,7 +211,7 @@ class ClientData(ConnectParty):
     def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:
         super().receive_msg("ServerData", message.decode("utf-8"))
 
-class ServerData(ConnectParty):
+class ServerData(NetworkParty):
     def __init__(self):
         super().__init__(
             ownership=Ownership.EXTERNAL_PARTY if fandango_is_client else Ownership.FANDANGO_PARTY,
