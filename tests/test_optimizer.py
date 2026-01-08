@@ -308,7 +308,9 @@ class GeneticTest(unittest.TestCase):
 
     def test_generate(self):
         # Run the evolution process
-        solutions = list(self.fandango.generate(max_generations=20))
+        # just generate the initial population, there is basically no chance
+        # that we don't generate at least one even number in 50 individuals by chance
+        solutions = list(self.fandango.generate(max_generations=1))
 
         # Check that the population has been updated
         self.assertIsNotNone(self.fandango.population)
@@ -317,6 +319,8 @@ class GeneticTest(unittest.TestCase):
         # Check that the population is valid
         for individual in self.fandango.population:
             self.assertTrue(self.fandango.grammar.parse(str(individual)))
+
+        self.assertGreater(len(solutions), 0)
 
         for individual in solutions:
             self.assertTrue(self.fandango.grammar.parse(str(individual)))
