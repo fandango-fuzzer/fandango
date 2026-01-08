@@ -296,11 +296,11 @@ When invoked with the `--server` option, Fandango will _create_ a server at the 
 So if we invoke
 
 ```{margin}
-The `--infinite` option ensures the server keeps on running even after having produced a sufficient [diverse set of interactions](sec:diversity).
+The option `-n 100` ensures the server will run for 100 interactions.
 ```
 
 ```shell
-$ fandango talk -f smtp-simple.fan --infinite --server 8125
+$ fandango talk -f smtp-simple.fan -n 100 --server 8125
 ```
 
 ```{code-cell}
@@ -310,7 +310,7 @@ import os
 import time
 
 os.system("pkill -f smtp-simple.fan")
-os.system("fandango talk -f smtp-simple.fan --infinite --server 8125 &")
+os.system("fandango talk -f smtp-simple.fan -n 100 --server 8125 &")
 time.sleep(1);  # Wait for server to be ready
 ```
 
@@ -339,13 +339,6 @@ sequenceDiagram
     Fandango->>SMTP Client (or telnet): (closes connection)
 ```
 
-```{admonition} Under Construction
-:class: attention
-Fandango can actually create and mock an arbitrary number of clients and servers, all interacting with each other.
-The interface for this is currently under construction.
-```
-
-% Got things running up to here -- AZ
 
 ## A Bigger Protocol Spec
 
@@ -424,5 +417,5 @@ That's it for now. GO and thoroughly test your programs!
 ```{code-cell}
 :tags: ["remove-input"]
 os.system("pkill -f aiosmtpd")
-os.system("pkill -f smtp-simple.fan")
+os.system("pkill -f smtp-simple.fan");
 ```
