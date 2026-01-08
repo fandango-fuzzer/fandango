@@ -24,7 +24,6 @@ jobs:
         with:
           python-version: 3.13
           needs-sudo: true
-          target: test
 
       - name: Install system dependencies for coverage (main + Ubuntu only)
         run: |

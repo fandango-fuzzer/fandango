@@ -451,7 +451,7 @@ class IterativeParser(
         w: int,
     ) -> bool:
         """
-        Scan a byte from th noe input `word`.
+        Scan a byte from the input `word`.
         `state` is the current parse state.
         `table` is the parse table.
         `table[k]` is the current column.

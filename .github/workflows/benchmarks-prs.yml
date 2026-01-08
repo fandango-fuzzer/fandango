@@ -17,7 +17,6 @@ jobs:
         with:
           python-version: 3.13
           needs-sudo: true
-          target: test
 
       - name: Run Benchmarks
         env:

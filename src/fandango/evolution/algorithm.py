@@ -194,7 +194,7 @@ class Fandango:
 
         Since this is a generator, it will only do its job if the generator is actually used. Call `list(fandango.generate_initial_population())` to ensure the generator runs until the end.
 
-        :return: A generator of DerivationTree objects, all of which are valid solutions to the grammar (or satisify the minimum fitness threshold).
+        :return: A generator of DerivationTree objects, all of which are valid solutions to the grammar (or satisfy the minimum fitness threshold).
         """
         LOGGER.info(
             f"Generating (additional) initial population (size: {self.population_size - len(self.population)})..."
@@ -347,7 +347,7 @@ class Fandango:
         :param max_generations: The maximum number of generations to evolve.
         :param desired_solutions: The number of solutions to evolve.
         :param solution_callback: A callback function to be called for each solution.
-        :return: A list of DerivationTree objects, all of which are valid solutions to the grammar (or satisify the minimum fitness threshold). The function may run indefinitely if neither max_generations nor desired_solutions are provided.
+        :return: A list of DerivationTree objects, all of which are valid solutions to the grammar (or satisfy the minimum fitness threshold). The function may run indefinitely if neither max_generations nor desired_solutions are provided.
         """
         warnings.warn("Use .generate instead", DeprecationWarning)
         if self.grammar.fuzzing_mode == FuzzingMode.COMPLETE:
@@ -383,7 +383,7 @@ class Fandango:
         Generates solutions for the grammar.
 
         :param max_generations: The maximum number of generations to generate. If None, the generation will run indefinitely.
-        :return: A generator of DerivationTree objects, all of which are valid solutions to the grammar (or satisify the minimum fitness threshold).
+        :return: A generator of DerivationTree objects, all of which are valid solutions to the grammar (or satisfy the minimum fitness threshold).
         """
         while self._initial_solutions:
             yield self._initial_solutions.pop(0)
@@ -575,7 +575,7 @@ class Fandango:
                                 self.population_manager.refill_population(
                                     current_population=self.population,
                                     eval_individual=self.evaluator.evaluate_individual,
-                                    max_nodes=self.current_max_nodes,
+                                    max_nodes=self.adaptive_tuner.current_max_nodes,
                                     target_population_size=self.population_size,
                                 )
                             )

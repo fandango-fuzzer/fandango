@@ -121,7 +121,7 @@ or simply
 $ pytest
 ```
 
-To run tests in parallel, you can use [pytest-xdist](https://pytest-xdist.readthedocs.io/en/stable/) (installed with the `test` depenendencies):
+To run tests in parallel, you can use [pytest-xdist](https://pytest-xdist.readthedocs.io/en/stable/) (installed with the `test` dependencies):
 
 ```shell
 $ pytest -n auto
@@ -141,6 +141,9 @@ This will run code formatting and type checking before every commit.
 ```{warning}
 The [tests](sec:running-tests)= aren't run as part of pre-commit, because they take significant time to complete. Run them manually.
 ```
+
+`uv.lock` is a snapshot of the (actual) dependencies used in this project.
+After updating the dependencies in `pyproject.toml`, make sure `uv.lock` is up-to-date with `uv lock`.
 
 (sec:first-time-contributors)=
 ## First Time Contributors
