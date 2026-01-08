@@ -146,7 +146,7 @@ class PathFinder(NodeVisitor[bool, bool]):
             try:
                 if len(node.nodes) <= child_idx:
                     raise GrammarKeyError(
-                        "Tree contains more children, then concatination node"
+                        "Tree contains more children, then concatenation node"
                     )
                 continue_exploring = self.visit(node.nodes[child_idx])
                 child_idx += 1

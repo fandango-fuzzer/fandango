@@ -213,7 +213,7 @@ def _get_algorithm_parser() -> argparse.ArgumentParser:
     algorithm_group.add_argument(
         "--random-seed",
         type=int,
-        help="Random seed to use for the algorithm. You probably also want to specify 'PYTHONHASHSEED=<some-value>' to achieve full reproducability.",
+        help="Random seed to use for the algorithm. You probably also want to specify 'PYTHONHASHSEED=<some-value>' to achieve full reproducibility.",
         default=None,
     )
     algorithm_group.add_argument(

@@ -119,7 +119,7 @@ or simply
 $ pytest
 ```
 
-To run tests in parallel, you can use [pytest-xdist](https://pytest-xdist.readthedocs.io/en/stable/) (installed with the `test` depenendencies):
+To run tests in parallel, you can use [pytest-xdist](https://pytest-xdist.readthedocs.io/en/stable/) (installed with the `test` dependencies):
 
 ```shell
 $ pytest -n auto
