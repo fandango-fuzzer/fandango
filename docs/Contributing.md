@@ -64,7 +64,7 @@ $ make system-dev-tools
 
 (sec:pip-install)=
 ### Step 5: Install Fandango
-
+ti
 Install your local copy of Fandango:
 
 ```shell
@@ -77,9 +77,11 @@ To install additional dependencies for unit tests, code checks, running the eval
 $ python -m pip install -e ".[test,development,evaluation,book]"
 ```
 
-```{info}
-If subsequent tests fails due to dependency breakage, use `uv` to create the virtual environment with `uv.lock`, which provides a snapshot of the dependencies that are tested on our CI.
-`uv sync --locked --all-extras && uv pip install -e ".[test,development,evaluation,book]" --no-deps`
+```{tip}
+If subsequent tests fails due to dependency breakage, use `uv` to create the virtual environment with `uv.lock`, which provides a snapshot of the dependencies that are tested on our CI:
+````shell
+$ uv sync --locked --all-extras && uv pip install -e ".[test,development,evaluation,book]" --no-deps
+````
 ```
 
 If you don't need the (much faster) C++ parser, build Fandango without:
