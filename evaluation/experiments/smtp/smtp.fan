@@ -125,7 +125,7 @@ where forall <mail> in <mail_data>:
 
 fandango_is_client = True
 
-class Client(ConnectParty):
+class Client(NetworkParty):
     def __init__(self):
         super().__init__(
             ownership=Ownership.FANDANGO_PARTY if fandango_is_client else Ownership.EXTERNAL_PARTY,
@@ -134,7 +134,7 @@ class Client(ConnectParty):
         )
         self.start()
 
-class Server(ConnectParty):
+class Server(NetworkParty):
     def __init__(self):
         super().__init__(
             ownership=Ownership.EXTERNAL_PARTY if fandango_is_client else Ownership.FANDANGO_PARTY,

@@ -267,17 +267,17 @@ where forall <t> in <type_cname>:
     bytes(<t>.<a_rd_length>) == pack('>H', len(bytes(<t>.<q_name>)))
 
 
-class UdpTcpProtocolDecorator(UdpTcpProtocolDecorator):
+class UdpTcpProtocolImplementation(UdpTcpProtocolImplementation):
     def on_send(self, message: DerivationTree, recipient: Optional[str]):
         compress_msg(message.to_bytes())
         super().on_send(message, recipient)
 
-class ConnectParty(ConnectParty):
+class NetworkParty(NetworkParty):
     def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:
         super().receive_msg(sender, decompress_msg(message))
 
 
-class Client(ConnectParty):
+class Client(NetworkParty):
     def __init__(self):
         super().__init__(
             ownership=Ownership.FANDANGO_PARTY if fandango_is_client else Ownership.EXTERNAL_PARTY,
@@ -290,7 +290,7 @@ class Client(ConnectParty):
         super().receive_msg(sender, decompress_msg(message))
 
 
-class Server(ConnectParty):
+class Server(NetworkParty):
     def __init__(self):
         super().__init__(
             ownership=Ownership.FANDANGO_PARTY if not fandango_is_client else Ownership.EXTERNAL_PARTY,
