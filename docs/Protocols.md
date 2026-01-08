@@ -101,7 +101,7 @@ The `telnet` command is handy for this.
 We give it a hostname (`localhost` for our local machine) and a port (8025 for our local SMTP server.)
 
 Once connected, anything we type into the `telnet` input will automatically be relayed to the given port, and hence to the SMTP server.
-For instance, a `QUIT` command (followed by Return) will terminate the connection.
+For instance, entering a `QUIT` command (followed by Return) into telnet will be forwarded to the SMTP server, which will terminate the connection:
 
 ```shell
 $ telnet localhost 8025
@@ -114,7 +114,8 @@ from minitelnet import telnet
 telnet(["QUIT\r\n"])
 ```
 
-Try this for yourself! What happens if you invoke `telnet`, introducing yourself with `HELO client.example.org`?
+Try this for yourself!
+What happens if you invoke `telnet`, introducing yourself with `HELO client.example.org`?
 
 :::{admonition} Solution
 :class: tip, dropdown
@@ -137,6 +138,11 @@ Connection closed by foreign host.
 :::
 
 
+```{tip}
+To interrupt a telnet session, type the escape character (`CTRL + ]`).
+At the `telnet>` prompt, enter `help` for possible commands;
+`quit` exits the telnet program.
+```
 
 
 ## A simple SMTP grammar
