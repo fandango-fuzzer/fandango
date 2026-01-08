@@ -216,7 +216,7 @@ What is the full string represented by the above derivation tree?
 
 ```{admonition} Solution
 :class: tip, dropdown
-It's `'Pl Seov,5150'`, as you can find on the right-hand side of the first line.
+You can find on the right-hand side of the first line.
 ```
 
 ```{tip}
