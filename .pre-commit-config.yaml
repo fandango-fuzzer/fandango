@@ -41,3 +41,7 @@ repos:
                 src/fandango/language/parser/.*Parser.*\.py|
                 src/fandango/converters/antlr/ANTLRv4.*\.py
             )$
+- repo: https://github.com/astral-sh/uv-pre-commit
+  rev: 0.9.18 # Correspond to uv version
+  hooks:
+    - id: uv-lock

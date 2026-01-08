@@ -30,8 +30,8 @@
   <Data_1> ::= <DATA>
     <DATA> ::= (<ImageDescriptor> <LocalColorTable>? <ImageData> | <GraphicControlExtension> | <CommentExtension> | <PlainTextExtension> | <ApplicationExtension> | <UndefinedData>)*
       <ImageDescriptor> ::= <IMAGEDESCRIPTOR>
-        <IMAGEDESCRIPTOR> ::= <ImageSeperator_1> <ImageLeftPosition> <ImageTopPosition> <ImageWidth> <ImageHeight> <PackedFields_1>
-          <ImageSeperator_1> ::= b','
+        <IMAGEDESCRIPTOR> ::= <ImageSeparator_1> <ImageLeftPosition> <ImageTopPosition> <ImageWidth> <ImageHeight> <PackedFields_1>
+          <ImageSeparator_1> ::= b','
           <ImageLeftPosition> ::= <ushort>
           <ImageTopPosition> ::= <ushort>
           <ImageWidth> ::= <ushort>

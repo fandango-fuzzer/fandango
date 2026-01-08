@@ -8,10 +8,6 @@ inputs:
   needs-sudo:
     description: "Whether to use sudo"
     required: true
-  target:
-    description: "Which dependency list to target"
-    required: false
-    default: "test"
   skip-parser:
     description: "Whether to skip the parser"
     required: false
@@ -30,25 +26,17 @@ runs:
         else
           make test-tools
         fi
-    - name: Set up Python ${{ inputs.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ inputs.python-version }}
     - name: Install uv and set the Python version
       uses: astral-sh/setup-uv@v7
       with:
         python-version: ${{ inputs.python-version }}
         activate-environment: true
-
+        cache-dependency-glob: |
+          pyproject.toml
+          uv.lock
     - name: Install Python dependencies
       shell: bash
       run: |
-        EXTRAS=""
-        IFS=',' read -ra TARGETS <<< "${{ inputs.target }}"
-        for target in "${TARGETS[@]}"; do
-          EXTRAS="$EXTRAS --extra ${target}"
-        done
-        uv sync --locked $EXTRAS
-        uv pip install --editable ".[${{ inputs.target }}]" --no-deps
+        uv sync --all-extras --locked --verbose
       env:
         FANDANGO_SKIP_CPP_PARSER: ${{ inputs.skip-parser }}
