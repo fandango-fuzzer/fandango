@@ -101,7 +101,7 @@ struct DATA {
 		// <Graphic Block> ::=       [Graphic Control Extension] <Graphic-Rendering Block>
 		if (ReadUByte(FTell()) == 0x2C) {
 			struct IMAGEDESCRIPTOR {
-				UBYTE	ImageSeperator;
+				UBYTE	ImageSeparator;
 				ushort	ImageLeftPosition;
 				ushort	ImageTopPosition;
 				ushort	ImageWidth;

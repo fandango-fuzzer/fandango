@@ -247,5 +247,5 @@ The bulk of available functions comes from the Python standard library. The vast
 
 * If a method is only implemented on one of the three base types, the `DerivationTree` internally is first transformed into that type (using `str(<SYMBOL>)` etc.).
 * If a method is implemented on multiple base types, but they always have different signatures (such as `.startswith`, which takes a `str` if called on a `str`, and `bytes` if called on `bytes`), the `DerivationTree` is transformed into the appropriate base type.
-* If a method is implemented on multiple base types, and there is no way to distinguish based on the signatures, the method is envoked on the underlying type. This is not recommended as these methods rely on knowledge of the type of the internal representation (which may change in the future). Simply convert the tree to the desired base type first (`str(<SYMBOL>).upper()`).
+* If a method is implemented on multiple base types, and there is no way to distinguish based on the signatures, the method is invoked on the underlying type. This is not recommended as these methods rely on knowledge of the type of the internal representation (which may change in the future). Simply convert the tree to the desired base type first (`str(<SYMBOL>).upper()`).
 

@@ -47,7 +47,7 @@ class SA_ErrorListener:
             Reference to the original input stream that this error is from
 
         offendingSymbol:Token
-            If available, denotes the erronous token
+            If available, denotes the erroneous token
 
         char_index:int
             Character offset of the error within the input stream
