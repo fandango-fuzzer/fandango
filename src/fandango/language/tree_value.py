@@ -663,6 +663,11 @@ class TreeValue:
             return self.is_type(TreeValueType.STRING)
         elif isinstance(other, bytes):
             return self.is_type(TreeValueType.BYTES)
+        elif isinstance(other, TreeValue):
+            return (
+                self._value == other._value
+                and self._trailing_bits == other._trailing_bits
+            )
         else:
             return False
 
