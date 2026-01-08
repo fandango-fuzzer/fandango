@@ -93,7 +93,7 @@ class ComparisonConstraint(Constraint):
         """
         assert (
             "searches" not in kwargs
-        ), "don't provide seaches combination, instead provide left_searches and right_searches"
+        ), "don't provide searches combination, instead provide left_searches and right_searches"
         searches: dict[str, NonTerminalSearch] = {}
         searches.update(
             {

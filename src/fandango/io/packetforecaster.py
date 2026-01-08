@@ -45,7 +45,7 @@ class PathFinder(NodeVisitor[bool, bool]):
         mounting_path = MountingPath(
             self.collapsed_tree, tuple(self._collapsed_path(self.current_path))
         )
-        f_packet = ForcastingPacket(node)
+        f_packet = ForecastingPacket(node)
         f_packet.add_path(mounting_path)
         self.result.add_packet(node.sender, f_packet)
 
@@ -146,7 +146,7 @@ class PathFinder(NodeVisitor[bool, bool]):
             try:
                 if len(node.nodes) <= child_idx:
                     raise GrammarKeyError(
-                        "Tree contains more children, then concatination node"
+                        "Tree contains more children, then concatenation node"
                     )
                 continue_exploring = self.visit(node.nodes[child_idx])
                 child_idx += 1
@@ -275,7 +275,7 @@ class MountingPath:
         return f"({', '.join([f'({nt.format_as_spec()}, {new_node})' for nt, new_node in self.path])})"
 
 
-class ForcastingPacket:
+class ForecastingPacket:
     def __init__(self, node: NonTerminalNode):
         self.node = node
         self.paths: set[MountingPath] = set()
@@ -284,19 +284,19 @@ class ForcastingPacket:
         self.paths.add(path)
 
 
-class ForcastingNonTerminals:
+class ForecastingNonTerminals:
     def __init__(self) -> None:
-        self.nt_to_packet = dict[NonTerminal, ForcastingPacket]()
+        self.nt_to_packet = dict[NonTerminal, ForecastingPacket]()
 
     def get_non_terminals(self) -> set[NonTerminal]:
         return set(self.nt_to_packet.keys())
 
-    def __getitem__(self, item: NonTerminal) -> "ForcastingPacket":
+    def __getitem__(self, item: NonTerminal) -> "ForecastingPacket":
         return self.nt_to_packet[item]
 
-    def add_packet(self, packet: "ForcastingPacket") -> None:
+    def add_packet(self, packet: "ForecastingPacket") -> None:
         """
-        Adds a packet to the ForcastingNonTerminals.
+        Adds a packet to the ForecastingNonTerminals.
         """
         if packet.node.symbol in self.nt_to_packet.keys():
             for path in packet.paths:
@@ -307,7 +307,7 @@ class ForcastingNonTerminals:
 
 class ForecastingResult:
     def __init__(self) -> None:
-        self.parties_to_packets = dict[str, ForcastingNonTerminals]()
+        self.parties_to_packets = dict[str, ForecastingNonTerminals]()
 
     def get_msg_parties(self) -> set[str]:
         return set(self.parties_to_packets.keys())
@@ -320,20 +320,20 @@ class ForecastingResult:
         """
         return any(party in self.parties_to_packets for party in parties)
 
-    def __getitem__(self, item: str) -> "ForcastingNonTerminals":
+    def __getitem__(self, item: str) -> "ForecastingNonTerminals":
         return self.parties_to_packets[item]
 
     def __contains__(self, item: str) -> bool:
         return item in self.parties_to_packets
 
-    def add_packet(self, party: Optional[str], packet: "ForcastingPacket") -> None:
+    def add_packet(self, party: Optional[str], packet: "ForecastingPacket") -> None:
         """
         Adds a packet to the ForecastingResult under the specified party.
         """
         if party is None:
             raise FandangoValueError("Party cannot be None")
         if party not in self.parties_to_packets.keys():
-            self.parties_to_packets[party] = ForcastingNonTerminals()
+            self.parties_to_packets[party] = ForecastingNonTerminals()
         self.parties_to_packets[party].add_packet(packet)
 
     def union(self, other: "ForecastingResult") -> "ForecastingResult":

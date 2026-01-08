@@ -4,7 +4,7 @@ from typing import Optional
 
 from fandango.constraints.failing_tree import FailingTree, Suggestion
 from fandango.errors import FandangoValueError
-from fandango.io.packetforecaster import ForcastingPacket
+from fandango.io.packetforecaster import ForecastingPacket
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
@@ -128,7 +128,7 @@ class IoPopulationManager(PopulationManager):
     ):
         super().__init__(grammar, start_symbol, warnings_are_errors)
         self._prev_packet_idx = 0
-        self.fuzzable_packets: Optional[list[ForcastingPacket]] = None
+        self.fuzzable_packets: Optional[list[ForecastingPacket]] = None
 
     def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
         if self.fuzzable_packets is None or len(self.fuzzable_packets) == 0:
