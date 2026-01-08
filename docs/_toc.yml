@@ -24,6 +24,7 @@ parts:
     - file: Recursive
     - file: Paths
     - file: Converters
+    - file: Diversity
     - file: ISO8601
   - caption: Generating Binary Inputs
     chapters:
