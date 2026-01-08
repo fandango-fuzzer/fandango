@@ -322,7 +322,6 @@ def parse_file(
 
     if last_tree is not None:
         # check if any tree matched the grammar and failed constraints
-        grammar.populate_sources(last_tree)
         failed_constraints = [
             c.format_as_spec() for c in constraints if not c.check(last_tree)
         ]

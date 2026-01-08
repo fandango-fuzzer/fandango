@@ -460,6 +460,7 @@ class Fandango(FandangoBase):
         last_tree = None
 
         for tree in tree_generator:
+            self.grammar.populate_sources(tree)
             if all(constraint.check(tree) for constraint in self.constraints):
                 yield tree
             else:
