@@ -198,13 +198,18 @@ Again, note that `In` and `Out` describe the interaction from the _perspective o
 
 With this, we can now connect to our (hopefully still running) SMTP server and actually send it a `QUIT` command:
 
+```{margin}
+The `-n 1` option limits fuzzing to one interaction.
+Without `-n 1`, Fandango keeps on generating inputs until [grammar coverage](sec:diversity) is achieved.
+```
+
 ```shell
-$ fandango talk -f smtp-telnet.fan telnet localhost 8025
+$ fandango talk -f smtp-telnet.fan -n 1 telnet localhost 8025
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango talk -f smtp-telnet.fan telnet localhost 8025
+!fandango talk -f smtp-telnet.fan -n 1 telnet localhost 8025
 assert _exit_code == 0
 ```
 
@@ -212,12 +217,12 @@ To track the data that is actually exchanged, use the verbose `-v` flag.
 The `In:` and `Out:` log messages show the data that is being exchanged.
 
 ```shell
-$ fandango -v talk -f smtp-telnet.fan telnet localhost 8025
+$ fandango -v talk -f smtp-telnet.fan -n 1 telnet localhost 8025
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango -v talk -f smtp-telnet.fan telnet localhost 8025
+!fandango -v talk -f smtp-telnet.fan -n 1 telnet localhost 8025
 assert _exit_code == 0
 ```
 
@@ -261,12 +266,12 @@ Note how we added `<hostname>` as additional specification of the hostname that 
 With this, we have Fandango act as client and connect to the (hopefully still running) server on port 8025:
 
 ```shell
-$ fandango talk -f smtp-simple.fan --client 8025
+$ fandango talk -f smtp-simple.fan -n 1 --client 8025
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango talk -f smtp-simple.fan --client 8025
+!fandango talk -f smtp-simple.fan -n 1 --client 8025
 assert _exit_code == 0
 ```
 
@@ -290,8 +295,12 @@ From the same specification, Fandango can act as a _client_ and as a _server_.
 When invoked with the `--server` option, Fandango will _create_ a server at the given port and accept client connections.
 So if we invoke
 
+```{margin}
+The `--infinite` option ensures the server keeps on running even after having produced a sufficient [diverse set of interactions](sec:diversity).
+```
+
 ```shell
-$ fandango talk -f smtp-simple.fan --server 8125
+$ fandango talk -f smtp-simple.fan --infinite --server 8125
 ```
 
 ```{code-cell}
@@ -301,7 +310,7 @@ import os
 import time
 
 os.system("pkill -f smtp-simple.fan")
-os.system("fandango talk -f smtp-simple.fan --server 8125 &")
+os.system("fandango talk -f smtp-simple.fan --infinite --server 8125 &")
 time.sleep(1);  # Wait for server to be ready
 ```
 
