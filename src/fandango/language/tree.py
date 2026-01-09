@@ -965,6 +965,18 @@ class DerivationTree:
         else:
             return self.value().__eq__(other)
 
+    def parseable_from(self, other: Any) -> bool:
+        """
+        Check if an object of type other can be parsed into self, type-wise.
+
+        :param other: The value to be parsed
+        :return: True if an object of type other can be parsed into self, False otherwise
+        """
+        if isinstance(other, DerivationTree):
+            return self.value().parseable_from(other.value())
+        else:
+            return self.value().parseable_from(other)
+
     def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
 
