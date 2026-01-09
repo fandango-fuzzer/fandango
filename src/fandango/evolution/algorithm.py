@@ -19,7 +19,7 @@ from fandango.evolution.mutation import MutationOperator, SimpleMutation
 from fandango.evolution.population import IoPopulationManager, PopulationManager
 from fandango.evolution.profiler import Profiler
 from fandango.io import FandangoIO
-from fandango.io.packetforecaster import ForcastingPacket, PacketForecaster
+from fandango.io.packetforecaster import ForecastingPacket, PacketForecaster
 from fandango.io.packetparser import parse_next_remote_packet
 from fandango.language.grammar import FuzzingMode
 from fandango.language.grammar.grammar import Grammar
@@ -178,7 +178,7 @@ class Fandango:
 
         Since this is a generator, it will only do its job if the generator is actually used. Call `list(fandango.generate_initial_population())` to ensure the generator runs until the end.
 
-        :return: A generator of DerivationTree objects, all of which are valid solutions to the grammar (or satisify the minimum fitness threshold).
+        :return: A generator of DerivationTree objects, all of which are valid solutions to the grammar (or satisfy the minimum fitness threshold).
         """
         LOGGER.info(
             f"Generating (additional) initial population (size: {self.population_size - len(self.population)})..."
@@ -331,7 +331,7 @@ class Fandango:
         :param max_generations: The maximum number of generations to evolve.
         :param desired_solutions: The number of solutions to evolve.
         :param solution_callback: A callback function to be called for each solution.
-        :return: A list of DerivationTree objects, all of which are valid solutions to the grammar (or satisify the minimum fitness threshold). The function may run indefinitely if neither max_generations nor desired_solutions are provided.
+        :return: A list of DerivationTree objects, all of which are valid solutions to the grammar (or satisfy the minimum fitness threshold). The function may run indefinitely if neither max_generations nor desired_solutions are provided.
         """
         warnings.warn("Use .generate instead", DeprecationWarning)
         if self.grammar.fuzzing_mode == FuzzingMode.COMPLETE:
@@ -367,7 +367,7 @@ class Fandango:
         Generates solutions for the grammar.
 
         :param max_generations: The maximum number of generations to generate. If None, the generation will run indefinitely.
-        :return: A generator of DerivationTree objects, all of which are valid solutions to the grammar (or satisify the minimum fitness threshold).
+        :return: A generator of DerivationTree objects, all of which are valid solutions to the grammar (or satisfy the minimum fitness threshold).
         """
         while self._initial_solutions:
             yield self._initial_solutions.pop(0)
@@ -496,7 +496,7 @@ class Fandango:
                 )
             )
             if len(msg_parties) != 0 and not io_instance.received_msg():
-                fuzzable_packets: list[ForcastingPacket] = []
+                fuzzable_packets: list[ForecastingPacket] = []
                 for party in msg_parties:
                     fuzzable_packets.extend(forecast[party].nt_to_packet.values())
                 assert isinstance(self.population_manager, IoPopulationManager)
