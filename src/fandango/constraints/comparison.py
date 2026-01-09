@@ -35,6 +35,7 @@ class EqualComparisonSuggestion(Suggestion):
         :param target: The target to parse into.
         :param source: What to parse.
         """
+        assert isinstance(target.symbol, NonTerminal)
         self._target = target
         self._source = source
 
@@ -93,7 +94,7 @@ class ComparisonConstraint(Constraint):
         """
         assert (
             "searches" not in kwargs
-        ), "don't provide seaches combination, instead provide left_searches and right_searches"
+        ), "don't provide searches combination, instead provide left_searches and right_searches"
         searches: dict[str, NonTerminalSearch] = {}
         searches.update(
             {
@@ -311,6 +312,7 @@ class ComparisonConstraint(Constraint):
                 # we need to make sure we can actually parse the value into the tree type-wise, before comparing the actual values
                 if (
                     single_left_tree is not None
+                    and isinstance(single_left_tree.symbol, NonTerminal)
                     and single_left_tree.parseable_from(left)
                     and single_left_tree == left
                 ):
@@ -319,6 +321,7 @@ class ComparisonConstraint(Constraint):
                     )
                 if (
                     single_right_tree is not None
+                    and isinstance(single_right_tree.symbol, NonTerminal)
                     and single_right_tree.parseable_from(right)
                     and single_right_tree == right
                 ):

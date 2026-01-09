@@ -37,7 +37,7 @@ from antlr4 import *
 # Python3 is a terrible language. You cannot import ANTLRv4Lexer
 # because Python3 cannot handle circular imports. So, we hardwire a
 # bunch of constants directly in this damn code. If someone can
-# figure out how to pound Python into submision and just work
+# figure out how to pound Python into submission and just work
 # please fix.
 # Cannot import lexer so use parser instead.
 from fandango.converters.antlr.ANTLRv4Parser import ANTLRv4Parser

@@ -275,3 +275,28 @@ def test_with_non_matching_types_eq_constraint():
         length, content = str(solution).split(";")
         assert int(length) > 0
         assert int(length) == content.count("-") + 1
+def test_does_not_provide_suggestion_with_slice_and_fixed_value():
+    with open(RESOURCES_ROOT / "persons.fan", "r") as file:
+        grammar, constraints = parse([file, "where <first_name>[0:4] == 'John'"])
+
+    assert grammar is not None
+    fan = Fandango(grammar, constraints)
+    individual = grammar.parse("First Last,30")
+    assert individual is not None
+    gen = GeneratorWithReturn(fan.evaluator.evaluate_individual(individual=individual))
+    solutions, (fitness, failing_trees, suggestion) = gen.collect()
+    assert len(solutions) == 0
+    assert fitness == 0.0
+    assert len(failing_trees) == 1
+    suggested_replacements = suggestion.get_replacements(individual, grammar)
+    assert len(suggested_replacements) == 0
+
+    individual = grammar.parse("John Doe,30")
+    assert individual is not None
+    gen = GeneratorWithReturn(fan.evaluator.evaluate_individual(individual=individual))
+    solutions, (fitness, failing_trees, suggestion) = gen.collect()
+    assert len(solutions) == 1
+    assert fitness == 1.0
+    assert len(failing_trees) == 0
+    suggested_replacements = suggestion.get_replacements(individual, grammar)
+    assert len(suggested_replacements) == 0

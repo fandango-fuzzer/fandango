@@ -179,8 +179,8 @@
                     <byte> ::= <_byte>
                       <_byte> ::= b'\x00'  # Position 0x1a (26)
       <ImageDescriptor> ::= <IMAGEDESCRIPTOR>
-        <IMAGEDESCRIPTOR> ::= <ImageSeperator_1> <ImageLeftPosition> <ImageTopPosition> <ImageWidth> <ImageHeight> <PackedFields_1>
-          <ImageSeperator_1> ::= b','  # Position 0x1b (27)
+        <IMAGEDESCRIPTOR> ::= <ImageSeparator_1> <ImageLeftPosition> <ImageTopPosition> <ImageWidth> <ImageHeight> <PackedFields_1>
+          <ImageSeparator_1> ::= b','  # Position 0x1b (27)
           <ImageLeftPosition> ::= <ushort>
             <ushort> ::= <unsigned_short>
               <unsigned_short> ::= <byte> <byte>
