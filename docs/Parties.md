@@ -13,12 +13,16 @@ kernelspec:
 (sec:parties)=
 # Defining Network Parties
 
-```{admonition} Under Construction
-:class: attention
-This chapter is under construction.
-```
+In the [previous chapter](sec:protocols), we have seen how to define and test protocol interactions with Fandango.
+In this chapter, we describe additional ways to control communication behavior.
 
-```{code-cell}
-!cat ../src/io/__init__.py
-```
+## Party Classes
+
+All the communication between Fandango and its parties takes place via dedicated _classes_.
+In fact, prefixes like `Server` and `Client` in [protocol testing](sec:protocols) or `In` and `Out` when [checking outputs](sec:outputs) all stand for predefined `FandangoParty` classes that implement a set of methods to establish communication.
+
+The `FandangoParty` class supports the following methods, detailed in the [`FandangoParty` reference](FandangoParty.md):
+
+
+
 
