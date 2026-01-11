@@ -273,8 +273,8 @@ class UdpTcpProtocolImplementation(UdpTcpProtocolImplementation):
         super().send(message, recipient)
 
 class NetworkParty(NetworkParty):
-    def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:
-        super().receive_msg(sender, decompress_msg(message))
+    def receive(self, message: str | bytes, sender: Optional[str]) -> None:
+        super().receive(decompress_msg(message), sender)
 
 
 class Client(NetworkParty):
@@ -286,8 +286,8 @@ class Client(NetworkParty):
         )
         self.start()
 
-    def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:
-        super().receive_msg(sender, decompress_msg(message))
+    def receive(self, message: str | bytes, sender: Optional[str]) -> None:
+        super().receive(decompress_msg(message), sender)
 
 
 class Server(NetworkParty):

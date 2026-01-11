@@ -20,7 +20,7 @@ class Client(FandangoParty):
 
     def send(self, message: DerivationTree, recipient: str):
         response = requests.get(self.url + message.to_string())
-        self.receive_msg("Server", json.dumps(response.json()))
+        self.receive(json.dumps(response.json()), sender="Server")
 
     def start(self):
         pass
