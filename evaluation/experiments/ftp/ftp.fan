@@ -195,8 +195,8 @@ class ServerControl(NetworkParty):
     def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:
         super().receive_msg("ClientControl", message.decode("utf-8"))
 
-    def on_send(self, message: DerivationTree, recipient: str):
-        super().on_send(message, recipient)
+    def send(self, message: DerivationTree, recipient: str):
+        super().send(message, recipient)
         if message.to_string().startswith("226"):
             FandangoIO.instance().parties['ServerData'].stop()
 

@@ -9,7 +9,7 @@ class Fuzzer(FandangoParty):
     def __init__(self):
         super().__init__(ownership=Ownership.FANDANGO_PARTY)
 
-    def on_send(
+    def send(
         self,
         message: DerivationTree,
         recipient: str
