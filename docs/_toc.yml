@@ -52,5 +52,6 @@ parts:
     - file: Stdlib
     - file: DerivationTree
     - file: PythonAPI
+    - file: FandangoParty
     - file: Including
     - file: LanguageServer
