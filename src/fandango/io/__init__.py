@@ -128,7 +128,7 @@ class FandangoParty(ABC):
         """
         return self.ownership == Ownership.FANDANGO_PARTY
 
-    def send(self, message: DerivationTree, recipient: Optional[str]) -> None:
+    def send(self, message: DerivationTree | str | bytes, recipient: Optional[str]) -> None:
         """
         Called to send a message to this party.
         :param message: The message to send.
@@ -208,7 +208,7 @@ class ProtocolImplementation(ABC):
         self.ip_type = ip_type
         self._party_instance = party_instance
 
-    def send(self, message: DerivationTree, recipient: Optional[str]) -> None:
+    def send(self, message: DerivationTree | str | bytes, recipient: Optional[str]) -> None:
         """
         Invoked whenever Fandango wants to send a message as this party.
         :param message: the message to send (a `DerivationTree` instance)
@@ -415,7 +415,8 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
                 self._running = False
                 break
 
-    def send(self, message: DerivationTree, recipient: Optional[str]) -> None:
+    def send(self, message: DerivationTree | str | bytes,
+             recipient: Optional[str]) -> None:
         """
         Called when Fandango wants to send a message as this party.
         :param message: The message to send.
@@ -427,7 +428,16 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
         self._wait_accept()
 
         assert self._connection is not None
-        send_data = message.to_bytes(encoding="utf-8")
+        if isinstance(message, DerivationTree):
+            send_data = message.to_bytes(encoding="utf-8")
+        elif isinstance(message, str):
+            send_data = message.encode("utf-8")
+        elif isinstance(message, bytes):
+            send_data = message
+        else:
+            raise FandangoValueError(
+                f"Invalid message type: {type(message)}. Must be DerivationTree, str, or bytes."
+            )
         if self.protocol_type == Protocol.TCP:
             self._connection.sendall(send_data)
         else:
@@ -504,7 +514,7 @@ class NetworkParty(FandangoParty):
             raise FandangoValueError(f"Unsupported protocol: {protocol}")
 
     # We defer all methods to the protocol implementation
-    def send(self, message: DerivationTree, recipient: Optional[str]) -> None:
+    def send(self, message: DerivationTree | str | bytes, recipient: Optional[str]) -> None:
         assert self.protocol_impl is not None
         self.protocol_impl.send(message, recipient)
 
@@ -557,8 +567,17 @@ class StdOut(FandangoParty):
         super().__init__(ownership=Ownership.FANDANGO_PARTY)
         self.stream = sys.stdout
 
-    def send(self, message: DerivationTree, recipient: Optional[str]) -> None:
-        self.stream.write(message.to_string())
+    def send(self, message: DerivationTree | str | bytes, recipient: Optional[str]) -> None:
+        if isinstance(message, DerivationTree):
+            self.stream.write(message.to_string())
+        elif isinstance(message, str):
+            self.stream.write(message)
+        elif isinstance(message, bytes):
+            self.stream.buffer.write(message)
+        else:
+            raise FandangoValueError(
+                f"Invalid message type: {type(message)}. Must be DerivationTree, str, or bytes."
+            )
 
     def start(self) -> None:
         pass
@@ -640,9 +659,18 @@ class In(FandangoParty):
             return
         self._close_post_transmit = value
 
-    def send(self, message: DerivationTree, recipient: Optional[str]) -> None:
+    def send(self, message: DerivationTree | str | bytes, recipient: Optional[str]) -> None:
         if self.proc.stdin is not None:
-            self.proc.stdin.write(message.to_string())
+            if isinstance(message, DerivationTree):
+                self.proc.stdin.write(message.to_string())
+            elif isinstance(message, str):
+                self.proc.stdin.write(message)
+            elif isinstance(message, bytes):
+                self.proc.stdin.buffer.write(message)
+            else:
+                raise FandangoValueError(
+                    f"Invalid message type: {type(message)}. Must be DerivationTree, str, or bytes."
+                )
             self.proc.stdin.flush()
             if self.close_post_transmit:
                 self.proc.stdin.close()
