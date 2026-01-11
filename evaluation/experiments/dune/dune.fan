@@ -18,7 +18,7 @@ class Client(FandangoParty):
         super().__init__(ownership=Ownership.FANDANGO_PARTY)
         self.url = "https://dune-api-a4iq.onrender.com"
 
-    def on_send(self, message: DerivationTree, recipient: str):
+    def send(self, message: DerivationTree, recipient: str):
         response = requests.get(self.url + message.to_string())
         self.receive_msg("Server", json.dumps(response.json()))
 

@@ -268,9 +268,9 @@ where forall <t> in <type_cname>:
 
 
 class UdpTcpProtocolImplementation(UdpTcpProtocolImplementation):
-    def on_send(self, message: DerivationTree, recipient: Optional[str]):
+    def send(self, message: DerivationTree, recipient: Optional[str]):
         compress_msg(message.to_bytes())
-        super().on_send(message, recipient)
+        super().send(message, recipient)
 
 class NetworkParty(NetworkParty):
     def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:

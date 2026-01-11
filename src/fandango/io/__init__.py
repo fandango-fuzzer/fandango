@@ -128,13 +128,17 @@ class FandangoParty(ABC):
         """
         return self.ownership == Ownership.FANDANGO_PARTY
 
-    def on_send(self, message: DerivationTree, recipient: Optional[str]) -> None:
+    def send(self, message: DerivationTree, recipient: Optional[str]) -> None:
         """
         Called when fandango wants to send a message as this party.
         :param message: The message to send.
         :param recipient: The recipient of the message. Only present if the grammar specifies a recipient.
         """
         print(f"({self.party_name}): {message}")
+
+    def on_send(self, message: DerivationTree, recipient: Optional[str]) -> None:
+        """Deprecated. Use send() instead."""
+        raise FandangoError("on_send() has been deprecated. Use send() instead.")
 
     def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:
         """
@@ -196,13 +200,13 @@ class ProtocolImplementation(ABC):
         self.ip_type = ip_type
         self._party_instance = party_instance
 
-    def on_send(self, message: DerivationTree, recipient: Optional[str]) -> None:
+    def send(self, message: DerivationTree, recipient: Optional[str]) -> None:
         """
         Invoked whenever Fandango wants to send a message as this party.
         :param message: the message to send (a `DerivationTree` instance)
         :param recipient: the recipient of the message (the name of a `FandangoParty`). Only present if the grammar specifies a recipient.
         """
-        raise NotImplementedError("on_send() method not implemented")
+        raise NotImplementedError("send() method not implemented")
 
     def start(self) -> None:
         """
@@ -403,7 +407,7 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
                 self._running = False
                 break
 
-    def on_send(self, message: DerivationTree, recipient: Optional[str]) -> None:
+    def send(self, message: DerivationTree, recipient: Optional[str]) -> None:
         """
         Called when Fandango wants to send a message as this party.
         :param message: The message to send.
@@ -494,9 +498,9 @@ class NetworkParty(FandangoParty):
             raise FandangoValueError(f"Unsupported protocol: {protocol}")
 
     # We defer all methods to the protocol implementation
-    def on_send(self, message: DerivationTree, recipient: Optional[str]) -> None:
+    def send(self, message: DerivationTree, recipient: Optional[str]) -> None:
         assert self.protocol_impl is not None
-        self.protocol_impl.on_send(message, recipient)
+        self.protocol_impl.send(message, recipient)
 
     def start(self) -> None:
         assert self.protocol_impl is not None
@@ -547,7 +551,7 @@ class StdOut(FandangoParty):
         super().__init__(ownership=Ownership.FANDANGO_PARTY)
         self.stream = sys.stdout
 
-    def on_send(self, message: DerivationTree, recipient: Optional[str]) -> None:
+    def send(self, message: DerivationTree, recipient: Optional[str]) -> None:
         self.stream.write(message.to_string())
 
     def start(self) -> None:
@@ -630,7 +634,7 @@ class In(FandangoParty):
             return
         self._close_post_transmit = value
 
-    def on_send(self, message: DerivationTree, recipient: Optional[str]) -> None:
+    def send(self, message: DerivationTree, recipient: Optional[str]) -> None:
         if self.proc.stdin is not None:
             self.proc.stdin.write(message.to_string())
             self.proc.stdin.flush()
@@ -778,7 +782,7 @@ class FandangoIO(object):
         :param message: The message to send.
         """
         if sender in self.parties.keys():
-            self.parties[sender].on_send(message, recipient)
+            self.parties[sender].send(message, recipient)
 
 
 class ProcessManager(object):
