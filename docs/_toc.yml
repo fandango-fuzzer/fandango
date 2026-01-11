@@ -33,6 +33,7 @@ parts:
     - file: Conversion
     - file: Gif
     - file: Hatching
+    # - file: Whitebox
   - caption: Checking Responses
     chapters:
     - file: Parsing
@@ -42,7 +43,8 @@ parts:
     chapters:
     - file: Protocols
     - file: Parties
-    # - file: Whitebox
+    - file: FTP
+    - file: DNS
   - caption: Fandango Reference
     chapters:
     - file: Reference

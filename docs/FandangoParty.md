@@ -21,7 +21,7 @@ classDiagram
     class FandangoParty {
         <<abstract>>
         FandangoParty(ownership: Ownership, party_name: str | None)
-        send(message: DerivationTree, recipient: str | None)
+        send(message: DerivationTree | str | bytes, recipient: str | None)
         receive(message: str | bytes, sender: str | None)
         start()
         stop()
@@ -37,6 +37,8 @@ classDiagram
     NetworkParty <|.. `(Own Classes)`
     FandangoParty <|-- In
     FandangoParty <|-- Out
+    FandangoParty <|-- StdIn
+    FandangoParty <|-- StdOut
     class Ownership {
          <<enumeration>>
         FANDANGO_PARTY
@@ -51,6 +53,8 @@ classDiagram
     click NetworkParty href "#the-networkparty-class" "Connect to an Internet party"
     click In href "#in-and-out" "Connect to standard input of an external program"
     click Out href "#in-and-out" "Connect to standard output of an external program"
+    click StdIn href "#in-and-out" "Connect to standard input of Fandango"
+    click StdOut href "#in-and-out" "Connect to standard output of Fandango"
     click Client href "#client-and-server" "Connect to a client"
     click Server href "#client-and-server" "Connect to a server"
 ```
@@ -81,10 +85,10 @@ FandangoParty(ownership: Ownership, party_name: Optional[str])
 On a `FandangoParty` object, the `send()` method is used to send a message (as a [`DerivationTree` object](sec:derivation-tree)) to a party.
 
 ```python
-send(message: DerivationTree, recipient: Optional[str]) -> None
+send(message: DerivationTree | str | bytes, recipient: Optional[str]) -> None
 ```
 
-* `message: DerivationTree`: The message to send.
+* `message: DerivationTree | str | bytes`: The message to send.
 * `recipient: str`: The recipient of the message. Only present if the grammar specifies a recipient.
 
 This method is typically overloaded and extended in subclasses.
@@ -92,13 +96,15 @@ For instance, to apply a `compress()` method to every message sent, write
 
 ```python
 class CompressedNetworkParty(NetworkParty):
-    def send(self, message: DerivationTree, recipient: Optional[str]) -> None:
+    def send(self, message: DerivationTree | str | bytes, recipient: Optional[str]) -> None:
         super().send(compress(message), recipient)
 ```
 
 ```{important}
-Note that the `message` argument to `send()` is of type `DerivationTree`.
+Fandango itself will always invoke `send()` with a [`DerivationTree`](DerivationTree.md) as argument.
+However, the `FandangoParty` classes all support sending `DerivationTree`, `str`, and `bytes` types, so you do not have to re-create a `DerivationTree` object when calling `send()`.
 ```
+
 
 
 (sec:receive-api)=
@@ -110,8 +116,8 @@ On a `FandangoParty` object, the `receive()` method is invoked when data has bee
 receive(message: str | bytes), sender: Optional[str]) -> None
 ```
 
-* `message: DerivationTree`: The message to send.
-* `recipient: str`: The recipient of the message. Only present if the grammar specifies a recipient.
+* `message: str | bytes`: The message received.
+* `recipient: str`: The sender of the message.
 
 This method is typically overloaded and extended in subclasses.
 For instance, to apply a `decompress()` method to every message received, write
@@ -193,6 +199,24 @@ Constructor.
 
 ```python
 Out()
+```
+
+Constructor.
+
+
+(sec:stdin-stdout-parties)=
+### `StdIn` and `StdOut`
+
+`StdIn` and `StdOut` are `FandangoParty` classes connecting to the standard input and the standard output of Fandango.
+
+```python
+StdIn()
+```
+
+Constructor.
+
+```python
+StdOut()
 ```
 
 Constructor.
