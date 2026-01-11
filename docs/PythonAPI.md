@@ -63,7 +63,18 @@ logging.basicConfig(
 (sec:fandango-class)=
 ## The `Fandango` class
 
-The Fandango API comes as a class, named `Fandango`.
+The Fandango API comes as a class, named `Fandango`:
+
+```{mermaid}
+classDiagram
+    class Fandango{
+        Fandango(fan_files: str | IO, List[str | IO], constraints: List[str], start_symbol: str | None, ...)
+        fuzz(extra_constraintsL List[str] | None, ...) -> List[DerivationTree]
+        parse(word: str | bytes | DerivationTree, prefix: bool, ...) -> Generator[DerivationTree]
+    }
+    click Fandango href "#the-fandango-class" "Fandango API class"
+```
+
 To use it, write
 
 ```{code-cell}
