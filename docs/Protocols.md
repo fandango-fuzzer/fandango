@@ -226,6 +226,13 @@ $ fandango -v talk -f smtp-telnet.fan -n 1 telnet localhost 8025
 assert _exit_code == 0
 ```
 
+```{versionchanged} 1.1
+As of version 1.1, Fandango by default
+
+* keeps on generating interactions until stopped (or limited by the `-n` option)
+* aims for [grammar coverage](sec:diversity), thus covering states and message alternatives
+```
+
 
 
 ## Interacting as Network Client
