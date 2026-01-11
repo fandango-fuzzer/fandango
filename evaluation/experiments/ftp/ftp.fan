@@ -178,10 +178,10 @@ class ClientControl(NetworkParty):
         )
         self.start()
 
-    def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:
+    def receive(self, message: str | bytes, sender: Optional[str]) -> None:
         if message.decode("utf-8").startswith("150"):
             FandangoIO.instance().parties["ClientData"].start()
-        super().receive_msg("ServerControl", message.decode("utf-8"))
+        super().receive(message.decode("utf-8"), sender="ServerControl")
 
 class ServerControl(NetworkParty):
     def __init__(self):
@@ -192,8 +192,8 @@ class ServerControl(NetworkParty):
         )
         self.start()
 
-    def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:
-        super().receive_msg("ClientControl", message.decode("utf-8"))
+    def receive(self, message: str | bytes, sender: Optional[str]) -> None:
+        super().receive(message.decode("utf-8"), sender="ClientControl")
 
     def send(self, message: DerivationTree, recipient: str):
         super().send(message, recipient)
@@ -208,8 +208,8 @@ class ClientData(NetworkParty):
             uri="tcp://[::1]:50100"
         )
 
-    def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:
-        super().receive_msg("ServerData", message.decode("utf-8"))
+    def receive(self, message: str | bytes, sender: Optional[str]) -> None:
+        super().receive(message.decode("utf-8"), sender="ServerData")
 
 class ServerData(NetworkParty):
     def __init__(self):
@@ -219,5 +219,5 @@ class ServerData(NetworkParty):
             uri="tcp://[::1]:50100"
         )
 
-    def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:
-        super().receive_msg("ClientData", message.decode("utf-8"))
+    def receive(self, message: str | bytes, sender: Optional[str]) -> None:
+        super().receive(message.decode("utf-8"), sender="ClientData")

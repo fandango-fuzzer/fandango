@@ -35,7 +35,7 @@ class Client(FandangoParty):
            model=message.children[0].to_string(),
            input=message.children[1].to_string()
         )
-        self.receive_msg("Gpt", response.output_text)
+        self.receive(response.output_text, sender="Gpt")
 
     def start(self):
         pass
