@@ -410,7 +410,7 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
                         self.current_remote_addr = addr
                     if len(data) == 0:
                         continue  # Keep waiting if connection is open but no data
-                    self._party_instance.receive(None, data)
+                    self._party_instance.receive(data, None)
             except Exception:
                 self._running = False
                 break
@@ -588,7 +588,7 @@ class StdIn(FandangoParty):
                 if read == "":
                     self.running = False
                     break
-                self.receive(self.party_name, read)
+                self.receive(read, self.party_name)
             else:
                 time.sleep(0.1)
 
@@ -609,7 +609,7 @@ class Out(FandangoParty):
         while True:
             if self.proc.stdout is not None:
                 line = self.proc.stdout.read(1)
-                self.receive(self.party_name, line)
+                self.receive(line, self.party_name)
 
 
 class In(FandangoParty):
