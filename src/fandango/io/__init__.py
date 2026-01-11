@@ -128,7 +128,9 @@ class FandangoParty(ABC):
         """
         return self.ownership == Ownership.FANDANGO_PARTY
 
-    def send(self, message: DerivationTree | str | bytes, recipient: Optional[str]) -> None:
+    def send(
+        self, message: DerivationTree | str | bytes, recipient: Optional[str]
+    ) -> None:
         """
         Called to send a message to this party.
         :param message: The message to send.
@@ -208,7 +210,9 @@ class ProtocolImplementation(ABC):
         self.ip_type = ip_type
         self._party_instance = party_instance
 
-    def send(self, message: DerivationTree | str | bytes, recipient: Optional[str]) -> None:
+    def send(
+        self, message: DerivationTree | str | bytes, recipient: Optional[str]
+    ) -> None:
         """
         Invoked whenever Fandango wants to send a message as this party.
         :param message: the message to send (a `DerivationTree` instance)
@@ -415,8 +419,9 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
                 self._running = False
                 break
 
-    def send(self, message: DerivationTree | str | bytes,
-             recipient: Optional[str]) -> None:
+    def send(
+        self, message: DerivationTree | str | bytes, recipient: Optional[str]
+    ) -> None:
         """
         Called when Fandango wants to send a message as this party.
         :param message: The message to send.
@@ -514,7 +519,9 @@ class NetworkParty(FandangoParty):
             raise FandangoValueError(f"Unsupported protocol: {protocol}")
 
     # We defer all methods to the protocol implementation
-    def send(self, message: DerivationTree | str | bytes, recipient: Optional[str]) -> None:
+    def send(
+        self, message: DerivationTree | str | bytes, recipient: Optional[str]
+    ) -> None:
         assert self.protocol_impl is not None
         self.protocol_impl.send(message, recipient)
 
@@ -567,7 +574,9 @@ class StdOut(FandangoParty):
         super().__init__(ownership=Ownership.FANDANGO_PARTY)
         self.stream = sys.stdout
 
-    def send(self, message: DerivationTree | str | bytes, recipient: Optional[str]) -> None:
+    def send(
+        self, message: DerivationTree | str | bytes, recipient: Optional[str]
+    ) -> None:
         if isinstance(message, DerivationTree):
             self.stream.write(message.to_string())
         elif isinstance(message, str):
@@ -659,7 +668,9 @@ class In(FandangoParty):
             return
         self._close_post_transmit = value
 
-    def send(self, message: DerivationTree | str | bytes, recipient: Optional[str]) -> None:
+    def send(
+        self, message: DerivationTree | str | bytes, recipient: Optional[str]
+    ) -> None:
         if self.proc.stdin is not None:
             if isinstance(message, DerivationTree):
                 self.proc.stdin.write(message.to_string())
