@@ -1,21 +1,9 @@
 version: 2
-
-multi-ecosystem-groups:
-  python:
-    schedule:
-      interval: daily
-
 updates:
-  - package-ecosystem: pip
-    directory: /
-    versioning-strategy: auto
-    multi-ecosystem-group: python
-    patterns:
-      - "*"
-    
   - package-ecosystem: uv
     directory: /
     versioning-strategy: auto
-    multi-ecosystem-group: python
+    schedule:
+      interval: daily
     patterns:
       - "*"
