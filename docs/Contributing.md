@@ -139,7 +139,7 @@ $ pre-commit install
 This will run code formatting and type checking before every commit.
 
 ```{warning}
-The [tests](sec:running-tests)= aren't run as part of pre-commit, because they take significant time to complete. Run them manually.
+The [tests](sec:running-tests) are not run as part of pre-commit, because they take significant time to complete. Run them manually.
 ```
 
 `uv.lock` is a snapshot of the (actual) dependencies used in this project.
@@ -212,7 +212,7 @@ Use
 $ make html
 ```
 
-to create a HTML version of the documentation in `docs/_build/html`.
+to create an HTML version of the documentation in `docs/_build/html`.
 
 
 ## Attributions
