@@ -11,6 +11,7 @@ from fandango.constraints.failing_tree import (
     NopSuggestion,
     Suggestion,
 )
+from fandango.evolution import GeneratorWithReturn
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.language import NonTerminal
 from fandango.language.tree import DerivationTree
@@ -362,7 +363,9 @@ class IoEvaluator(Evaluator):
         if key in self._fitness_cache:
             return self._fitness_cache[key]
 
-        fitness, failing_trees, suggestion = self.evaluate_hard_constraints(individual)
+        generator = GeneratorWithReturn(super().evaluate_individual(individual))
+        generator.collect()
+        fitness, failing_trees, suggestion = generator.return_value
         self._fitness_cache[key] = (fitness, failing_trees, suggestion)
 
         if fitness < self._expected_fitness:
