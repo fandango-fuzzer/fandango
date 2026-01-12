@@ -53,12 +53,14 @@ class EqualComparisonSuggestion(Suggestion):
 
         # don't parse if same symbol
         if isinstance(self._source, DerivationTree) and symbol == self._source.symbol:
+            source_copy = self._source.deepcopy(
+                        copy_children=True, copy_params=False, copy_parent=False
+                    )
+            source_copy.set_all_read_only(False)
             return [
                 (
                     self._target,
-                    self._source.deepcopy(
-                        copy_children=True, copy_params=False, copy_parent=False
-                    ),
+                    source_copy,
                 )
             ]
 
@@ -310,6 +312,8 @@ class ComparisonConstraint(Constraint):
                 # this will always fix <len> to 0
                 # or <first_name> + "Doe" == "John Doe"
                 # this will try to parse "John Doe" into <first_name>, which is not what we want
+
+                # TODO replacement might be read only
                 if single_left_tree is not None and single_left_tree == left:
                     suggestions.append(
                         EqualComparisonSuggestion(single_left_tree, right)

@@ -245,9 +245,9 @@ where forall <ex> in <start>.<exchange>:
 # The remainder of the check does the same check, but only for direct answers without allowing transitive response chains.
 # This second part is used to allow fandangos contains solving optimization to be used to generate a valid answer more efficiently
 where forall <ex> in <start>.<exchange>:
-    forall <q> in <ex>.<dns_req>.<question>:
-        forall <a> in <ex>.<dns_resp>.<answer_an>:
-            verify_transitive(<q>, <ex>.<dns_resp>) or (bytes(<a>.<answer_an_type>)[0:2] == bytes(<q>.<q_type>) and bytes(<a>.<q_name_optional>) == bytes(<q>.<q_name>))
+    forall <a> in <ex>.<dns_resp>.<answer_an>:
+        exists <q> in <ex>.<dns_req>.<question>:
+            verify_transitive(<q>, <ex>.<dns_resp>) or bytes(<a>.<answer_an_type>)[0:2] == bytes(<q>.<q_type>) and bytes(<a>.<q_name_optional>) == bytes(<q>.<q_name>)
 
 <answer_au> ::= <q_name_optional> <type_soa>
 <answer_opt> ::= <q_name_optional> (<type_opt>|<type_a>)
