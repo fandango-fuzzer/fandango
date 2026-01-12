@@ -136,7 +136,7 @@ class FandangoParty(ABC):
         :param message: The message to send.
         :param recipient: The recipient of the message. Only present if the grammar specifies a recipient.
         """
-        print(f"({self.party_name}): {message}")
+        print(f"({self.party_name}): {str(message)}")
 
     def receive(self, message: str | bytes, sender: Optional[str]) -> None:
         """
@@ -677,7 +677,7 @@ class In(FandangoParty):
             elif isinstance(message, str):
                 self.proc.stdin.write(message)
             elif isinstance(message, bytes):
-                self.proc.stdin.buffer.write(message)
+                self.proc.stdin.write(message.decode('utf-8'))
             else:
                 raise FandangoValueError(
                     f"Invalid message type: {type(message)}. Must be DerivationTree, str, or bytes."
