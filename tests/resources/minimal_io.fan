@@ -15,9 +15,9 @@ class Fuzzer(FandangoParty):
         recipient: str
     ):
         if str(message) == "ping\n":
-            self.receive("Extern", "pong\n")
+            self.receive("pong\n", "Extern")
         elif str(message) == "puff\n":
-            self.receive("Extern", "paff\n")
+            self.receive("paff\n", "Extern")
 
 class Extern(FandangoParty):
     def __init__(self):
