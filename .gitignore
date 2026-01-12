@@ -205,3 +205,5 @@ report.html
 
 # env config
 .env
+
+_build
