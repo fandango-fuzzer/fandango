@@ -677,7 +677,7 @@ class In(FandangoParty):
             elif isinstance(message, str):
                 self.proc.stdin.write(message)
             elif isinstance(message, bytes):
-                self.proc.stdin.write(message.decode('utf-8'))
+                self.proc.stdin.write(message.decode("utf-8"))
             else:
                 raise FandangoValueError(
                     f"Invalid message type: {type(message)}. Must be DerivationTree, str, or bytes."
