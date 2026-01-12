@@ -1,7 +1,6 @@
 from struct import unpack, pack
 from faker import Faker
 from fandango.language.symbols import NonTerminal, Terminal
-from fandango.language.tree import DerivationTree
 from random import randint
 
 fake = Faker()
@@ -10,6 +9,11 @@ fandango_is_client = True
 # If uses as a client interact with a command like this:
 # dig @127.0.0.1 -p 25565 A fandango.io +noedns +time=100 +tries=1
 
+
+# This function gets a question and a response the response section of a DNS response and verifies if the response does answer the question.
+# This also handles responses that are transitive. For example if the question is for a type A record for "example.com" and the response contains
+# a CNAME record pointing "example.com" to "alias.com" and then an A record for "alias.com", this function will verify that the response correctly
+# answers the original question through the CNAME redirection.
 def verify_transitive(question, response):
     type_byte = bytes(question.find_direct_trees(NonTerminal("<q_type>"))[0])
     allowed_names = [bytes(question.find_direct_trees(NonTerminal("<q_name>"))[0])]
@@ -21,6 +25,9 @@ def verify_transitive(question, response):
             return True
     return False
 
+
+# Generate a random domain name. We either generate a domain name using the Faker library, which likely is not known to the DNS server,
+# or we use 'fandango.io' or 'test.fandango.io' which in our case are known to the DNS server.
 def gen_q_name():
     result = b''
     rand = randint(0, 2)
@@ -36,9 +43,12 @@ def gen_q_name():
         result += part.encode('iso8859-1')
     return result
 
+# Convert a 2-byte byte array to an integer
 def byte_to_int(byte_val):
     return int(unpack('>H', bytes(byte_val))[0])
 
+# Generates a list of tuples, for a DNS name containing an entry for each zone present in it including the offset to that zone within the DNS name.
+# Example msg_suffix(b'\x08fandango\x02io\x00') would result in [(0, b'\x08fandango\x02io\x00'), (9, b'\x02io\x00')]
 def msg_suffix(name):
     suffixes = []
     len_idx = 0
@@ -49,15 +59,8 @@ def msg_suffix(name):
         prefix_len = name[len_idx]
     return suffixes
 
-def to_byte_tree(byte_val):
-    children = []
-    for idx in range(8):
-        bit_val = (byte_val >> idx) & 1
-        children.insert(0, DerivationTree(NonTerminal('<bit>'), [
-            DerivationTree(Terminal(bit_val))
-        ]))
-    return DerivationTree(NonTerminal('byte'), children)
-
+# Applies the DNS name compression algorithm to a DNS name starting at curr_idx within the uncompressed message.
+# suffix dict is a dictionary mapping known DNS suffix names to their offsets within the already analyzed compressed part of the message.
 def compress_name(uncompressed, curr_idx, len_reduction, suffix_dict):
     name_len = 0
     while uncompressed[curr_idx + name_len] != 0:
@@ -80,6 +83,7 @@ def compress_name(uncompressed, curr_idx, len_reduction, suffix_dict):
             suffix_dict[suffix] = offset_name_start + n_offset - len_reduction
             return b_name, name_len, len_reduction
 
+# Compresses a full DNS message applying the DNS name compression algorithm to all names present in the message.
 def compress_msg(uncompressed):
     qd_count = byte_to_int(uncompressed[4:6])
     an_count = byte_to_int(uncompressed[6:8])
@@ -120,6 +124,7 @@ def compress_msg(uncompressed):
             curr_idx += r_data_len
     return compressed
 
+# Decompresses a DNS name starting at name_idx within the compressed message.
 def decompress_name(compressed, name_idx):
     segment_len = compressed[name_idx]
     compressed_len = 0
@@ -139,7 +144,7 @@ def decompress_name(compressed, name_idx):
     decompressed = decompressed + bytes([0])
     return decompressed, compressed_len + 1
 
-
+# Decompresses a full DNS message applying the DNS name decompression algorithm to all names present in the message.
 def decompress_msg(compressed):
     count_header = compressed[4:12]
     qd_count = byte_to_int(count_header[:2])
@@ -195,6 +200,11 @@ def decompress_msg(compressed):
 <header_resp> ::= <h_id> 1 <h_opcode_standard> <bit> 0 <h_rd> <h_ra> 0 <h_aa> 0 (<h_rcode_none> | <h_rcode_name>) <resp_qd_count> <resp_an_count> <resp_ns_count> <resp_ar_count>
 # aa=1 if server has authority over domain
 
+# Ensures that for each request/response pair the following parts match:
+# The recursion desired flag (RD) (<h_rd>)
+# The DNS message identifier (ID) (<h_id>)
+# The question that the response aims to answer is the same as the question in the request (<question>)
+# The question count in the response matches the question count in the request (<req_qd_count>)
 where forall <ex> in <start>.<exchange>:
     <ex>.<dns_resp>.<header_resp>.<h_rd> == <ex>.<dns_req>.<header_req>.<h_rd> and <ex>.<dns_resp>.<header_resp>.<h_id> == <ex>.<dns_req>.<header_req>.<h_id> and <ex>.<dns_resp>.<question> == <ex>.<dns_req>.<question> and bytes(<ex>.<dns_resp>.<header_resp>.<resp_qd_count>) == bytes(<ex>.<dns_req>.<header_req>.<req_qd_count>)
 
@@ -231,7 +241,9 @@ where forall <ex> in <start>.<exchange>:
 <q_type> ::= <type_id_cname> | <type_id_a> | <type_id_ns>
 <rr_class> ::= 0{15} 1 # Equals class IN (Internet)
 
-# Type of first answer is the same as of the question
+# Checks if a dns response answers the corresponding dns question using the verify_transitive-function.
+# The remainder of the check does the same check, but only for direct answers without allowing transitive response chains.
+# This second part is used to allow fandangos contains solving optimization to be used to generate a valid answer more efficiently
 where forall <ex> in <start>.<exchange>:
     forall <q> in <ex>.<dns_req>.<question>:
         forall <a> in <ex>.<dns_resp>.<answer_an>:
@@ -257,6 +269,7 @@ where forall <ex> in <start>.<exchange>:
 <type_cname> ::= <type_id_cname> <rr_class> <a_ttl> <a_rd_length> <q_name>
 <udp_payload_size> ::= <bit>{16}
 
+# <type_cname> responses must have the correct length in the <a_rd_length> field (r data length), which corresponds to the following <q_name> field.
 where forall <t> in <type_cname>:
     bytes(<t>.<a_rd_length>) == pack('>H', len(bytes(<t>.<q_name>)))
 
@@ -267,6 +280,7 @@ class UdpTcpProtocolImplementation(UdpTcpProtocolImplementation):
         super().send(message, recipient)
 
 class NetworkParty(NetworkParty):
+
     def receive(self, message: str | bytes, sender: Optional[str]) -> None:
         super().receive(decompress_msg(message), sender)
 
