@@ -57,7 +57,7 @@ import re
 
 def find_reference(key, bibfile='fandango.bib'):
     bib = open(bibfile, 'r').read()
-    match = re.match(r'@[a-zA-Z0-9]*\{' + key + r',(.|\n)*\n\}', bib)
+    match = re.match(r'@[a-zA-Z0-9]*\{' + key + r',(.|\n)*?\n\}', bib)
     assert match is not None
     return match.group(0)
 
