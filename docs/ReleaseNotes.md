@@ -21,7 +21,8 @@ This document lists major changes across releases.
    * `fandango talk` now keeps on producing diverse interactions until stopped or 100% coverage is reached
    * Much extended documentation with [FTP](sec:ftp) and [DNS](sec:dns) case studies
    * Protocol fuzzing is now out of beta
-* Major internal refactorings and code quality improvements.
+* [development] Major internal refactorings and code quality improvements.
+* [development] Added support for the `uv` package manager, including appropriate lock files to ensure compatible and fixed dependency versions
 ```
 
 ```{versionadded} 1.0 (June 2025)
