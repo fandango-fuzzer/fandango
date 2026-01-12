@@ -1,14 +1,8 @@
 from struct import unpack, pack
 from faker import Faker
-import time
 from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
-from copy import deepcopy
-from fandango.language.parse import parse
-from fandango.language.grammar.grammar import Grammar
 from random import randint
-import socket
-import threading
 
 fake = Faker()
 

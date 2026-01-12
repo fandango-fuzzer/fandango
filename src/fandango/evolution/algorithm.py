@@ -681,13 +681,8 @@ class Fandango:
                                 self.evaluator.evaluate_individual(history_tree)
                             ).collect()
                         )
-                        failing_trees = list(
-                            filter(
-                                lambda x: not isinstance(x.cause, SoftValue),
-                                failing_trees,
-                            )
-                        )
-                        if len(failing_trees) == 0:
+                        assert fitness <= 1.0
+                        if fitness == 1.0:
                             hookin_success = True
                             break
                     if not hookin_success:
