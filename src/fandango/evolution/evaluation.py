@@ -120,7 +120,8 @@ class Evaluator:
         return self._evaluate_constraints(individual, self._hard_constraints)
 
     def evaluate_repetition_bounds_constraints(
-        self, individual: DerivationTree,
+        self,
+        individual: DerivationTree,
     ) -> tuple[float, list[FailingTree], Suggestion]:
         return self._evaluate_constraints(
             individual, self._repetition_bounds_constraints
