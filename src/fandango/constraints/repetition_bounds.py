@@ -64,6 +64,10 @@ class RepetitionBoundsSuggestion(Suggestion):
         self._iter_id = iter_id
         self._repetition_id = repetition_id
         self._repetition_node = repetition_node
+        self.allow_repetition_full_delete = False
+
+    def rec_set_allow_repetition_full_delete(self, allow_repetition_full_delete: bool):
+        self.allow_repetition_full_delete = allow_repetition_full_delete
 
     def _insert_repetitions(
         self,
@@ -164,7 +168,7 @@ class RepetitionBoundsSuggestion(Suggestion):
                 )
             )
         else:
-            if self._goal_len == 0:
+            if self._goal_len == 0 and not self.allow_repetition_full_delete:
                 self._goal_len = 1
             if self._goal_len == self._bound_len:
                 return []

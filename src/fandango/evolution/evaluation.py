@@ -120,7 +120,7 @@ class Evaluator:
         return self._evaluate_constraints(individual, self._hard_constraints)
 
     def evaluate_repetition_bounds_constraints(
-        self, individual: DerivationTree
+        self, individual: DerivationTree,
     ) -> tuple[float, list[FailingTree], Suggestion]:
         return self._evaluate_constraints(
             individual, self._repetition_bounds_constraints
@@ -211,12 +211,13 @@ class Evaluator:
             # normalize the fitness to the number of hard constraints
             fitness = fitness / (total_constraint_count) * len(self._hard_constraints)
 
-        if len(self._repetition_bounds_constraints) > 0 and fully_solved_so_far:
+        if len(self._repetition_bounds_constraints) > 0:
             # all hard constraints are satisfied, so we can evaluate the repetition bounds constraints
             rep_fitness, rep_failing_trees, rep_suggestion = (
                 self.evaluate_repetition_bounds_constraints(individual)
             )
-            suggestion = rep_suggestion
+            rep_suggestion.rec_set_allow_repetition_full_delete(fully_solved_so_far)
+            suggestion = ApplyAllSuggestions([suggestion, rep_suggestion])
             failing_trees.extend(rep_failing_trees)
 
             fully_solved_so_far = fully_solved_so_far and rep_fitness == 1.0

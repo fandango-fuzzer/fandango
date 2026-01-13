@@ -15,6 +15,7 @@ def main():
         grammar=grammar,
         constraints=constraints,
         population_size=10,
+        #elitism_rate=1.0,
         max_nodes=600 * 8,
         logger_level=LoggerLevel.INFO,
     )

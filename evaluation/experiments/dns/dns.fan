@@ -5,7 +5,7 @@ from random import randint
 
 fake = Faker()
 
-fandango_is_client = True
+fandango_is_client = False
 # If uses as a client interact with a command like this:
 # dig @127.0.0.1 -p 25565 A fandango.io +noedns +time=100 +tries=1
 
@@ -193,7 +193,12 @@ def decompress_msg(compressed):
 
 # A request consists of a header and a number of questions and answers as specified in the header
 <dns_req> ::= <header_req> <question>{byte_to_int(<req_qd_count>)}
-<dns_resp> ::= <header_resp> <question>{byte_to_int(<header_req>.<req_qd_count>)} <answer_an>{byte_to_int(<resp_an_count>)} <answer_au>{byte_to_int(<resp_ns_count>)} <answer_opt>{byte_to_int(<resp_ar_count>)}
+<dns_resp> ::= <header_resp> <question_section> <answer_an_section> <answer_au_section> <answer_opt_section>
+
+<question_section> ::= <question>{byte_to_int(<header_req>.<req_qd_count>)}
+<answer_an_section> ::= <answer_an>{byte_to_int(<resp_an_count>)}
+<answer_au_section> ::= <answer_au>{byte_to_int(<resp_ns_count>)}
+<answer_opt_section> ::= <answer_opt>{byte_to_int(<resp_ar_count>)}
 
 #                       qr      opcode       aa tc rd  ra  z      rcode   qdcount  ancount nscount arcount
 <header_req> ::= <h_id> 0 <h_opcode_standard> 0 0 <h_rd> 0 0 <bit> 0 <h_rcode_none> <req_qd_count> 0{16} 0{16} 0{16}
@@ -206,7 +211,7 @@ def decompress_msg(compressed):
 # The question that the response aims to answer is the same as the question in the request (<question>)
 # The question count in the response matches the question count in the request (<req_qd_count>)
 where forall <ex> in <start>.<exchange>:
-    <ex>.<dns_resp>.<header_resp>.<h_rd> == <ex>.<dns_req>.<header_req>.<h_rd> and <ex>.<dns_resp>.<header_resp>.<h_id> == <ex>.<dns_req>.<header_req>.<h_id> and <ex>.<dns_resp>.<question> == <ex>.<dns_req>.<question> and bytes(<ex>.<dns_resp>.<header_resp>.<resp_qd_count>) == bytes(<ex>.<dns_req>.<header_req>.<req_qd_count>)
+    <ex>.<dns_resp>.<header_resp>.<h_rd> == <ex>.<dns_req>.<header_req>.<h_rd> and <ex>.<dns_resp>.<header_resp>.<h_id> == <ex>.<dns_req>.<header_req>.<h_id> and <ex>.<dns_resp>.<question_section>.<question> == <ex>.<dns_req>.<question> and bytes(<ex>.<dns_resp>.<header_resp>.<resp_qd_count>) == bytes(<ex>.<dns_req>.<header_req>.<req_qd_count>)
 
 
 <req_qd_count> ::= <byte>{2} := pack(">H", 1)
@@ -245,7 +250,7 @@ where forall <ex> in <start>.<exchange>:
 # The remainder of the check does the same check, but only for direct answers without allowing transitive response chains.
 # This second part is used to allow fandangos contains solving optimization to be used to generate a valid answer more efficiently
 where forall <ex> in <start>.<exchange>:
-    forall <a> in <ex>.<dns_resp>.<answer_an>:
+    forall <a> in <ex>.<dns_resp>.<answer_an_section>.<answer_an>:
         exists <q> in <ex>.<dns_req>.<question>:
             verify_transitive(<q>, <ex>.<dns_resp>) or bytes(<a>.<answer_an_type>)[0:2] == bytes(<q>.<q_type>) and bytes(<a>.<q_name_optional>) == bytes(<q>.<q_name>)
 
