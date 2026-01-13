@@ -5,5 +5,9 @@ updates:
     versioning-strategy: auto
     schedule:
       interval: daily
+    groups:
+      patch-updates:
+        update-types:
+          - "patch"
     patterns:
       - "*"
