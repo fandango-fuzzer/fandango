@@ -39,7 +39,9 @@ class EqualComparisonSuggestion(Suggestion):
         self._target = target
         self._source = source
 
-    def rec_set_allow_repetition_full_delete(self, allow_repetition_full_delete: bool) -> None:
+    def rec_set_allow_repetition_full_delete(
+        self, allow_repetition_full_delete: bool
+    ) -> None:
         pass
 
     def get_replacements(
