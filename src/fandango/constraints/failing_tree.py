@@ -83,6 +83,15 @@ class Suggestion:
         :return: Replacements (target, source) pairs.
         """
 
+    @abc.abstractmethod
+    def rec_set_allow_repetition_full_delete(self, allow_repetition_full_delete: bool):
+        """
+        Recursively set the allow_repetition_full_delete flag for all RepetitionBoundsConstraints.
+
+        :param allow_repetition_full_delete: Whether to allow repetition full delete.
+        """
+        pass
+
 
 class ApplyAllSuggestions(Suggestion):
     """
@@ -94,6 +103,10 @@ class ApplyAllSuggestions(Suggestion):
         Initialize the ApplyAllSuggestions with the given suggestions.
         """
         self.suggestions = suggestions
+
+    def rec_set_allow_repetition_full_delete(self, allow_repetition_full_delete: bool):
+        for s in self.suggestions:
+            s.rec_set_allow_repetition_full_delete(allow_repetition_full_delete)
 
     def get_replacements(
         self,
@@ -128,6 +141,10 @@ class ApplyFirstSuggestion(Suggestion):
         """
         self.suggestions = suggestions
 
+    def rec_set_allow_repetition_full_delete(self, allow_repetition_full_delete: bool):
+        for s in self.suggestions:
+            s.rec_set_allow_repetition_full_delete(allow_repetition_full_delete)
+
     def get_replacements(
         self,
         individual: DerivationTree,
@@ -159,6 +176,9 @@ class NopSuggestion(Suggestion):
         grammar: "fandango.language.grammar.grammar.Grammar",
     ) -> list[tuple[DerivationTree, DerivationTree]]:
         return []
+
+    def rec_set_allow_repetition_full_delete(self, allow_repetition_full_delete: bool):
+        pass
 
 
 class FailingTree:
