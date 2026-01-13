@@ -80,7 +80,7 @@ $ python -m pip install -e ".[test,development,evaluation,book]"
 ```{tip}
 If subsequent tests fails due to dependency breakage, use `uv` to create the virtual environment with `uv.lock`, which provides a snapshot of the dependencies that are tested on our CI:
 ````shell
-$ uv sync --locked --all-extras && uv pip install -e ".[test,development,evaluation,book]" --no-deps
+$ uv sync --locked --all-extras
 ````
 ```
 
