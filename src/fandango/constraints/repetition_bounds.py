@@ -66,7 +66,7 @@ class RepetitionBoundsSuggestion(Suggestion):
         self._repetition_node = repetition_node
         self.allow_repetition_full_delete = False
 
-    def rec_set_allow_repetition_full_delete(self, allow_repetition_full_delete: bool):
+    def rec_set_allow_repetition_full_delete(self, allow_repetition_full_delete: bool) -> None:
         self.allow_repetition_full_delete = allow_repetition_full_delete
 
     def _insert_repetitions(
