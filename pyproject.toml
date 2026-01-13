@@ -35,6 +35,7 @@ dependencies = [
     "astar>=0.99",
     "beartype>=0.21.0,!=0.22.6,!=0.22.7",
     "cachedir_tag>=0.0.3",
+    "cachetools>=5.5.2",
     "dill>=0.3.7",
     "exrex>=0.12.0",
     "gnureadline>=8.2.13 ; platform_system != 'Windows' and implementation_name != 'pypy'",
