@@ -301,6 +301,7 @@ class Fandango(FandangoBase):
         desired_solutions: Optional[int],
         max_generations: Optional[int],
         infinite: bool,
+        use_fcc: bool,
     ) -> tuple[Optional[int], Optional[int], bool]:
         """
         Sanitize the runtime end settings and emit warnings if necessary.
@@ -338,6 +339,8 @@ class Fandango(FandangoBase):
             if max_generations is not None:
                 LOGGER.warning("Infinite mode is activated, overriding max_generations")
             max_generations = None  # infinite overrides max_generations
+            if use_fcc:
+                desired_solutions = None
 
         return max_generations, desired_solutions, infinite
 
@@ -407,6 +410,7 @@ class Fandango(FandangoBase):
                 desired_solutions,
                 max_generations,
                 infinite,
+                settings["use_fcc"] if "use_fcc" in settings else False,
             )
         )
 

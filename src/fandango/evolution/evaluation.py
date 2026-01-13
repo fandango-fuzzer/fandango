@@ -14,6 +14,7 @@ from fandango.constraints.failing_tree import (
     Suggestion,
 )
 from fandango.evolution import GeneratorWithReturn
+from fandango.execution.fcc import FCC
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.language import NonTerminal
 from fandango.language.tree import DerivationTree
@@ -31,6 +32,8 @@ class Evaluator:
         diversity_weight: float,
         warnings_are_errors: bool = False,
         stop_criterion: Optional[Callable[[DerivationTree], bool]] = None,
+        put: Optional[str] = None,
+        put_args: Optional[list[str]] = None,
     ):
         self._grammar = grammar
         self._soft_constraints: list[SoftValue] = []
@@ -45,8 +48,14 @@ class Evaluator:
         self._checks_made = 0
         self._stop_criterion = stop_criterion
         self._stop_criterion_met = False
+        self.fcc = FCC(put, put_args) if put is not None else None
 
         for constraint in constraints:
+            if "DynamicAnalysis" in constraint.format_as_spec():
+                assert self.fcc is not None
+                constraint.global_variables["DynamicAnalysis"] = (
+                    self.fcc.dynamic_analysis.trace_input
+                )
             if isinstance(constraint, SoftValue):
                 self._soft_constraints.append(constraint)
             elif isinstance(constraint, RepetitionBoundsConstraint):
