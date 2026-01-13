@@ -84,7 +84,9 @@ class Suggestion:
         """
 
     @abc.abstractmethod
-    def rec_set_allow_repetition_full_delete(self, allow_repetition_full_delete: bool) -> None:
+    def rec_set_allow_repetition_full_delete(
+        self, allow_repetition_full_delete: bool
+    ) -> None:
         """
         Recursively set the allow_repetition_full_delete flag for all RepetitionBoundsConstraints.
 
@@ -104,7 +106,9 @@ class ApplyAllSuggestions(Suggestion):
         """
         self.suggestions = suggestions
 
-    def rec_set_allow_repetition_full_delete(self, allow_repetition_full_delete: bool) -> None:
+    def rec_set_allow_repetition_full_delete(
+        self, allow_repetition_full_delete: bool
+    ) -> None:
         for s in self.suggestions:
             s.rec_set_allow_repetition_full_delete(allow_repetition_full_delete)
 
@@ -141,7 +145,9 @@ class ApplyFirstSuggestion(Suggestion):
         """
         self.suggestions = suggestions
 
-    def rec_set_allow_repetition_full_delete(self, allow_repetition_full_delete: bool) -> None:
+    def rec_set_allow_repetition_full_delete(
+        self, allow_repetition_full_delete: bool
+    ) -> None:
         for s in self.suggestions:
             s.rec_set_allow_repetition_full_delete(allow_repetition_full_delete)
 
@@ -177,7 +183,9 @@ class NopSuggestion(Suggestion):
     ) -> list[tuple[DerivationTree, DerivationTree]]:
         return []
 
-    def rec_set_allow_repetition_full_delete(self, allow_repetition_full_delete: bool) -> None:
+    def rec_set_allow_repetition_full_delete(
+        self, allow_repetition_full_delete: bool
+    ) -> None:
         pass
 
 
