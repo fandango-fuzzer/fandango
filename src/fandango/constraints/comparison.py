@@ -317,7 +317,6 @@ class ComparisonConstraint(Constraint):
                 # or <first_name> + "Doe" == "John Doe"
                 # this will try to parse "John Doe" into <first_name>, which is not what we want
                 # we need to make sure we can actually parse the value into the tree type-wise, before comparing the actual values
-                # TODO replacement might be read only
                 if (
                     single_left_tree is not None
                     and isinstance(single_left_tree.symbol, NonTerminal)
