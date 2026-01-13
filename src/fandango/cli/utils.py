@@ -96,6 +96,11 @@ def make_fandango_settings(
     _copy_setting(args, settings, "max_node_rate")
     _copy_setting(args, settings, "stop_criterion")
     _copy_setting(args, settings, "stop_after_seconds")
+    _copy_setting(args, settings, "use_fcc")
+
+    if "use_fcc" in settings:
+        settings["put"] = args.test_command
+        settings["put_args"] = args.test_args  # list[str]
 
     if hasattr(args, "start_symbol") and args.start_symbol is not None:
         if args.start_symbol.startswith("<"):
@@ -172,6 +177,9 @@ def parse_contents_from_args(
     max_constraints = [f"maximizing {c}" for c in (args.maxconstraints or [])]
     min_constraints = [f"minimizing {c}" for c in (args.minconstraints or [])]
     constraints = (args.constraints or []) + max_constraints + min_constraints
+
+    if "use_fcc" in args and args.use_fcc:
+        assert args.test_command is not None
 
     extra_defs = ""
     if "test_command" in args and args.test_command:

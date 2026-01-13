@@ -1,0 +1,14 @@
+BasicBlockID = str
+FunctionName = str
+ModuleName = str
+Callee = tuple[str, str]
+BBDict = dict[str, list[Callee]]
+FunctionDict = dict[FunctionName, dict[BasicBlockID, BBDict]]
+CfgsType = dict[ModuleName, FunctionDict]
+CGType = dict[ModuleName, dict[FunctionName, list[Callee]]]
+ModuleBBToFType = dict[ModuleName, dict[BasicBlockID, FunctionName]]
+ModuleFToFirstBBType = dict[tuple[ModuleName, FunctionName], str]
+ModuleFunction = tuple[ModuleName, FunctionName]
+ModuleBBID = tuple[ModuleName, BasicBlockID]
+CallDistanceDict = dict[ModuleFunction, float]
+BBDistanceDict = dict[ModuleBBID, float]
