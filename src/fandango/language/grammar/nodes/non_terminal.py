@@ -117,14 +117,15 @@ class NonTerminalNode(Node):
         self,
         *,
         grammar: "fandango.language.grammar.grammar.Grammar",
-        seen_nts: Optional[set[Symbol]] = None,
+        seen_nts: Optional[set[tuple[str, str, Symbol]]] = None,
         include_recipients: bool = False,
     ) -> set[str]:
         if seen_nts is None:
             seen_nts = set()
-        if self.symbol in seen_nts:
+        ident = (self.sender, self.recipient, self.symbol)
+        if ident in seen_nts:
             return set()
-        seen_nts.add(self.symbol)
+        seen_nts.add(ident)
         parties: set[str] = grammar.rules[self.symbol].msg_parties(
             grammar=grammar, seen_nts=seen_nts, include_recipients=include_recipients
         )
