@@ -117,7 +117,7 @@ class NonTerminalNode(Node):
         self,
         *,
         grammar: "fandango.language.grammar.grammar.Grammar",
-        seen_nts: Optional[set[tuple[str, str, Symbol]]] = None,
+        seen_nts: Optional[set[tuple[Optional[str], Optional[str], Symbol]]] = None,
         include_recipients: bool = False,
     ) -> set[str]:
         if seen_nts is None:
