@@ -125,6 +125,7 @@ def feat_response():
 <exchange_list> ::= <ClientControl:ServerControl:request_list><ServerControl:ClientControl:open_list><list_transfer>
 <request_list> ::= 'LIST\r\n'
 <open_list> ::= '150 ' <command_tail> '\r\n'
+# <list_data> gets sent using the data-channel. Therefore, we use ServerData and ClientData as sending and receiving parties.
 <list_transfer> ::= <ServerData:ClientData:list_data>?<ServerControl:ClientControl:finalize_list>
 <finalize_list> ::= '226 ' <command_tail> '\r\n'
 <list_data> ::= (<list_data_file>)+
