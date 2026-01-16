@@ -1,11 +1,11 @@
 from struct import unpack, pack
 from faker import Faker
-from fandango.language.symbols import NonTerminal, Terminal
+from fandango.language.symbols import NonTerminal
 from random import randint
 
 fake = Faker()
 
-fandango_is_client = False
+fandango_is_client = True
 # If uses as a client interact with a command like this:
 # dig @127.0.0.1 -p 25565 A fandango.io +noedns +time=100 +tries=1
 
@@ -279,15 +279,16 @@ where forall <t> in <type_cname>:
     bytes(<t>.<a_rd_length>) == pack('>H', len(bytes(<t>.<q_name>)))
 
 
-class UdpTcpProtocolImplementation(UdpTcpProtocolImplementation):
-    def send(self, message: DerivationTree, recipient: Optional[str]):
-        compress_msg(message.to_bytes())
-        super().send(message, recipient)
 
 class NetworkParty(NetworkParty):
 
+    # We want all sent messages to be compressed and all received messages to be decompressed for all parties.
+    # Therefore we override the send and the receive functions in the base NetworkParty class.
     def receive(self, message: str | bytes, sender: Optional[str]) -> None:
         super().receive(decompress_msg(message), sender)
+
+    def send(self, message: str | bytes, recipient: Optional[str]) -> None:
+        super().send(compress_msg(message.to_bytes(encoding="utf-8")), recipient)
 
 
 class Client(NetworkParty):
@@ -298,9 +299,6 @@ class Client(NetworkParty):
             uri="udp://localhost:25566"
         )
         self.start()
-
-    def receive(self, message: str | bytes, sender: Optional[str]) -> None:
-        super().receive(decompress_msg(message), sender)
 
 
 class Server(NetworkParty):
