@@ -1,7 +1,7 @@
 from random import randint
 import math
 
-fandango_is_client = True
+fandango_is_client = False
 
 # The starting symbol from which the fuzzer starts generating messages.
 <start> ::= <state_setup>
@@ -11,18 +11,24 @@ fandango_is_client = True
 
 # Logged out state. Client is not logged in yet. Client might ask for ssl or tls auth, which gets rejected by the server.
 # Client is allowed to log in unencrypted.
+# Note the commented-out nonterminals below. When enabled they limit the number of login failures to 2 before a successful login is required. This is required, since our testing target (vsftpd) disconnects the client after 3 failed login attempts.
+# We commented-out those states, since we used a k-path "k" that is small enough to not trigger that behaviour on purpose. Instead the limit_errors-constraint below ensures that we do not generate too many failing auth requests in a row.
 <state_logged_out_1> ::= (<exchange_auth_tls><state_logged_out_1>) | (<exchange_auth_ssl><state_logged_out_1>) | (<exchange_login_fail><state_logged_out_1>) | (<exchange_login_ok><state_logged_in>)
 #<state_logged_out_1> ::= (<exchange_auth_tls><state_logged_out_1>) | (<exchange_auth_ssl><state_logged_out_1>) | (<exchange_login_fail><state_logged_out_2>) | (<exchange_login_ok><state_logged_in>)
 #<state_logged_out_2> ::= (<exchange_auth_tls><state_logged_out_2>) | (<exchange_auth_ssl><state_logged_out_2>) | (<exchange_login_fail><state_logged_out_3>) | (<exchange_login_ok><state_logged_in>)
 #<state_logged_out_3> ::= (<exchange_auth_tls><state_logged_out_3>) | (<exchange_auth_ssl><state_logged_out_3>) | (<exchange_login_ok><state_logged_in>)
 
-where less_then(<start>, NonTerminal('<exchange_login_fail>'), 3);
+where limit_failed_logins(<start>, NonTerminal('<exchange_login_fail>'));
 where limit_errors(<start>);
 
 def less_then(tree, symbol_to_find, number):
     count = len(tree.find_all_trees(symbol_to_find))
     return count < number
 
+def limit_failed_logins(tree, symbol_to_find):
+    return less_then(tree, symbol_to_find, 3);
+
+# Limits number of errors to 10. Our testing target (vsftpd) disconnects the client at 10 failed attempts in a row.
 def limit_errors(tree):
     nts = [NonTerminal('<request_auth_ssl>'), NonTerminal('<response_auth_ssl>'), NonTerminal('<request_auth_tls>'), NonTerminal('<response_auth_tls>')]
     count = 0
@@ -102,7 +108,7 @@ def limit_errors(tree):
 <feat_entry> ::= ' ' r'[\x20-\x7E]+' '\r\n'
 
 def feat_response():
-    features = '211-Features:\r\n EPRT\r\n EPSV\r\n MDTM\r\n PASV\r\n REST STREAM\r\n SIZE\r\n TVFS\r\n211 End\r\n'
+    features = '211-Features:\r\n EPSV\r\n211 End\r\n'
     return features
 
 <exchange_set_type> ::= <ClientControl:ServerControl:request_set_type><ServerControl:ClientControl:response_set_type>
@@ -152,6 +158,7 @@ def feat_response():
 <wrong_user_name> ::= r'^(?!the_user$)([a-zA-Z0-9_]+)'
 <wrong_user_password> ::= r'^(?!the_password$)([a-zA-Z0-9_]+)'
 
+# When producing or parsing <open_port> we call the open_data_port generator function to reconfigure the data parties.
 <open_port> ::= <passive_port> := open_data_port(int(<open_port_param>))
 <open_port_param> ::= <passive_port> := open_data_port(int(<open_port>))
 <passive_port> ::= r'[1-9][0-9]{0,4}' := randint(50100, 50100)
@@ -197,6 +204,7 @@ class ServerControl(NetworkParty):
 
     def send(self, message: DerivationTree, recipient: str):
         super().send(message, recipient)
+        # 226 indicates the end of a data transfer. We stop the data parties then in order to disconnect from the ftp servers data socket.
         if message.to_string().startswith("226"):
             FandangoIO.instance().parties['ServerData'].stop()
 
