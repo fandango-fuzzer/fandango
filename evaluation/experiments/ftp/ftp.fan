@@ -176,6 +176,7 @@ def open_data_port(port):
     FandangoIO.instance().parties["ServerData"].start()
     return port
 
+# The classes ClientControl and ServerControl are the party definitions for the control connection.
 class ClientControl(NetworkParty):
     def __init__(self):
         super().__init__(
@@ -186,8 +187,12 @@ class ClientControl(NetworkParty):
         self.start()
 
     def receive(self, message: str | bytes, sender: Optional[str]) -> None:
+        # 150 indicates the start of a data transfer. We start the data parties then in order to connect to the ftp servers data socket.
         if message.decode("utf-8").startswith("150"):
             FandangoIO.instance().parties["ClientData"].start()
+        # We set ServerControl as the sender for all received messages.
+        # Fandango can only automatically infer the sender of a message for specification 2 two party definitions.
+        # In this specification we have 4 parties, so we need to set the sender incoming messages manually.
         super().receive(message.decode("utf-8"), sender="ServerControl")
 
 class ServerControl(NetworkParty):
@@ -208,6 +213,7 @@ class ServerControl(NetworkParty):
         if message.to_string().startswith("226"):
             FandangoIO.instance().parties['ServerData'].stop()
 
+# The classes ClientControl and ServerControl are the party definitions for the data connection.
 class ClientData(NetworkParty):
     def __init__(self):
         super().__init__(
