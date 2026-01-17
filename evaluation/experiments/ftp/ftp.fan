@@ -7,7 +7,7 @@ fandango_is_client = False
 <start> ::= <state_setup>
 
 # Setup stage that directs server to send a welcome message and leads over to the logged out state.
-<state_setup> ::= <exchange_socket_connect> <state_logged_out_1>
+<state_setup> ::= <service_ready> <state_logged_out_1>
 
 # Logged out state. Client is not logged in yet. Client might ask for ssl or tls auth, which gets rejected by the server.
 # Client is allowed to log in unencrypted.
@@ -18,15 +18,15 @@ fandango_is_client = False
 #<state_logged_out_2> ::= (<exchange_auth_tls><state_logged_out_2>) | (<exchange_auth_ssl><state_logged_out_2>) | (<exchange_login_fail><state_logged_out_3>) | (<exchange_login_ok><state_logged_in>)
 #<state_logged_out_3> ::= (<exchange_auth_tls><state_logged_out_3>) | (<exchange_auth_ssl><state_logged_out_3>) | (<exchange_login_ok><state_logged_in>)
 
-where limit_failed_logins(<start>, NonTerminal('<exchange_login_fail>'));
-where limit_errors(<start>);
+where limit_failed_logins(<start>, NonTerminal('<exchange_login_fail>'))
+where limit_errors(<start>)
 
 def less_than(tree, symbol_to_find, number):
     count = len(tree.find_all_trees(symbol_to_find))
     return count < number
 
 def limit_failed_logins(tree, symbol_to_find):
-    return less_than(tree, symbol_to_find, 3);
+    return less_than(tree, symbol_to_find, 3)
 
 # Limits number of errors to 10. Our testing target (vsftpd) disconnects the client at 10 failed attempts in a row.
 def limit_errors(tree):
@@ -48,7 +48,7 @@ def limit_errors(tree):
 
 # The logged in state. If the client is logged in, it is allowed to send the following commands.
 <logged_in_cmds> ::= <exchange_pwd> | <exchange_syst> | <exchange_feat> | <exchange_set_utf8>
-<exchange_socket_connect> ::= <ServerControl:ClientControl:response_server_info>
+<service_ready> ::= <ServerControl:ClientControl:response_server_info>
 <response_server_info> ::= r'(220-(?:[\x20-\x7E]*\r\n))*220 (?:[\x20-\x7E]*)\r\n'
 
 <exchange_quit> ::= <ClientControl:ServerControl:request_quit><ServerControl:ClientControl:response_quit>
@@ -222,7 +222,7 @@ class ServerControl(NetworkParty):
         if message.to_string().startswith("226"):
             FandangoIO.instance().parties['ServerData'].stop()
 
-# The classes ClientControl and ServerControl are the party definitions for the data connection.
+# The classes ClientData and ServerData are the party definitions for the data connection.
 class ClientData(NetworkParty):
     def __init__(self):
         super().__init__(
