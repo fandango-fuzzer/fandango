@@ -276,10 +276,109 @@ We do not support logging in via TLS and SSL and accept a 500 (syntax error) or 
 <response_auth_ssl> ::= r'(530|500)' ' ' <command_tail> '\r\n'
 ```
 
-## FTP States
+
+## FTP Commands
+
+When the client is logged in, it can send commands to the server.
+In the `<state_logged_in>` state, we support the commands listed in `<logged_in_cmds>`.
+
+The `<exchange_set_type>` and `<exchange_set_passive>` commands change the FTP state; see [States](sec:ftp-states) below.
 
 ```{mermaid}
-stateDiagram-v2
+stateDiagram
+    [*] --> state_logged_out_1
+    state_logged_out_1 --> state_logged_in: exchange_login_ok
+
+    state_logged_in --> state_logged_in: logged_in_cmds
+    state_logged_in --> state_in_binary: exchange_set_type
+    state_logged_in --> state_in_passive: exchange_set_epassive
+```
+
+```
+<state_logged_in> ::= <logged_in_cmds> <state_logged_in>
+ | <exchange_set_type> <state_in_binary>
+ | <exchange_set_epassive> <state_in_passive>
+```
+
+```python
+<logged_in_cmds> ::= (
+    <exchange_pwd> | 
+    <exchange_syst> | 
+    <exchange_feat> | 
+    <exchange_set_utf8>)
+```
+
+### The PWD command
+
+PWD requests the current working directory. The server answers with a (random) path.
+
+```python
+<exchange_pwd> ::= (
+  <ClientControl:ServerControl:request_pwd>
+  <ServerControl:ClientControl:response_pwd>
+)
+<request_pwd> ::= 'PWD\r\n'
+<response_pwd> ::= '257 \"' <directory> '\" is the current directory\r\n'
+<directory> ::= '/' | ('/' <filesystem_name>)+
+<filesystem_name> ::= r'[a-zA-Z0-9_]+'
+<client_name> ::= r'[a-zA-Z0-9]+'
+```
+
+
+### The SYST command
+
+With the `SYST` command, we can request a `215` reply, followed by the server system name.
+We use `Linux` as default.
+
+```python
+<exchange_syst> ::= (
+  <ClientControl:ServerControl:request_syst>
+  <ServerControl:ClientControl:response_syst>
+)
+<request_syst> ::= 'SYST\r\n'
+<response_syst> ::= '215 ' <syst_name> '\r\n'
+<syst_name> ::= r'[\x20-\x7E]+' := 'Linux'
+```
+
+
+### The FEAT command
+
+The FEAT command returns a list of features that the server supports. If Fandango generates the feature list, we return a fixed value generated with the generator.
+When receiving a feature list, we parse it according to the provided regex.
+
+```python
+<exchange_feat> ::= (
+  <ClientControl:ServerControl:request_feat>
+  <ServerControl:ClientControl:response_feat>
+)
+<request_feat> ::= 'FEAT\r\n'
+<response_feat> ::= '211-Features:\r\n' <feat_entry>+ '211 End\r\n' := feat_response()
+<feat_entry> ::= ' ' r'[\x20-\x7E]+' '\r\n'
+
+def feat_response():
+    features = '211-Features:\r\n EPSV\r\n211 End\r\n'
+    return features
+```
+
+
+### The OPTS UTF8 command
+
+We can send a command to set the character set to UTF-8, expecting a `200` (okay) response.
+
+```python
+<exchange_set_utf8> ::= (
+   <ClientControl:ServerControl:request_set_utf8>
+   <ServerControl:ClientControl:response_set_utf8>
+)
+<request_set_utf8> ::= 'OPTS UTF8 ON\r\n'
+<response_set_utf8> ::= '200 ' <command_tail> '\r\n'
+```
+
+(sec:ftp-states)=
+## More FTP States
+
+```{mermaid}
+stateDiagram
     [*] --> state_logged_out_1
     state_logged_out_1 --> state_logged_in: exchange_login_ok
 
@@ -301,35 +400,33 @@ stateDiagram-v2
 ```
 
 ```python
-<state_logged_in> ::= (<logged_in_cmds><state_logged_in>) | (<exchange_set_type><state_in_binary>) | (<exchange_set_epassive><state_in_passive>)
 <state_in_binary> ::= (<logged_in_cmds><state_in_binary>) | (<exchange_set_epassive><state_in_binary_passive>)
 <state_in_passive> ::= (<logged_in_cmds><state_in_passive>) | (<exchange_set_type> <state_in_binary_passive>)
 <state_in_binary_passive> ::= (<logged_in_cmds><state_in_binary_passive>) | (<exchange_list><state_in_binary>) | (<exchange_quit><state_finished>)
 
-<state_finished> ::= ''
 ```
 
 
-## FTP Commands
-
-```python
-<logged_in_cmds> ::= (
-    <exchange_pwd> | 
-    <exchange_syst> | 
-    <exchange_feat> | 
-    <exchange_set_utf8>)
-```
-
-
-
+## The LIST command
 
 ```{admonition} Under Construction
 :class: attention
 Extended documentation for this case study is under construction.
 ```
 
-```{code-cell}
-:tags: ["remove-input"]
-!cat ../evaluation/experiments/ftp/ftp.fan
-assert _exit_code == 0
+
+## The QUIT command
+
+```python
+<state_finished> ::= ''
 ```
+
+```{admonition} Under Construction
+:class: attention
+Extended documentation for this case study is under construction.
+```
+
+% ```{code-cell}
+% :tags: ["remove-input"]
+% !cat ../evaluation/experiments/ftp/ftp.fan
+% assert _exit_code == 0
