@@ -21,12 +21,12 @@ fandango_is_client = False
 where limit_failed_logins(<start>, NonTerminal('<exchange_login_fail>'));
 where limit_errors(<start>);
 
-def less_then(tree, symbol_to_find, number):
+def less_than(tree, symbol_to_find, number):
     count = len(tree.find_all_trees(symbol_to_find))
     return count < number
 
 def limit_failed_logins(tree, symbol_to_find):
-    return less_then(tree, symbol_to_find, 3);
+    return less_than(tree, symbol_to_find, 3);
 
 # Limits number of errors to 10. Our testing target (vsftpd) disconnects the client at 10 failed attempts in a row.
 def limit_errors(tree):
