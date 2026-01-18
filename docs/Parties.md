@@ -16,6 +16,11 @@ kernelspec:
 In the [previous chapter](sec:protocols), we have seen how to define and test protocol interactions with Fandango.
 In this chapter, we describe additional ways to control communication behavior.
 
+```{versionadded} 1.1
+These features are available in Fandango 1.1 and later.
+```
+
+
 ## Party Classes
 
 All the communication between Fandango and its parties takes place via dedicated _classes_.
