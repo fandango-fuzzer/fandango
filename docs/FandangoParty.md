@@ -14,6 +14,11 @@ kernelspec:
 # FandangoParty Reference
 
 All communication between Fandango and its parties is established via `FandangoParty` classes.
+
+```{versionadded} 1.1
+These features are available in Fandango 1.1 and later.
+```
+
 The following diagram illustrates the classes and methods discussed in this chapter:
 
 ```{mermaid}
