@@ -101,9 +101,9 @@ class NonTerminalNode(Node):
     def format_as_spec(self) -> str:
         if self.sender is not None:
             if self.recipient is None:
-                return f"<{self.sender}:{(self.symbol.format_as_spec())[:-1]}>"
+                return f"<{self.sender}:{(self.symbol.format_as_spec())[1:-1]}>"
             else:
-                return f"<{self.sender}:{self.recipient}:{(self.symbol.format_as_spec())[:-1]}>"
+                return f"<{self.sender}:{self.recipient}:{(self.symbol.format_as_spec())[1:-1]}>"
         else:
             return self.symbol.format_as_spec()
 
