@@ -548,6 +548,13 @@ def _populate_convert_parser(parser: argparse.ArgumentParser) -> None:
         help="Format of the external spec file: 'antlr'/'g4' (ANTLR), 'dtd' (XML DTD), '010'/'bt' (010 Editor Binary Template), 'fan' (Fandango spec), or 'auto' (default: try to guess from file extension).",
     )
     parser.add_argument(
+        "--to",
+        dest="to_format",
+        choices=["fan", "state", "mermaid"],
+        default="fan",
+        help="Format of the output file: 'fan' (Fandango spec; default), 'state' (state diagram), or 'mermaid' (Mermaid state diagram).",
+    )
+    parser.add_argument(
         "--endianness", choices=["little", "big"], help="Set endianness for .bt files."
     )
     parser.add_argument(

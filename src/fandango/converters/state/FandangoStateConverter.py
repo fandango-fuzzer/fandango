@@ -21,6 +21,7 @@ class FandangoStateConverter(FandangoConverter):
             contents, filename=self.filename, use_cache=False, parties=self.parties
         )
         header = f"""%% Automatically generated from {self.filename!r}.
+%% Format: STATE_1 --> STATE_2: [ACTIONS]
 %%
 """
         return header + str(parsed_spec.grammar.to_states(mermaid=mermaid))

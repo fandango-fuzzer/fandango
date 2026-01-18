@@ -32,6 +32,7 @@ from fandango.converters.bt.BTFandangoConverter import (
 )
 from fandango.converters.dtd.DTDFandangoConverter import DTDFandangoConverter
 from fandango.converters.fan.FandangoFandangoConverter import FandangoFandangoConverter
+from fandango.converters.state.FandangoStateConverter import FandangoStateConverter
 from fandango.errors import FandangoError, FandangoParseError
 from fandango.language.grammar import FuzzingMode
 from fandango.language.grammar.grammar import Grammar
@@ -363,6 +364,8 @@ def convert_command(args: argparse.Namespace) -> None:
                     f"{input_file!r}: unknown file extension; use --from=FORMAT to specify the format"
                 )
 
+        to_format = args.to_format
+
         temp_file = None
         if input_file == "-":
             # Read from stdin
@@ -401,9 +404,33 @@ def convert_command(args: argparse.Namespace) -> None:
                 converter = FandangoFandangoConverter(input_file, parties=args.parties)
                 spec = converter.to_fan()
 
-        print(spec, file=output, end="")
         if temp_file:
-            # Remove temporary file
+            temp_file.close()
+            os.unlink(temp_file.name)
+            del temp_file
+
+        if to_format == "fan":
+            # Send format out as is
+            print(spec, file=output)
+        else:
+            # Since folks may want to recombine --from and --to,
+            # we need to parse the spec (again)
+            temp_file = tempfile.NamedTemporaryFile(
+                mode="w", delete=False, suffix=".tmp"
+            )
+            temp_file.write(spec)
+            temp_file.flush()
+
+            converter = FandangoStateConverter(temp_file.name, parties=args.parties)
+            converter.filename = input_file
+
+            match to_format:
+                case "state":
+                    out = converter.to_state()
+                case "mermaid":
+                    out = converter.to_state(mermaid=True)
+            print(out, file=output)
+
             temp_file.close()
             os.unlink(temp_file.name)
 
