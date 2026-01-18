@@ -362,10 +362,8 @@ This spec can actually handle the initial interaction (check it!).
 
 ## From State Diagrams to Grammars
 
-In the [extended SMTP spec](sec:smtp-extended), you may note the following points:
-
-First, the commands (and replies) follow a particular _order_, implying the _state_ the server and client are in.
-In the "happy" path (assuming no errors), this is the order of possible commands:
+In the [extended SMTP spec](sec:smtp-extended), you may note that the interactions follow a particular _order_, implying the _state_ the server and client are in.
+In the "happy" path (assuming no errors), the order of possible states and interactions can be visualized as a _state diagram_:
 
 % Can't have <...> here, as they'd render as HTML tags
 ```{mermaid}
@@ -380,24 +378,39 @@ stateDiagram
     #lt;quit#gt; --> [*]: #lt;Client#colon;QUIT#gt; #lt;Server#colon;bye#gt;
 ```
 
-In this state diagram, every rounded rectangle stands for a _state_, and arrows denote _transitions_ between these states.
-_Labels_ on the transitions denote the interactions that take place from one interaction to another.
-Any _path_ through the state diagram indicates a valid sequence of states (and hence a valid sequence of interactions).
+In this state diagram,
 
-State diagrams often contain _loops_: Note how the I/O grammar (and the above state diagram) accepts multiple `<mail_to>` interactions, allowing mails to be sent to multiple destinations.
+* every _rounded rectangle_ stands for a _state_;
+* _arrows_ denote possible _transitions_ between these states;
+* _labels_ on the transitions denote the interactions that take place when transitioning from one state to another; and
+* any _path_ through the state diagram indicates a valid sequence of states (and hence a valid sequence of interactions).
 
-```{tip}
-Often, a protocol specification is already given in the form of such a _labeled state diagram_, also known as a _labeled transition system_ (LTS) or as a  _finite state automaton_ (FSA).
+State diagrams often contain _loops_.
+Both the SMTP grammar (and the above state diagram) accepts multiple `<mail_to>` interactions, allowing mails to be sent to multiple destinations.
+
+Note how the set of paths through the state diagram corresponds to the possible sequence of productions in the SMTP specification.
+Both the state diagram and the grammar effectively specify the same sequence of interactions; the grammar on top also specifies the syntax of individual messages.
+
+```{note}
+In Fandango, you can apply [constraints](sec:constraints) to all nonterminals, whether they stand for states, interactions, messages, or parts thereof.
+```
+
+
+### Converting State Diagrams to Grammars
+
+Often, a protocol specification is already given in the form of such a state diagram, also known as a _labeled transition system_ (LTS) or as a  _finite state automaton_ (FSA).
 You can convert these into Fandango grammars as follows:
 
 1. Every _state_ $S$ in the diagram becomes a _nonterminal_ $S$ in the grammar.
 2. Every _transition_ $A \rightarrow B$ in the diagram becomes an _expansion_ of $A$ into $B$, or $A ::= B$.
 3. If there are multiple _alternatives_ outgoing from $A$, each of them becomes a separate alternative for the expansion of $A$.
 
-Check how the SMTP state diagram and the SMTP spec relate to each other.
-```
+Apply these rules are to the SMTP state diagram, and check how they correspond to the Fandango SMTP spec.
 
-Our SMTP spec above actually accounts for errors, always having the server enter an `<error>` state if the client command received cannot be parsed properly.
+
+### Modeling Errors
+
+Our SMTP spec above actually accounts for _errors_, always having the server enter an `<error>` state if the client command received cannot be parsed properly.
 Hence, the state diagram induced by the above grammar actually looks like this:
 
 % Can't have <...> here, as they'd render as HTML tags
@@ -417,9 +430,10 @@ stateDiagram
     #lt;quit#gt; --> [*]: #lt;Client#colon;QUIT#gt; #lt;Server#colon;bye#gt;
 ```
 
+Having such `<error>` transitions as part of the spec allows Fandango to also cover and trigger these.
 
 
-## Simulating Individual Parties
+### Simulating Individual Parties
 
 As described in the [chapter on checking outputs](sec:outputs), we can use the `fuzz` command to actually show generated outputs of individual parties:
 
