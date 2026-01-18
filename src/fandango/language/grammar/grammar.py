@@ -406,18 +406,15 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             ]
         )
 
-    def to_states(self, *,
-                  start_symbol: str = "<start>",
-                  mermaid: bool = False) -> str:
+    def to_states(self, *, start_symbol: str = "<start>", mermaid: bool = False) -> str:
         """Convert into a (textual) finite state machine representation."""
 
-        def _paths(node: Node) -> list[list[Node]]:
+        def paths(node: Node) -> list[list[Node]]:
             """Return all possible paths starting from this node."""
             if isinstance(node, Concatenation):
                 children_paths = []
                 for child in node.children():
                     children_paths.append(paths(child))
-                print("Children paths for", node.format_as_spec(), ":", children_paths)
 
                 all_paths = []
                 for product in itertools.product(*children_paths):
@@ -432,10 +429,13 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
 
             return [[node]]
 
-        def paths(node: Node) -> list[list[Node]]:
-            p = _paths(node)
-            print("Paths for", node.format_as_spec(), ":", p)
-            return p
+        def escape(s: str) -> str:
+            """Escape special characters for Mermaid."""
+            if mermaid:
+                s = s.replace(':', '#colon;')
+                s = s.replace("<", "#lt;")
+                s = s.replace(">", "#gt;")
+            return s
 
         lines = []
         if mermaid:
@@ -453,19 +453,17 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             value = self.rules[from_state]
 
             for p in paths(value):
-                print("Path:", p)
                 to_state = p[-1]
                 if to_state.is_terminal:
                     continue
 
                 transitions = p[:-1]
                 line = "    " if mermaid else ""
-                line += f"{from_state.name()} --> {to_state.format_as_spec()}"
+                line += f"{escape(from_state.name())} --> {escape(to_state.format_as_spec())}"
                 if transitions:
                     line += ": "
-                    line += " ".join(node.format_as_spec() for node in transitions)
+                    line += " ".join(escape(node.format_as_spec()) for node in transitions)
                 lines.append(line)
-                print("Line:", line)
                 work.append(to_state.to_symbol())
 
         return "\n".join(lines)
