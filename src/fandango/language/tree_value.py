@@ -676,9 +676,12 @@ class TreeValue:
 
     def __repr__(self) -> str:
         if self._trailing_bits:
-            return f"{self._value!r} + bits: {''.join(str(bit) for bit in self._trailing_bits)}"
+            # When printing a Fandango spec, this breaks parsing - AZ
+            # return f"{self._value!r} + bits: {''.join(str(bit) for bit in self._trailing_bits)}"
+            return ''.join(str(bit) for bit in self._trailing_bits)
         else:
-            return repr(self._value)
+           return repr(self._value)
+
 
     def __deepcopy__(self, memo: dict[int, Any]) -> TreeValue:
         return TreeValue(
