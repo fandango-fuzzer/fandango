@@ -346,7 +346,7 @@ sequenceDiagram
     Fandango->>SMTP Client (or telnet): (closes connection)
 ```
 
-
+(sec:smtp-extended)=
 ## A Bigger Protocol Spec
 
 So far, our SMTP server is not great at testing SMTP clients – all it can handle is a single `QUIT` command.
@@ -358,7 +358,11 @@ Let us extend it a bit with a few more commands, reflecting the interaction in t
 ```
 
 This spec can actually handle the initial interaction (check it!).
-You may note the following points:
+
+
+## From State Diagrams to Grammars
+
+In the [extended SMTP spec](sec:smtp-extended), you may note the following points:
 
 First, the commands (and replies) follow a particular _order_, implying the _state_ the server and client are in.
 In the "happy" path (assuming no errors), this is the order of possible commands:
@@ -366,35 +370,56 @@ In the "happy" path (assuming no errors), this is the order of possible commands
 % Can't have <...> here, as they'd render as HTML tags
 ```{mermaid}
 stateDiagram
-    [*] --> 1: ‹connect›
-    1 --> 2: ‹helo›
-    2 --> 3: ‹mail_from›
-    3 --> 3: ‹mail_to›
-    3 --> 4: ‹mail_to›
-    4 --> 5: ‹data›
-    5 --> [*]: ‹quit›
+    [*] --> #lt;connect#gt;
+    #lt;connect#gt; --> #lt;helo#gt;: #lt;Server#colon;id#gt;
+    #lt;helo#gt; --> #lt;mail_from#gt;: #lt;Client#colon;HELO#gt; #lt;Server#colon;hello#gt;
+    #lt;mail_from#gt; --> #lt;mail_to#gt;: #lt;Client#colon;MAIL_FROM#gt; #lt;Server#colon;ok#gt;
+    #lt;mail_to#gt; --> #lt;data#gt;: #lt;Client#colon;RCPT_TO#gt; #lt;Server#colon;ok#gt;
+    #lt;mail_to#gt; --> #lt;mail_to#gt;: #lt;Client#colon;RCPT_TO#gt; #lt;Server#colon;ok#gt;
+    #lt;data#gt; --> #lt;quit#gt;: #lt;Client#colon;DATA#gt; #lt;Server#colon;end_data#gt; #lt;Client#colon;message#gt;
+    #lt;quit#gt; --> [*]: #lt;Client#colon;QUIT#gt; #lt;Server#colon;bye#gt;
 ```
 
-Note how the I/O grammar (and the above state diagram) accepts multiple `<mail_to>` interactions, allowing mails to be sent to multiple destinations.
+In this state diagram, every rounded rectangle stands for a _state_, and arrows denote _transitions_ between these states.
+_Labels_ on the transitions denote the interactions that take place from one interaction to another.
+Any _path_ through the state diagram indicates a valid sequence of states (and hence a valid sequence of interactions).
 
-Second, the spec actually accounts for errors, always entering an `<error>` state if the client command received cannot be parsed properly.
-Hence, the state diagram induced in the above grammar actually looks like this:
+State diagrams often contain _loops_: Note how the I/O grammar (and the above state diagram) accepts multiple `<mail_to>` interactions, allowing mails to be sent to multiple destinations.
+
+```{tip}
+Often, a protocol specification is already given in the form of such a _labeled state diagram_, also known as a _labeled transition system_ (LTS) or as a  _finite state automaton_ (FSA).
+You can convert these into Fandango grammars as follows:
+
+1. Every _state_ $S$ in the diagram becomes a _nonterminal_ $S$ in the grammar.
+2. Every _transition_ $A \rightarrow B$ in the diagram becomes an _expansion_ of $A$ into $B$, or $A ::= B$.
+3. If there are multiple _alternatives_ outgoing from $A$, each of them becomes a separate alternative for the expansion of $A$.
+
+Check how the SMTP state diagram and the SMTP spec relate to each other.
+```
+
+Our SMTP spec above actually accounts for errors, always having the server enter an `<error>` state if the client command received cannot be parsed properly.
+Hence, the state diagram induced by the above grammar actually looks like this:
 
 % Can't have <...> here, as they'd render as HTML tags
 ```{mermaid}
 stateDiagram
-    [*] --> 1: ‹connect›
-    1 --> 2: ‹helo›
-    2 --> [*]: ‹error›
-    2 --> 3: ‹mail_from›
-    3 --> [*]: ‹error›
-    3 --> 3: ‹mail_to›
-    3 --> 4: ‹mail_to›
-    4 --> 5: ‹data›
-    4 --> [*]: ‹error›
-    5 --> [*]: ‹quit›
-    5 --> [*]: ‹error›
+    [*] --> #lt;connect#gt;
+    #lt;connect#gt; --> #lt;helo#gt;: #lt;Server#colon;id#gt;
+    #lt;connect#gt; --> [*]: #lt;Server#colon;error#gt;
+    #lt;helo#gt; --> #lt;mail_from#gt;: #lt;Client#colon;HELO#gt; #lt;Server#colon;hello#gt;
+    #lt;mail_from#gt; --> #lt;mail_to#gt;: #lt;Client#colon;MAIL_FROM#gt; #lt;Server#colon;ok#gt;
+    #lt;mail_from#gt; --> [*]: #lt;Server#colon;error#gt;
+    #lt;mail_to#gt; --> #lt;data#gt;: #lt;Client#colon;RCPT_TO#gt; #lt;Server#colon;ok#gt;
+    #lt;mail_to#gt; --> #lt;mail_to#gt;: #lt;Client#colon;RCPT_TO#gt; #lt;Server#colon;ok#gt;
+    #lt;mail_to#gt; --> [*]: #lt;Server#colon;error#gt;
+    #lt;data#gt; --> #lt;quit#gt;: #lt;Client#colon;DATA#gt; #lt;Server#colon;end_data#gt; #lt;Client#colon;message#gt;
+    #lt;data#gt; --> [*]: #lt;Server#colon;error#gt;
+    #lt;quit#gt; --> [*]: #lt;Client#colon;QUIT#gt; #lt;Server#colon;bye#gt;
 ```
+
+
+
+## Simulating Individual Parties
 
 As described in the [chapter on checking outputs](sec:outputs), we can use the `fuzz` command to actually show generated outputs of individual parties:
 
