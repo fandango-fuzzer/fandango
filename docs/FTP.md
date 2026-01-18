@@ -160,10 +160,12 @@ are never successful, we remain logged out.
 
 ```{mermaid}
 stateDiagram
-    [*] --> state_logged_out_1
-    state_logged_out_1 --> state_logged_out_1: exchange_auth_tls | exchange_auth_ssl | exchange_login_fail
-    state_logged_out_1 --> state_logged_in: exchange_login_ok
+    [*] --> #lt;state_logged_out_1#gt;
+    #lt;state_logged_out_1#gt; --> state_logged_out_1#gt;: #lt;exchange_auth_tls#gt; | #lt;exchange_auth_ssl#gt; | #lt;exchange_login_fail#gt;
+    #lt;state_logged_out_1#gt; --> #lt;state_logged_in#gt;: #lt;exchange_login_ok
 ```
+
+In our spec, this is modeled as exchanges followed by the resulting state.
 
 ```python
 <state_logged_out_1> ::= (
@@ -277,21 +279,21 @@ We do not support logging in via TLS and SSL and accept a 500 (syntax error) or 
 ```
 
 
-## FTP Commands
+## First FTP Commands
 
 When the client is logged in, it can send commands to the server.
 In the `<state_logged_in>` state, we support the commands listed in `<logged_in_cmds>`.
 
-The `<exchange_set_type>` and `<exchange_set_passive>` commands change the FTP state; see [States](sec:ftp-states) below.
+(The `<exchange_set_type>` and `<exchange_set_passive>` commands change the FTP state; see [States](sec:ftp-states) below.)
 
 ```{mermaid}
 stateDiagram
-    [*] --> state_logged_out_1
-    state_logged_out_1 --> state_logged_in: exchange_login_ok
+    [*] --> #lt;state_logged_out_1#gt;
+    #lt;state_logged_out_1#gt; --> #lt;state_logged_in#gt;: #lt;exchange_login_ok#gt;
 
-    state_logged_in --> state_logged_in: logged_in_cmds
-    state_logged_in --> state_in_binary: exchange_set_type
-    state_logged_in --> state_in_passive: exchange_set_epassive
+    #lt;state_logged_in#gt; --> #lt;state_logged_in#gt;: #lt;logged_in_cmds#gt;
+    #lt;state_logged_in#gt; --> #lt;state_in_binary#gt;: #lt;exchange_set_type#gt;
+    #lt;state_logged_in#gt; --> #lt;state_in_passive#gt;: #lt;exchange_set_epassive#gt;
 ```
 
 ```
@@ -375,39 +377,110 @@ We can send a command to set the character set to UTF-8, expecting a `200` (okay
 ```
 
 (sec:ftp-states)=
-## More FTP States
+## Changing FTP States
+
+Let us now explore more states.
+In our model, the FTP server can be in four states:
+
+1. `<state_logged_in>` - the default state
+2. `<state_in_binary>` - binary mode
+3. `<state_in_passive>` - passive mode
+4. `<state_in_binary_passive>` - binary _and_ passive mode
+
+Binary and passive states are activated via `<exchange_set_type>` and `<exchange_set_epassive>` interactions, as shown below.
 
 ```{mermaid}
 stateDiagram
-    [*] --> state_logged_out_1
-    state_logged_out_1 --> state_logged_in: exchange_login_ok
-
-    state_logged_in --> state_logged_in: logged_in_cmds
-    state_logged_in --> state_in_binary: exchange_set_type
-    state_logged_in --> state_in_passive: exchange_set_epassive
-
-    state_in_binary --> state_in_binary: logged_in_cmds
-    state_in_binary --> state_in_binary_passive: exchange_set_epassive
-
-    state_in_passive --> state_in_passive: logged_in_cmds
-    state_in_passive --> state_in_binary_passive: exchange_set_type
-
-    state_in_binary_passive --> state_in_binary_passive: logged_in_cmds
-    state_in_binary_passive --> state_in_binary: exchange_list
-    state_in_binary_passive --> state_finished: exchange_quit
-
-    state_finished --> [*]
+    [*] --> #lt;state_logged_out_1#gt;
+    #lt;state_logged_out_1#gt; --> #lt;state_logged_in#gt;: #lt;exchange_login_ok#gt;
+    #lt;state_logged_in#gt; --> #lt;state_logged_in#gt;: #lt;logged_in_cmds#gt;
+    #lt;state_logged_in#gt; --> #lt;state_in_binary#gt;: #lt;exchange_set_type#gt;
+    #lt;state_logged_in#gt; --> #lt;state_in_passive#gt;: #lt;exchange_set_epassive#gt;
+    #lt;state_in_passive#gt; --> #lt;state_in_passive#gt;: #lt;logged_in_cmds#gt;
+    #lt;state_in_passive#gt; --> #lt;state_in_binary_passive#gt;: #lt;exchange_set_type#gt;
+    #lt;state_in_binary_passive#gt; --> #lt;state_in_binary_passive#gt;: #lt;logged_in_cmds#gt;
+    #lt;state_in_binary_passive#gt; --> #lt;state_in_binary#gt;: #lt;exchange_list#gt;
+    #lt;state_in_binary_passive#gt; --> #lt;state_finished#gt;: #lt;exchange_quit#gt;
+    #lt;state_in_binary#gt; --> #lt;state_in_binary#gt;: #lt;logged_in_cmds#gt;
+    #lt;state_in_binary#gt; --> #lt;state_in_binary_passive#gt;: #lt;exchange_set_epassive#gt;
+    #lt;state_finished#gt; --> [*]
 ```
 
 ```python
-<state_in_binary> ::= (<logged_in_cmds><state_in_binary>) | (<exchange_set_epassive><state_in_binary_passive>)
-<state_in_passive> ::= (<logged_in_cmds><state_in_passive>) | (<exchange_set_type> <state_in_binary_passive>)
-<state_in_binary_passive> ::= (<logged_in_cmds><state_in_binary_passive>) | (<exchange_list><state_in_binary>) | (<exchange_quit><state_finished>)
+<state_in_binary> ::= (
+  <logged_in_cmds> <state_in_binary> |
+  <exchange_set_epassive> <state_in_binary_passive>
+)
+<state_in_passive> ::= (
+  <logged_in_cmds> <state_in_passive> |
+  <exchange_set_type> <state_in_binary_passive>
+)
+<state_in_binary_passive> ::= (
+  <logged_in_cmds> <state_in_binary_passive> |
+  <exchange_list> <state_in_binary> |
+  <exchange_quit> <state_finished>
+)
+```
 
+### The EPSV command - entering passive mode
+
+The `EPSV` command directs the server to open a port for data transmission.
+The server returns the port number.
+
+
+```python
+<exchange_set_epassive> ::= \
+  <ClientControl:ServerControl:request_set_epassive> \
+  <ServerControl:ClientControl:response_set_epassive>
+
+<request_set_epassive> ::= 'EPSV\r\n'
+<response_set_epassive> ::= '229 Entering Extended Passive Mode (|||' <open_port> '|)\r\n'
+```
+
+When producing or parsing `<open_port>`, we call the `open_data_port()` generator function to reconfigure the data parties.
+This method gets called both when parsing and producing:
+
+* When _producing_, Fandango produces a parameter `<open_port_param>`.
+  `<open_port_param>` consists of `<passive_port>` and another generator that depends on `<open_port>`.
+  This generator does not get executed when generating parameters for the generator from `<open_port>`, such that we do not get caught in an infinite loop between those to generators.
+  Instead, we generate `<passive_port>` directly without invoking the generator.
+* When _parsing_ `<open_port>`, Fandango derives the argument `<open_port_param>` used in the generator by executing the generator from `<open_port_param>` which depends on `<open_port>`
+
+```python
+<open_port> ::= <passive_port> := open_data_port(int(<open_port_param>))
+<open_port_param> ::= <passive_port> := open_data_port(int(<open_port>))
+```
+
+When generating a passive port, we use a generator to randomly generate a port in [50100, 50100]
+
+```
+<passive_port> ::= r'[1-9][0-9]{0,4}' := randint(50100, 50100)
+```
+
+The function `open_data_port(port)` is a generator.
+When executed, it returns the value that was given to it and reconfigures the
+data party definitions to use that port.
+
+```python
+def open_data_port(port):
+   client_data = ClientData.instance()
+   server_data = ServerData.instance()
+
+     if client_data.port != port:
+        client_data.stop()
+        client_data.port = port
+    if  server_data.port != port:
+        server_data.stop()
+        server_data.port = port
+    client_data.start()
+    server_data.start()
+    return port
 ```
 
 
-## The LIST command
+
+
+### The LIST command
 
 ```{admonition} Under Construction
 :class: attention
@@ -415,7 +488,7 @@ Extended documentation for this case study is under construction.
 ```
 
 
-## The QUIT command
+### The QUIT command
 
 ```python
 <state_finished> ::= ''
