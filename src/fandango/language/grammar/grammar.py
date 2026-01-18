@@ -470,7 +470,9 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                         escape(node.format_as_spec()) for node in transitions
                     )
                 lines.append(line)
-                work.append(to_state.to_symbol())
+                next_symbol = to_state.to_symbol()
+                assert isinstance(next_symbol, NonTerminal)
+                work.append(next_symbol)
 
         return "\n".join(lines)
 
