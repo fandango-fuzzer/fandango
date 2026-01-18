@@ -427,6 +427,10 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             if isinstance(node, Alternative):
                 return [p for child in node.children() for p in paths(child)]
 
+            if isinstance(node, (Repetition, Plus, Star, Option)):
+                # For simplicity, we assume one repetition
+                return paths(node.children()[0])
+
             return [[node]]
 
         def escape(s: str) -> str:
@@ -459,7 +463,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
 
                 transitions = p[:-1]
                 line = "    " if mermaid else ""
-                line += f"{escape(from_state.name())} --> {escape(to_state.format_as_spec())}"
+                line += f"{escape(from_state.format_as_spec())} --> {escape(to_state.format_as_spec())}"
                 if transitions:
                     line += ": "
                     line += " ".join(
