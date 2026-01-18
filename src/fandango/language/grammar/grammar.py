@@ -432,7 +432,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         def escape(s: str) -> str:
             """Escape special characters for Mermaid."""
             if mermaid:
-                s = s.replace(':', '#colon;')
+                s = s.replace(":", "#colon;")
                 s = s.replace("<", "#lt;")
                 s = s.replace(">", "#gt;")
             return s
@@ -462,7 +462,9 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                 line += f"{escape(from_state.name())} --> {escape(to_state.format_as_spec())}"
                 if transitions:
                     line += ": "
-                    line += " ".join(escape(node.format_as_spec()) for node in transitions)
+                    line += " ".join(
+                        escape(node.format_as_spec()) for node in transitions
+                    )
                 lines.append(line)
                 work.append(to_state.to_symbol())
 
