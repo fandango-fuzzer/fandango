@@ -115,6 +115,16 @@ class FandangoParty(ABC):
         self._ownership = ownership
         FandangoIO.instance().parties[self.party_name] = self
 
+    @classmethod
+    def instance(cls, party_name: Optional[str] = None) -> "FandangoParty":
+        """
+        Retrieves the instance of the `party_name` object (default: class name).
+        :return: the instance of this object
+        """
+        if party_name is None:
+            party_name = cls.__name__
+        return FandangoIO.instance().parties[party_name]
+
     @property
     def ownership(self) -> Ownership:
         """

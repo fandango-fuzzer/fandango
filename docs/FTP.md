@@ -463,10 +463,10 @@ data party definitions to use that port.
 
 ```python
 def open_data_port(port):
-   client_data = ClientData.instance()
-   server_data = ServerData.instance()
+    client_data = ClientData.instance()
+    server_data = ServerData.instance()
 
-     if client_data.port != port:
+    if client_data.port != port:
         client_data.stop()
         client_data.port = port
     if  server_data.port != port:
