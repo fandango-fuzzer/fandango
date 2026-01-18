@@ -192,10 +192,11 @@ Use one `.fan` file to specify the protocol, and a second one (which [includes](
 This allows alternate settings to also make use (= include) the protocol spec - say, a setting in which Fandango acts as server(s) to fuzz the clients.
 ```
 
-## Accessing Network Parties
+(sec:party-instance)=
+## Accessing Network Parties at Runtime
 
 If the party configuration changes at runtime (see the [FTP](sec:ftp) case study for an example), you may need to access the individual party objects.
-Use `PARTY.instance()` for this, where `PARTY` is the class of the respective party.
+Use [`PARTY.instance()`](sec:instance-api) for this, where `PARTY` is the class of the respective party.
 
 For instance, to stop the `Server` object, use
 

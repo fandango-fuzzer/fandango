@@ -16,10 +16,15 @@ kernelspec:
 This FTP specification allows testing FTP clients and servers.
 It demonstrates how additional channels (`ClientData` and `ServerData`) are created on demand, based on the ports returned by the FTP server.
 
+The [`ftp.fan`](ftp.fan) Fandango FTP spec is available for download.
+
 ```{versionadded} 1.1
 These features are available in Fandango 1.1 and later.
 ```
 
+%% FIXME: We need an example of how to run this -- AZ
+
+(sec:ftp-parties)=
 ## The FTP Parties
 
 In contrast to other (simpler) protocols, FTP maintains _two_ communication channels: one for _control_ (issuing commands and getting responses), and one for _data_ (for transferring data).
@@ -55,6 +60,8 @@ sequenceDiagram
 In our setting, we assume that Fandango is acting as _client_ to test an FTP server.
 Fandango connects to a server running on port 25521 on the local host.
 Whenever it receives a `150` message initiating a data transfer, it starts the `ClientData` party.
+Here, we use the [`instance()`](sec:party-instance) method to access and reconfigure the individual parties.
+
 
 ```python
 class ClientControl(NetworkParty):
@@ -68,8 +75,7 @@ class ClientControl(NetworkParty):
 
     def receive(self, message: str | bytes, sender: Optional[str]) -> None:
         if message.decode("utf-8").startswith("150"):
-            # FIXME: Make this ClientData.start()?
-            FandangoIO.instance().parties["ClientData"].start()
+            ClientData.instance().start()
 ```
 
 When the server sends a `226` message, this indicates the end of a data transfer;
@@ -91,7 +97,7 @@ class ServerControl(NetworkParty):
     def send(self, message: DerivationTree, recipient: str):
         super().send(message, recipient)
         if message.to_string().startswith("226"):
-            FandangoIO.instance().parties['ServerData'].stop()
+            ServerData.instance().stop()
 ```
 
 
@@ -127,7 +133,7 @@ class ServerData(NetworkParty):
 
 
 
-
+(sec:ftp-connect)=
 ## Connecting to the FTP Server
 
 The interaction with an FTP server starts with the server `ServerControl` sending a 220 message `<response_server_info>` to the client `ClientControl`, indicating that it is ready for a new user.
@@ -140,6 +146,7 @@ Afterwards, we are in the state `state_logged_out_1`.
 <response_server_info> ::= r'(220-(?:[\x20-\x7E]*\r\n))*220 (?:[\x20-\x7E]*)\r\n'
 ```
 
+(sec:ftp-login)=
 ## Logging In
 
 While we're logged out (in state `<state_logged_out_1>`), we can
@@ -284,7 +291,7 @@ We do not support logging in via TLS and SSL and accept a 500 (syntax error) or 
 When the client is logged in, it can send commands to the server.
 In the `<state_logged_in>` state, we support the commands listed in `<logged_in_cmds>`.
 
-(The `<exchange_set_type>` and `<exchange_set_passive>` commands change the FTP state; see [States](sec:ftp-states) below.)
+(The [`<exchange_set_type>`](sec:ftp-type) and [`<exchange_set_passive>`](sec:ftp-epsv) commands change the FTP state; see [States](sec:ftp-states) below.)
 
 ```{mermaid}
 stateDiagram
@@ -310,6 +317,7 @@ stateDiagram
     <exchange_set_utf8>)
 ```
 
+(sec:ftp-pwd)=
 ### The PWD command
 
 PWD requests the current working directory. The server answers with a (random) path.
@@ -326,7 +334,7 @@ PWD requests the current working directory. The server answers with a (random) p
 <client_name> ::= r'[a-zA-Z0-9]+'
 ```
 
-
+(sec:ftp-syst)=
 ### The SYST command
 
 With the `SYST` command, we can request a `215` reply, followed by the server system name.
@@ -342,10 +350,11 @@ We use `Linux` as default.
 <syst_name> ::= r'[\x20-\x7E]+' := 'Linux'
 ```
 
-
+(sec:ftp-feat)=
 ### The FEAT command
 
-The FEAT command returns a list of features that the server supports. If Fandango generates the feature list, we return a fixed value generated with the generator.
+The FEAT command returns a list of features that the server supports.
+If Fandango generates the feature list, we return a fixed value - in our model, we only support the [`EPSV`](sec:ftp-epsv) command.
 When receiving a feature list, we parse it according to the provided regex.
 
 ```python
@@ -362,7 +371,7 @@ def feat_response():
     return features
 ```
 
-
+(sec:ftp-opts)=
 ### The OPTS UTF8 command
 
 We can send a command to set the character set to UTF-8, expecting a `200` (okay) response.
@@ -387,7 +396,8 @@ In our model, the FTP server can be in four states:
 3. `<state_in_passive>` - passive mode
 4. `<state_in_binary_passive>` - binary _and_ passive mode
 
-Binary and passive states are activated via `<exchange_set_type>` and `<exchange_set_epassive>` interactions, as shown below.
+Binary and passive modes are activated via [`<exchange_set_type>`](sec:ftp-type) and [`<exchange_set_epassive>`](sec:ftp-epsv) interactions, as shown below.
+We want to be in binary _and_ passive mode, so we can actually retrieve data using `LIST` ([`<exchange_list>`](sec:ftp-list)) and finally quit ([`exchange_quit`](sec:ftp-quit)).
 
 ```{mermaid}
 stateDiagram
@@ -422,11 +432,17 @@ stateDiagram
 )
 ```
 
+(sec:ftp-epsv)=
 ### The EPSV command - entering passive mode
 
-The `EPSV` command directs the server to open a port for data transmission.
-The server returns the port number.
+```{margin}
+By default, FTP uses "active" mode, in which the FTP server accesses a port on the client machine.
+Since most firewalls block such behavior, "passive" mode is now the typical use.
+```
 
+The `EPSV` command directs the server to open a port for data transmission.
+With this, we prepare client and server for actual data transfer.
+The server returns the port number by which it can be accessed; we have to get and process it.
 
 ```python
 <exchange_set_epassive> ::= \
@@ -460,11 +476,20 @@ When generating a passive port, we use a generator to randomly generate a port i
 The function `open_data_port(port)` is a generator.
 When executed, it returns the value that was given to it and reconfigures the
 data party definitions to use that port.
+Again, we use the [`instance()`](sec:party-instance) method to access and reconfigure the individual parties.
+
+```{margin}
+As we may use the spec file to run with `fandango fuzz` as server or client, we protect against the fact that the `ClientData` or `ServerData` instances may not have been created.
+```
 
 ```python
 def open_data_port(port):
-    client_data = ClientData.instance()
-    server_data = ServerData.instance()
+    try:
+        client_data = ClientData.instance()
+        server_data = ServerData.instance()
+    except KeyError:
+        # Party instances not created
+        return port
 
     if client_data.port != port:
         client_data.stop()
@@ -477,27 +502,134 @@ def open_data_port(port):
     return port
 ```
 
+(sec:ftp-type)=
+### The TYPE command - set binary mode
 
+Using the FTP `TYPE` command, we can set the server into binary mode.
 
-
-### The LIST command
-
-```{admonition} Under Construction
-:class: attention
-Extended documentation for this case study is under construction.
+```python
+<exchange_set_type> ::= (
+  <ClientControl:ServerControl:request_set_type>
+  <ServerControl:ClientControl:response_set_type>
+)
+<request_set_type> ::= 'TYPE I\r\n'
+<response_set_type> ::= '200 ' <command_tail> '\r\n'
 ```
 
 
+(sec:ftp-list)=
+### The LIST command
+
+Finally, after all these preparations, we can actually retrieve data via FTP.
+The FTP `LIST` command makes the FTP server send the contents of the current directory.
+
+```python
+<exchange_list> ::= (
+  <ClientControl:ServerControl:request_list>
+  <ServerControl:ClientControl:open_list>
+  <list_transfer>
+)
+<request_list> ::= 'LIST\r\n'
+<open_list> ::= '150 ' <command_tail> '\r\n'
+```
+
+`<list_data>` gets sent using the data channel.
+Therefore, we use `ServerData` and `ClientData` as sending and receiving parties.
+
+```python
+<list_transfer> ::= <ServerData:ClientData:list_data>?<ServerControl:ClientControl:finalize_list>
+<finalize_list> ::= '226 ' <command_tail> '\r\n'
+```
+
+The list data itself contains file names, user names, permissions, and dates:
+
+```python
+<list_data> ::= (<list_data_file>)+
+<list_data_file> ::= <permissions> ' '+ <link_count> ' ' <user> ' '+ <group> ' '+ <file_size> ' ' <date> ' ' <filename> '\r\n'
+<filename>    ::= r'[\x20-\x7E]+'
+<number>      ::= r'[0-9]+' := str(randint(1, 1000))
+<file_size>   ::= <number> := str(randint(0, 9999999))
+<link_count>  ::= <number>
+
+<permissions> ::= <file_type> <perm> <perm> <perm>
+<file_type>   ::= r'[-dlcb]'
+<perm>        ::= r'[r-]' r'[w-]' r'[x-]'
+<user>        ::= r'[0-9a-zA-Z_\-]+'
+<group>       ::= r'[0-9a-zA-Z_\-]+'
+<date>        ::= <month> ' ' <day> ' ' <time>
+<month>       ::= r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
+<day>         ::= r'[0-9]{2}' := "{:02d}".format(randint(1, 28))
+<time>        ::= <hour> ':' <minute>
+<hour>        ::= r'[0-9]{2}' := "{:02d}".format(randint(0, 23))
+<minute>      ::= r'[0-9]{2}' := "{:02d}".format(randint(0, 59))
+```
+
+This is what a typical generated entry looks like:
+
+```shell
+$ fandango fuzz -f ftp.fan --start-symbol '<list_data>' --party ServerData -n 1
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f ftp.fan --start-symbol '<list_data>' --party ServerData -n 1
+```
+
+
+(sec:ftp-quit)=
 ### The QUIT command
+
+After a number of `LIST` commands, it is time to quit.
+We use the FTP `QUIT` command for this purpose.
+
+```python
+<exchange_quit> ::= (
+  <ClientControl:ServerControl:request_quit>
+  <ServerControl:ClientControl:response_quit>
+)
+<request_quit> ::= 'QUIT\r\n'
+<response_quit> ::= '221 ' <command_tail> '\r\n'
+```
+
+After that, the FTP server enters `<state_finished>`.
+There is no other interaction or state following, so we're done.
 
 ```python
 <state_finished> ::= ''
 ```
 
-```{admonition} Under Construction
-:class: attention
-Extended documentation for this case study is under construction.
+
+## Example Interactions
+
+We can use `fandango fuzz` in conjunction with the `--party` option to simulate the messages produced by a single party.
+
+### A Typical Client Interaction
+
+Here is a typical sequence of commands as issued by a client:
+
+```shell
+$ fandango fuzz -f ftp.fan --party ClientControl -n 1
 ```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f ftp.fan --party ClientControl -n 1
+```
+
+### A Typical Server Interaction
+
+Here is a typical sequence of responses as issued by a server:
+
+```shell
+$ fandango fuzz -f ftp.fan --party ServerControl -n 1
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f ftp.fan --party ServerControl -n 1
+```
+
+Now go and try things out for yourself!
 
 % ```{code-cell}
 % :tags: ["remove-input"]
