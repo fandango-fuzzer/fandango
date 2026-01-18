@@ -154,7 +154,7 @@ def feat_response():
 <response_pwd> ::= '257 \"' <directory> '\" is the current directory\r\n'
 <directory> ::= '/' | ('/' <filesystem_name>)+
 <filesystem_name> ::= r'[a-zA-Z0-9_]+'
-<client_name> ::= r'[a-zA-Z0-9]+'
+# <client_name> ::= r'[a-zA-Z0-9]+'
 
 <wrong_user_name> ::= r'^(?!the_user$)([a-zA-Z0-9_]+)'
 <wrong_user_password> ::= r'^(?!the_password$)([a-zA-Z0-9_]+)'
@@ -174,9 +174,13 @@ def feat_response():
 
 # open_data_port(port) is a generator. When executed, it returns the value
 # given to it and reconfigures the data party definitions to use that port.
-def open_data_port(port):
-    client_data = ClientData.instance()
-    server_data = ServerData.instance()
+def open_data_port(port) -> int:
+    try:
+        client_data = ClientData.instance()
+        server_data = ServerData.instance()
+    except KeyError:
+        # Party instances not created
+        return port
 
     if client_data.port != port:
         client_data.stop()

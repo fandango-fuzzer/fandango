@@ -142,6 +142,29 @@ stop() -> None
 These methods can be used in subclasses to add additional behavior.
 
 
+(sec:instance-api)=
+### The `instance()` class method
+
+`FandangoParty` provides an `instance()` class method that retrieves the last created instance of the given class.
+
+```python
+instance(party_name: str | None = None) -> FandangoParty
+```
+
+`instance()` is typically invoked prefixed with the respective class, as in 
+
+```
+Client.instance().stop()  # Stop the client
+```
+
+One can also invoke it with a party name; in that case, the class is ignored (use `FandangoParty`), and `instance()` retrieves the instance created with that name.
+
+```
+FandangoParty.instance("Client").stop()  # Equivalent to the above.
+```
+
+
+
 (sec:networkparty-class)=
 ## The `NetworkParty` class
 
