@@ -197,7 +197,7 @@ class ComparisonConstraint(Constraint):
             if not hasattr(self, "types_checked") or not self._types_checked:
                 self._types_checked = self.check_type_compatibility(left, right)
 
-            (fitness_value, suggestion) = self._evaluate_comparison(
+            fitness_value, suggestion = self._evaluate_comparison(
                 left, right, single_left_tree, single_right_tree
             )
             if fitness_value < 1.0:

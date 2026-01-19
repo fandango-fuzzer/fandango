@@ -24,7 +24,7 @@ def _write_coverage_log(
             time_elapsed = timestamp - time_start
             f.write(f"{time_elapsed}")
             for symbol in symbol_sorted:
-                (covered, total) = coverage_dict[symbol]
+                covered, total = coverage_dict[symbol]
                 coverage_percent = covered / total if total > 0 else 0
                 f.write(f",{covered},{total},{coverage_percent}")
             f.write("\n")
