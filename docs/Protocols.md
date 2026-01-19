@@ -456,6 +456,46 @@ stateDiagram
 Having such `<error>` transitions as part of the spec allows Fandango to also cover and trigger these.
 
 
+### Extracting State Diagrams
+
+You can use Fandango to extract state diagrams such as the above.
+
+* `fandango convert --to=state` produces a generic textual representation.
+* `fandango convert --to=mermaid` produces a textual representation for [Mermaid](https://mermaid.ai/open-source/intro/).
+* `fandango convert --to=dot` produces a textual representation in DOT format for [Graphviz](https://graphviz.org).
+
+This assumes the grammar actually embeds a state diagram - the last nonterminal in each expansion is supposed to be a new state, and the nonterminals next to last will become part of the transition.
+
+Here's how to produce the above state diagram for SMTP as a SVG file,
+using the [Mermaid `mmdc` command-line interface](https://github.com/mermaid-js/mermaid-cli):
+
+```shell
+$ fandango convert --to=mermaid smtp-extended.fan | mmdc -i - -o output.svg
+```
+
+Here's how to produce the above state diagram for SMTP as a PNG file,
+using the [Graphviz `dot` command-line interface](https://graphviz.org/doc/info/command.html):
+
+```shell
+$ fandango convert --to=dot smtp-extended.fan | dot -Tpng > output.png
+```
+
+If you want to read or further process the diagram, a simple textual representation is available as well:
+
+```shell
+$ fandango convert --to=state smtp-extended.fan
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango convert --to=state smtp-extended.fan
+assert _exit_code == 0
+```
+
+
+
+
+
 ### Simulating Individual Parties
 
 As described in the [chapter on checking outputs](sec:outputs), we can use the `fuzz` command to actually show generated outputs of individual parties:
@@ -464,9 +504,10 @@ As described in the [chapter on checking outputs](sec:outputs), we can use the `
 $ fandango fuzz --party=Client -f smtp-extended.fan
 ```
 
+% | tr -d '\015' removes CR characters, which are rendered as NL in jupyter book
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz --party=Client -f smtp-extended.fan -n 1
+!fandango fuzz --party=Client -f smtp-extended.fan -n 1 | tr -d '\015'
 assert _exit_code == 0
 ```
 
@@ -476,7 +517,7 @@ $ fandango fuzz --party=Server -f smtp-extended.fan
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz --party=Server -f smtp-extended.fan -n 1
+!fandango fuzz --party=Server -f smtp-extended.fan -n 1 | tr -d '\015'
 assert _exit_code == 0 
 ```
 

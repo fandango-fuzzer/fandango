@@ -550,9 +550,10 @@ def _populate_convert_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--to",
         dest="to_format",
-        choices=["fan", "state", "mermaid"],
+        # These choices must match those in grammar.to_state()
+        choices=["fan", "state", "mermaid", "dot"],
         default="fan",
-        help="Format of the output file: 'fan' (Fandango spec; default), 'state' (state diagram), or 'mermaid' (Mermaid state diagram).",
+        help="Format of the output file: 'fan' (Fandango spec; default), 'state' (state diagram), 'mermaid' (Mermaid state diagram), or 'dot' (DOT graph).",
     )
     parser.add_argument(
         "--endianness", choices=["little", "big"], help="Set endianness for .bt files."
