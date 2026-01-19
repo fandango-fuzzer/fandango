@@ -13,17 +13,40 @@ kernelspec:
 (sec:protocols)=
 # Testing Protocols
 
+::::{grid}
+:reverse:
+
+:::{grid-item}
+:columns: 12 5 5 5
+
+```{image} FandangoIO.png
+:width: 300px
+:class: sd-m-auto
+```
+
+:::
+
+:::{grid-item}
+:columns: 12 7 7 7
+:child-align: justify
+:class: sd-fs-5
+
 In [the chapter on checking outputs](sec:outputs), we already have seen how to interact with external programs.
 In this chapter, we will extend this concept to full _protocol testing_ across networks.
-This includes:
+::::
 
-* Acting as a network _client_ and interacting with network _servers_; and
-* Acting as a network _server_ and interacting with network _clients_.
+Fandango can test protocols.
+In particular, it can
+
+* act as a network _client_ and interact with network _servers_; and
+* act as a network _server_ and interact with network _clients_.
+
 
 
 ## Interacting with an SMTP server
 
-The Simple Mail Transfer Protocol (SMTP) is, as the name suggests, a simple protocol through which mail clients can connect to a server to send mail to recipients.
+Let us start with a simple example.
+The Simple Mail Transfer Protocol (SMTP) is a protocol through which mail clients can connect to a server to send mail to recipients.
 A [typical interaction with an SMTP server](https://en.wikipedia.org/wiki/Simple_Mail_Transfer_Protocol) `smtp.example.com`, sending a mail from `bob@example.org` to `alice@example.com`, is illustrated below:
 
 ```{mermaid}
