@@ -185,8 +185,7 @@ class Client(NetworkParty):
     def __init__(self):
         super().__init__(
             "{args.client}",
-            ownership=Ownership.FANDANGO_PARTY,
-            endpoint_type=EndpointType.CONNECT,
+            connection_mode=ConnectionMode.CONNECT,
         )
         self.start()
 
@@ -194,8 +193,7 @@ class Server(NetworkParty):
     def __init__(self):
         super().__init__(
             "{args.client}",
-            ownership=Ownership.EXTERNAL_PARTY,
-            endpoint_type=EndpointType.OPEN,
+            connection_mode=ConnectionMode.EXTERNAL,
         )
         self.start()
 """
@@ -207,8 +205,7 @@ class Client(NetworkParty):
     def __init__(self):
         super().__init__(
             "{args.server}",
-            ownership=Ownership.EXTERNAL_PARTY,
-            endpoint_type=EndpointType.CONNECT,
+            connection_mode=ConnectionMode.EXTERNAL,
         )
         self.start()
 
@@ -216,8 +213,7 @@ class Server(NetworkParty):
     def __init__(self):
         super().__init__(
             "{args.server}",
-            ownership=Ownership.FANDANGO_PARTY,
-            endpoint_type=EndpointType.OPEN,
+            connection_mode=ConnectionMode.OPEN,
         )
         self.start()
 """
