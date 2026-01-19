@@ -10,7 +10,6 @@ from fandango.language.tree_value import (
 )
 from fandango.language.tree_value import TreeValue, TreeValueType, trailing_bits_to_int
 
-
 A_BITS = [int(bit) for bit in f"{ord('a'):08b}"]
 ONE_BITS = [int(bit) for bit in f"{ord('1'):08b}"]
 

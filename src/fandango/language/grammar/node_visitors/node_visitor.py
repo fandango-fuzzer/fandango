@@ -8,7 +8,6 @@ from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Repetition, Star, Plus, Option
 from fandango.language.grammar.nodes.terminal import TerminalNode
 
-
 AggregateType = TypeVar("AggregateType")
 ResultType = TypeVar("ResultType")
 
