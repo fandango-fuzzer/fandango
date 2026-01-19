@@ -1,8 +1,6 @@
 from random import randint
 import math
 
-fandango_is_client = False
-
 # The starting symbol from which the fuzzer starts generating messages.
 <start> ::= <state_setup>
 
