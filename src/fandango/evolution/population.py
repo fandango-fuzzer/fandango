@@ -88,7 +88,7 @@ class PopulationManager:
             individual = self._generate_population_entry(max_nodes)
             _fitness, failing_trees, suggestion = yield from eval_individual(individual)
             candidate, _fixes_made = self.fix_individual(individual, suggestion)
-            (_fitness, _failing_trees, _suggestion) = yield from eval_individual(
+            _fitness, _failing_trees, _suggestion = yield from eval_individual(
                 candidate
             )
             if not PopulationManager.add_unique_individual(

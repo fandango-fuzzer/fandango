@@ -558,7 +558,7 @@ def parse(
     mode = FuzzingMode.COMPLETE
 
     while FILES_TO_PARSE:
-        (name, fan_contents, depth) = FILES_TO_PARSE.pop(0)
+        name, fan_contents, depth = FILES_TO_PARSE.pop(0)
         LOGGER.debug(f"Reading {name} (depth = {depth})")
         new_grammar, new_constraints = parse_content(
             fan_contents,
