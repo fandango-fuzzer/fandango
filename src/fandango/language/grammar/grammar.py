@@ -515,7 +515,11 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             lines.append('    node [shape=point,width=0.2,label=""]_start;')
             lines.append('    node [shape=doublecircle,label=""]_end;')
             # Default style for all other nodes; \N inserts the node name
-            lines.append('    node [shape=ellipse,label="\\N"];')
+            # Color and fonts are the same as in Mermaid
+            lines.append(
+                '    node [shape=ellipse,style=filled,fontname="Calibri",color="#ececfe",label="\\N"];'
+            )
+            lines.append('    edge [fontname="Calibri"];')
 
         add_line(transition(entry(), node(start_symbol)))
         states_seen = set()
