@@ -36,7 +36,7 @@ sd_hide_title: true
 ```{rubric} Fuzzing with Fandango
 ```
 
-Fandango produces myriads of _high-quality random inputs_ to test programs, giving users unprecedented control over format and shape of the inputs.
+Fandango produces myriads of _high-quality random inputs and interactions_ to test programs and protocols, giving users unprecedented control over format and shape of the inputs.
 
 ```{button-ref} Tutorial
 :ref-type: doc
