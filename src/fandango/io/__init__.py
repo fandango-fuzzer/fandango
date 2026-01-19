@@ -60,6 +60,18 @@ class Ownership(enum.Enum):
     FANDANGO_PARTY = "FandangoParty"
     EXTERNAL_PARTY = "ExternalParty"
 
+class ConnectionMode(enum.Enum):
+    """
+    Connection mode for a FandangoParty.
+    * `ConnectionMode.OPEN` - Fandango opens a server socket and waits for incoming connections and behaves as a server.
+    * `ConnectionMode.CONNECT` - Fandango connects to an already running server socket and behaves as a client.
+    * `ConnectionMode.EXTERNAL` - The party is an external party; no connection is made by Fandango. Messages annotated with this party are not produced by Fandango, but are expected to be received from an external party.
+    """
+
+    OPEN = "Open"
+    CONNECT = "Connect"
+    EXTERNAL = "External"
+
 
 # We use the following URI format for specifying a party:
 # [name=][protocol:][//][host:]port
@@ -103,16 +115,16 @@ def split_party_spec(
 class FandangoParty(ABC):
     """Base class for all parties in Fandango."""
 
-    def __init__(self, *, ownership: Ownership, party_name: Optional[str] = None):
+    def __init__(self, *, connection_mode: ConnectionMode, party_name: Optional[str] = None):
         """Constructor.
-        :param ownership: Ownership of the party. See `Ownership` above for details.
+        :param connection_mode: ConnectionMode of the party. See `ConnectionMode` above for details.
         :param party_name: Optional name of the party. If None, the class name is used.
         """
         if party_name is None:
             self.party_name = type(self).__name__
         else:
             self.party_name = party_name
-        self._ownership = ownership
+        self._connection_mode = connection_mode
         FandangoIO.instance().parties[self.party_name] = self
 
     @classmethod
@@ -126,17 +138,17 @@ class FandangoParty(ABC):
         return FandangoIO.instance().parties[party_name]
 
     @property
-    def ownership(self) -> Ownership:
+    def connection_mode(self) -> ConnectionMode:
         """
-        :return: ownership of the party
+        :return: connection mode of the party
         """
-        return self._ownership
+        return self._connection_mode
 
     def is_fuzzer_controlled(self) -> bool:
         """
         :return: True if this party is owned by Fandango, False if it is an external party.
         """
-        return self.ownership == Ownership.FANDANGO_PARTY
+        return self.connection_mode == ConnectionMode.CONNECT or self.connection_mode == ConnectionMode.OPEN
 
     def send(
         self, message: DerivationTree | str | bytes, recipient: Optional[str]
@@ -199,7 +211,7 @@ class ProtocolImplementation(ABC):
     def __init__(
         self,
         *,
-        endpoint_type: EndpointType = EndpointType.CONNECT,
+        connection_mode: ConnectionMode = ConnectionMode.CONNECT,
         ip_type: IpType = IpType.IPV4,
         ip: Optional[str],
         port: Optional[int],
@@ -208,13 +220,13 @@ class ProtocolImplementation(ABC):
         """
         Initialize a protocol implementation.
 
-        :param endpoint_type: An EndpointType; see above
+        :param connection_mode: A ConnectionMode; see above
         :param ip_type: An IpType; see above
         :param ip: The IP address to connect to or bind to
         :param port: The port to connect to or bind to
         :param party_instance: The FandangoParty instance using this protocol implementation
         """
-        self.endpoint_type = endpoint_type
+        self.connection_mode = connection_mode
         self.ip = ip
         self.port = port
         self.ip_type = ip_type
@@ -261,7 +273,7 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
     def __init__(
         self,
         *,
-        endpoint_type: EndpointType = EndpointType.CONNECT,
+        connection_mode: ConnectionMode = ConnectionMode.CONNECT,
         protocol_type: Protocol,
         ip_type: IpType = IpType.IPV4,
         ip: Optional[str] = None,
@@ -275,7 +287,7 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
         if party_instance is None:
             raise FandangoValueError("party_instance must not be None")
         super().__init__(
-            endpoint_type=endpoint_type,
+            connection_mode=connection_mode,
             ip_type=ip_type,
             ip=ip,
             port=port,
@@ -332,7 +344,8 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
         """
         Helper method; Connects or binds the socket based on the endpoint type (Open/Connect).
         """
-        if self.endpoint_type == EndpointType.OPEN:
+        assert self.connection_mode != ConnectionMode.EXTERNAL
+        if self.connection_mode == ConnectionMode.OPEN:
             assert self._sock is not None
             self._sock.bind((self.ip, self.port))
             if self.protocol_type == Protocol.TCP:
@@ -375,10 +388,11 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
         * For TCP, waits for a connection to be accepted
         * Does nothing for UDP.
         """
+        assert self.connection_mode != ConnectionMode.EXTERNAL
         with self._lock:
             if self._connection is None:
                 if self.protocol_type == Protocol.TCP:
-                    if self.endpoint_type == EndpointType.OPEN:
+                    if self.connection_mode == ConnectionMode.OPEN:
                         assert self._sock is not None
                         while self._running:
                             rlist, _, _ = select.select([self._sock], [], [], 0.00001)
@@ -438,6 +452,7 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
         :param recipient: The recipient of the message. Only present if the grammar specifies a recipient.
         :raises FandangoError: If the party is not running.
         """
+        assert self.connection_mode != ConnectionMode.EXTERNAL
         if not self._running:
             raise FandangoError("Party not running. Invoke start() first.")
         self._wait_accept()
@@ -456,7 +471,7 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
         if self.protocol_type == Protocol.TCP:
             self._connection.sendall(send_data)
         else:
-            if self.endpoint_type == EndpointType.OPEN:
+            if self.connection_mode == ConnectionMode.OPEN:
                 if self.current_remote_addr is None:
                     raise FandangoValueError(
                         "Client received no data yet. No address to send to."
@@ -479,23 +494,19 @@ class NetworkParty(FandangoParty):
         self,
         uri: str,
         *,
-        ownership: Ownership = Ownership.FANDANGO_PARTY,
-        endpoint_type: EndpointType = EndpointType.CONNECT,
+        connection_mode: ConnectionMode = ConnectionMode.CONNECT,
     ):
         """
         NetworkParty constructor.
         :param uri: The party specification of the party to connect to. Format: `[name=][protocol:][//][host:]port`. Must match the `RE_PARTY` regex.
 
-        :param ownership: Ownership of the party:
-        * `Ownership.FANDANGO_PARTY` (default) - The party is controlled by Fandango. All outgoing messages are generated by Fandango.
-        * `Ownership.EXTERNAL_PARTY` - The party is an external party. The messages are defined by an external party; Fandango can read them.
-
-        :param endpoint_type: Should Fandango open a server socket or connect to a server socket?
-        * `EndpointType.CONNECT` (default) - Fandango connects to an already running server socket.
-        * `EndpointType.OPEN` - Fandango opens a server socket and waits for incoming connections.
+        :param connection_mode: ConnectionMode of the party:
+        * `ConnectionMode.OPEN` - Fandango opens a server socket and waits for incoming connections and behaves as a server.
+        * `ConnectionMode.CONNECT` - Fandango connects to an already running server socket and behaves as a client.
+        * `ConnectionMode.EXTERNAL` - The party is an external party; no connection is made by Fandango. Messages annotated with this party are not produced by Fandango, but are expected to be received from an external party.
         """
         party_name, prot, host, port = split_party_spec(uri)
-        super().__init__(ownership=ownership, party_name=party_name)
+        super().__init__(connection_mode=connection_mode, party_name=party_name)
         self.protocol_impl = None
 
         if prot is None:
@@ -518,7 +529,7 @@ class NetworkParty(FandangoParty):
 
         if protocol == Protocol.TCP or protocol == Protocol.UDP:
             self.protocol_impl = UdpTcpProtocolImplementation(
-                endpoint_type=endpoint_type,
+                connection_mode=connection_mode,
                 protocol_type=protocol,
                 ip_type=ip_type,
                 ip=ip,
@@ -577,11 +588,11 @@ class NetworkParty(FandangoParty):
 class StdOut(FandangoParty):
     """
     Standard output party for sending messages to stdout. The party can only send messages, but not receive any.
-    The party is always owned by Fandango (Ownership.FANDANGO_PARTY), meaning it sends messages generated by Fandango.
+    The party is always owned by Fandango (ConnectionMode.CONNECT), meaning it sends messages generated by Fandango.
     """
 
     def __init__(self) -> None:
-        super().__init__(ownership=Ownership.FANDANGO_PARTY)
+        super().__init__(connection_mode=ConnectionMode.CONNECT)
         self.stream = sys.stdout
 
     def send(
@@ -608,11 +619,11 @@ class StdOut(FandangoParty):
 class StdIn(FandangoParty):
     """
     Standard input party for reading messages from stdin. The party can only receive messages, but not send any.
-    The ownership of this party is always Ownership.EXTERNAL_PARTY, meaning it is an external party.
+    The connection mode of this party is always ConnectionMode.EXTERNAL, meaning it is an external party.
     """
 
     def __init__(self) -> None:
-        super().__init__(ownership=Ownership.EXTERNAL_PARTY)
+        super().__init__(connection_mode=ConnectionMode.EXTERNAL)
         self.running = True
         self.stream = sys.stdin
         self.listen_thread = threading.Thread(target=self._listen_loop, daemon=True)
@@ -635,11 +646,11 @@ class Out(FandangoParty):
     """
     Standard output party for receiving messages from an external process set using set_program_command(command: str).
     The party can only receive messages, but not send any.
-    The ownership of this party is always Ownership.EXTERNAL_PARTY, meaning it is an external party.
+    The connection mode of this party is always ConnectionMode.EXTERNAL, meaning it is an external party.
     """
 
     def __init__(self) -> None:
-        super().__init__(ownership=Ownership.EXTERNAL_PARTY)
+        super().__init__(connection_mode=ConnectionMode.EXTERNAL)
         self.proc = ProcessManager.instance().get_process()
         threading.Thread(target=self._listen_loop, daemon=True).start()
 
@@ -654,11 +665,11 @@ class In(FandangoParty):
     """
     Standard input party for sending messages to an external process set using set_program_command(command: str).
     The party can only send messages, but not receive any.
-    The ownership of this party is always Ownership.FANDANGO_PARTY, meaning it sends messages generated by Fandango.
+    The connection mode of this party is always ConnectionMode.CONNECT, meaning it sends messages generated by Fandango.
     """
 
     def __init__(self) -> None:
-        super().__init__(ownership=Ownership.FANDANGO_PARTY)
+        super().__init__(connection_mode=ConnectionMode.CONNECT)
         self.proc = ProcessManager.instance().get_process()
         self._close_post_transmit = False
 
@@ -859,6 +870,7 @@ class ProcessManager(object):
         self._command: Optional[str | list[str]] = None
         self.lock = threading.Lock()
         self.proc: Optional[subprocess.Popen[str]] = None
+        self.text = True
 
     @classmethod
     def instance(cls) -> "ProcessManager":
