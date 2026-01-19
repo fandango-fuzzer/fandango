@@ -466,19 +466,32 @@ You can use Fandango to extract state diagrams such as the above.
 
 This assumes the grammar actually embeds a state diagram - the last nonterminal in each expansion is supposed to be a new state, and the nonterminals next to last will become part of the transition.
 
-Here's how to produce the above state diagram for SMTP as a SVG file,
-using the [Mermaid `mmdc` command-line interface](https://github.com/mermaid-js/mermaid-cli):
+To produce the above state diagram for SMTP as an SVG file [smtp-mermaid.svg](smtp-mermaid.svg),
+use the [Mermaid `mmdc` command-line interface](https://github.com/mermaid-js/mermaid-cli):
 
 ```shell
-$ fandango convert --to=mermaid smtp-extended.fan | mmdc -i - -o output.svg
+$ fandango convert --to=mermaid smtp-extended.fan | mmdc -i - -o smtp-mermaid.svg
 ```
 
-Here's how to produce the above state diagram for SMTP as a PNG file,
-using the [Graphviz `dot` command-line interface](https://graphviz.org/doc/info/command.html):
+```{image} smtp-mermaid.svg
+```
+
+
+To produce a similar SVG file [smtp-dot.svg](smtp-dot.svg) using Graphviz,
+use the [`dot` command-line interface](https://graphviz.org/doc/info/command.html):
+
+```{margin}
+Besides `svg`, Graphviz supports [dozens of output formats](https://graphviz.org/docs/outputs/), including `jpg`, `png`, `pdf`, and many more.
+```
 
 ```shell
-$ fandango convert --to=dot smtp-extended.fan | dot -Tpng > output.png
+$ fandango convert --to=dot smtp-extended.fan | dot -T svg -o smtp-dot.svg
 ```
+
+```{image} smtp-dot.svg
+```
+
+Which one is nicer? Pick your favorite.
 
 If you want to read or further process the diagram, a simple textual representation is available as well:
 
@@ -489,7 +502,7 @@ $ fandango convert --to=state smtp-extended.fan
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango convert --to=state smtp-extended.fan
-assert _exit_code == 0
+assert _exit_code == 0 
 ```
 
 
