@@ -4,7 +4,7 @@ updates:
     directory: /
     versioning-strategy: auto
     schedule:
-      interval: daily
+      interval: weekly
     groups:
       patch-updates:
         update-types:
