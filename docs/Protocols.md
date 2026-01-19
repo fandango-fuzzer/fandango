@@ -456,15 +456,19 @@ stateDiagram
 Having such `<error>` transitions as part of the spec allows Fandango to also cover and trigger these.
 
 
-### Extracting State Diagrams
+## Extracting State Diagrams
 
-You can use Fandango to extract state diagrams such as the above.
+You can use Fandango to _automatically extract state diagrams_ such as the above.
+Such a visualization can be helpful for debugging.
 
+* `fandango convert --to=mermaid` produces input for the [Mermaid](https://mermaid.ai/open-source/intro/) visualizer.
+* `fandango convert --to=dot` produces an input in DOT format for the [Graphviz](https://graphviz.org) visualizer.
 * `fandango convert --to=state` produces a generic textual representation.
-* `fandango convert --to=mermaid` produces a textual representation for [Mermaid](https://mermaid.ai/open-source/intro/).
-* `fandango convert --to=dot` produces a textual representation in DOT format for [Graphviz](https://graphviz.org).
 
 This assumes the grammar actually embeds a state diagram - the last nonterminal in each expansion is supposed to be a new state, and the nonterminals next to last will become part of the transition.
+
+
+### Visualizing State Diagrams with Mermaid
 
 To produce the above state diagram for SMTP as an SVG file [smtp-mermaid.svg](smtp-mermaid.svg),
 use the [Mermaid `mmdc` command-line interface](https://github.com/mermaid-js/mermaid-cli):
@@ -473,9 +477,13 @@ use the [Mermaid `mmdc` command-line interface](https://github.com/mermaid-js/me
 $ fandango convert --to=mermaid smtp-extended.fan | mmdc -i - -o smtp-mermaid.svg
 ```
 
+This is the resulting SVG image:
+
 ```{image} smtp-mermaid.svg
 ```
 
+
+### Visualizing State Diagrams with Graphviz (DOT)
 
 To produce a similar SVG file [smtp-dot.svg](smtp-dot.svg) using Graphviz,
 use the [`dot` command-line interface](https://graphviz.org/doc/info/command.html):
@@ -488,10 +496,15 @@ Besides `svg`, Graphviz supports [dozens of output formats](https://graphviz.org
 $ fandango convert --to=dot smtp-extended.fan | dot -T svg -o smtp-dot.svg
 ```
 
+This is the resulting SVG image:
+
 ```{image} smtp-dot.svg
 ```
 
 Which one is nicer? Pick your favorite.
+
+
+### Extracting State Diagrams as Plain Text
 
 If you want to read or further process the diagram, a simple textual representation is available as well:
 
@@ -506,10 +519,7 @@ assert _exit_code == 0
 ```
 
 
-
-
-
-### Simulating Individual Parties
+## Simulating Individual Parties
 
 As described in the [chapter on checking outputs](sec:outputs), we can use the `fuzz` command to actually show generated outputs of individual parties:
 
