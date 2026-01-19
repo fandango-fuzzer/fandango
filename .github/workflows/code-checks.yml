@@ -23,7 +23,7 @@ jobs:
 
       - name: Check formatting with black
         run: |
-          uvx black --check .
+          uv run black --check .
 
   mypy-check:
     runs-on: ${{ matrix.os }}
