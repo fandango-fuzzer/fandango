@@ -15,7 +15,7 @@ import json
 import requests
 class Client(FandangoParty):
     def __init__(self):
-        super().__init__(ownership=Ownership.FANDANGO_PARTY)
+        super().__init__(connection_mode=ConnectionMode.OPEN)
         self.url = "https://dune-api-a4iq.onrender.com"
 
     def send(self, message: DerivationTree, recipient: str):
@@ -30,7 +30,7 @@ class Client(FandangoParty):
 
 class Server(FandangoParty):
     def __init__(self):
-        super().__init__(ownership=Ownership.EXTERNAL_PARTY)
+        super().__init__(connection_mode=ConnectionMode.EXTERNAL)
 
     def start(self):
         pass

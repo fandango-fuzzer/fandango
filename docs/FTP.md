@@ -67,8 +67,7 @@ Here, we use the [`instance()`](sec:party-instance) method to access and reconfi
 class ClientControl(NetworkParty):
     def __init__(self):
         super().__init__(
-            ownership=Ownership.FANDANGO_PARTY
-            endpoint_type=EndpointType.CONNECT,
+            connection_mode=ConnectionMode.CONNECT,
             uri="tcp://[::1]:25521"
         )
         self.start()
@@ -85,8 +84,7 @@ so we stop the `ServerData` instance to disconnect.
 class ServerControl(NetworkParty):
     def __init__(self):
         super().__init__(
-            ownership=Ownership.EXTERNAL_PARTY
-            endpoint_type=EndpointType.OPEN,
+            connection_mode=ConnectionMode.EXTERNAL,
             uri="tcp://[::1]:25522"
         )
         self.start()
@@ -109,8 +107,7 @@ In our setting, the FTP data transfer takes place via port 50100 on the local ho
 class ClientData(NetworkParty):
     def __init__(self):
         super().__init__(
-            ownership=Ownership.FANDANGO_PARTY
-            endpoint_type=EndpointType.CONNECT,
+            connection_mode=ConnectionMode.CONNECT,
             uri="tcp://[::1]:50100"
         )
 
@@ -122,8 +119,7 @@ class ClientData(NetworkParty):
 class ServerData(NetworkParty):
     def __init__(self):
         super().__init__(
-            ownership=Ownership.EXTERNAL_PARTY
-            endpoint_type=EndpointType.OPEN,
+            connection_mode=ConnectionMode.EXTERNAL,
             uri="tcp://[::1]:50100"
         )
 
