@@ -25,7 +25,7 @@ where str(<request>..<avoid>).lower() not in str(<response>).lower()
 import openai
 class Client(FandangoParty):
     def __init__(self):
-        super().__init__(ownership=Ownership.FANDANGO_PARTY)
+        super().__init__(connection_mode=ConnectionMode.CONNECT)
         if not self.is_fuzzer_controlled():
             return
         openai.api_key = 'YOUR_OPENAI_API_KEY'
@@ -45,7 +45,7 @@ class Client(FandangoParty):
 
 class Gpt(FandangoParty):
     def __init__(self):
-        super().__init__(ownership=Ownership.EXTERNAL_PARTY)
+        super().__init__(connection_mode=ConnectionMode.EXTERNAL)
 
     def start(self):
         pass

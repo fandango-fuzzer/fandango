@@ -167,26 +167,22 @@ Using the [`NetworkParty` constructor](sec:networkparty-class), the respective `
 class Client_1(NetworkParty):
     def __init__(self):
         super().__init__("localhost:8000",
-                         ownership=Ownership.FANDANGO_PARTY,
-                         endpoint_type=EndpointType.CONNECT)
+                         connection_mode=ConnectionMode.CONNECT)
 
 class Server_1(NetworkParty):
     def __init__(self):
         super().__init__("localhost:8000",
-                         ownership=Ownership.EXTERNAL_PARTY,
-                         endpoint_type=EndpointType.OPEN)
+                         connection_mode=ConnectionMode.EXTERNAL)
 
 class Client_2(NetworkParty):
     def __init__(self):
         super().__init__("localhost:8000",
-                         ownership=Ownership.FANDANGO_PARTY,
-                         endpoint_type=EndpointType.CONNECT)
+                         connection_mode=ConnectionMode.CONNECT)
 
 class Server_2(NetworkParty):
     def __init__(self):
         super().__init__("localhost:8001",
-                         ownership=Ownership.EXTERNAL_PARTY,
-                         endpoint_type=EndpointType.OPEN)
+                         connection_mode=ConnectionMode.EXTERNAL)
 ```
 
 The grammar can then use `Client_1`, `Client_2`, `Server_1`, and `Server_2` as prefixes, and specify a protocol that involves all four parties.
