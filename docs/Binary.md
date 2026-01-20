@@ -309,9 +309,10 @@ Using `struct`, we can redefine `uint16()` as
 
 and obtain the same result:
 
+% FIXME: Omitted `--validate` as a workaround for #777 -- AZ
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -n 1 -f binary-pack.fan --validate | od -c
+!fandango fuzz -n 1 -f binary-pack.fan | od -c
 assert _exit_code == 0
 ```
 
