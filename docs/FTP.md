@@ -601,28 +601,30 @@ We can use `fandango fuzz` in conjunction with the `--party` option to simulate 
 
 ### A Typical Client Interaction
 
-Here is a typical sequence of commands as issued by a client:
+Here is a valid sequence of commands as issued by a client:
 
 ```shell
 $ fandango fuzz -f ftp.fan --party ClientControl -n 1
 ```
 
+% | tr -d '\015' removes CR characters, which are rendered as NL in jupyter book
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f ftp.fan --party ClientControl -n 1
+!fandango fuzz -f ftp.fan --party ClientControl -n 1 | tr -d '\015'
 ```
 
 ### A Typical Server Interaction
 
-Here is a typical sequence of responses as issued by a server:
+Here is a valid sequence of responses as issued by a server:
 
 ```shell
 $ fandango fuzz -f ftp.fan --party ServerControl -n 1
 ```
 
+% | tr -d '\015' removes CR characters, which are rendered as NL in jupyter book
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f ftp.fan --party ServerControl -n 1
+!fandango fuzz -f ftp.fan --party ServerControl -n 1 | tr -d '\015'
 ```
 
 Now go and try things out for yourself!

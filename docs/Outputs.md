@@ -21,12 +21,6 @@ Since Fandango makes use of specifications both to [_produce_](sec:fuzzing) and 
 For this purpose, Fandango provides a means to combine both input and output in a _single specification_, used by the Fandango `talk` command.
 Let us see how this works.
 
-```{admonition} Under Construction
-:class: attention
-Checking outputs is currently in beta.
-Check out [the list of open issues](https://github.com/fandango-fuzzer/fandango/issues).
-```
-
 
 ## Interaction Testing
 

@@ -412,8 +412,20 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             ]
         )
 
-    def to_states(self, *, start_symbol: str = "<start>", mermaid: bool = False) -> str:
+    # Formats for to_states()
+    STATE_FORMAT = "state"
+    MERMAID_FORMAT = "mermaid"
+    DOT_FORMAT = "dot"
+
+    def to_states(
+        self, *, start_symbol: str = "<start>", format: str = STATE_FORMAT
+    ) -> str:
         """Convert into a (textual) finite state machine representation."""
+
+        if format not in {self.STATE_FORMAT, self.MERMAID_FORMAT, self.DOT_FORMAT}:
+            raise ValueError(
+                f"Unknown format: {format}; must be one of {self.STATE_FORMAT}, {self.MERMAID_FORMAT}, {self.DOT_FORMAT}"
+            )
 
         def paths(node: Node) -> list[list[Node]]:
             """Return all possible paths starting from this node."""
@@ -439,46 +451,124 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
 
             return [[node]]
 
-        def escape(s: str) -> str:
+        def node(s: str) -> str:
             """Escape special characters for Mermaid."""
-            if mermaid:
+            if format == self.MERMAID_FORMAT:
                 s = s.replace(":", "#colon;")
                 s = s.replace("<", "#lt;")
                 s = s.replace(">", "#gt;")
             return s
 
+        def entry() -> str:
+            """Return the entry symbol for the given format."""
+            match format:
+                case self.MERMAID_FORMAT:
+                    return "[*]"
+                case self.DOT_FORMAT:
+                    return "_start"
+                case _:
+                    return "[*]"
+
+        def exit() -> str:
+            """Return the entry symbol for the given format."""
+            match format:
+                case self.MERMAID_FORMAT:
+                    return "[*]"
+                case self.DOT_FORMAT:
+                    return "_end"
+                case _:
+                    return "[*]"
+
+        def transition(a: str, b: str, label: Optional[str] = None) -> str:
+            """Return a transition line for the given format."""
+            match format:
+                case self.MERMAID_FORMAT:
+                    line = f"{a} --> {b}"
+                    if label:
+                        line += f": {label}"
+                    return line
+                case self.DOT_FORMAT:
+                    line = f'"{a}" -> "{b}"'
+                    if label:
+                        line += f' [label="{label}"]'
+                    return line
+                case _:
+                    line = f"{a} --> {b}"
+                    if label:
+                        line += f": {label}"
+                    return line
+
+        def transition_sep() -> str:
+            """Return the transition separator for the given format."""
+            match format:
+                case self.DOT_FORMAT:
+                    return "\\n"
+                case _:
+                    return " "
+
         lines = []
-        if mermaid:
+
+        def add_line(line: str) -> None:
+            if format in {self.MERMAID_FORMAT, self.DOT_FORMAT}:
+                line = "    " + line
+            lines.append(line)
+
+        if format == self.MERMAID_FORMAT:
             lines.append("stateDiagram")
+        elif format == self.DOT_FORMAT:
+            lines.append("digraph finite_state_machine {")
+            # Style for start and end nodes
+            lines.append('    node [shape=point,width=0.2,label=""]_start;')
+            lines.append('    node [shape=doublecircle,label=""]_end;')
+            # Default style for all other nodes; \N inserts the node name
+            # Color and fonts are the same as in Mermaid
+            lines.append(
+                '    node [shape=ellipse,style=filled,fontname="Calibri",color="#ececfe",label="\\N"];'
+            )
+            lines.append('    edge [fontname="Calibri"];')
+
+        add_line(transition(entry(), node(start_symbol)))
         states_seen = set()
         start_nt = NonTerminal(start_symbol)
-        work = [start_nt]
+        work: list[Symbol] = [start_nt]
 
         while work:
             from_state = work.pop()
             if from_state in states_seen:
                 continue
+            if from_state not in self.rules:
+                continue
+
+            assert isinstance(from_state, NonTerminal)
 
             states_seen.add(from_state)
             value = self.rules[from_state]
 
-            for p in paths(value):
-                to_state = p[-1]
-                if to_state.is_terminal:
-                    continue
+            all_paths = paths(value)
 
+            for p in all_paths:
+                to_state = p[-1]
+                from_str = node(from_state.format_as_spec())
+
+                if isinstance(to_state, NonTerminalNode):
+                    to_str = node(to_state.format_as_spec())
+                else:
+                    # Last element is not a nonterminal, so it's an end state
+                    to_str = node(exit())
+
+                label = None
                 transitions = p[:-1]
-                line = "    " if mermaid else ""
-                line += f"{escape(from_state.format_as_spec())} --> {escape(to_state.format_as_spec())}"
                 if transitions:
-                    line += ": "
-                    line += " ".join(
-                        escape(node.format_as_spec()) for node in transitions
+                    label = transition_sep().join(
+                        node(n.format_as_spec()) for n in transitions
                     )
-                lines.append(line)
+
+                add_line(transition(from_str, to_str, label))
                 next_symbol = to_state.to_symbol()
-                assert isinstance(next_symbol, NonTerminal)
                 work.append(next_symbol)
+
+        if format == self.DOT_FORMAT:
+            lines.append("}")
 
         return "\n".join(lines)
 

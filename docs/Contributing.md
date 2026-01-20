@@ -77,14 +77,15 @@ To install additional dependencies for unit tests, code checks, running the eval
 $ python -m pip install -e ".[test,development,evaluation,book]"
 ```
 
+% Can't use ````shell here; this breaks rendering -- AZ
 ```{tip}
 If subsequent tests fails due to dependency breakage, use `uv` to create the virtual environment with `uv.lock`, which provides a snapshot of the dependencies that are tested on our CI:
-````shell
-$ uv sync --locked --all-extras
-````
+
+`$ uv sync --locked --all-extras`
 ```
 
-If you don't need the (much faster) C++ parser, build Fandango without:
+
+If you don't need the (much faster) C++ parser, build Fandango without it:
 
 ```shell
 $ FANDANGO_SKIP_CPP_PARSER=1 python -m pip install -e .
