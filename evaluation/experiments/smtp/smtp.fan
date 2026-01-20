@@ -122,21 +122,3 @@ def decode64(input):
 where forall <mail> in <mail_data>:
     (str(<mail>..<request_mail_from>.<email_address>) == str(<mail>..<mail_header_from>.<email_address>)
     and str(<mail>..<request_mail_to>.<email_address>) == str(<mail>..<mail_header_to>.<email_address>))
-
-fandango_is_client = True
-
-class Client(NetworkParty):
-    def __init__(self):
-        super().__init__(
-            connection_mode=ConnectionMode.CONNECT if fandango_is_client else ConnectionMode.EXTERNAL,
-            uri="tcp://localhost:8025"
-        )
-        self.start()
-
-class Server(NetworkParty):
-    def __init__(self):
-        super().__init__(
-            connection_mode=ConnectionMode.EXTERNAL if fandango_is_client else ConnectionMode.OPEN,
-            uri="tcp://localhost:8025"
-        )
-        self.start()

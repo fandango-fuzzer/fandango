@@ -50,7 +50,7 @@ class SMTPServer:
 class GrammarCoverageTest(unittest.TestCase):
     @staticmethod
     def gen_fandango(coverage_goal: CoverageGoal) -> Fandango:
-        with open(EVALUATION_ROOT / "experiments/smtp/smtp.fan") as f:
+        with open(EVALUATION_ROOT / "experiments/smtp/smtp_client.fan") as f:
             grammar, constraints = parse(
                 f,
                 use_stdlib=False,
