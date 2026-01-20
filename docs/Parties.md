@@ -71,7 +71,7 @@ class Client(Client):  # extends the original `Client` class
 ```
 :::
 
-See the [`FandangoParty` reference](sec:start-api) for details on `start()`.
+See the [`FandangoParty` reference](sec:startstop-api) for details on `start()`.
 
 
 ### Stopping a Party
@@ -90,7 +90,7 @@ class Server(Server):
 ```
 
 Again, this definition goes right into the `.fan` file.
-See the [`FandangoParty` reference](sec:stop-api) for details on `stop()`.
+See the [`FandangoParty` reference](sec:startstop-api) for details on `stop()`.
 
 
 ### Sending Messages
