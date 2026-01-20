@@ -294,8 +294,7 @@ class NetworkParty(NetworkParty):
 class Client(NetworkParty):
     def __init__(self):
         super().__init__(
-            ownership=Ownership.FANDANGO_PARTY if fandango_is_client else Ownership.EXTERNAL_PARTY,
-            endpoint_type=EndpointType.CONNECT,
+            connection_mode=ConnectionMode.CONNECT if fandango_is_client else ConnectionMode.EXTERNAL,
             uri="udp://localhost:25566"
         )
         self.start()
@@ -304,8 +303,7 @@ class Client(NetworkParty):
 class Server(NetworkParty):
     def __init__(self):
         super().__init__(
-            ownership=Ownership.FANDANGO_PARTY if not fandango_is_client else Ownership.EXTERNAL_PARTY,
-            endpoint_type=EndpointType.OPEN,
+            connection_mode=ConnectionMode.OPEN if not fandango_is_client else ConnectionMode.EXTERNAL,
             uri="udp://localhost:25565"
         )
         self.start()
