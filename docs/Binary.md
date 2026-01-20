@@ -102,7 +102,7 @@ $ echo $?  # print exit code
 assert _exit_code == 0
 ```
 
-Adding 1 to this number should make it _invalid_:
+Adding a `1` digit to this number should make it _invalid_:
 
 ```shell
 $ echo -n 4931633575526871 | fandango parse -f credit_card.fan
