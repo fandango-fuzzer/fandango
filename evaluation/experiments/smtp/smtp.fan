@@ -47,10 +47,10 @@ def decode64(input):
                            <Server:response_auth_fail><state_logged_out>
 
 <request_auth> ::= 'AUTH LOGIN\r\n'
-<response_auth_expect_user> ::= '334 VXNlcm5hbWU6\r\n'
+<response_auth_expect_user> ::= '334 ' r'[a-zA-Z0-9\+\\\=]+' '\r\n'
 <request_auth_user_correct> ::= 'dGhlX3VzZXI=\r\n'
 <request_auth_user_incorrect> ::= <user_incorrect_64> '\r\n'
-<response_auth_expect_pass> ::= '334 UGFzc3dvcmQ6\r\n'
+<response_auth_expect_pass> ::= '334 ' r'[a-zA-Z0-9\+\\\=]+' '\r\n'
 <request_auth_pass_correct> ::= 'dGhlX3Bhc3N3b3Jk\r\n'
 <request_auth_pass_incorrect> ::= <pass_incorrect_64> '\r\n'
 <response_auth_success> ::= '235 ' r'[a-zA-Z0-9\-\. ]+' '\r\n'
@@ -98,7 +98,7 @@ def decode64(input):
 <request_mail_to> ::= 'RCPT TO:<' <email_address> '>\r\n'
 <response_mail_to> ::= '250 ' r'[a-zA-Z0-9\-\.\: ]+' '\r\n'
 <request_mail_data> ::= 'DATA\r\n'
-<response_mail_data> ::= '354 ' r'[a-zA-Z0-9\-\.\,\"\: ]+' '\r\n'
+<response_mail_data> ::= '354 ' r'[a-zA-Z0-9\-\.\,\"\:\<\> ]+' '\r\n'
 
 <mail_body_end> ::= '\r\n\r\n.\r\n'
 <mail_contents_64> ::= r'[a-zA-Z0-9\+\\\=]+' := encode64(<mail_contents>)
