@@ -232,12 +232,12 @@ Again, all of this goes into a single `.fan` file: [`binary.fan`](binary.fan) ho
 Let us produce a single output using `binary.fan` and view its (binary) contents, using `od -c`:
 
 ```shell
-$ fandango fuzz -n 1 -f binary.fan -o - | hexdump -C
+$ fandango fuzz -n 1 -f binary.fan | hexdump -C
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-! fandango fuzz -n 1 -f binary.fan -o - | hexdump -C
+! fandango fuzz -n 1 -f binary.fan | hexdump -C
 ```
 
 The hexadecimal dump shows that the first two bytes encode the length of the string of digits that follows.
@@ -281,12 +281,13 @@ With this, we can easily produce length-encoded inputs:
 
 
 ```shell
-$ fandango fuzz -n 1 -f binary-rep.fan -o - | hexdump -C
+$ fandango fuzz -n 1 -f binary-rep.fan | hexdump -C
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-! fandango fuzz -n 1 -f binary-rep.fan -o - | hexdump -C
+!fandango fuzz -n 1 -f binary-rep.fan | hexdump -C 
+assert _exit_code == 0
 ```
 
 ```{tip}
@@ -310,7 +311,7 @@ and obtain the same result:
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -n 1 -f binary-pack.fan -o - --validate | od -c
+!fandango fuzz -n 1 -f binary-pack.fan --validate | od -c
 assert _exit_code == 0
 ```
 
