@@ -607,6 +607,8 @@ def parse(
         grammar.update(g, prime=False)
         n += 1
 
+    grammar.finalize_globals()
+
     LOGGER.debug(f"Final grammar: {[key.name() for key in grammar.rules.keys()]}")
 
     grammar.fuzzing_mode = mode
