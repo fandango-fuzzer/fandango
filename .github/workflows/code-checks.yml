@@ -16,14 +16,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install uv and set the Python version
-        uses: astral-sh/setup-uv@v7
+      - name: Install Fandango
+        uses: ./.github/workflows/setup-fandango
         with:
-          python-version: ${{ inputs.python-version }}
+          python-version: ${{ matrix.python-version }}
+          needs-sudo: true
+          skip-parser: 1
 
       - name: Check formatting with black
         run: |
-          uvx black --check .
+          uv run black --check .
 
   mypy-check:
     runs-on: ${{ matrix.os }}

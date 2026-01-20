@@ -5,7 +5,7 @@
 <hostname> ::= r"[-a-zA-Z0-9.:]+" := "host.example.com"
 
 <helo> ::= <Client:HELO> \
-    (<Server:hello> <mail_from> | <Server:error>)
+    (<Server:hello> <mail_from> | <Server:error> <end>)
 <HELO> ::= 'HELO ' <hostname> '\r\n'
 
 <hello> ::= '250 Hello ' <hostname> ', glad to meet you\r\n'
@@ -14,7 +14,7 @@
 <error_message> ::= r'[^\r]*' := "Error"
 
 <mail_from> ::= <Client:MAIL_FROM> \
-    (<Server:ok> <mail_to> | <Server:error>)
+    (<Server:ok> <mail_to> | <Server:error> <end>)
 
 <MAIL_FROM> ::= 'MAIL FROM:<' <email> '>\r\n'
 # Actual email addresses are much more varied
@@ -23,12 +23,12 @@
 <ok> ::= '250 Ok\r\n'
 
 <mail_to> ::= <Client:RCPT_TO> \
-    (<Server:ok> <data> | <Server:ok> <mail_to> | <Server:error>)
+    (<Server:ok> <data> | <Server:ok> <mail_to> | <Server:error> <end>)
 
 <RCPT_TO> ::= 'RCPT TO:<' <email> '>\r\n'
 
 <data> ::= <Client:DATA> <Server:end_data> <Client:message> \
-    (<Server:ok> <quit> | <Server:error>)
+    (<Server:ok> <quit> | <Server:error> <end>)
 
 <DATA> ::= 'DATA\r\n'
 
@@ -36,8 +36,10 @@
 
 <message> ::= r'[^.\r\n]*\r\n[.]\r\n'
 
-<quit> ::= <Client:QUIT> <Server:bye>
+<quit> ::= <Client:QUIT> <Server:bye> <end>
 
 <QUIT> ::= 'QUIT\r\n'
 
 <bye> ::= '221 Bye\r\n'
+
+<end> ::= ''

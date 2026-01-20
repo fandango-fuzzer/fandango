@@ -424,11 +424,7 @@ def convert_command(args: argparse.Namespace) -> None:
             converter = FandangoStateConverter(temp_file.name, parties=args.parties)
             converter.filename = input_file
 
-            match to_format:
-                case "state":
-                    out = converter.to_state()
-                case "mermaid":
-                    out = converter.to_state(mermaid=True)
+            out = converter.to_state(format=to_format)
             print(out, file=output)
 
             temp_file.close()

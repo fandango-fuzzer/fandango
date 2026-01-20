@@ -13,17 +13,40 @@ kernelspec:
 (sec:protocols)=
 # Testing Protocols
 
+::::{grid}
+:reverse:
+
+:::{grid-item}
+:columns: 12 5 5 5
+
+```{image} FandangoIO.png
+:width: 300px
+:class: sd-m-auto
+```
+
+:::
+
+:::{grid-item}
+:columns: 12 7 7 7
+:child-align: justify
+:class: sd-fs-5
+
 In [the chapter on checking outputs](sec:outputs), we already have seen how to interact with external programs.
 In this chapter, we will extend this concept to full _protocol testing_ across networks.
-This includes:
+::::
 
-* Acting as a network _client_ and interacting with network _servers_; and
-* Acting as a network _server_ and interacting with network _clients_.
+Fandango can test protocols.
+In particular, it can
+
+* act as a network _client_ and interact with network _servers_; and
+* act as a network _server_ and interact with network _clients_.
+
 
 
 ## Interacting with an SMTP server
 
-The Simple Mail Transfer Protocol (SMTP) is, as the name suggests, a simple protocol through which mail clients can connect to a server to send mail to recipients.
+Let us start with a simple example.
+The Simple Mail Transfer Protocol (SMTP) is a protocol through which mail clients can connect to a server to send mail to recipients.
 A [typical interaction with an SMTP server](https://en.wikipedia.org/wiki/Simple_Mail_Transfer_Protocol) `smtp.example.com`, sending a mail from `bob@example.org` to `alice@example.com`, is illustrated below:
 
 ```{mermaid}
@@ -433,7 +456,70 @@ stateDiagram
 Having such `<error>` transitions as part of the spec allows Fandango to also cover and trigger these.
 
 
-### Simulating Individual Parties
+## Extracting State Diagrams
+
+You can use Fandango to _automatically extract state diagrams_ such as the above.
+Such a visualization can be helpful for debugging.
+
+* `fandango convert --to=mermaid` produces input for the [Mermaid](https://mermaid.ai/open-source/intro/) visualizer.
+* `fandango convert --to=dot` produces an input in DOT format for the [Graphviz](https://graphviz.org) visualizer.
+* `fandango convert --to=state` produces a generic textual representation.
+
+This assumes the grammar actually embeds a state diagram - the last nonterminal in each expansion is supposed to be a new state, and the nonterminals next to last will become part of the transition.
+
+
+### Visualizing State Diagrams with Mermaid
+
+To produce the above state diagram for SMTP as an SVG file [smtp-mermaid.svg](smtp-mermaid.svg),
+use the [Mermaid `mmdc` command-line interface](https://github.com/mermaid-js/mermaid-cli):
+
+```shell
+$ fandango convert --to=mermaid smtp-extended.fan | mmdc -i - -o smtp-mermaid.svg
+```
+
+This is the resulting SVG image:
+
+```{image} smtp-mermaid.svg
+```
+
+
+### Visualizing State Diagrams with Graphviz (DOT)
+
+To produce a similar SVG file [smtp-dot.svg](smtp-dot.svg) using Graphviz,
+use the [`dot` command-line interface](https://graphviz.org/doc/info/command.html):
+
+```{margin}
+Besides `svg`, Graphviz supports [dozens of output formats](https://graphviz.org/docs/outputs/), including `jpg`, `png`, `pdf`, and many more.
+```
+
+```shell
+$ fandango convert --to=dot smtp-extended.fan | dot -T svg -o smtp-dot.svg
+```
+
+This is the resulting SVG image:
+
+```{image} smtp-dot.svg
+```
+
+Which one is nicer? Pick your favorite.
+
+
+### Extracting State Diagrams as Plain Text
+
+If you want to read or further process the diagram, a simple textual representation is available as well:
+
+```shell
+$ fandango convert --to=state smtp-extended.fan
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango convert --to=state smtp-extended.fan
+assert _exit_code == 0 
+```
+
+
+## Simulating Individual Parties
 
 As described in the [chapter on checking outputs](sec:outputs), we can use the `fuzz` command to actually show generated outputs of individual parties:
 
@@ -441,9 +527,10 @@ As described in the [chapter on checking outputs](sec:outputs), we can use the `
 $ fandango fuzz --party=Client -f smtp-extended.fan
 ```
 
+% | tr -d '\015' removes CR characters, which are rendered as NL in jupyter book
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz --party=Client -f smtp-extended.fan -n 1
+!fandango fuzz --party=Client -f smtp-extended.fan -n 1 | tr -d '\015'
 assert _exit_code == 0
 ```
 
@@ -453,7 +540,7 @@ $ fandango fuzz --party=Server -f smtp-extended.fan
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz --party=Server -f smtp-extended.fan -n 1
+!fandango fuzz --party=Server -f smtp-extended.fan -n 1 | tr -d '\015'
 assert _exit_code == 0 
 ```
 
