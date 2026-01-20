@@ -60,6 +60,7 @@ class Ownership(enum.Enum):
     FANDANGO_PARTY = "FandangoParty"
     EXTERNAL_PARTY = "ExternalParty"
 
+
 class ConnectionMode(enum.Enum):
     """
     Connection mode for a FandangoParty.
@@ -115,7 +116,9 @@ def split_party_spec(
 class FandangoParty(ABC):
     """Base class for all parties in Fandango."""
 
-    def __init__(self, *, connection_mode: ConnectionMode, party_name: Optional[str] = None):
+    def __init__(
+        self, *, connection_mode: ConnectionMode, party_name: Optional[str] = None
+    ):
         """Constructor.
         :param connection_mode: ConnectionMode of the party. See `ConnectionMode` above for details.
         :param party_name: Optional name of the party. If None, the class name is used.
@@ -148,7 +151,10 @@ class FandangoParty(ABC):
         """
         :return: True if this party is owned by Fandango, False if it is an external party.
         """
-        return self.connection_mode == ConnectionMode.CONNECT or self.connection_mode == ConnectionMode.OPEN
+        return (
+            self.connection_mode == ConnectionMode.CONNECT
+            or self.connection_mode == ConnectionMode.OPEN
+        )
 
     def send(
         self, message: DerivationTree | str | bytes, recipient: Optional[str]
