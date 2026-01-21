@@ -10,7 +10,7 @@ fandango_is_client = True
 # dig @127.0.0.1 -p 25565 A fandango.io +noedns +time=100 +tries=1
 
 
-# This function gets a question and a response the response section of a DNS response and verifies if the response does answer the question.
+# This function gets a question and the response section of a DNS response and verifies if the response does answer the question.
 # This also handles responses that are transitive. For example if the question is for a type A record for "example.com" and the response contains
 # a CNAME record pointing "example.com" to "alias.com" and then an A record for "alias.com", this function will verify that the response correctly
 # answers the original question through the CNAME redirection.
@@ -27,20 +27,23 @@ def verify_transitive(question, response):
 
 
 # Generate a random domain name. We either generate a domain name using the Faker library, which likely is not known to the DNS server,
-# or we use 'fandango.io' or 'test.fandango.io' which in our case are known to the DNS server.
+# or we use 'github.com' or 'cispa.de' which should be known to the DNS server.
 def gen_q_name():
     result = b''
     rand = randint(0, 2)
+
     if rand == 0:
-        domain_name = 'fandango.io'
+        domain_name = 'github.com'
     elif rand == 1:
-        domain_name = 'test.fandango.io'
+        domain_name = 'cispa.de'
     else:
         domain_name = fake.domain_name()
+
     domain_parts = domain_name.split('.')
     for part in domain_parts:
         result += len(part).to_bytes(1, 'big')
         result += part.encode('iso8859-1')
+
     return result
 
 # Convert a 2-byte byte array to an integer
@@ -100,6 +103,7 @@ def compress_msg(uncompressed):
         curr_idx += decompressed_len
         compressed += uncompressed[curr_idx:curr_idx+4]
         curr_idx += 4
+
     for i in range(an_count + ns_count + ar_count):
         name, decompressed_len, len_reduction = compress_name(uncompressed, curr_idx, len_reduction, suffix_dict)
         compressed = compressed + name
@@ -122,6 +126,7 @@ def compress_msg(uncompressed):
             compressed += uncompressed[curr_idx-2:curr_idx]
             compressed += uncompressed[curr_idx:curr_idx+r_data_len]
             curr_idx += r_data_len
+
     return compressed
 
 # Decompresses a DNS name starting at name_idx within the compressed message.
@@ -136,11 +141,13 @@ def decompress_name(compressed, name_idx):
             name_ptr += compressed[name_idx+1]
             decompressed = decompressed + decompress_name(compressed, name_ptr)[0]
             return decompressed, compressed_len + 2
+
         decompressed = decompressed + bytes([segment_len])
         decompressed = decompressed + compressed[name_idx + 1 : name_idx + 1 + segment_len]
         compressed_len = compressed_len + segment_len + 1
         name_idx = name_idx + segment_len + 1
         segment_len = compressed[name_idx]
+
     decompressed = decompressed + bytes([0])
     return decompressed, compressed_len + 1
 
@@ -153,12 +160,14 @@ def decompress_msg(compressed):
     ar_count = byte_to_int(count_header[6:8])
     decompressed = compressed[0:12]
     curr_idx = 12
+
     for i in range(qd_count):
         name, compressed_len = decompress_name(compressed, curr_idx)
         decompressed = decompressed + name
         curr_idx += compressed_len
         decompressed += compressed[curr_idx:curr_idx+4]
         curr_idx += 4
+
     for i in range(an_count + ns_count + ar_count):
         name, compressed_len = decompress_name(compressed, curr_idx)
         decompressed = decompressed + name
@@ -176,11 +185,11 @@ def decompress_msg(compressed):
             decompressed += pack('>H', len(c_name))
             decompressed += c_name
             curr_idx += compressed_len
-            pass
         else:
             decompressed += compressed[curr_idx-2:curr_idx]
             decompressed += compressed[curr_idx:curr_idx+r_data_len]
             curr_idx += r_data_len
+
     return decompressed
 
 
@@ -281,7 +290,6 @@ where forall <t> in <type_cname>:
 
 
 class NetworkParty(NetworkParty):
-
     # We want all sent messages to be compressed and all received messages to be decompressed for all parties.
     # Therefore we override the send and the receive functions in the base NetworkParty class.
     def receive(self, message: str | bytes, sender: Optional[str]) -> None:
@@ -291,6 +299,7 @@ class NetworkParty(NetworkParty):
         super().send(compress_msg(message.to_bytes(encoding="utf-8")), recipient)
 
 
+# If we do not specify --client or --server, these are the default settings:
 class Client(NetworkParty):
     def __init__(self):
         super().__init__(
