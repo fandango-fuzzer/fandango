@@ -13,7 +13,7 @@ kernelspec:
 (sec:dns)=
 # Case Study: DNS
 
-This Fandango specification allows testing FTP clients and servers.
+This Fandango specification allows testing [DNS](https://datatracker.ietf.org/doc/html/rfc1035) (RFC 1035, Domain Name Service) clients and servers.
 It demonstrates
 
 * how a nontrivial protocol with bit-level _binary_ commands is implemented;

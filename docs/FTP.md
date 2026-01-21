@@ -13,7 +13,7 @@ kernelspec:
 (sec:ftp)=
 # Case Study: FTP
 
-This Fandango specification allows testing FTP clients and servers.
+This Fandango specification allows testing [FTP](https://datatracker.ietf.org/doc/html/rfc959) (RFC 959, File Transfer Protocol) clients and servers.
 It demonstrates
 
 * how a nontrivial protocol with text commands is implemented; and
