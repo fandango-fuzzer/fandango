@@ -24,11 +24,11 @@ jobs:
           python-version: 3.13
           needs-sudo: true
 
-      # Step 3: Ensure Graphviz system package is installed
-      - name: Install Graphviz system package
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y graphviz
+      # Step 3: Install system dependencies for book
+      - name: Install system dependencies for book
+        env:
+          NEEDS_SUDO: true
+        run: sudo make system-dev-tools
 
       # Step 4: Locate Fandango and add to PATH
       - name: Locate Fandango and add to PATH
@@ -37,18 +37,13 @@ jobs:
           echo "$(dirname $(which fandango))" >> $GITHUB_PATH
           fandango --help
 
-      # Step 5: Install system dependencies for book
-      - name: Install system dependencies for book
-        run: |
-          make system-dev-tools
-
-      # Step 6: Build the documentation
+      # Step 5: Build the documentation
       - name: Build the book
         run: |
           source .venv/bin/activate
           make web
 
-      # Step 7: Upload built book as artifact
+      # Step 6: Upload built book as artifact
       - name: Upload built book as artifact
         uses: actions/upload-artifact@v4
         with:
