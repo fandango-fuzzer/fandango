@@ -349,3 +349,5 @@ $ fandango fuzz -f bc.fan --party=Out -n 10 --format=value
 :tags: ["remove-input"]
 !fandango fuzz -f bc.fan --party=Out -n 10 --format=value
 ```
+
+We make use of such interactions extensively in the next part on [Testing protocols](sec:protocols).

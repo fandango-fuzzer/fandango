@@ -523,7 +523,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             # Default style for all other nodes; \N inserts the node name
             # Color and fonts are the same as in Mermaid
             lines.append(
-                '    node [shape=ellipse,style=filled,fontname="Calibri",color="#ececfe",label="\\N"];'
+                '    node [shape=ellipse,style=filled,fontname="Calibri",fillcolor="#ececfe",label="\\N"];'
             )
             lines.append('    edge [fontname="Calibri"];')
 

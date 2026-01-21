@@ -17,7 +17,7 @@
 <!-- &lt;start&gt; -->
 <g id="node3" class="node">
 <title>&lt;start&gt;</title>
-<ellipse fill="#ececfe" stroke="#ececfe" cx="322" cy="-857.4" rx="39.42" ry="18.38"/>
+<ellipse fill="#ececfe" stroke="black" cx="322" cy="-857.4" rx="39.42" ry="18.38"/>
 <text xml:space="preserve" text-anchor="middle" x="322" y="-853.1" font-family="Calibri" font-size="14.00">&lt;start&gt;</text>
 </g>
 <!-- _start&#45;&gt;&lt;start&gt; -->
@@ -35,7 +35,7 @@
 <!-- &lt;connect&gt; -->
 <g id="node4" class="node">
 <title>&lt;connect&gt;</title>
-<ellipse fill="#ececfe" stroke="#ececfe" cx="322" cy="-783.63" rx="53.21" ry="18.38"/>
+<ellipse fill="#ececfe" stroke="black" cx="322" cy="-783.63" rx="53.21" ry="18.38"/>
 <text xml:space="preserve" text-anchor="middle" x="322" y="-779.33" font-family="Calibri" font-size="14.00">&lt;connect&gt;</text>
 </g>
 <!-- &lt;start&gt;&#45;&gt;&lt;connect&gt; -->
@@ -47,7 +47,7 @@
 <!-- &lt;helo&gt; -->
 <g id="node5" class="node">
 <title>&lt;helo&gt;</title>
-<ellipse fill="#ececfe" stroke="#ececfe" cx="322" cy="-692.86" rx="38.36" ry="18.38"/>
+<ellipse fill="#ececfe" stroke="black" cx="322" cy="-692.86" rx="38.36" ry="18.38"/>
 <text xml:space="preserve" text-anchor="middle" x="322" y="-688.56" font-family="Calibri" font-size="14.00">&lt;helo&gt;</text>
 </g>
 <!-- &lt;connect&gt;&#45;&gt;&lt;helo&gt; -->
@@ -60,7 +60,7 @@
 <!-- &lt;mail_from&gt; -->
 <g id="node6" class="node">
 <title>&lt;mail_from&gt;</title>
-<ellipse fill="#ececfe" stroke="#ececfe" cx="187" cy="-584.09" rx="62.23" ry="18.38"/>
+<ellipse fill="#ececfe" stroke="black" cx="187" cy="-584.09" rx="62.23" ry="18.38"/>
 <text xml:space="preserve" text-anchor="middle" x="187" y="-579.79" font-family="Calibri" font-size="14.00">&lt;mail_from&gt;</text>
 </g>
 <!-- &lt;helo&gt;&#45;&gt;&lt;mail_from&gt; -->
@@ -74,7 +74,7 @@
 <!-- &lt;end&gt; -->
 <g id="node7" class="node">
 <title>&lt;end&gt;</title>
-<ellipse fill="#ececfe" stroke="#ececfe" cx="231" cy="-77.78" rx="36.24" ry="18.38"/>
+<ellipse fill="#ececfe" stroke="black" cx="231" cy="-77.78" rx="36.24" ry="18.38"/>
 <text xml:space="preserve" text-anchor="middle" x="231" y="-73.48" font-family="Calibri" font-size="14.00">&lt;end&gt;</text>
 </g>
 <!-- &lt;helo&gt;&#45;&gt;&lt;end&gt; -->
@@ -96,7 +96,7 @@
 <!-- &lt;mail_to&gt; -->
 <g id="node8" class="node">
 <title>&lt;mail_to&gt;</title>
-<ellipse fill="#ececfe" stroke="#ececfe" cx="187" cy="-475.32" rx="51.09" ry="18.38"/>
+<ellipse fill="#ececfe" stroke="black" cx="187" cy="-475.32" rx="51.09" ry="18.38"/>
 <text xml:space="preserve" text-anchor="middle" x="187" y="-471.02" font-family="Calibri" font-size="14.00">&lt;mail_to&gt;</text>
 </g>
 <!-- &lt;mail_from&gt;&#45;&gt;&lt;mail_to&gt; -->
@@ -132,7 +132,7 @@
 <!-- &lt;data&gt; -->
 <g id="node9" class="node">
 <title>&lt;data&gt;</title>
-<ellipse fill="#ececfe" stroke="#ececfe" cx="266" cy="-366.55" rx="38.89" ry="18.38"/>
+<ellipse fill="#ececfe" stroke="black" cx="266" cy="-366.55" rx="38.89" ry="18.38"/>
 <text xml:space="preserve" text-anchor="middle" x="266" y="-362.25" font-family="Calibri" font-size="14.00">&lt;data&gt;</text>
 </g>
 <!-- &lt;mail_to&gt;&#45;&gt;&lt;data&gt; -->
@@ -156,7 +156,7 @@
 <!-- &lt;quit&gt; -->
 <g id="node10" class="node">
 <title>&lt;quit&gt;</title>
-<ellipse fill="#ececfe" stroke="#ececfe" cx="394" cy="-204.17" rx="36.77" ry="18.38"/>
+<ellipse fill="#ececfe" stroke="black" cx="394" cy="-204.17" rx="36.77" ry="18.38"/>
 <text xml:space="preserve" text-anchor="middle" x="394" y="-199.87" font-family="Calibri" font-size="14.00">&lt;quit&gt;</text>
 </g>
 <!-- &lt;data&gt;&#45;&gt;&lt;quit&gt; -->
