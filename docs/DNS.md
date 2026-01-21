@@ -234,6 +234,8 @@ We ensure that for each request/response pair,
 * The question that the response aims to answer is the same as the question in the request (`<question>`).
 * The question count in the response matches the question count in the request (`<req_qd_count>`).
 
+Our constraint uses [old-style quantifiers](sec:old-quantifiers) for compatibility with previous Fandango versions.
+
 % FIXME: Convert to new all()/any() quantifier syntax
 ```python
 where forall <ex> in <start>.<exchange>:
@@ -280,6 +282,8 @@ AN answers are structured like this:  % FIXME: What is an AN answer?
 
 `<type_cname>` responses must have the correct length in the `<a_rd_length>` field (r data length), which corresponds to the following `<q_name>` field.
 
+Our constraint uses [old-style quantifiers](sec:old-quantifiers) for compatibility with previous Fandango versions.
+
 ```python
 where forall <t> in <type_cname>:
     bytes(<t>.<a_rd_length>) == pack('>H', len(bytes(<t>.<q_name>)))
@@ -321,6 +325,8 @@ OPT answers are structured like this:  % FIXME: What is an OPT answer?
 We check if a DNS response answers the corresponding DNS question using the `verify_transitive()` function.
 The remainder of the check does the same check, but only for direct answers without allowing transitive response chains.
 This second part is used to allow Fandango ``contains solving'' optimization to be used to generate a valid answer more efficiently.
+
+Our constraint uses [old-style quantifiers](sec:old-quantifiers) for compatibility with previous Fandango versions.
 
 % FIXME: Convert to new all()/any() quantifier syntax
 ```python

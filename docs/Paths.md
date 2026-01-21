@@ -588,5 +588,44 @@ You can access all `<ascii_lowercase_letter>` elements within `<first_name>` dir
 ```shell
 $ fandango fuzz -f persons.fan -n 10 -c '<first_name>..<ascii_lowercase_letter> == "a"'
 ```
-
 :::
+
+(sec:old-quantifiers)=
+### Old-Style Quantifiers
+
+Prior to version 1.0, Fandango supported another style of quantifiers:
+
+* The expression `forall SYMBOL in EXPRESSION: CONSTRAINT` is equivalent to `all(CONSTRAINT for ELEM in *EXPRESSION: )`
+* The expression `exists SYMBOL in EXPRESSION: CONSTRAINT` is equivalent to `any(CONSTRAINT for ELEM in *EXPRESSION: )`
+
+with `SYMBOL` being a symbol (in `<...>`, so not a Python object) which can be referred to in `CONSTRAINT`.
+
+To express that at least one letter in `<first_name>` should be `'a'`, write
+
+```python
+exists <c> in <first_name>: str(<c>) == 'a'
+```
+
+```shell
+$ fandango fuzz -f persons.fan -n 5 -c 'exists <c> in <ascii_lowercase_letter>: str(<c>) == "a"'
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f persons.fan -n 5 -c 'exists <c> in <ascii_lowercase_letter>: str(<c>) == "a"' --validate
+assert _exit_code == 0
+```
+
+```shell
+$ fandango fuzz -f persons.fan -n 5 -c 'forall <c> in <ascii_lowercase_letter>: str(<c>) == "a"'
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f persons.fan -n 5 -c 'forall <c> in <ascii_lowercase_letter>: str(<c>) == "a"' --validate
+assert _exit_code == 0
+```
+
+```{deprecated} 1.0
+Old-style quantifiers will be deprecated in a future Fandango version. Use [`all()` and `any()`](sec:quantifiers) instead.
+```
