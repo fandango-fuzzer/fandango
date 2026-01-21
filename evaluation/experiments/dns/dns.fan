@@ -306,7 +306,7 @@ class Client(NetworkParty):
     def __init__(self):
         super().__init__(
             connection_mode=ConnectionMode.CONNECT if fandango_is_client else ConnectionMode.EXTERNAL,
-            uri="udp://1.1.1.1:53"
+            uri="udp://localhost:25566"
         )
         self.start()
 
