@@ -481,6 +481,13 @@ def _populate_fuzz_parser(parser: argparse.ArgumentParser) -> None:
         help="When invoking COMMAND, choose whether Fandango input will be passed as standard input (`stdin`), as last argument on the command line (`filename`) (default), or to a libFuzzer style harness compiled to a shared .so/.dylib object (`libfuzzer`).",
     )
     command_group.add_argument(
+        "--fcc",
+        default=False,
+        dest="use_fcc",
+        action="store_true",
+        help="The command to be invoked is a fcc-compiled binary.",
+    )
+    command_group.add_argument(
         "test_command",
         metavar="command",
         type=str,

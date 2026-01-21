@@ -44,6 +44,7 @@ dependencies = [
     "thefuzz>=0.22",
     "xdg-base-dirs>=6.0.2",
     "beartype>=0.21.0,!=0.22.6,!=0.22.7",
+    "cachetools>=5.5.2",
 ]
 
 [project.optional-dependencies]
