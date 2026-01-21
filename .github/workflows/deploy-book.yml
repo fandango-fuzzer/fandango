@@ -37,13 +37,18 @@ jobs:
           echo "$(dirname $(which fandango))" >> $GITHUB_PATH
           fandango --help
 
-      # Step 5: Build the documentation
+      # Step 5: Install system dependencies for book
+      - name: Install system dependencies for book
+        run: |
+          make system-dev-tools
+
+      # Step 6: Build the documentation
       - name: Build the book
         run: |
           source .venv/bin/activate
           make web
 
-      # Step 6: Upload built book as artifact
+      # Step 7: Upload built book as artifact
       - name: Upload built book as artifact
         uses: actions/upload-artifact@v4
         with:
