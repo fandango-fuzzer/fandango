@@ -41,7 +41,7 @@ jobs:
       - name: Build the book
         run: |
           source .venv/bin/activate
-          make html
+          make web
 
       # Step 6: Upload built book as artifact
       - name: Upload built book as artifact
