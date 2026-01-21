@@ -311,6 +311,15 @@ class IterativeParser(
             node, nt = self._context_rules[symbol]
             self.predict_ctx_rule(state, table, k, node, nt, hookin_parent)
 
+    def current_tree(self) -> Optional[DerivationTree]:
+        if len(self._table[self._table_idx]) == 0:
+            return None
+        for col in self._table[::-1]:
+            if len(col) == 0:
+                continue
+            return self.construct_incomplete_tree(col[-1], self._table)
+        return None
+
     def construct_incomplete_tree(
         self, state: ParseState, table: list[Column]
     ) -> DerivationTree:
