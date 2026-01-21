@@ -288,14 +288,16 @@ class NetworkParty(NetworkParty):
         super().receive(decompress_msg(message), sender)
 
     def send(self, message: str | bytes, recipient: Optional[str]) -> None:
-        super().send(compress_msg(message.to_bytes(encoding="utf-8")), recipient)
+        if isinstance(message, DerivationTree):
+            message = message.to_bytes(encoding="utf-8")
+        super().send(compress_msg(message), recipient)
 
 
 class Client(NetworkParty):
     def __init__(self):
         super().__init__(
             connection_mode=ConnectionMode.CONNECT if fandango_is_client else ConnectionMode.EXTERNAL,
-            uri="udp://localhost:25566"
+            uri="udp://1.1.1.1:53"
         )
         self.start()
 
