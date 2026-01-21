@@ -452,6 +452,25 @@ def _populate_fuzz_parser(parser: argparse.ArgumentParser) -> None:
         default=None,
         help="Write output to OUTPUT (default: stdout).",
     )
+    """The following two arguments can be used to stop Fandango once a specified objective is met.
+    `--stop-criterion` accepts a lambda function that is evaluated on each derivation tree.
+    `--stop-after-seconds` terminates execution after the specified number of seconds.
+    These options are useful for setting up experiments.
+    """
+    parser.add_argument(
+        "--stop-criterion",
+        type=str,
+        dest="stop_criterion",
+        default="lambda t: False",
+        help='stop criterion to be used. This is a lambda function which is run on every new solution. Example: `lambda t: t.to_string().startswith("abc")`',
+    )
+    parser.add_argument(
+        "--stop-after-seconds",
+        type=int,
+        dest="stop_after_seconds",
+        default=None,
+        help="Stop after a given number of seconds. Example: `--stop-after-seconds 60`",
+    )
 
     command_group = parser.add_argument_group("command invocation settings")
 
