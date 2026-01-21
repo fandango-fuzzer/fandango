@@ -71,12 +71,9 @@ class Fandango:
         max_nodes: int = 200,
         max_nodes_rate: float = 0.5,
         profiling: bool = False,
-<<<<<<< HEAD
-=======
         use_fcc: bool = False,
         put: Optional[str] = None,
         put_args: Optional[list[str]] = None,
->>>>>>> 6de14c4c (fcc integration)
         stop_criterion: str = "lambda t: False",
         stop_after_seconds: int = -1,
     ):
@@ -102,10 +99,7 @@ class Fandango:
         self.remote_response_timeout = 15.0
         self.experiment_start_time = time.time()
         self.stop_after_seconds = stop_after_seconds
-<<<<<<< HEAD
-=======
         self.fcc = FCC(put, put_args) if use_fcc else None
->>>>>>> 6de14c4c (fcc integration)
 
         # Instantiate managers
         if self.grammar.fuzzing_mode == FuzzingMode.IO:
@@ -127,10 +121,7 @@ class Fandango:
             diversity_k,
             diversity_weight,
             warnings_are_errors,
-<<<<<<< HEAD
-=======
             self.fcc,
->>>>>>> 6de14c4c (fcc integration)
             eval(stop_criterion),
         )
         self.adaptive_tuner = AdaptiveTuner(
