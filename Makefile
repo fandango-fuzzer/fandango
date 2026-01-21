@@ -34,17 +34,17 @@ $(EGG_INFO)/PKG-INFO: pyproject.toml
 UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
 # Mac
-SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli uv
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz uv
 TEST_TOOLS =  # clang is installed by default on Mac
 SYSTEM_DEV_INSTALL = brew install
 else ifeq ($(UNAME), Linux)
 # Linux
-SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli uv
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz
 TEST_TOOLS = clang
 SYSTEM_DEV_INSTALL = apt-get install
 else ifneq (,$(findstring NT,$(UNAME)))
 # Windows (all variants): Windows_NT, MINGW64_NT-10.0-20348, MSYS_NT-10.0-20348
-SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli uv
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz uv
 TEST_TOOLS = llvm # this is the easiest way to install clang on windows
 SYSTEM_DEV_INSTALL = choco install
 else
