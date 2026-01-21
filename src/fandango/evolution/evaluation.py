@@ -1,6 +1,8 @@
 import random
 from typing import Counter
-from collections.abc import Generator, Sequence
+from collections.abc import Generator, Sequence, Callable
+from typing import Optional
+
 
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
@@ -25,6 +27,7 @@ class Evaluator:
         diversity_k: int,
         diversity_weight: float,
         warnings_are_errors: bool = False,
+        stop_criterion: Optional[Callable[..., bool]] = None,
     ):
         self._grammar = grammar
         self._soft_constraints: list[SoftValue] = []
@@ -37,6 +40,8 @@ class Evaluator:
         self._fitness_cache: dict[int, tuple[float, list[FailingTree], Suggestion]] = {}
         self._solution_set: set[int] = set()
         self._checks_made = 0
+        self._stop_criterion = stop_criterion
+        self._stop_criterion_met = False
 
         for constraint in constraints:
             if isinstance(constraint, SoftValue):
@@ -226,6 +231,8 @@ class Evaluator:
             )
 
         if fitness >= self._expected_fitness and key not in self._solution_set:
+            if self._stop_criterion:
+                self._stop_criterion_met |= self._stop_criterion(individual)
             self._solution_set.add(key)
             yield individual
 
