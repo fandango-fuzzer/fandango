@@ -192,13 +192,17 @@ class FandangoParty(ABC):
 
     def on_send(self, message: DerivationTree, recipient: Optional[str]) -> None:
         """Deprecated. Use send() instead."""
-        raise FandangoError(f"Party {self.party_name}: on_send() has been deprecated. Use send() instead.")
+        raise FandangoError(
+            f"Party {self.party_name}: on_send() has been deprecated. Use send() instead."
+        )
 
     def receive_msg(
         self, sender: Optional[str], message: str, recipient: Optional[str]
     ) -> None:
         """Deprecated. Use receive() instead."""
-        raise FandangoError(f"Party {self.party_name}: receive_msg() has been deprecated. Use receive() instead; note the changed argument order")
+        raise FandangoError(
+            f"Party {self.party_name}: receive_msg() has been deprecated. Use receive() instead; note the changed argument order"
+        )
 
     def start(self) -> None:
         raise NotImplementedError("start() method not implemented")
@@ -465,7 +469,9 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
         """
         assert self.connection_mode != ConnectionMode.EXTERNAL
         if not self._running:
-            raise FandangoError(f"Party {self.party_name!r} not running. Invoke start() first.")
+            raise FandangoError(
+                f"Party {self.party_name!r} not running. Invoke start() first."
+            )
         self._wait_accept()
 
         assert self._connection is not None
@@ -534,7 +540,9 @@ class NetworkParty(FandangoParty):
             ip = info[0][4][0]
             ip_type = IpType.IPV6
         if isinstance(ip, int):
-            raise FandangoValueError(f"Party {self.party_name}: Invalid IP address: {ip}")
+            raise FandangoValueError(
+                f"Party {self.party_name}: Invalid IP address: {ip}"
+            )
         if port is None:
             protocol = self.DEFAULT_PORT
 
@@ -548,7 +556,9 @@ class NetworkParty(FandangoParty):
                 party_instance=self,
             )
         else:
-            raise FandangoValueError(f"Party {self.party_name}: Unsupported protocol: {protocol}")
+            raise FandangoValueError(
+                f"Party {self.party_name}: Unsupported protocol: {protocol}"
+            )
 
     # We defer all methods to the protocol implementation
     def send(
@@ -581,7 +591,9 @@ class NetworkParty(FandangoParty):
         info = socket.getaddrinfo(host, None, socket.AF_INET)
         ip = info[0][4][0]
         if isinstance(ip, int):
-            raise FandangoValueError(f"Party {self.party_name}: Invalid IP address: {ip}")
+            raise FandangoValueError(
+                f"Party {self.party_name}: Invalid IP address: {ip}"
+            )
         self.protocol_impl.ip = ip
 
     @property
