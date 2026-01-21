@@ -20,7 +20,7 @@ It demonstrates
 * how to use constraints to _validate_ responses; and
 * how to embed _compression_ and _decompression_ functions.
 
-The Fandango DNS protocol spec [`dns.fan`](.fan) is available for download.
+The Fandango DNS protocol spec [`dns.fan`](dns.fan) is available for download.
 To test it with Fandango as client querying the public Cloudflare DNS server 1.1.1.1 on the default DNS port 53, invoke Fandango as
 
 ```shell
