@@ -31,6 +31,8 @@ In _fuzzing_, Fandango sends a synthesized input to the program under test:
 
 ```{mermaid}
 sequenceDiagram
+    participant Fandango
+    participant Program under Test
     Fandango->>Program under Test: Some input
 ```
 
@@ -38,6 +40,8 @@ During _parsing_, Fandango accepts and processes _outputs_ from the program unde
 
 ```{mermaid}
 sequenceDiagram
+    participant Fandango
+    participant Program under Test
     Program under Test-->>Fandango: Some output
 ```
 
@@ -45,6 +49,8 @@ What we want, though, is an _interaction_ - a means to _first_ send an input to 
 
 ```{mermaid}
 sequenceDiagram
+    participant Fandango
+    participant Program under Test
     Fandango->>Program under Test: Some input
     Program under Test-->>Fandango: Some output
 ```
