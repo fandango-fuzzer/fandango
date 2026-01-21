@@ -23,11 +23,11 @@ The [`ftp.fan`](ftp.fan) Fandango FTP spec is available for download.
 To test it, run an FTP server on the local host at port 50100, and invoke Fandango as
 
 ```{margin}
-Use `-n 1` if you want just one interaction.
+Omit `-n 1` if you want Fandango to test until protocol coverage is achieved.
 ```
 
 ```shell
-$ fandango -f ftp.fan
+$ fandango talk -n 1 -f ftp.fan
 ```
 
 ```{versionadded} 1.1
