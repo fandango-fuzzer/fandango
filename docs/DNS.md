@@ -71,6 +71,11 @@ def byte_to_int(byte_val):
     return int(unpack('>H', bytes(byte_val))[0])
 ```
 
+```{note}
+We do not model DNSSEC and other DNS extensions.
+```
+
+
 
 ### Request Headers
 
@@ -78,7 +83,7 @@ The header consists of a number of fields as defined below.
 Note the mix of bits and bytes, which is common in DNS messages.
 
 ```python
-<header_req> ::= <h_id> 0 <h_opcode_standard> 0 0 <h_rd> 0 0 <bit> 0 <h_rcode_none> <req_qd_count> 0{16} 0{16} 0{16}
+<header_req> ::= <h_id> 0 <h_opcode_standard> 0 0 <h_rd> 0 0 <bit> 0 <h_rcode_noerror> <req_qd_count> 0{16} 0{16} 0{16}
 ```
 
 The ID is an identifier of two bytes.
@@ -93,7 +98,6 @@ The remaining fields are set to fixed values:
 ```python
 <h_opcode_standard> ::= 0 0 0 0
 <h_rd> ::= 1 # 0 causes server failure with cname
-<h_rcode_none> ::= 0 0 0 0
 <req_qd_count> ::= <byte>{2} := pack(">H", 1)
 ```
 
@@ -101,11 +105,15 @@ The remaining fields are set to fixed values:
 ### Request Questions
 
 Now for the actual DNS questions.
-This is where a host name (say, `example.com`) to be looked up is transmitted.
 
 ```python
 <question> ::= <q_name> <q_type> <rr_class>
 ```
+
+```{note}
+`<q_name>` is where the host name (say, `example.com`) is sent to the DNS server.
+```
+
 
 #### Request Names
 
@@ -115,19 +123,28 @@ A request name is terminated by 8 zero bits (i.e., a NUL byte).
 <q_name> ::= <q_name_written> 0{8}
 ```
 
-The name is encoded as an octet specifyinh the length of the name, followed by a sequence of bytes that represent the actual name.
+The name is encoded as
+
+* an octet specifying the _length_ of the name,
+* followed by a sequence of bytes holding the actual name.
 
 ```python
 <q_name_written> ::= (<label_len_octet> <byte>{byte_to_int(b'\x00' + bytes(<label_len_octet>))})+ := gen_q_name()
 <label_len_octet> ::= <byte>
 ```
 
-To generate domain names to query, we either generate a domain name using the Faker library, which likely is not known to the DNS server,
-or we use 'github.com' or 'cispa.de', which are known to the DNS server.
+To generate domain names to query, we either 
+
+* use the Faker library to obtain a random host name (which likely is not known to the DNS server),
+* or we use 'github.com' or 'cispa.de', which should be known to a DNS server.
 
 The individual parts (say, `github` and `com`) are also length-encoded, i.e. there is a leading byte telling the length of the part, followed by the part.
 
-```python
+```{code-cell}
+from random import randint
+from faker import Faker
+fake = Faker()
+
 def gen_q_name():
     result = b''
     rand = randint(0, 2)
@@ -146,9 +163,22 @@ def gen_q_name():
     return result
 ```
 
+Here are some examples of `gen_q_name()`:
+
+```{code-cell}
+[gen_q_name() for _ in range(5)]
+```
+
+
+
 #### Request Types
 
-We can request CNAME, A, and NS records from the DNS server.
+We can request the following records from the DNS server:
+
+* `CNAME` - return an "official" host name (or a redirect);
+* `A` - return the IP address (the typical use of a DNS server); and
+* `NS` - return the name server (a DNS server) for the given domain.
+
 These are encoded using bit sequences as follows:
 
 ```python
@@ -160,10 +190,10 @@ These are encoded using bit sequences as follows:
 
 #### Request Class
 
-Our DNS request refers to class `IN` (Internet).
+All our DNS requests refer to the class `IN` (Internet).
 
 ```python
-<rr_class> ::= 0{15} 1 # Equals class IN (Internet)
+<rr_class> ::= 0{15} 1 # Class IN (Internet)
 ```
 
 With that, the definition of our requests are complete.
@@ -179,32 +209,29 @@ Now for the responses of the DNS server.
 
 ### DNS Response Headers
 
-First, let us have a look at the header.
+First, let us have a look at the response header.
 
 ```python
-<header_resp> ::= <h_id> 1 <h_opcode_standard> <bit> 0 <h_rd> <h_ra> 0 <h_aa> 0 (<h_rcode_none> | <h_rcode_name>) <resp_qd_count> <resp_an_count> <resp_ns_count> <resp_ar_count>
+<header_resp> ::= <h_id> 1 <h_opcode_standard> <bit> 0 <h_rd> <h_ra> 0 <h_aa> 0 (<h_rcode_noerror> | <h_rcode_nxdomain>) <resp_qd_count> <resp_an_count> <resp_ns_count> <resp_ar_count>
 ```
 
-Most of these fields have been defined above already.
-These are new:
+Most of these fields have been defined above already, except for these:
 
 ```python
-<h_aa> ::= <bit>
-<h_ra> ::= <bit>
+<h_aa> ::= <bit>  # 1 if authoritative answer
+<h_ra> ::= <bit>  # 1 if recursion is available
 ```
 
-The interesting part is the return code, telling success (or non-success) of the query:
-
-% FIXME: What is the meaning of the return codes? NXDOMAIN? NXERROR?
+The most interesting part is the return code, telling success (or non-success) of the query:
 
 ```python
-<h_rcode> ::= <h_rcode_none> | <h_rcode_format> | <h_rcode_server> | <h_rcode_name> | <h_rcode_ni> | <h_rcode_refused> | <h_rcode_other>
-<h_rcode_none> ::= 0 0 0 0
-<h_rcode_format> ::= 0 0 0 1
-<h_rcode_server> ::= 0 0 1 0
-<h_rcode_name> ::= 0 0 1 1
-<h_rcode_ni> ::= 0 1 0 0
-<h_rcode_refused> ::= 0 1 0 1
+<h_rcode> ::= <h_rcode_noerror> | <h_rcode_formerr> | <h_rcode_servfail> | <h_rcode_nxdomain> | <h_rcode_notimp> | <h_rcode_refused> | <h_rcode_other>
+<h_rcode_noerror>  ::= 0 0 0 0  # NOERROR - no error
+<h_rcode_formerr>  ::= 0 0 0 1  # FORMERR - format error
+<h_rcode_servfail> ::= 0 0 1 0  # SERVFAIL - server failure
+<h_rcode_nxdomain> ::= 0 0 1 1  # NXDOMAIN - non existent domain
+<h_rcode_notimp>   ::= 0 1 0 0  # NOTIMP - not implemented
+<h_rcode_refused>  ::= 0 1 0 1  # REFUSED - query refused
 <h_rcode_other> ::= (1 <bit>{3, 3}) | (0 1 1 <bit>)
 ```
 
@@ -221,23 +248,24 @@ This is followed by four fields denoting the number of fields that follow.
 ### DNS Response Question Section
 
 The DNS server _replicates_ the original request in its response.
-This is necessary as the UDP protocol can drop packets, so the response must be clear which request it refers to.
+This is necessary as the UDP protocol can drop packets, so the response must clearly specify which request it refers to.
 This has the same format as the original response.
 
 ```python
 <question_section> ::= <question>{byte_to_int(<header_req>.<req_qd_count>)}
 ```
 
-% FIXME: The length is defined by the request, not the response? -- AZ
+Note that we refer to the _original_ number of questions from the `<header_req>` request, not the number of questions stated in the response (which is equal anyway).
+This is for efficiency reasons: The original number of questions is already defined, so we do not have to retrieve it from the server response.
 
-We ensure that for each request/response pair,
+The following constraint ensures that for each request/response pair,
 
-* The recursion desired flag (RD) (`<h_rd>`) match.
-* The DNS message identifier (ID) (`<h_id>`) match.
-* The question that the response aims to answer is the same as the question in the request (`<question>`).
+* The recursion desired flag (RD) (`<h_rd>`) match;
+* The DNS message identifier (ID) (`<h_id>`) match;
+* The question that the response aims to answer is the same as the question in the request (`<question>`); and
 * The question count in the response matches the question count in the request (`<req_qd_count>`).
 
-Our constraint uses [old-style quantifiers](sec:old-quantifiers) for compatibility with previous Fandango versions.
+Note that our constraint uses [old-style quantifiers](sec:old-quantifiers) for compatibility with previous Fandango versions.
 
 % FIXME: Convert to new all()/any() quantifier syntax
 ```python
@@ -261,7 +289,8 @@ The actual response is contained in these answers:
 
 #### AN Answers
 
-AN answers are structured like this:  % FIXME: What is an AN answer?
+The `AN` answer field `<answer_an>` contains the answer to the DNS question.
+It can return an `A` record, a `CNAME` record, or an `NS` record (see above).
 
 ```python
 <answer_an> ::= <q_name_optional> <answer_an_type>
@@ -271,16 +300,34 @@ AN answers are structured like this:  % FIXME: What is an AN answer?
 
 ##### Type A Answers
 
+This is the answer to an `A` request querying the IP address of a hostname.
+
+A `<type_a>` answer holds the `A` record of the requested domain.
+The `<ip_address>` field (finally!) holds the requested IP address, as a sequence of four bytes.
+
 ```python
-<type_a> ::= <type_id_a> <rr_class> <a_ttl> 0{13} 1 0 0 <byte>{4}
+<type_a> ::= <type_id_a> <rr_class> <a_ttl> 0{13} 1 0 0 <ip_address>
 <type_id_a> ::= 0{15} 1
 <a_ttl> ::= 0 <bit>{7} <byte>{3}
+<ip_address> ::= <byte>{4}
 ```
+
+```{note}
+`<ip_address>` is the place where the IP address (e.g. 104.18.27.120) is sent back.
+```
+
+```{note}
+Our DNS server only supports IP version 4.
+```
+
 
 ##### Type CNAME Answers
 
+This is the answer to a `CNAME` request, asking for an "official" host name. `<q_name>` is the host name returned.
+
 ```python
 <type_cname> ::= <type_id_cname> <rr_class> <a_ttl> <a_rd_length> <q_name>
+<a_rd_length> ::= <byte>{2} := pack(">H", randint(0, 0))
 ```
 
 `<type_cname>` responses must have the correct length in the `<a_rd_length>` field (r data length), which corresponds to the following `<q_name>` field.
@@ -294,26 +341,26 @@ where forall <t> in <type_cname>:
 
 ##### Type NS Answers
 
+Finally, `<type_ns>` is the answer to an `NS` request, returning the name server for the given domain.
+
 ```python
 <type_ns> ::= <type_id_ns> <rr_class> <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
-<a_rdata> ::= <byte>
+<a_rdata> ::= <byte>  # We don't go into further details here.
 ```
 
 #### AU Answers
 
-AU answers are structured like this:  % FIXME: What is an AU answer?
+An `AU` answer returns the name server for a domain. We don't go into details here.
 
 ```python
 <answer_au> ::= <q_name_optional> <type_soa>
 <type_soa> ::= <type_id_soa> <rr_class> <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
-<a_rd_length> ::= <byte>{2} := pack(">H", randint(0, 0))
-<a_rdata> ::= <byte>
 <type_id_soa> ::= 0{13} 1 1 0
 ```
 
 #### OPT Answers
 
-OPT answers are structured like this:  % FIXME: What is an OPT answer?
+An `OPT` answer returns optional additional details. We don't go into details here.
 
 ```python
 <answer_opt> ::= <q_name_optional> (<type_opt>|<type_a>)
@@ -326,8 +373,9 @@ OPT answers are structured like this:  % FIXME: What is an OPT answer?
 #### Consistency in Responses
 
 We check if a DNS response answers the corresponding DNS question using the `verify_transitive()` function.
-The remainder of the check does the same check, but only for direct answers without allowing transitive response chains.
-This second part is used to allow Fandango ``contains solving'' optimization to be used to generate a valid answer more efficiently.
+
+The second part of the `or` clause `bytes(<a>.<answer_an_type>)[0:2]...` also checks this, but only for direct answers without allowing transitive response chains.
+This allows Fandango optimizations to be used to generate a valid answer more efficiently.
 
 Our constraint uses [old-style quantifiers](sec:old-quantifiers) for compatibility with previous Fandango versions.
 
@@ -336,12 +384,19 @@ Our constraint uses [old-style quantifiers](sec:old-quantifiers) for compatibili
 where forall <ex> in <start>.<exchange>:
     forall <a> in <ex>.<dns_resp>.<answer_an_section>.<answer_an>:
         exists <q> in <ex>.<dns_req>.<question>:
-            verify_transitive(<q>, <ex>.<dns_resp>) or bytes(<a>.<answer_an_type>)[0:2] == bytes(<q>.<q_type>) and bytes(<a>.<q_name_optional>) == bytes(<q>.<q_name>)
+            verify_transitive(<q>, <ex>.<dns_resp>) or \
+            (bytes(<a>.<answer_an_type>)[0:2] == bytes(<q>.<q_type>) and 
+             bytes(<a>.<q_name_optional>) == bytes(<q>.<q_name>))
 ```
 
 The `verify_transitive()` function gets a question and the response section of a DNS response and verifies if the response does answer the question.
 This also handles responses that are transitive.
-If, for example the question is for a type A record for "example.com" and the response contains a CNAME record pointing "example.com" to "alias.com" and then an A record for "alias.com", this function will verify that the response correctly answers the original question through the CNAME redirection.
+If, for example the question is
+
+* for a type `A` record for `example.com` and
+* the response contains a `CNAME` record pointing `example.com` to `alias.com` and then an `A` record for `alias.com`,
+
+then `verify_transitive()` will verify that the response correctly answers the original question through the `CNAME` redirection.
 
 ```python
 def verify_transitive(question, response):
@@ -364,7 +419,10 @@ def verify_transitive(question, response):
 ## Compression and Decompression
 
 The DNS protocol maintains a complex system for compressing requests.
-We implement this by overriding the `NetworkParty` `send()` and `receive()` functions such that all sent messages are compressed, and all received messages are decompressed.
+We implement this by overriding the `NetworkParty` `send()` and `receive()` functions such that
+
+* all sent messages are compressed (`compress_msg()`), and
+* all received messages are decompressed (`decompress_msg()`).
 
 ```{margin}
 We give the new class the same name `NetworkParty` so we can stick to original party names.
@@ -383,10 +441,19 @@ class NetworkParty(NetworkParty):
 
 ### Compression
 
-`msg_suffix()` generates a list of tuples, for a DNS name containing an entry for each zone present in it including the offset to that zone within the DNS name.
-Example: `msg_suffix(b'\x08fandango\x02io\x00')` results in `[(0, b'\x08fandango\x02io\x00'), (9, b'\x02io\x00')]`.
+When receiving a DNS package, some domain names may occur multiple times.
+To reduce traffic, DNS allows encoding domain names suffixes such that they _refer_ to _suffixes_ of earlier messages.
+For instance, if the first answer contains `host.example.com`, then a subsequent `example.com` can be replaced by a pointer into this answer.
+Such pointers are represented by _offsets_ starting from the first answer.
 
-```python
+We use the function `msg_suffix()` to identify such compressions.
+`msg_suffix()` takes an (encoded) domain name in `<q_name>` format and returns a list of tuples (offset, suffix) for a DNS name.
+Here,
+
+* `suffix` is a possible suffix of `name`
+* `offset` is the number of characters into `name` where `suffix` begins
+
+```{code-cell}
 def msg_suffix(name):
     suffixes = []
     len_idx = 0
@@ -399,6 +466,21 @@ def msg_suffix(name):
     return suffixes
 ```
 
+Here is an example of `msg_suffix()`:
+
+```{code-cell}
+name = b'\x07example\x03com\x00'
+msg_suffix(name)
+```
+
+The returned suffix `(8, b'\x03com\x00')` starts 8 bytes into the passed `name`.
+
+```{code-cell}
+name[8:]
+```
+
+
+
 We apply the DNS name compression algorithm to a DNS name starting at `curr_idx` within the uncompressed message.
 `suffix_dict` is a dictionary mapping a known DNS suffix names to their offsets within the already analyzed compressed part of the message.
 
@@ -406,7 +488,16 @@ We apply the DNS name compression algorithm to a DNS name starting at `curr_idx`
 % FIXME: Add full docstrings, with :param: and :return:
 
 ```python
-def compress_name(uncompressed, curr_idx, len_reduction, suffix_dict):
+def compress_name(uncompressed: bytes, curr_idx: int,
+                  len_reduction: int, suffix_dict: dict[bytes, int]) -> tuple[bytes, int, int]:
+    """
+    Compress a single name in a DNS message.
+    :param: uncompressed - the message before compression
+    :param: curr_idx - the current index in `compress_msg()` (see below)
+    :param: len_reduction - how many bytes we already have compressed
+    :param: suffix_dict - the suffixes encoded so far
+    :return: a tuple (new_name, length, len_reduction) - the compressed name, its length, the new length reduction
+    """
     name_len = 0
     while uncompressed[curr_idx + name_len] != 0:
         name_len += uncompressed[curr_idx + name_len] + 1
@@ -433,7 +524,10 @@ Now for the actual compression.
 `compress_msg()` compresses a full DNS message applying the DNS name compression algorithm to all names present in the message.
 
 ```python
-def compress_msg(uncompressed):
+def compress_msg(uncompressed: bytes) -> bytes:
+    """
+    Compress a single DNS message.
+    """
     qd_count = byte_to_int(uncompressed[4:6])
     an_count = byte_to_int(uncompressed[6:8])
     ns_count = byte_to_int(uncompressed[8:10])
@@ -478,10 +572,16 @@ def compress_msg(uncompressed):
 
 ### Decompression
 
-`decompress_name()` decompresses a DNS name starting at name_idx within the compressed message.
+`decompress_name()` decompresses a DNS name starting at `name_idx` within the compressed message.
 
 ```python
-def decompress_name(compressed, name_idx):
+def decompress_name(compressed: bytes, name_idx: int) -> tuple[bytes, int]:
+    """
+    Decompress the package `compressed` at the current index `name_idx` of a name.
+    :param: compressed - the package to be decompressed
+    :param: name_idx - the index of a name in `compressed`
+    :returns: a pair (decompressed, length) - the decompressed package and its length increase
+    """
     segment_len = compressed[name_idx]
     compressed_len = 0
     decompressed = b''
@@ -506,7 +606,12 @@ def decompress_name(compressed, name_idx):
 Conversely, `decompress_msg()` decompresses a full DNS message applying the DNS name decompression algorithm to all names present in the message.
 
 ```python
-def decompress_msg(compressed):
+def decompress_msg(compressed: bytes) -> bytes:
+    """
+    Decompress the DNS message `compressed`.
+    :param: compressed - the compressed DNS message
+    :returns: the decompressed DNS message.
+    """
     count_header = compressed[4:12]
     qd_count = byte_to_int(count_header[:2])
     an_count = byte_to_int(count_header[2:4])
