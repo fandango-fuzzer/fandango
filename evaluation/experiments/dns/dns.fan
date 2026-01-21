@@ -64,7 +64,16 @@ def msg_suffix(name):
 
 # Applies the DNS name compression algorithm to a DNS name starting at curr_idx within the uncompressed message.
 # suffix dict is a dictionary mapping known DNS suffix names to their offsets within the already analyzed compressed part of the message.
-def compress_name(uncompressed, curr_idx, len_reduction, suffix_dict):
+def compress_name(uncompressed: bytes, curr_idx: int,
+                  len_reduction: int, suffix_dict: dict[bytes, int]) -> tuple[bytes, int, int]:
+    """
+    Compress a single name in a DNS message.
+    :param: uncompressed - the message before compression
+    :param: curr_idx - the current index in `compress_msg()` (see below)
+    :param: len_reduction - how many bytes we already have compressed
+    :param: suffix_dict - the suffixes encoded so far
+    :return: a tuple (new_name, length, len_reduction) - the compressed name, its length, the new length reduction
+    """
     name_len = 0
     while uncompressed[curr_idx + name_len] != 0:
         name_len += uncompressed[curr_idx + name_len] + 1
@@ -87,7 +96,10 @@ def compress_name(uncompressed, curr_idx, len_reduction, suffix_dict):
             return b_name, name_len, len_reduction
 
 # Compresses a full DNS message applying the DNS name compression algorithm to all names present in the message.
-def compress_msg(uncompressed):
+def compress_msg(uncompressed: bytes) -> bytes:
+    """
+    Compress a single DNS message.
+    """
     qd_count = byte_to_int(uncompressed[4:6])
     an_count = byte_to_int(uncompressed[6:8])
     ns_count = byte_to_int(uncompressed[8:10])
@@ -130,7 +142,13 @@ def compress_msg(uncompressed):
     return compressed
 
 # Decompresses a DNS name starting at name_idx within the compressed message.
-def decompress_name(compressed, name_idx):
+def decompress_name(compressed: bytes, name_idx: int) -> tuple[bytes, int]:
+    """
+    Decompress the package `compressed` at the current index `name_idx` of a name.
+    :param: compressed - the package to be decompressed
+    :param: name_idx - the index of a name in `compressed`
+    :returns: a pair (decompressed, length) - the decompressed package and its length increase
+    """
     segment_len = compressed[name_idx]
     compressed_len = 0
     decompressed = b''
@@ -152,7 +170,12 @@ def decompress_name(compressed, name_idx):
     return decompressed, compressed_len + 1
 
 # Decompresses a full DNS message applying the DNS name decompression algorithm to all names present in the message.
-def decompress_msg(compressed):
+def decompress_msg(compressed: bytes) -> bytes:
+    """
+    Decompress the DNS message `compressed`.
+    :param: compressed - the compressed DNS message
+    :returns: the decompressed DNS message.
+    """
     count_header = compressed[4:12]
     qd_count = byte_to_int(count_header[:2])
     an_count = byte_to_int(count_header[2:4])
@@ -210,8 +233,8 @@ def decompress_msg(compressed):
 <answer_opt_section> ::= <answer_opt>{byte_to_int(<resp_ar_count>)}
 
 #                       qr      opcode       aa tc rd  ra  z      rcode   qdcount  ancount nscount arcount
-<header_req> ::= <h_id> 0 <h_opcode_standard> 0 0 <h_rd> 0 0 <bit> 0 <h_rcode_none> <req_qd_count> 0{16} 0{16} 0{16}
-<header_resp> ::= <h_id> 1 <h_opcode_standard> <bit> 0 <h_rd> <h_ra> 0 <h_aa> 0 (<h_rcode_none> | <h_rcode_name>) <resp_qd_count> <resp_an_count> <resp_ns_count> <resp_ar_count>
+<header_req> ::= <h_id> 0 <h_opcode_standard> 0 0 <h_rd> 0 0 <bit> 0 <h_rcode_noerror> <req_qd_count> 0{16} 0{16} 0{16}
+<header_resp> ::= <h_id> 1 <h_opcode_standard> <bit> 0 <h_rd> <h_ra> 0 <h_aa> 0 (<h_rcode_noerror> | <h_rcode_nxdomain>) <resp_qd_count> <resp_an_count> <resp_ns_count> <resp_ar_count>
 # aa=1 if server has authority over domain
 
 # Ensures that for each request/response pair the following parts match:
@@ -236,13 +259,13 @@ where forall <ex> in <start>.<exchange>:
 <h_aa> ::= <bit>
 <h_ra> ::= <bit>
 
-<h_rcode> ::= <h_rcode_none> | <h_rcode_format> | <h_rcode_server> | <h_rcode_name> | <h_rcode_ni> | <h_rcode_refused> | <h_rcode_other>
-<h_rcode_none> ::= 0 0 0 0
-<h_rcode_format> ::= 0 0 0 1
-<h_rcode_server> ::= 0 0 1 0
-<h_rcode_name> ::= 0 0 1 1
-<h_rcode_ni> ::= 0 1 0 0
-<h_rcode_refused> ::= 0 1 0 1
+<h_rcode> ::= <h_rcode_noerror> | <h_rcode_formerr> | <h_rcode_servfail> | <h_rcode_nxdomain> | <h_rcode_notimp> | <h_rcode_refused> | <h_rcode_other>
+<h_rcode_noerror>  ::= 0 0 0 0  # NOERROR - no error
+<h_rcode_formerr>  ::= 0 0 0 1  # FORMERR - format error
+<h_rcode_servfail> ::= 0 0 1 0  # SERVFAIL - server failure
+<h_rcode_nxdomain> ::= 0 0 1 1  # NXDOMAIN - non existent domain
+<h_rcode_notimp>   ::= 0 1 0 0  # NOTIMP - not implemented
+<h_rcode_refused>  ::= 0 1 0 1  # REFUSED - query refused
 <h_rcode_other> ::= (1 <bit>{3, 3}) | (0 1 1 <bit>)
 <bit> ::= 0 | 1
 <byte> ::= <bit>{8}
@@ -256,8 +279,8 @@ where forall <ex> in <start>.<exchange>:
 <rr_class> ::= 0{15} 1 # Equals class IN (Internet)
 
 # Checks if a dns response answers the corresponding dns question using the verify_transitive-function.
-# The remainder of the check does the same check, but only for direct answers without allowing transitive response chains.
-# This second part is used to allow fandangos contains solving optimization to be used to generate a valid answer more efficiently
+# The second part of the `or` clause `bytes(<a>.<answer_an_type>)[0:2]...` also checks this, but only for direct answers without allowing transitive response chains.
+# This allows Fandango optimizations to be used to generate a valid answer more efficiently.
 where forall <ex> in <start>.<exchange>:
     forall <a> in <ex>.<dns_resp>.<answer_an_section>.<answer_an>:
         exists <q> in <ex>.<dns_req>.<question>:
@@ -276,7 +299,8 @@ where forall <ex> in <start>.<exchange>:
 <type_id_soa> ::= 0{13} 1 1 0
 <type_id_cname> ::= 0{13} 1 0 1
 <type_id_opt> ::= 0{10} 1 0 1 0 0 1
-<type_a> ::= <type_id_a> <rr_class> <a_ttl> 0{13} 1 0 0 <byte>{4}
+<type_a> ::= <type_id_a> <rr_class> <a_ttl> 0{13} 1 0 0 <ip_address>
+<ip_address> ::= <byte>{4}
 <type_ns> ::= <type_id_ns> <rr_class> <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
 <type_soa> ::= <type_id_soa> <rr_class> <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
 <type_opt> ::= <type_id_opt> <udp_payload_size> <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
