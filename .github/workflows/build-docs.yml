@@ -30,6 +30,7 @@ jobs:
           sudo make system-dev-tools
           source .venv/bin/activate
           make web
+          echo "Exit code: $?"
 
       # Step 4: Upload built book as artifact
       - name: Upload built book as artifact
