@@ -34,8 +34,6 @@ $ fandango -f ftp.fan
 These features are available in Fandango 1.1 and later.
 ```
 
-%% FIXME: We need an example of how to run this -- AZ
-
 (sec:ftp-parties)=
 ## The FTP Parties
 
