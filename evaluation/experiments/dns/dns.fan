@@ -251,7 +251,9 @@ where forall <ex> in <start>.<exchange>:
 <resp_an_count> ::= <bit>{16} := pack(">H", randint(1, 2))
 <resp_ns_count> ::= <bit>{16} := pack(">H", randint(0, 2))
 <resp_ar_count> ::= <bit>{16} := pack(">H", randint(0, 2))
-<req_ar_count> ::= <bit>{16} := pack(">H", randint(0, 0))
+
+# Unused
+# <req_ar_count> ::= <bit>{16} := pack(">H", randint(0, 0))
 
 <h_id> ::= <byte><byte>
 <h_opcode_standard> ::= 0 0 0 0
