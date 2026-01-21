@@ -21,10 +21,10 @@ It demonstrates
 * how to embed _compression_ and _decompression_ functions.
 
 The [`dns.fan`](.fan) Fandango DNS spec is available for download.
-To test it with Fandango as client querying the DNS server 1.1.1.1 on port 53, invoke Fandango as
+To test it with Fandango as client querying the public Cloudflare DNS server 1.1.1.1 on the default DNS port 53, invoke Fandango as
 
 ```shell
-$ fandango -v talk -n 1 -f dns.fan --client udp:1.1.1.1:53
+$ fandango -v talk -n 1 -f dns.fan --client udp://1.1.1.1:53
 ```
 
 ```{versionadded} 1.1
@@ -33,7 +33,7 @@ These features are available in Fandango 1.1 and later.
 
 ## A DNS Exchange
 
-In principle, the DNS _protocol_ is pretty simple.
+At an abstract level, the DNS _protocol_ is pretty simple.
 A _Client_ sends a DNS request to the server (via UDP, by default on port 53), and gets a DNS response.
 For instance, as of January 2026, the host `example.com` had the IP address `104.18.27.120`:
 
@@ -50,19 +50,20 @@ This is also how the exchange is modeled in `dns.fan`:
 <exchange> ::= <Client:dns_req> <Server:dns_resp>
 ```
 
-All straight-forward so far.
+Alas, the devil is in the details.
 Let's dig a bit deeper.
 
 
 ## DNS Requests
 
-A DNS request consists of a header and a number of questions and answers as specified in the header.
+A DNS request consists of a _header_ and a number of _questions_.
+The actual number of questions is transmitted in a header field `<req_qd_count>`.
 
 ```python
 <dns_req> ::= <header_req> <question>{byte_to_int(<req_qd_count>)}
 ```
 
-The actual number of questions is set in the `<req_qd_count>` field of the `<header_req>`. We decode it as
+We decode `<req_qd_count>` using a function `byte_to_int()`:
 
 ```python
 # Convert a 2-byte byte array to an integer
@@ -70,16 +71,18 @@ def byte_to_int(byte_val):
     return int(unpack('>H', bytes(byte_val))[0])
 ```
 
+
 ### Request Headers
 
-The header consists of a number of fields as defined below:
+The header consists of a number of fields as defined below.
+Note the mix of bits and bytes, which is common in DNS messages.
 
 ```python
 <header_req> ::= <h_id> 0 <h_opcode_standard> 0 0 <h_rd> 0 0 <bit> 0 <h_rcode_none> <req_qd_count> 0{16} 0{16} 0{16}
 ```
 
 The ID is an identifier of two bytes.
-When sending the request, we choose random values:
+When sending the request, we choose a random value:
 
 ```python
 <h_id> ::= <byte><byte>
@@ -106,13 +109,13 @@ This is where a host name (say, `example.com`) to be looked up is transmitted.
 
 #### Request Names
 
-A request name is terminated by 8 zero-bits.
+A request name is terminated by 8 zero bits (i.e., a NUL byte).
 
 ```python
 <q_name> ::= <q_name_written> 0{8}
 ```
 
-The name is encoded as an octet telling the length, and then a sequence of bytes representing the actual name.
+The name is encoded as an octet specifyinh the length of the name, followed by a sequence of bytes that represent the actual name.
 
 ```python
 <q_name_written> ::= (<label_len_octet> <byte>{byte_to_int(b'\x00' + bytes(<label_len_octet>))})+ := gen_q_name()
