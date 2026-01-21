@@ -186,21 +186,19 @@ class FandangoParty(ABC):
                 sender = parties[0]
             else:
                 raise FandangoValueError(
-                    f"Could not determine sender of message received by {self.party_name}. Please explicitly provide the sender to the receive() method."
+                    f"Party {self.party_name}: Could not determine sender of message received. Please explicitly provide the sender to the receive() method."
                 )
         FandangoIO.instance().add_receive(sender, self.party_name, message)
 
     def on_send(self, message: DerivationTree, recipient: Optional[str]) -> None:
         """Deprecated. Use send() instead."""
-        raise FandangoError("on_send() has been deprecated. Use send() instead.")
+        raise FandangoError(f"Party {self.party_name}: on_send() has been deprecated. Use send() instead.")
 
     def receive_msg(
         self, sender: Optional[str], message: str, recipient: Optional[str]
     ) -> None:
         """Deprecated. Use receive() instead."""
-        raise FandangoError(
-            "receive_msg() has been deprecated. Use receive() instead; note the changed argument order"
-        )
+        raise FandangoError(f"Party {self.party_name}: receive_msg() has been deprecated. Use receive() instead; note the changed argument order")
 
     def start(self) -> None:
         raise NotImplementedError("start() method not implemented")
@@ -266,6 +264,13 @@ class ProtocolImplementation(ABC):
         :return: The protocol type (`Protocol`) of this protocol implementation.
         """
         raise NotImplementedError("protocol_type property not implemented")
+
+    @property
+    def party_name(self) -> str:
+        """
+        :return: The name of the party using this protocol implementation.
+        """
+        return self._party_instance.party_name
 
 
 class UdpTcpProtocolImplementation(ProtocolImplementation):
@@ -460,7 +465,7 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
         """
         assert self.connection_mode != ConnectionMode.EXTERNAL
         if not self._running:
-            raise FandangoError("Party not running. Invoke start() first.")
+            raise FandangoError(f"Party {self.party_name!r} not running. Invoke start() first.")
         self._wait_accept()
 
         assert self._connection is not None
@@ -480,7 +485,7 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
             if self.connection_mode == ConnectionMode.OPEN:
                 if self.current_remote_addr is None:
                     raise FandangoValueError(
-                        "Client received no data yet. No address to send to."
+                        f"Party {self.party_name!r} received no data yet. No address to send to."
                     )
                 self._connection.sendto(send_data, self.current_remote_addr)
             else:
@@ -529,7 +534,7 @@ class NetworkParty(FandangoParty):
             ip = info[0][4][0]
             ip_type = IpType.IPV6
         if isinstance(ip, int):
-            raise FandangoValueError(f"Invalid IP address: {ip}")
+            raise FandangoValueError(f"Party {self.party_name}: Invalid IP address: {ip}")
         if port is None:
             protocol = self.DEFAULT_PORT
 
@@ -543,7 +548,7 @@ class NetworkParty(FandangoParty):
                 party_instance=self,
             )
         else:
-            raise FandangoValueError(f"Unsupported protocol: {protocol}")
+            raise FandangoValueError(f"Party {self.party_name}: Unsupported protocol: {protocol}")
 
     # We defer all methods to the protocol implementation
     def send(
@@ -576,7 +581,7 @@ class NetworkParty(FandangoParty):
         info = socket.getaddrinfo(host, None, socket.AF_INET)
         ip = info[0][4][0]
         if isinstance(ip, int):
-            raise FandangoValueError(f"Invalid IP address: {ip}")
+            raise FandangoValueError(f"Party {self.party_name}: Invalid IP address: {ip}")
         self.protocol_impl.ip = ip
 
     @property
@@ -707,7 +712,7 @@ class In(FandangoParty):
                 self.proc.stdin.write(message.decode("utf-8"))
             else:
                 raise FandangoValueError(
-                    f"Invalid message type: {type(message)}. Must be DerivationTree, str, or bytes."
+                    f"Party {self.party_name}: Invalid message type: {type(message)}. Must be DerivationTree, str, or bytes."
                 )
             self.proc.stdin.flush()
             if self.close_post_transmit:
