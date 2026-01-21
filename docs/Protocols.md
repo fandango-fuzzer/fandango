@@ -439,18 +439,20 @@ Hence, the state diagram induced by the above grammar actually looks like this:
 % Can't have <...> here, as they'd render as HTML tags
 ```{mermaid}
 stateDiagram
-    [*] --> #lt;connect#gt;
+    [*] --> #lt;start#gt;
+    #lt;start#gt; --> #lt;connect#gt;
     #lt;connect#gt; --> #lt;helo#gt;: #lt;Server#colon;id#gt;
-    #lt;connect#gt; --> [*]: #lt;Server#colon;error#gt;
     #lt;helo#gt; --> #lt;mail_from#gt;: #lt;Client#colon;HELO#gt; #lt;Server#colon;hello#gt;
+    #lt;helo#gt; --> #lt;end#gt;: #lt;Client#colon;HELO#gt; #lt;Server#colon;error#gt;
     #lt;mail_from#gt; --> #lt;mail_to#gt;: #lt;Client#colon;MAIL_FROM#gt; #lt;Server#colon;ok#gt;
-    #lt;mail_from#gt; --> [*]: #lt;Server#colon;error#gt;
+    #lt;mail_from#gt; --> #lt;end#gt;: #lt;Client#colon;MAIL_FROM#gt; #lt;Server#colon;error#gt;
     #lt;mail_to#gt; --> #lt;data#gt;: #lt;Client#colon;RCPT_TO#gt; #lt;Server#colon;ok#gt;
     #lt;mail_to#gt; --> #lt;mail_to#gt;: #lt;Client#colon;RCPT_TO#gt; #lt;Server#colon;ok#gt;
-    #lt;mail_to#gt; --> [*]: #lt;Server#colon;error#gt;
-    #lt;data#gt; --> #lt;quit#gt;: #lt;Client#colon;DATA#gt; #lt;Server#colon;end_data#gt; #lt;Client#colon;message#gt;
-    #lt;data#gt; --> [*]: #lt;Server#colon;error#gt;
-    #lt;quit#gt; --> [*]: #lt;Client#colon;QUIT#gt; #lt;Server#colon;bye#gt;
+    #lt;mail_to#gt; --> #lt;end#gt;: #lt;Client#colon;RCPT_TO#gt; #lt;Server#colon;error#gt;
+    #lt;data#gt; --> #lt;quit#gt;: #lt;Client#colon;DATA#gt; #lt;Server#colon;end_data#gt; #lt;Client#colon;message#gt; #lt;Server#colon;ok#gt;
+    #lt;data#gt; --> #lt;end#gt;: #lt;Client#colon;DATA#gt; #lt;Server#colon;end_data#gt; #lt;Client#colon;message#gt; #lt;Server#colon;error#gt;
+    #lt;quit#gt; --> #lt;end#gt;: #lt;Client#colon;QUIT#gt; #lt;Server#colon;bye#gt;
+    #lt;end#gt; --> [*]
 ```
 
 Having such `<error>` transitions as part of the spec allows Fandango to also cover and trigger these.
@@ -473,11 +475,15 @@ This assumes the grammar actually embeds a state diagram - the last nonterminal 
 To produce the above state diagram for SMTP as an SVG file [smtp-mermaid.svg](smtp-mermaid.svg),
 use the [Mermaid `mmdc` command-line interface](https://github.com/mermaid-js/mermaid-cli):
 
+```{margin}
+Use `mmdc --help` to see how to control formats, sizes, and themes.
+```
+
 ```shell
 $ fandango convert --to=mermaid smtp-extended.fan | mmdc -i - -o smtp-mermaid.svg
 ```
 
-This is the resulting SVG image:
+The resulting SVG image is the same as embedded above:
 
 ```{image} smtp-mermaid.svg
 ```
