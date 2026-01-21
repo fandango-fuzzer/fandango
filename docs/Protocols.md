@@ -46,7 +46,7 @@ In particular, it can
 ## Interacting with an SMTP server
 
 Let us start with a simple example.
-The Simple Mail Transfer Protocol (SMTP) is a protocol through which mail clients can connect to a server to send mail to recipients.
+The [Simple Mail Transfer Protocol](https://en.wikipedia.org/wiki/Simple_Mail_Transfer_Protocol) (SMTP, [RFC 821](https://datatracker.ietf.org/doc/html/rfc821)) is a protocol through which mail clients can connect to a server to send mail to recipients.
 A [typical interaction with an SMTP server](https://en.wikipedia.org/wiki/Simple_Mail_Transfer_Protocol) `smtp.example.com`, sending a mail from `bob@example.org` to `alice@example.com`, is illustrated below:
 
 ```{mermaid}

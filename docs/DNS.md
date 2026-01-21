@@ -13,14 +13,14 @@ kernelspec:
 (sec:dns)=
 # Case Study: DNS
 
-This Fandango specification allows testing [DNS](https://datatracker.ietf.org/doc/html/rfc1035) (RFC 1035, Domain Name Service) clients and servers.
+This Fandango specification allows testing clients and name servers of the Internet [Domain Name System](https://en.wikipedia.org/wiki/Domain_Name_System) (DNS, [RFC 1035](https://datatracker.ietf.org/doc/html/rfc1035)).
 It demonstrates
 
 * how a nontrivial protocol with bit-level _binary_ commands is implemented;
 * how to use constraints to _validate_ responses; and
 * how to embed _compression_ and _decompression_ functions.
 
-The [`dns.fan`](.fan) Fandango DNS spec is available for download.
+The Fandango DNS protocol spec [`dns.fan`](.fan) is available for download.
 To test it with Fandango as client querying the public Cloudflare DNS server 1.1.1.1 on the default DNS port 53, invoke Fandango as
 
 ```shell
@@ -82,6 +82,7 @@ We do not model DNSSEC and other DNS extensions.
 The header consists of a number of fields as defined below.
 Note the mix of bits and bytes, which is common in DNS messages.
 
+% FIXME: We don't support all <h_rcode> types. Why?
 ```python
 <header_req> ::= <h_id> 0 <h_opcode_standard> 0 0 <h_rd> 0 0 <bit> 0 <h_rcode_noerror> <req_qd_count> 0{16} 0{16} 0{16}
 ```
