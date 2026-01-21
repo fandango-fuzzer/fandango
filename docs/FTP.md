@@ -13,10 +13,22 @@ kernelspec:
 (sec:ftp)=
 # Case Study: FTP
 
-This FTP specification allows testing FTP clients and servers.
-It demonstrates how additional channels (`ClientData` and `ServerData`) are created on demand, based on the ports returned by the FTP server.
+This Fandango specification allows testing FTP clients and servers.
+It demonstrates
+
+* how a nontrivial protocol with text commands is implemented; and
+* how additional channels (`ClientData` and `ServerData`) are used on demand, based on the ports returned by the FTP server
 
 The [`ftp.fan`](ftp.fan) Fandango FTP spec is available for download.
+To test it, run an FTP server on the local host at port 50100, and invoke Fandango as
+
+```{margin}
+Use `-n 1` if you want just one interaction.
+```
+
+```shell
+$ fandango -f ftp.fan
+```
 
 ```{versionadded} 1.1
 These features are available in Fandango 1.1 and later.
