@@ -8,7 +8,7 @@ PYTHON = python
 PYTEST = pytest
 ANTLR = antlr
 BLACK = black
-PIP = pip
+PIP = $(PYTHON) -m pip
 SED = sed
 PAGELABELS = $(PYTHON) -m pagelabels
 
