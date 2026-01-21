@@ -1,4 +1,4 @@
-name: GitHub Pages
+name: Build and deploy Docs
 
 on:
   pull_request:
