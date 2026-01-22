@@ -28,7 +28,6 @@ jobs:
       - name: Build the book
         run: |
           sudo make system-dev-tools
-          source .venv/bin/activate
           bash -c "source .venv/bin/activate && make web"
           echo "Exit code: $?"
 
