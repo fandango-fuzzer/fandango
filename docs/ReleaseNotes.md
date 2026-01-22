@@ -21,6 +21,7 @@ This document lists major changes across releases.
    * `fandango talk` now systematically covers states and messages
    * `fandango talk` now keeps on producing diverse interactions until stopped or 100% coverage is reached
    * Much extended documentation with [FTP](sec:ftp) and [DNS](sec:dns) case studies
+* `fandango convert` can now produce [state diagrams from grammars](sec:extracting-state-diagrams).
 * The documentation [fandango.pdf](_static/fandango.pdf) is now available for download from the top-level menu
 * [development] Major internal refactorings and code quality improvements.
 * [development] Added support for the `uv` package manager, including appropriate lock files to ensure compatible and fixed dependency versions

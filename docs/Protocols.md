@@ -458,6 +458,7 @@ stateDiagram
 Having such `<error>` transitions as part of the spec allows Fandango to also cover and trigger these.
 
 
+(sec:extracting-state-diagrams)=
 ## Extracting State Diagrams
 
 You can use Fandango to _automatically extract state diagrams_ such as the above.
