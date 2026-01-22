@@ -760,6 +760,7 @@ def remap_to_std_party(grammar: Grammar, io_instance: FandangoIO) -> None:
     if unknown_recipients:
         raise FandangoValueError(f"Recipients {unknown_recipients!r} unspecified")
 
+
 def slice_parties(grammar: Grammar, parties: set[str], ignore_receivers=False) -> None:
     is_first = True
     deleted_keys = set()
@@ -768,10 +769,16 @@ def slice_parties(grammar: Grammar, parties: set[str], ignore_receivers=False) -
         deleted_keys = set()
         is_first = False
         for nt in set(grammar.rules.keys()):
-            delete_rule = PacketTruncator(grammar, parties, ignore_receivers=ignore_receivers, delete_rules=keys_to_delete).visit(grammar.rules[nt])
+            delete_rule = PacketTruncator(
+                grammar,
+                parties,
+                ignore_receivers=ignore_receivers,
+                delete_rules=keys_to_delete,
+            ).visit(grammar.rules[nt])
             if delete_rule:
                 deleted_keys.add(nt)
                 del grammar.rules[nt]
+
 
 def truncate_invisible_packets(grammar: Grammar, io_instance: FandangoIO) -> None:
     keep_parties = grammar.msg_parties(include_recipients=True)
