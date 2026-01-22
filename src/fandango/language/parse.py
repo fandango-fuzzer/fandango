@@ -445,12 +445,8 @@ def rec_read_file(current_path: Path, include_path: Path) -> str:
         contents = file.read()
     files.append(contents)
     for include_file in find_include_paths(contents):
-        last_delimiter_idx = max(include_file.rfind("/"), include_file.rfind("\\"))
-        relative_include_folder = ""
+        relative_include_folder = include_path.parent
         include_file_name = include_file
-        if last_delimiter_idx != -1:
-            relative_include_folder = include_file[:last_delimiter_idx]
-            include_file_name = include_file[last_delimiter_idx + 1:]
         file_folder = current_path / Path(relative_include_folder)
         included_contents = rec_read_file(file_folder, Path(include_file_name))
         files.append(included_contents)
@@ -498,15 +494,24 @@ def parse(
         constraints = []
 
     if includes is None:
-        includes = []
+        includes = [] # TODO use
 
     if start_symbol is None:
-        start_symbol = "<start>"
+        start_symbol = "<start>" # TODO use
 
     full_file = ""
 
     if use_stdlib:
         full_file += stdlib + "\n\n"
+        std_grammar, std_constraints = parse_content(
+            stdlib,
+            filename="<stdlib>",
+            use_cache=use_cache,
+            lazy=lazy,
+            max_repetitions=max_repetitions,
+        )
+        for symbol in std_grammar.rules.keys():
+            USED_SYMBOLS.add(symbol.name())
 
     for fan_file in fan_files:
         if isinstance(fan_file, str):
@@ -532,34 +537,12 @@ def parse(
         lazy=lazy,
         max_repetitions=max_repetitions,
     )
-    grammar.prime()
-    return grammar, constraints
-
-
 
     LOGGER.debug(f"Final grammar: {[key.name() for key in grammar.rules.keys()]}")
 
-    grammar.fuzzing_mode = mode
     LOGGER.debug(f"Grammar fuzzing mode: {grammar.fuzzing_mode}")
 
     LOGGER.debug("Processing constraints")
-    for constraint in constraints or []:
-        LOGGER.debug(f"Constraint {constraint}")
-        first_token = constraint.split()[0]
-        if any(
-            first_token.startswith(kw) for kw in ["where", "minimizing", "maximizing"]
-        ):
-            _, new_constraints = parse_content(
-                constraint, filename=constraint, use_cache=use_cache, lazy=lazy
-            )
-        else:
-            _, new_constraints = parse_content(
-                "where " + constraint,
-                filename=constraint,
-                use_cache=use_cache,
-                lazy=lazy,
-            )
-        parsed_constraints += new_constraints
 
     if check:
         LOGGER.debug("Checking and finalizing content")
@@ -568,8 +551,8 @@ def parse(
                 grammar, given_used_symbols=USED_SYMBOLS, start_symbol=start_symbol
             )
 
-        if grammar and parsed_constraints:
-            check_constraints_existence(grammar, parsed_constraints)
+        if grammar and constraints:
+            check_constraints_existence(grammar, constraints)
 
     global_env, local_env = grammar.get_spec_env()
     if not parties and grammar.fuzzing_mode == FuzzingMode.IO:
@@ -597,7 +580,7 @@ def parse(
         slice_parties(grammar, parties)
 
     LOGGER.debug("All contents parsed")
-    return grammar, parsed_constraints
+    return grammar, constraints
 
 
 ### Consistency Checks
