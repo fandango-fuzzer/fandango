@@ -28,7 +28,7 @@ jobs:
       - name: Build the book
         run: |
           sudo make system-dev-tools
-          bash -c "source .venv/bin/activate && make web"
+          make web
           echo "Exit code: $?"
 
       # Step 4: Upload built book as artifact
