@@ -9,7 +9,13 @@ from fandango.language.grammar.nodes.terminal import TerminalNode
 
 
 class PacketTruncator(NodeVisitor[bool, bool]):
-    def __init__(self, grammar: "Grammar", keep_parties: set[str], ignore_receivers: bool = False, delete_rules: set[NonTerminal] = None):
+    def __init__(
+        self,
+        grammar: "Grammar",
+        keep_parties: set[str],
+        ignore_receivers: bool = False,
+        delete_rules: set[NonTerminal] = None,
+    ):
         self.grammar = grammar
         self.keep_msg_parties = keep_parties
         self.ignore_receivers = ignore_receivers
