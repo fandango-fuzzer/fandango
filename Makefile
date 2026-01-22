@@ -6,9 +6,8 @@ MAKEFLAGS=--warn-undefined-variables
 # Programs
 PYTHON = python
 PYTEST = pytest
-ANTLR = antlr
 BLACK = black
-PIP = pip
+PIP = $(PYTHON) -m pip
 SED = sed
 PAGELABELS = $(PYTHON) -m pagelabels
 
@@ -34,17 +33,17 @@ $(EGG_INFO)/PKG-INFO: pyproject.toml
 UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
 # Mac
-SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli uv
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz uv
 TEST_TOOLS =  # clang is installed by default on Mac
 SYSTEM_DEV_INSTALL = brew install
 else ifeq ($(UNAME), Linux)
 # Linux
-SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli uv
+SYSTEM_DEV_TOOLS = antlr4 pdftk-java graphviz
 TEST_TOOLS = clang
 SYSTEM_DEV_INSTALL = apt-get install
 else ifneq (,$(findstring NT,$(UNAME)))
 # Windows (all variants): Windows_NT, MINGW64_NT-10.0-20348, MSYS_NT-10.0-20348
-SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli uv
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz uv
 TEST_TOOLS = llvm # this is the easiest way to install clang on windows
 SYSTEM_DEV_INSTALL = choco install
 else
@@ -122,7 +121,7 @@ osascript -e 'tell application "Safari" to set URL of document of window 1 to UR
 VIEW_PDF = open $(PDF_TARGET)
 
 # Command to check docs for failed assertions
-CHECK_DOCS = grep -l AssertionError $(DOCS)/_build/html/*.html; if [ $$? == 0 ]; then echo '*** Check the above files for failed assertions'; false; else true; fi
+CHECK_DOCS = grep -l AssertionError docs/_build/html/*.html; [ $$? -ne 0 ]
 
 # Command to patch HTML output
 PATCH_HTML = cd $(DOCS); sh ./patch-html.sh
