@@ -666,7 +666,7 @@ def parse(
     grammar.update(grammar, prime=check)
 
     if parties:
-        slice_parties(grammar, set(parties))
+        slice_parties(grammar, set(parties), ignore_receivers=True)
 
     LOGGER.debug("All contents parsed")
     return grammar, parsed_constraints
@@ -760,7 +760,7 @@ def remap_to_std_party(grammar: Grammar, io_instance: FandangoIO) -> None:
     if unknown_recipients:
         raise FandangoValueError(f"Recipients {unknown_recipients!r} unspecified")
 
-def slice_parties(grammar: Grammar, parties: set[str]) -> None:
+def slice_parties(grammar: Grammar, parties: set[str], ignore_receivers=False) -> None:
     is_first = True
     deleted_keys = set()
     while len(deleted_keys) != 0 or is_first:
@@ -768,7 +768,7 @@ def slice_parties(grammar: Grammar, parties: set[str]) -> None:
         deleted_keys = set()
         is_first = False
         for nt in set(grammar.rules.keys()):
-            delete_rule = PacketTruncator(grammar, parties, ignore_receivers=True, delete_rules=keys_to_delete).visit(grammar.rules[nt])
+            delete_rule = PacketTruncator(grammar, parties, ignore_receivers=ignore_receivers, delete_rules=keys_to_delete).visit(grammar.rules[nt])
             if delete_rule:
                 deleted_keys.add(nt)
                 del grammar.rules[nt]
@@ -779,7 +779,7 @@ def truncate_invisible_packets(grammar: Grammar, io_instance: FandangoIO) -> Non
     for existing_party in list(keep_parties):
         if not io_instance.parties[existing_party].is_fuzzer_controlled():
             keep_parties.remove(existing_party)
-    slice_parties(grammar, keep_parties)
+    slice_parties(grammar, keep_parties, ignore_receivers=False)
 
 
 def check_grammar_consistency(
