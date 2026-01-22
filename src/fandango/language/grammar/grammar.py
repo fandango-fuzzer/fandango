@@ -300,12 +300,6 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         if prime:
             self.prime()
 
-    def finalize_globals(self) -> None:
-        """Finalize global variables by evaluating any callables."""
-        for key, value in self._global_variables.items():
-            if "__globals__" in dir(value):
-                value.__globals__.update(self._global_variables)
-
     def get_protocol_messages(
         self, start_symbol: NonTerminal = NonTerminal("<start>")
     ) -> set[PacketNonTerminal]:

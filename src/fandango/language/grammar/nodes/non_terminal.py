@@ -72,7 +72,7 @@ class NonTerminalNode(Node):
             generated.recipient = self.recipient
             parent.set_children(parent.children[:-1])
             parent.add_child(generated)
-            return
+            return None
         parent.set_children(parent.children[:-1])
 
         assign_sender = None

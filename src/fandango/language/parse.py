@@ -128,45 +128,7 @@ def include(file_to_be_included: str) -> None:
     Include FILE_TO_BE_INCLUDED in the current context.
     This function is invoked from .fan files.
     """
-    global FILES_TO_PARSE
-    global CURRENT_FILENAME
-    global INCLUDE_DEPTH
-
-    path = os.path.dirname(CURRENT_FILENAME)
-    if not path:
-        # If the current file has no path, use the current directory
-        path = "."
-    if INCLUDES:
-        path += ":" + ":".join(INCLUDES)
-    if os.environ.get("FANDANGO_PATH"):
-        path += ":" + os.environ["FANDANGO_PATH"]
-    dirs = [Path(dir) for dir in path.split(":")]
-
-    if platform.system() == "Darwin":
-        dirs += [Path.home() / "Library" / "Fandango"]  # ~/Library/Fandango
-        dirs += [Path("/Library/Fandango")]  # /Library/Fandango
-
-    dirs += [xdg_data_home() / "fandango"]  # sth like ~/.local/share/fandango
-    dirs += [
-        dir / "fandango" for dir in xdg_data_dirs()
-    ]  # sth like /usr/local/share/fandango
-
-    for dir in dirs:
-        full_file_name = dir / file_to_be_included
-        if not os.path.exists(full_file_name):
-            continue
-        with open(full_file_name, "r") as full_file:
-            LOGGER.debug(f"{CURRENT_FILENAME}: including {full_file_name}")
-
-            INCLUDE_DEPTH += (
-                1  # Will be lowered when the included file is done processing
-            )
-            FILES_TO_PARSE.append((full_file.name, full_file.read(), INCLUDE_DEPTH))
-        return
-
-    raise FileNotFoundError(
-        f"{CURRENT_FILENAME}: {file_to_be_included!r} not found in {':'.join(str(dir) for dir in dirs)}"
-    )
+    return None # This is only a placeholder. We don't actually execute this function.
 
 
 ### Parsing
@@ -461,6 +423,40 @@ USED_SYMBOLS: set[str] = set()
 STDLIB_GRAMMAR: Optional[Grammar] = None
 STDLIB_CONSTRAINTS: Optional[list[Constraint | SoftValue]] = None
 
+def find_include_paths(file_contents: str) -> list[str]:
+    find_include_pattern = r"include\(['\"]([\w\.\\/._]+\.[\w\.]+)['\"]\)(\s*#.+)?"
+    find_include_re = re.compile(find_include_pattern)
+
+    found_paths: list[str] = []
+    for include_match in find_include_re.finditer(file_contents):
+        file_name = include_match.group(1)
+        found_paths.append(file_name)
+    return found_paths
+
+def rec_read_file(current_path: Path, include_path: Path) -> str:
+    """
+    Resolve INCLUDE_PATH relative to CURRENT_PATH recursively.
+    :param current_path: The current file path
+    :param include_path: The include file path
+    :return: The resolved absolute include file path
+    """
+    files = []
+    with open(current_path / include_path, "r") as file:
+        contents = file.read()
+    files.append(contents)
+    for include_file in find_include_paths(contents):
+        last_delimiter_idx = max(include_file.rfind("/"), include_file.rfind("\\"))
+        relative_include_folder = ""
+        include_file_name = include_file
+        if last_delimiter_idx != -1:
+            relative_include_folder = include_file[:last_delimiter_idx]
+            include_file_name = include_file[last_delimiter_idx + 1:]
+        file_folder = current_path / Path(relative_include_folder)
+        included_contents = rec_read_file(file_folder, Path(include_file_name))
+        files.append(included_contents)
+    return "\n\n".join(files[::-1])
+
+
 
 def parse(
     fan_files: str | IO[str] | list[str | IO[str]],
@@ -507,107 +503,39 @@ def parse(
     if start_symbol is None:
         start_symbol = "<start>"
 
-    global STDLIB_SYMBOLS, STDLIB_GRAMMAR, STDLIB_CONSTRAINTS
-    if use_stdlib and STDLIB_GRAMMAR is None:
-        LOGGER.debug("Reading standard library")
-        STDLIB_GRAMMAR, STDLIB_CONSTRAINTS = parse_content(
-            stdlib,
-            filename="<stdlib>",
-            use_cache=use_cache,
-            max_repetitions=max_repetitions,
-        )
+    full_file = ""
 
-    global USED_SYMBOLS
-    USED_SYMBOLS = set()
     if use_stdlib:
-        assert STDLIB_GRAMMAR is not None
-        for symbol in STDLIB_GRAMMAR.rules.keys():
-            # Do not complain about unused symbols in the standard library
-            USED_SYMBOLS.add(symbol.name())
+        full_file += stdlib + "\n\n"
 
-    global INCLUDES
-    INCLUDES = includes
-
-    grammars = []
-    parsed_constraints: list[Constraint | SoftValue] = []
-    if use_stdlib:
-        assert STDLIB_GRAMMAR is not None
-        assert STDLIB_CONSTRAINTS is not None
-        try:
-            grammars = [deepcopy(STDLIB_GRAMMAR)]
-        except TypeError:
-            # This can happen if we invoke parse() from a notebook
-            grammars = [STDLIB_GRAMMAR]
-        parsed_constraints = STDLIB_CONSTRAINTS.copy()
-
-    grammars += given_grammars
-
-    LOGGER.debug("Reading files")
-    more_grammars = []
-    global FILES_TO_PARSE
-    for file in fan_files:
-        if isinstance(file, str):
-            FILES_TO_PARSE.append(("<string>", file, 0))  # TODO: fix
+    for fan_file in fan_files:
+        if isinstance(fan_file, str):
+            full_file += "\n\n" + fan_file
         else:
-            FILES_TO_PARSE.append((file.name, file.read(), 0))
-            file.close()
+            full_file += "\n\n" + rec_read_file(Path(os.curdir), Path(fan_file.name))
+            fan_file.close()
 
-    global INCLUDE_DEPTH
-    INCLUDE_DEPTH = 0
-
-    mode = FuzzingMode.COMPLETE
-
-    while FILES_TO_PARSE:
-        name, fan_contents, depth = FILES_TO_PARSE.pop(0)
-        LOGGER.debug(f"Reading {name} (depth = {depth})")
-        new_grammar, new_constraints = parse_content(
-            fan_contents,
-            filename=name,
-            use_cache=use_cache,
-            lazy=lazy,
-            max_repetitions=max_repetitions,
-        )
-        parsed_constraints += new_constraints
-        assert new_grammar is not None
-        if new_grammar.fuzzing_mode == FuzzingMode.IO:
-            mode = FuzzingMode.IO
-
-        if depth == 0:
-            # Given file: process in order
-            more_grammars.append(new_grammar)
-            for generator in new_grammar.generators.values():
-                for nonterminal in generator.nonterminals.values():
-                    USED_SYMBOLS.add(nonterminal.symbol.name())
+    for constraint in constraints:
+        first_token = constraint.split()[0]
+        if any(
+            first_token.startswith(kw) for kw in ["where", "minimizing", "maximizing"]
+        ):
+            full_file += "\n\n" + constraint
         else:
-            # Included file: process _before_ current grammar
-            more_grammars = [new_grammar] + more_grammars
-            # Do not complain about unused symbols in included files
-            for symbol in new_grammar.rules.keys():
-                USED_SYMBOLS.add(symbol.name())
-            for generator in new_grammar.generators.values():
-                for nonterminal in generator.nonterminals.values():
-                    USED_SYMBOLS.add(nonterminal.symbol.name())
+            full_file += "\n\nwhere " + constraint
+    full_file += "\n\n"
 
-        if INCLUDE_DEPTH > 0:
-            INCLUDE_DEPTH -= 1
+    grammar, constraints = parse_content(
+        full_file,
+        filename="test_file",
+        use_cache=use_cache,
+        lazy=lazy,
+        max_repetitions=max_repetitions,
+    )
+    grammar.prime()
+    return grammar, constraints
 
-    grammars += more_grammars
 
-    LOGGER.debug(f"Processing {len(grammars)} grammars")
-    grammar = grammars[0]
-    LOGGER.debug(f"Grammar #1: {[key.name() for key in grammar.rules.keys()]}")
-    n = 2
-    for g in grammars[1:]:
-        LOGGER.debug(f"Grammar #{n}: {[key.name() for key in g.rules.keys()]}")
-
-        for symbol in g.rules.keys():
-            if symbol in grammar.rules:
-                LOGGER.info(f"Redefining {symbol.name()}")
-
-        grammar.update(g, prime=False)
-        n += 1
-
-    grammar.finalize_globals()
 
     LOGGER.debug(f"Final grammar: {[key.name() for key in grammar.rules.keys()]}")
 
