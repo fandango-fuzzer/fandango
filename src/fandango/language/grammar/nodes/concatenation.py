@@ -56,10 +56,6 @@ class Concatenation(Node):
     def children(self) -> list[Node]:
         return self.nodes
 
-    def slice_parties(self, parties: list[str]) -> None:
-        self.nodes = [node for node in self.nodes if node.in_parties(parties)]
-        super().slice_parties(parties)
-
     def __getitem__(self, item: int) -> Node:
         return self.nodes.__getitem__(item)
 
