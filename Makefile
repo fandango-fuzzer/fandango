@@ -121,7 +121,7 @@ osascript -e 'tell application "Safari" to set URL of document of window 1 to UR
 VIEW_PDF = open $(PDF_TARGET)
 
 # Command to check docs for failed assertions
-CHECK_DOCS = grep -l AssertionError $(DOCS)/_build/html/*.html; if [ $$? == 0 ]; then echo '*** Check the above files for failed assertions'; false; else true; fi
+CHECK_DOCS = grep -l AssertionError docs/_build/html/*.html; [ $$? -ne 0 ]
 
 # Command to patch HTML output
 PATCH_HTML = cd $(DOCS); sh ./patch-html.sh
