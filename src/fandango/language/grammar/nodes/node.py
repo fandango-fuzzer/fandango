@@ -115,11 +115,6 @@ class Node(abc.ABC):
             )
         return parties
 
-    def slice_parties(self, parties: list[str]) -> None:
-        """Remove all nodes whose party is not in `parties`."""
-        for child in self.children():
-            child.slice_parties(parties)
-
     def in_parties(self, parties: list[str]) -> bool:
         return True
 
