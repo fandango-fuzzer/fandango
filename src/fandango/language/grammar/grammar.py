@@ -944,14 +944,6 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             else:
                 raise FandangoValueError(f"Unknown node type {node.node_type}")
 
-    def slice_parties(self, parties: list[str]) -> None:
-        """
-        Returns a new grammar that only contains the rules that are relevant to the given parties.
-        """
-        for expansion in self.rules.values():
-            expansion.slice_parties(parties)
-        self.fuzzing_mode = FuzzingMode.COMPLETE
-
     def default_result(self) -> list[Node]:
         return []
 
