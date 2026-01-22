@@ -78,12 +78,6 @@ class Alternative(Node):
     def children(self) -> list[Node]:
         return self.alternatives
 
-    def slice_parties(self, parties: list[str]) -> None:
-        self.alternatives = [
-            node for node in self.alternatives if node.in_parties(parties)
-        ]
-        super().slice_parties(parties)
-
     def __getitem__(self, item: int) -> Node:
         return self.alternatives.__getitem__(item)
 

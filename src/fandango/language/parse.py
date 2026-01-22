@@ -666,7 +666,7 @@ def parse(
     grammar.update(grammar, prime=check)
 
     if parties:
-        slice_parties(grammar, parties)
+        slice_parties(grammar, set(parties))
 
     LOGGER.debug("All contents parsed")
     return grammar, parsed_constraints
@@ -760,6 +760,18 @@ def remap_to_std_party(grammar: Grammar, io_instance: FandangoIO) -> None:
     if unknown_recipients:
         raise FandangoValueError(f"Recipients {unknown_recipients!r} unspecified")
 
+def slice_parties(grammar: Grammar, parties: set[str]) -> None:
+    is_first = True
+    deleted_keys = set()
+    while len(deleted_keys) != 0 or is_first:
+        keys_to_delete = set(deleted_keys)
+        deleted_keys = set()
+        is_first = False
+        for nt in set(grammar.rules.keys()):
+            delete_rule = PacketTruncator(grammar, parties, ignore_receivers=True, delete_rules=keys_to_delete).visit(grammar.rules[nt])
+            if delete_rule:
+                deleted_keys.add(nt)
+                del grammar.rules[nt]
 
 def truncate_invisible_packets(grammar: Grammar, io_instance: FandangoIO) -> None:
     keep_parties = grammar.msg_parties(include_recipients=True)
@@ -767,9 +779,7 @@ def truncate_invisible_packets(grammar: Grammar, io_instance: FandangoIO) -> Non
     for existing_party in list(keep_parties):
         if not io_instance.parties[existing_party].is_fuzzer_controlled():
             keep_parties.remove(existing_party)
-
-    for nt in grammar.rules.keys():
-        PacketTruncator(grammar, keep_parties).visit(grammar.rules[nt])
+    slice_parties(grammar, keep_parties)
 
 
 def check_grammar_consistency(
@@ -1091,27 +1101,6 @@ def check_constraints_existence_children(
             )
     indirect_child[f"<{parent}>"][f"<{symbol}>"] = is_child
     return is_child
-
-
-def slice_parties(grammar: Grammar, parties: list[str]) -> None:
-    """
-    Slice the given parties from the grammar.
-    :param grammar: The grammar to check
-    :param parties: List of party names to check
-    :raises FandangoValueError: If a party is not defined in the grammar
-    """
-    if not parties:
-        return
-
-    defined_parties = set(grammar.msg_parties(include_recipients=True))
-    for party in parties:
-        if party not in defined_parties:
-            closest = closest_match(party, defined_parties)
-            raise FandangoValueError(
-                f"Party {party!r} not defined in the grammar. Did you mean {closest!r}?"
-            )
-
-    grammar.slice_parties(parties)
 
 
 def assign_implicit_party(grammar: Grammar, implicit_party: str) -> None:
