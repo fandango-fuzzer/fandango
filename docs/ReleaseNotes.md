@@ -17,12 +17,14 @@ This document lists major changes across releases.
 
 ```{versionadded} 1.1 (January 2026)
 * Much enhanced [protocol fuzzing](sec:protocols):
+   * Protocol fuzzing is now out of beta
    * `fandango talk` now systematically covers states and messages
    * `fandango talk` now keeps on producing diverse interactions until stopped or 100% coverage is reached
    * Much extended documentation with [FTP](sec:ftp) and [DNS](sec:dns) case studies
-   * Protocol fuzzing is now out of beta
+* The documentation [fandango.pdf](_static/fandango.pdf) is now available for download from the top-level menu
 * [development] Major internal refactorings and code quality improvements.
 * [development] Added support for the `uv` package manager, including appropriate lock files to ensure compatible and fixed dependency versions
+* Lots of minor bug fixes
 ```
 
 ```{versionadded} 1.0 (June 2025)
