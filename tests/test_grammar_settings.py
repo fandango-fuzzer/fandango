@@ -5,7 +5,7 @@ from fandango.language.grammar.grammar_settings import GrammarSetting
 from fandango.language.grammar.nodes.node import Node, NODE_SETTINGS_DEFAULTS
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.terminal import TerminalNode
-from fandango.language.parse import parse
+from fandango.language.parse.parse import parse
 
 FLOAT_KEY = next(
     k for k in NODE_SETTINGS_DEFAULTS if isinstance(NODE_SETTINGS_DEFAULTS[k], float)

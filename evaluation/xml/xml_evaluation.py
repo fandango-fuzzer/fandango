@@ -2,7 +2,7 @@ import time
 import xml.etree.ElementTree as ET
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
-from fandango.language.parse import parse
+from fandango.language.parse.parse import parse
 
 
 def is_syntactically_valid_xml(xml_string):

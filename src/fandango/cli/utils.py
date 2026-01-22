@@ -12,7 +12,7 @@ from fandango.constraints.constraint import Constraint
 from fandango.errors import FandangoError, FandangoParseError
 from fandango.evolution import GeneratorWithReturn
 from fandango.language.grammar.grammar import Grammar
-from fandango.language.parse import parse
+from fandango.language.parse.parse import parse
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER, set_visualization
 

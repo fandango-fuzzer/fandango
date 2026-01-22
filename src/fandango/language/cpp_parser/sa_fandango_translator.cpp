@@ -48,6 +48,7 @@ SA_FandangoTranslator::~SA_FandangoTranslator() {
     Py_XDECREF(Rs_sliceContext_cls);
     Py_XDECREF(PythonContext_cls);
     Py_XDECREF(Python_tagContext_cls);
+    Py_XDECREF(IncludeContext_cls);
     Py_XDECREF(Grammar_settingContext_cls);
     Py_XDECREF(Grammar_setting_contentContext_cls);
     Py_XDECREF(Grammar_selectorContext_cls);
@@ -479,6 +480,12 @@ antlrcpp::Any SA_FandangoTranslator::visitPython(FandangoParser::PythonContext *
 antlrcpp::Any SA_FandangoTranslator::visitPython_tag(FandangoParser::Python_tagContext *ctx){
     if(!Python_tagContext_cls) Python_tagContext_cls = PyObject_GetAttrString(translator->parser_cls, "Python_tagContext");
     PyObject *py_ctx = translator->convert_ctx(this, ctx, Python_tagContext_cls);
+    return py_ctx;
+}
+
+antlrcpp::Any SA_FandangoTranslator::visitInclude(FandangoParser::IncludeContext *ctx){
+    if(!IncludeContext_cls) IncludeContext_cls = PyObject_GetAttrString(translator->parser_cls, "IncludeContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, IncludeContext_cls);
     return py_ctx;
 }
 
