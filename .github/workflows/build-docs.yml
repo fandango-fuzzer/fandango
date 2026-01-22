@@ -26,7 +26,8 @@ jobs:
       
       # Step 3: Build the documentation
       - name: Build the book
-        run: |
+        shell: bash
+        run: |  
           sudo make system-dev-tools
           make web
           echo "Exit code: $?"
