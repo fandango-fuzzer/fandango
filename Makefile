@@ -10,6 +10,7 @@ BLACK = black
 PIP = $(PYTHON) -m pip
 SED = sed
 PAGELABELS = $(PYTHON) -m pagelabels
+ANTLR = antlr
 
 # Sources
 SRC = src/fandango
