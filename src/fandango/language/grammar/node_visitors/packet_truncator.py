@@ -51,8 +51,12 @@ class PacketTruncator(NodeVisitor[bool, bool]):
     def visitNonTerminalNode(self, node: NonTerminalNode) -> bool:
         if node.symbol in self.delete_rules:
             return True
-        if node.sender is None and (self.ignore_receivers or node.recipient is None):
-            return False
+        if self.ignore_receivers:
+            if node.sender is None:
+                return False
+        else:
+            if node.sender is None or node.recipient is None:
+                return False
         truncatable = True
         if node.sender in self.keep_msg_parties:
             truncatable = False
