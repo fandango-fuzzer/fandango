@@ -19,7 +19,12 @@ It demonstrates
 * how a nontrivial protocol with text commands is implemented; and
 * how additional channels (`ClientData` and `ServerData`) are used on demand, based on the ports returned by the FTP server
 
-The [`ftp.fan`](ftp.fan) Fandango FTP spec is available for download.
+The FTP spec consists of three parts, all available for download:
+
+* [`ftp.fan`](ftp.fan) - the core FTP spec without specific party definitions
+* [`ftp_client.fan`](ftp_client.fan) - for using Fandango as an FTP client (includes `ftp.fan`)
+* [`ftp_server.fan`](ftp_server.fan) - for using Fandango as an FTP server (includes `ftp.fan`)
+
 To test it, run an FTP server on the local host at port 50100, and invoke Fandango as
 
 ```{margin}
@@ -27,7 +32,7 @@ Omit `-n 1` if you want Fandango to test until protocol coverage is achieved.
 ```
 
 ```shell
-$ fandango talk -n 1 -f ftp.fan
+$ fandango talk -n 1 -f ftp_client.fan
 ```
 
 ```{versionadded} 1.1
@@ -573,12 +578,13 @@ The list data itself contains file names, user names, permissions, and dates:
 This is what a typical generated entry looks like:
 
 ```shell
-$ fandango fuzz -f ftp.fan --start-symbol '<list_data>' --party ServerData -n 1
+$ fandango fuzz -f ftp_client.fan --start-symbol '<list_data>' --party ServerData -n 1
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f ftp.fan --start-symbol '<list_data>' --party ServerData -n 1
+!fandango fuzz -f ftp_client.fan --start-symbol '<list_data>' --party ServerData -n 1
+assert _exit_code == 0
 ```
 
 
@@ -614,13 +620,14 @@ We can use `fandango fuzz` in conjunction with the `--party` option to simulate 
 Here is a valid sequence of commands as issued by a client:
 
 ```shell
-$ fandango fuzz -f ftp.fan --party ClientControl -n 1
+$ fandango fuzz -f ftp_client.fan --party ClientControl -n 1
 ```
 
 % | tr -d '\015' removes CR characters, which are rendered as NL in jupyter book
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f ftp.fan --party ClientControl -n 1 | tr -d '\015'
+!fandango fuzz -f ftp_client.fan --party ClientControl -n 1 | tr -d '\015'
+assert _exit_code == 0
 ```
 
 ### A Typical Server Interaction
@@ -628,18 +635,14 @@ $ fandango fuzz -f ftp.fan --party ClientControl -n 1
 Here is a valid sequence of responses as issued by a server:
 
 ```shell
-$ fandango fuzz -f ftp.fan --party ServerControl -n 1
+$ fandango fuzz -f ftp_client.fan --party ServerControl -n 1
 ```
 
 % | tr -d '\015' removes CR characters, which are rendered as NL in jupyter book
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f ftp.fan --party ServerControl -n 1 | tr -d '\015'
+!fandango fuzz -f ftp_client.fan --party ServerControl -n 1 | tr -d '\015'
+assert _exit_code == 0
 ```
 
 Now go and try things out for yourself!
-
-% ```{code-cell}
-% :tags: ["remove-input"]
-% !cat ../evaluation/experiments/ftp/ftp.fan
-% assert _exit_code == 0
