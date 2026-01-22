@@ -1,5 +1,5 @@
 import itertools
-from fandango import parse
+from fandango.language.parse.parse import parse
 from fandango.api import Fandango
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue

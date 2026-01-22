@@ -163,6 +163,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitInclude(FandangoParser::IncludeContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitGrammar_setting(FandangoParser::Grammar_settingContext *ctx) override {
     return visitChildren(ctx);
   }

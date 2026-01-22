@@ -10,15 +10,15 @@ from antlr4.error.Errors import ParseCancellationException
 from fandango.constraints import predicates
 from fandango.constraints.comparison import ComparisonConstraint
 from fandango.constraints.failing_tree import Comparison
-from fandango.language.convert import (
-    FandangoSplitter,
+from fandango.language.parse.convert import (
     GrammarProcessor,
     SearchProcessor,
     PythonProcessor,
 )
+from fandango.language.parse.splitter import FandangoSplitter
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.nodes.alternative import Alternative
-from fandango.language.parse import parse
+from fandango.language.parse.parse import parse
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.search import AnnotatedSearch, RuleSearch
@@ -48,7 +48,7 @@ def test_indents():
     "a" \
     | "a" <a>
 """)
-    splitter = FandangoSplitter()
+    splitter = FandangoSplitter(filename="<string>", used_symbols=set())
     splitter.visit(tree)
     processor = GrammarProcessor(grammar_settings=splitter.grammar_settings)
     grammar = processor.get_grammar(splitter.productions)
@@ -65,7 +65,7 @@ def test_alt_indents():
     | "a" <a>
     )
 """)
-    splitter = FandangoSplitter()
+    splitter = FandangoSplitter(filename="<string>", used_symbols=set())
     splitter.visit(tree)
     processor = GrammarProcessor(grammar_settings=splitter.grammar_settings)
     grammar = processor.get_grammar(splitter.productions)
@@ -257,7 +257,7 @@ def test_conversion_statement(stmt, value, is_global):
     is_global = True  # As of now, all Python defs are parsed as global defs
 
     fandango_tree: FandangoParser.ExpressionContext = get_tree(stmt)
-    splitter = FandangoSplitter()
+    splitter = FandangoSplitter(filename="<string>", used_symbols=set())
     splitter.visit(fandango_tree)
     code = splitter.python_code
     processor = PythonProcessor()
