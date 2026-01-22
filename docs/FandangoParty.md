@@ -25,7 +25,7 @@ The following diagram illustrates the classes and methods discussed in this chap
 classDiagram
     class FandangoParty {
         <<abstract>>
-        FandangoParty(ownership: Ownership, party_name: str | None)
+        FandangoParty(connection_mode: ConnectionMode, party_name: str | None)
         send(message: DerivationTree | str | bytes, recipient: str | None)
         receive(message: str | bytes, sender: str | None)
         start()
@@ -33,7 +33,7 @@ classDiagram
     }
     FandangoParty <|-- NetworkParty
     class NetworkParty{
-        NetworkParty(uri: str, ownership: Ownership, endpoint_type: EndPointType)
+        NetworkParty(uri: str, connection_mode: ConnectionMode)
         ip: str
         port: int
     }
@@ -44,15 +44,11 @@ classDiagram
     FandangoParty <|-- Out
     FandangoParty <|-- StdIn
     FandangoParty <|-- StdOut
-    class Ownership {
+    class ConnectionMode {
          <<enumeration>>
-        FANDANGO_PARTY
-        EXTERNAL_PARTY
-    }
-    class EndPointType {
-         <<enumeration>>
-        CONNECT
         OPEN
+        CONNECT
+        EXTERNAL
     }
     click FandangoParty href "#the-fandangoparty-class" "Base class for communicating with a party"
     click NetworkParty href "#the-networkparty-class" "Connect to an Internet party"
@@ -62,6 +58,7 @@ classDiagram
     click StdOut href "#in-and-out" "Connect to standard output of Fandango"
     click Client href "#client-and-server" "Connect to a client"
     click Server href "#client-and-server" "Connect to a server"
+    click ConnectionMode href "#the-fandangoparty-class" "Connection mode for a FandangoParty"
 ```
 
 All classes are predefined within `.fan` files; they need not be imported.
@@ -75,12 +72,12 @@ All classes are predefined within `.fan` files; they need not be imported.
 ### Constructor
 
 ```python
-FandangoParty(ownership: Ownership, party_name: Optional[str])
+FandangoParty(connection_mode: ConnectionMode, party_name: str | None = None)
 ```
-
-* `ownership`: Whether this party is
-    - controlled by Fandango (`Ownership.FANDANGO_PARTY`); or
-    - an external party (`Ownership.EXTERNAL_PARTY`).
+* `connection_mode`: Can be one of three values:
+    * `ConnectionMode.OPEN` - Fandango behaves as a _server_. It opens a port and waits for incoming connections.
+    * `ConnectionMode.CONNECT` - Fandango behaves as a _client_. It uses an existing port and connects to it.
+    * `ConnectionMode.EXTERNAL` - The party is an external party; no connection is made by Fandango. Messages annotated with this party are not produced by Fandango, but are expected to be received from an external party.
 * `party_name`: The name of the party. If `None`, the class name is used.
 
 
@@ -180,7 +177,7 @@ It implements the `FandangoParty` methods, as described above, plus the followin
 ### Constructor
 
 ```python
-NetworkParty(uri: str, ownership: Ownership, endpoint_type: EndPointType)
+NetworkParty(uri: str, connection_mode: ConnectionMode = ConnectionMode.CONNECT)
 ```
 
 * `uri` (string): The party specification of the party to connect to.
@@ -189,12 +186,10 @@ NetworkParty(uri: str, ownership: Ownership, endpoint_type: EndPointType)
     - `PROTOCOL`: `tcp` (default) or `udp`.
     - `HOST`: host name; use `[...]` for IPv6 host names. Default: 127.0.0.1
     - `PORT`: the port to connect to (0-65535)
-* `ownership`: Whether this party is
-    - controlled by Fandango (`Ownership.FANDANGO_PARTY`, default); or
-    - an external party (`Ownership.EXTERNAL_PARTY`).
-* `endpoint_type`: Whether Fandango should
-    - connect to an already running server socket (`EndpointType.CONNECT`, default); or
-    - open a server socket and wait for incoming connections (`EndpointType.OPEN`).
+* `connection_mode`: Can be one of three values:
+    * `ConnectionMode.OPEN` - Fandango behaves as a _server_. It opens the given URI and waits for incoming connections.
+    * `ConnectionMode.CONNECT` - Fandango behaves as a _client_. It connects to the given URI.
+    * `ConnectionMode.EXTERNAL` - The party is an external party; no connection is made by Fandango. Messages annotated with this party are not produced by Fandango, but are expected to be received from an external party.
 
 ### Properties
 
