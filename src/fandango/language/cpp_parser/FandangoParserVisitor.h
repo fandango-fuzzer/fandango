@@ -93,6 +93,8 @@ public:
 
     virtual std::any visitPython_tag(FandangoParser::Python_tagContext *context) = 0;
 
+    virtual std::any visitInclude(FandangoParser::IncludeContext *context) = 0;
+
     virtual std::any visitGrammar_setting(FandangoParser::Grammar_settingContext *context) = 0;
 
     virtual std::any visitGrammar_setting_content(FandangoParser::Grammar_setting_contentContext *context) = 0;

@@ -43,35 +43,6 @@ from fandango.language.symbols import NonTerminal, Terminal
 from fandango.logger import LOGGER
 
 
-class FandangoSplitter(FandangoParserVisitor):
-    def __init__(self) -> None:
-        self.productions: list[FandangoParser.ProductionContext] = []
-        self.constraints: list[FandangoParser.ConstraintContext] = []
-        self.grammar_settings: list[FandangoParser.Grammar_setting_contentContext] = []
-        self.python_code: list[FandangoParser.PythonContext] = []
-
-    def visitFandango(self, ctx: FandangoParser.FandangoContext):
-        self.productions = []
-        self.constraints = []
-        self.grammar_settings = []
-        self.python_code = []
-        self.visitChildren(ctx)
-
-    def visitProduction(self, ctx: FandangoParser.ProductionContext):
-        self.productions.append(ctx)
-
-    def visitConstraint(self, ctx: FandangoParser.ConstraintContext):
-        self.constraints.append(ctx)
-
-    def visitGrammar_setting_content(
-        self, ctx: FandangoParser.Grammar_setting_contentContext
-    ):
-        self.grammar_settings.append(ctx)
-
-    def visitPython(self, ctx: FandangoParser.PythonContext):
-        self.python_code.append(ctx)
-
-
 class GrammarProcessor(FandangoParserVisitor):
     def __init__(
         self,

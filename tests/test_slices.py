@@ -8,7 +8,7 @@ from fandango.language.grammar.grammar import Grammar
 from fandango.language.search import ItemSearch, RuleSearch
 from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
-from fandango.language.parse import parse
+from fandango.language.parse.parse import parse
 from .utils import RESOURCES_ROOT, run_command
 
 

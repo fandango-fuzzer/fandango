@@ -4,7 +4,7 @@ import sys
 from typing import Any, Optional
 
 from fandango.converters.FandangoConverter import FandangoConverter
-from fandango.language.parse import parse_spec
+from fandango.language.parse.parse_spec import parse_content
 
 
 class FandangoFandangoConverter(FandangoConverter):
@@ -17,7 +17,7 @@ class FandangoFandangoConverter(FandangoConverter):
     def to_fan(self, **_kwargs: Any) -> str:
         """Convert the grammar spec to Fandango format"""
         contents = open(self.filename, "r").read()
-        parsed_spec = parse_spec(
+        parsed_spec = parse_content(
             contents, filename=self.filename, use_cache=False, parties=self.parties
         )
         header = f"""# Automatically generated from {self.filename!r}.

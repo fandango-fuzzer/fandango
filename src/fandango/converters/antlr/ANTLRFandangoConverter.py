@@ -14,7 +14,7 @@ from fandango.converters.FandangoConverter import FandangoConverter
 from fandango.converters.antlr.ANTLRv4Lexer import ANTLRv4Lexer
 from fandango.converters.antlr.ANTLRv4Parser import ANTLRv4Parser
 from fandango.converters.antlr.ANTLRv4ParserVisitor import ANTLRv4ParserVisitor
-from fandango.language.parse import PythonAntlrErrorListener
+from fandango.language.parse.parser_error_listeners import PythonAntlrErrorListener
 
 
 class ANTLRFandangoConverterVisitor(ANTLRv4ParserVisitor):

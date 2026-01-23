@@ -12,6 +12,7 @@ program: NEWLINE* (statement NEWLINE*)*;
 statement
     : production
     | constraint
+    | include
     | grammar_setting
     | python
     ;
@@ -198,34 +199,38 @@ python
     // PYTHON_START (python_tag | NEWLINE)* PYTHON_END
     ;
 
-python_tag:
-    (NEWLINE* (stmt) NEWLINE*)
+python_tag
+    : (NEWLINE* (stmt) NEWLINE*)
     ;
 
-grammar_setting:
-    INDENT* SETTING grammar_setting_content DEDENT*    
+include
+    : INCLUDE '(' STRING ')' NEWLINE
     ;
 
-grammar_setting_content:
-    grammar_selector (grammar_rule)*
+grammar_setting
+    : INDENT* SETTING grammar_setting_content DEDENT*    
     ;
 
-grammar_selector:
-    nonterminal
+grammar_setting_content
+    : grammar_selector (grammar_rule)*
+    ;
+
+grammar_selector
+    : nonterminal
     | 'all_with_type' '(' NODE_TYPES ')'
     | '*'
     ;
 
-grammar_rule:
-    grammar_setting_key SPACES? '='? SPACES? grammar_setting_value SPACES?
+grammar_rule
+    : grammar_setting_key SPACES? '='? SPACES? grammar_setting_value SPACES?
     ;
 
-grammar_setting_key:
-    NAME
+grammar_setting_key
+    : NAME
     ;
 
-grammar_setting_value:
-    literal_expr
+grammar_setting_value
+    : literal_expr
     ;
 
 // STARTING RULES
