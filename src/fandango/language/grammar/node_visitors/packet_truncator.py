@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
@@ -14,7 +16,7 @@ class PacketTruncator(NodeVisitor[bool, bool]):
         grammar: "Grammar",
         keep_parties: set[str],
         ignore_receivers: bool = False,
-        delete_rules: set[NonTerminal] = None,
+        delete_rules: Optional[set[NonTerminal]] = None,
     ):
         self.grammar = grammar
         self.keep_msg_parties = keep_parties
