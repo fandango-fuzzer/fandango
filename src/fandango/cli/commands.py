@@ -36,7 +36,7 @@ from fandango.converters.state.FandangoStateConverter import FandangoStateConver
 from fandango.errors import FandangoError, FandangoParseError
 from fandango.language.grammar import FuzzingMode
 from fandango.language.grammar.grammar import Grammar
-from fandango.language.parse import cache_dir, clear_cache
+from fandango.language.parse.cache import clear_cache, get_cache_dir
 from fandango.logger import LOGGER, print_exception
 
 
@@ -437,7 +437,7 @@ def convert_command(args: argparse.Namespace) -> None:
 
 
 def clear_command(args: argparse.Namespace) -> None:
-    CACHE_DIR = cache_dir()
+    CACHE_DIR = get_cache_dir()
     if args.dry_run:
         print(f"Would clear {CACHE_DIR}", file=sys.stderr)
     elif os.path.exists(CACHE_DIR):

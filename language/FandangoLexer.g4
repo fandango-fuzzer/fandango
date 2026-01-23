@@ -47,6 +47,7 @@ GLOBAL     : 'global';
 IF         : 'if' { python_start(); };
 IMPORT     : 'import';
 IN         : 'in';
+INCLUDE    : 'include';
 IS         : 'is';
 LAMBDA     : 'lambda';
 MATCH      : 'match' { python_start(); };

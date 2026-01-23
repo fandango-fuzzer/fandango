@@ -1,7 +1,7 @@
 from typing import cast
 import unittest
 
-from fandango import parse
+from fandango.language.parse.parse import parse
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.comparison import ComparisonConstraint
 from fandango.constraints.exists import ExistsConstraint

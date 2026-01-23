@@ -10,7 +10,7 @@ from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.repetition import Star
 from fandango.language.grammar.parser.iterative_parser import IterativeParser
 from fandango.language.grammar.parser.parser import Parser
-from fandango.language.parse import parse
+from fandango.language.parse.parse import parse
 from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
 from .utils import RESOURCES_ROOT, DOCS_ROOT, run_command
@@ -602,6 +602,7 @@ class TestGIFParsing(TestCLIParsing):
             str(DOCS_ROOT / "gif89a.fan"),
             str(DOCS_ROOT / "tinytrans.gif"),
             "--validate",
+            "--no-cache",
         ]
         out, err, code = run_command(command)
         self.assertEqual("", err)

@@ -5,7 +5,7 @@ import itertools
 import unittest
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
-from fandango.language.parse import parse
+from fandango.language.parse.parse import parse
 from .utils import RESOURCES_ROOT, run_command
 
 

@@ -6,7 +6,7 @@ import unittest
 
 from fandango.evolution.algorithm import Fandango
 from fandango.language.symbols import NonTerminal
-from fandango.language.parse import parse
+from fandango.language.parse.parse import parse
 from fandango.language.tree import DerivationTree
 from .utils import RESOURCES_ROOT
 
