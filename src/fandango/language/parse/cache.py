@@ -33,7 +33,7 @@ def clear_cache() -> None:
         shutil.rmtree(cache_dir, ignore_errors=True)
 
 
-def get_pickle_file(fan_contents: str, filename: str) -> Path:
+def get_pickle_file(fan_contents: str) -> Path:
     cache_dir = get_cache_dir()
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir, mode=0o700, exist_ok=True)
@@ -45,18 +45,8 @@ def get_pickle_file(fan_contents: str, filename: str) -> Path:
     return cache_dir / (hash + ".pickle")
 
 
-def remove_cache_for(
-    fan_contents: str, filename: str, exc: Optional[Exception]
-) -> None:
-    pickle_file = get_pickle_file(fan_contents, filename)
-    if os.path.exists(pickle_file):
-        LOGGER.debug(f"Cached spec failed; removing {pickle_file}")
-        os.remove(pickle_file)
-        print_exception(exc)
-
-
 def load_from_cache(fan_contents: str, filename: str) -> Optional[FandangoSpec]:
-    pickle_file = get_pickle_file(fan_contents, filename)
+    pickle_file = get_pickle_file(fan_contents)
 
     if os.path.exists(pickle_file):
         try:
@@ -87,7 +77,7 @@ def load_from_cache(fan_contents: str, filename: str) -> Optional[FandangoSpec]:
 
 
 def store_in_cache(spec: FandangoSpec, fan_contents: str, filename: str) -> None:
-    pickle_file = get_pickle_file(fan_contents, filename)
+    pickle_file = get_pickle_file(fan_contents)
     try:
         with open(pickle_file, "wb") as fp:
             LOGGER.info(f"{filename}: saving spec to cache {pickle_file}")
