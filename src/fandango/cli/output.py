@@ -1,4 +1,5 @@
 import argparse
+import contextlib
 import ctypes
 from io import UnsupportedOperation
 import os
@@ -47,7 +48,9 @@ def output(
     raise NotImplementedError("Unsupported output format")
 
 
-def open_file(filename: str, file_mode: str, *, mode: str = "r") -> IO[Any]:
+def open_file(
+    filename: str, file_mode: str, *, mode: str = "r"
+) -> IO[Any] | contextlib.nullcontext[IO[Any]]:
     assert file_mode == "binary" or file_mode == "text"
 
     if file_mode == "binary":
@@ -57,9 +60,10 @@ def open_file(filename: str, file_mode: str, *, mode: str = "r") -> IO[Any]:
 
     if filename == "-":
         if "b" in mode:
-            return sys.stdin.buffer if "r" in mode else sys.stdout.buffer
+            fd = sys.stdin.buffer if "r" in mode else sys.stdout.buffer
         else:
-            return sys.stdin if "r" in mode else sys.stdout
+            fd = sys.stdin if "r" in mode else sys.stdout
+        return contextlib.nullcontext(fd)  # otherwise closing will cause an error
 
     return open(filename, mode)
 
