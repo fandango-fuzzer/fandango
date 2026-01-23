@@ -3,7 +3,6 @@ import os
 import sys
 from typing import Optional
 from antlr4.tree.Tree import ParseTree
-import fandango
 
 import fandango
 from fandango.constraints import predicates

@@ -4,7 +4,6 @@ from typing import Optional
 from fandango.language.parse.spec import FandangoSpec
 from fandango.language.parse.cache import (
     load_from_cache,
-    remove_cache_for,
     store_in_cache,
 )
 from fandango.language.parse.parse_tree import parse_tree
@@ -35,20 +34,9 @@ def parse_content(
     :return: A FandangoSpec object containing the parsed grammar, constraints, and code text.
     """
     spec: Optional[FandangoSpec] = None
-    from_cache = False
 
     if use_cache:
         spec = load_from_cache(fan_contents, filename)
-        if spec:
-            from_cache = True
-
-    if spec:
-        LOGGER.debug(f"{filename}: running code")
-        try:
-            spec.run_code(filename=filename)
-        except Exception as exc:
-            # In case the error has anything to do with caching, play it safe
-            remove_cache_for(fan_contents, filename, exc)
 
     if not spec:
         tree = parse_tree(filename, fan_contents)
@@ -62,11 +50,8 @@ def parse_content(
             includes=includes,
             used_symbols=used_symbols,
         )
-
-    assert spec is not None
-
-    if use_cache and not from_cache:
-        store_in_cache(spec, fan_contents, filename)
+        if use_cache:
+            store_in_cache(spec, fan_contents, filename)
 
     if parties:
         slice_parties(spec.grammar, parties)
