@@ -43,11 +43,13 @@ def get_tree(example, start="fandango"):
 
 
 def test_indents():
-    tree = get_tree(r"""
+    tree = get_tree(
+        r"""
 <a> ::= \
     "a" \
     | "a" <a>
-""")
+"""
+    )
     splitter = FandangoSplitter()
     splitter.visit(tree)
     processor = GrammarProcessor(grammar_settings=splitter.grammar_settings)
@@ -59,12 +61,14 @@ def test_indents():
 
 
 def test_alt_indents():
-    tree = get_tree(r"""
+    tree = get_tree(
+        r"""
 <a> ::= (
     "a"
     | "a" <a>
     )
-""")
+"""
+    )
     splitter = FandangoSplitter()
     splitter.visit(tree)
     processor = GrammarProcessor(grammar_settings=splitter.grammar_settings)
