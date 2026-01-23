@@ -761,7 +761,9 @@ def remap_to_std_party(grammar: Grammar, io_instance: FandangoIO) -> None:
         raise FandangoValueError(f"Recipients {unknown_recipients!r} unspecified")
 
 
-def slice_parties(grammar: Grammar, parties: set[str], ignore_receivers=False) -> None:
+def slice_parties(
+    grammar: Grammar, parties: set[str], ignore_receivers: bool = False
+) -> None:
     is_first = True
     deleted_keys: set[NonTerminal] = set()
     while len(deleted_keys) != 0 or is_first:
