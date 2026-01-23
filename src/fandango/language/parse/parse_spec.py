@@ -1,5 +1,4 @@
-from typing import Optional
-
+from typing import Optional, Any
 
 from fandango.language.parse.spec import FandangoSpec
 from fandango.language.parse.cache import (
@@ -21,6 +20,8 @@ def parse_content(
     max_repetitions: int = 5,
     includes: Optional[list[str]] = None,
     used_symbols: set[str] = set(),
+    pyenv_globals: Optional[dict[str, Any]] = None,
+    pyenv_locals: Optional[dict[str, Any]] = None,
 ) -> FandangoSpec:
     """
     Parse given content into a grammar and constraints.
@@ -49,6 +50,8 @@ def parse_content(
             max_repetitions=max_repetitions,
             includes=includes,
             used_symbols=used_symbols,
+            pyenv_globals=pyenv_globals,
+            pyenv_locals=pyenv_locals,
         )
         if use_cache:
             store_in_cache(spec, fan_contents, filename)
