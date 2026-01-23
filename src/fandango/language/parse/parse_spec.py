@@ -54,7 +54,7 @@ def parse_content(
             store_in_cache(spec, fan_contents, filename)
 
     if parties:
-        slice_parties(spec.grammar, parties)
+        slice_parties(spec.grammar, set(parties), ignore_receivers=True)
 
     LOGGER.debug(f"{filename}: parsing complete")
     return spec

@@ -196,7 +196,7 @@ def parse(
     grammar.update(grammar, prime=check)
 
     if parties:
-        slice_parties(grammar, parties)
+        slice_parties(grammar, set(parties), ignore_receivers=True)
 
     LOGGER.debug("All contents parsed")
     return grammar, parsed_constraints
