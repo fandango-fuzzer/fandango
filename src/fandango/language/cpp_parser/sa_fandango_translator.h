@@ -49,6 +49,7 @@ class SA_FandangoTranslator : public FandangoParserBaseVisitor {
     PyObject *Rs_sliceContext_cls = NULL;
     PyObject *PythonContext_cls = NULL;
     PyObject *Python_tagContext_cls = NULL;
+    PyObject *IncludeContext_cls = NULL;
     PyObject *Grammar_settingContext_cls = NULL;
     PyObject *Grammar_setting_contentContext_cls = NULL;
     PyObject *Grammar_selectorContext_cls = NULL;
@@ -335,6 +336,8 @@ class SA_FandangoTranslator : public FandangoParserBaseVisitor {
     antlrcpp::Any visitPython(FandangoParser::PythonContext *ctx);
 
     antlrcpp::Any visitPython_tag(FandangoParser::Python_tagContext *ctx);
+
+    antlrcpp::Any visitInclude(FandangoParser::IncludeContext *ctx);
 
     antlrcpp::Any visitGrammar_setting(FandangoParser::Grammar_settingContext *ctx);
 

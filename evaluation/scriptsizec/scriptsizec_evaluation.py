@@ -7,7 +7,7 @@ import time
 from tccbox import tcc_bin_path
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
-from fandango.language.parse import parse
+from fandango.language.parse.parse import parse
 
 
 def declare_variables(c_code):
