@@ -151,10 +151,10 @@ def fuzz_command(args: argparse.Namespace) -> None:
     else:
         grammar = DEFAULT_FAN_CONTENT[0]
         constraints = DEFAULT_FAN_CONTENT[1]
-    grammar.fuzzing_mode = FuzzingMode.COMPLETE
 
     if grammar is None:
         raise FandangoError("Use '-f FILE.fan' to open a Fandango spec")
+    grammar.fuzzing_mode = FuzzingMode.COMPLETE
 
     # Avoid messing with default constraints
     constraints = constraints.copy()
@@ -240,10 +240,10 @@ def parse_command(args: argparse.Namespace) -> None:
     else:
         grammar = DEFAULT_FAN_CONTENT[0]
         constraints = DEFAULT_FAN_CONTENT[1]
-    grammar.fuzzing_mode = FuzzingMode.COMPLETE
 
     if grammar is None:
         raise FandangoError("Use '-f FILE.fan' to open a Fandango spec")
+    grammar.fuzzing_mode = FuzzingMode.COMPLETE
 
     # Avoid messing with default constraints
     constraints = constraints.copy()

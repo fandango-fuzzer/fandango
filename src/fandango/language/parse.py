@@ -427,7 +427,7 @@ def parse_spec(
                 pass
 
     if parties:
-        slice_parties(spec.grammar, parties)
+        slice_parties(spec.grammar, set(parties))
 
     LOGGER.debug(f"{filename}: parsing complete")
     return spec
@@ -763,7 +763,7 @@ def remap_to_std_party(grammar: Grammar, io_instance: FandangoIO) -> None:
 
 def slice_parties(grammar: Grammar, parties: set[str], ignore_receivers=False) -> None:
     is_first = True
-    deleted_keys = set()
+    deleted_keys: set[NonTerminal] = set()
     while len(deleted_keys) != 0 or is_first:
         keys_to_delete = set(deleted_keys)
         deleted_keys = set()
