@@ -11,7 +11,7 @@ from fandango.constraints.fitness import FailingTree
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.evolution.population import PopulationManager
-from fandango.language.parse import parse
+from fandango.language.parse.parse import parse
 from fandango.language.tree import DerivationTree
 from .utils import RESOURCES_ROOT
 

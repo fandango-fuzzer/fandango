@@ -3,7 +3,7 @@ import pytest
 from fandango import DerivationTree
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.algorithm import Fandango
-from fandango.language.parse import parse
+from fandango.language.parse.parse import parse
 from fandango.language.symbols.non_terminal import NonTerminal
 from tests.utils import RESOURCES_ROOT
 

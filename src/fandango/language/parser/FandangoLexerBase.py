@@ -21,6 +21,7 @@ class FandangoLexerBase(Lexer):
         self.opened = 0
         self.in_python = 0
         self.in_fstring = False
+        self.in_filepath = 0
 
         # Set the global lexer instance to this one
         global lexer
@@ -32,6 +33,7 @@ class FandangoLexerBase(Lexer):
         self.opened = 0
         self.in_python = 0
         self.in_fstring = False
+        self.in_filepath = 0
         super().reset()  # type: ignore[no-untyped-call] # antlr4 doesn't provide types
 
     def emitToken(self, token: Token) -> None:
@@ -116,6 +118,12 @@ class FandangoLexerBase(Lexer):
     def is_not_fstring(self) -> bool:
         return not self.in_fstring
 
+    def filepath_start(self) -> None:
+        self.in_filepath += 1
+
+    def filepath_end(self) -> None:
+        self.in_filepath = 0
+
     def on_newline(self) -> None:
         new_line = self.NEW_LINE_PATTERN.sub("", self.text)
         spaces = self.SPACES_PATTERN.sub("", self.text)
@@ -199,3 +207,15 @@ def is_not_fstring() -> bool:
     global lexer
     assert lexer is not None
     return bool(lexer.is_not_fstring())
+
+
+def filepath_start() -> None:
+    global lexer
+    assert lexer is not None
+    lexer.filepath_start()
+
+
+def filepath_end() -> None:
+    global lexer
+    assert lexer is not None
+    lexer.filepath_end()
