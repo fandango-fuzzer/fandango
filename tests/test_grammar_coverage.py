@@ -4,10 +4,10 @@ from aiosmtpd.handlers import Debugging
 
 from fandango.io.navigation.coverage_goal import CoverageGoal
 from fandango.language.grammar import FuzzingMode
-from fandango.language.parse import parse
+from fandango.language.parse.parse import parse
 from fandango.evolution.algorithm import Fandango, LoggerLevel
 from aiosmtpd.controller import Controller
-from aiosmtpd.smtp import AuthResult, LoginPassword, SMTP
+from aiosmtpd.smtp import AuthResult, LoginPassword
 
 from tests.utils import EVALUATION_ROOT
 
