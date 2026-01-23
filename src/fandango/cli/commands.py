@@ -202,19 +202,15 @@ def fuzz_command(args: argparse.Namespace) -> None:
             # Python 3.11 does not know the `delete` argument
             temp_dir = tempfile.TemporaryDirectory()
         args.directory = temp_dir.name
-        args.format = "string"
         output_population(population, args, file_mode=file_mode, output_on_stdout=False)
         generated_files = glob.glob(args.directory + "/*")
         generated_files.sort()
         assert len(generated_files) == len(population)
 
         errors = 0
-        for i in range(len(generated_files)):
-            generated_file = generated_files[i]
-            individual = population[i]
-
+        for generated_file, individual in zip(generated_files, population):
             try:
-                with open_file(generated_file, file_mode, mode="r") as fd:
+                with open_file(generated_file, file_mode=file_mode, mode="r") as fd:
                     tree = parse_file(fd, args, grammar, constraints, settings)
                     validate(individual, tree, filename=fd.name)
 
