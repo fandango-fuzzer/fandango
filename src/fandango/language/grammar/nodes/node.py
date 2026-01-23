@@ -122,10 +122,9 @@ class Node(abc.ABC):
         return []
 
     def __repr__(self) -> str:
-        # This confuses my debugger
-        # warnings.warn(
-        #     f"Don't rely on the __repr__ impl on {self.__class__.__name__}. Use a method specific to your usecase, such as format_as_spec(). Report this as a bug if this is called from within Fandango."
-        # )
+        warnings.filterwarnings("ignore",
+            message=f"Don't rely on the __repr__ impl on {self.__class__.__name__}. Use a method specific to your usecase, such as format_as_spec(). Report this as a bug if this is called from within Fandango."
+        )
         return f"{self.__class__.__name__}({self.format_as_spec()})"
 
     def __str__(self) -> str:
