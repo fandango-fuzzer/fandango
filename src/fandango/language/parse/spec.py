@@ -1,7 +1,8 @@
 import ast
 import os
 import sys
-from typing import Optional
+from pickle import GLOBAL
+from typing import Optional, Any
 from antlr4.tree.Tree import ParseTree
 
 import fandango
@@ -24,8 +25,6 @@ class FandangoSpec:
     so we pickle the code text, grammar, and constraints instead.
     """
 
-    GLOBALS = predicates.__dict__
-    LOCALS = None  # Must be None to ensure top-level imports
 
     def __init__(
         self,
@@ -36,12 +35,18 @@ class FandangoSpec:
         max_repetitions: int = 5,
         used_symbols: set[str] = set(),
         includes: Optional[list[str]] = None,
+        pyenv_globals: Optional[dict[str, Any]] = None,
+        pyenv_locals: Optional[dict[str, Any]] = None,
     ) -> None:
         self.version = fandango.version()
         self.fan_contents = fan_contents
-        self.global_vars = self.GLOBALS.copy()
-        self.local_vars = self.LOCALS
+        if pyenv_globals is None:
+            pyenv_globals = predicates.__dict__.copy()
+        if pyenv_locals is None:
+            pyenv_locals = None  # Must be None to ensure top-level imports
         self.lazy = lazy
+        self.local_vars = pyenv_locals
+        self.global_vars = pyenv_globals
 
         LOGGER.debug(f"{filename}: extracting code")
         splitter = FandangoSplitter(

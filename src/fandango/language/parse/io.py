@@ -6,7 +6,6 @@ from fandango.language.grammar.node_visitors.message_nesting_detector import (
     MessageNestingDetector,
 )
 from fandango.language.grammar.node_visitors.node_replacer import NodeReplacer
-from fandango.language.grammar.node_visitors.packet_truncator import PacketTruncator
 from fandango.language.grammar.node_visitors.symbol_finder import SymbolFinder
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode

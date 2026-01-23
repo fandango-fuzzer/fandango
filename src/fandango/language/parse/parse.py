@@ -3,7 +3,7 @@ import re
 from copy import deepcopy
 from typing import IO, Optional
 
-
+from fandango.constraints import predicates
 from fandango.language.parse.io import init_io
 from fandango.language.parse.slice_parties import slice_parties
 
@@ -77,6 +77,7 @@ def parse(
 
     if start_symbol is None:
         start_symbol = "<start>"
+    pyenv_globals = predicates.__dict__.copy()
 
     global STDLIB_SYMBOLS, STDLIB_GRAMMAR, STDLIB_CONSTRAINTS
     if use_stdlib and STDLIB_GRAMMAR is None:
@@ -86,6 +87,7 @@ def parse(
             filename="<stdlib>",
             use_cache=use_cache,
             max_repetitions=max_repetitions,
+            pyenv_globals=pyenv_globals,
         )
         STDLIB_GRAMMAR = stdlib_spec.grammar
         STDLIB_CONSTRAINTS = stdlib_spec.constraints
@@ -130,6 +132,7 @@ def parse(
             lazy=lazy,
             max_repetitions=max_repetitions,
             used_symbols=used_symbols,
+            pyenv_globals=pyenv_globals,
         )
         parsed_constraints += new_spec.constraints
         new_grammar = new_spec.grammar
@@ -166,7 +169,8 @@ def parse(
             first_token.startswith(kw) for kw in ["where", "minimizing", "maximizing"]
         ):
             new_spec = parse_content(
-                constraint, filename=constraint, use_cache=use_cache, lazy=lazy
+                constraint, filename=constraint, use_cache=use_cache, lazy=lazy,
+                pyenv_globals=pyenv_globals,
             )
         else:
             new_spec = parse_content(
@@ -174,6 +178,7 @@ def parse(
                 filename=constraint,
                 use_cache=use_cache,
                 lazy=lazy,
+                pyenv_globals=pyenv_globals,
             )
         parsed_constraints += new_spec.constraints
 

@@ -4,7 +4,7 @@ import time
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.grammar import FuzzingMode
-from fandango.language.parse import parse
+from fandango.language.parse.parse import parse
 
 
 def main():
