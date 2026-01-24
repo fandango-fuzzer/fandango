@@ -870,16 +870,13 @@ class ProcessManager(object):
     Used internally by Fandango; do not use directly.
     """
 
-    _instance: Optional["ProcessManager"] = None
+    _instances: dict[EnvKey, "ProcessManager"] = {}
+    _lock = threading.Lock()
 
     def __init__(self) -> None:
         """
         Constructor for the ProcessManager class. Singleton! Do not call this method directly. Call instance() instead.
         """
-        assert (
-            ProcessManager._instance is None
-        ), "ProcessManager singleton already created"
-        ProcessManager._instance = self
         self._command: Optional[str | list[str]] = None
         self.lock = threading.Lock()
         self.proc: Optional[subprocess.Popen[str]] = None
@@ -890,10 +887,17 @@ class ProcessManager(object):
         """
         Returns the singleton instance of ProcessManager. If it does not exist, it creates one.
         """
-        if cls._instance is None:
-            ProcessManager()
-        assert cls._instance is not None
-        return cls._instance
+        try:
+            env_key = CURRENT_ENV_KEY.get()
+        except LookupError:
+            raise RuntimeError(
+                "ProcessManager.instance() called without an active environment"
+            )
+
+        with cls._lock:
+            if env_key not in cls._instances:
+                cls._instances[env_key] = cls()
+            return cls._instances[env_key]
 
     def get_process(self) -> subprocess.Popen[str]:
         """
