@@ -81,7 +81,7 @@ def shell_command(args: argparse.Namespace) -> None:
             readline.set_completer(_complete)
             readline.parse_and_bind("tab: complete")
 
-        version_command(argparse.Namespace())
+        version_command(argparse.Namespace(), skip_update_check=True)
         print("Type a command, 'help', 'copyright', 'version', or 'exit'.")
 
     while True:
