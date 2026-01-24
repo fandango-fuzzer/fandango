@@ -7,6 +7,7 @@ from fandango import Fandango
 from fandango.cli.commands import COMMANDS, run
 from fandango.cli.shell import shell_command
 from fandango.cli.parser import get_parser
+from fandango.cli.upgrade import check_for_fandango_update
 from fandango.logger import LOGGER
 
 
@@ -37,6 +38,9 @@ def main(
         LOGGER.setLevel(logging.INFO)  # Give more info
     elif args.verbose and args.verbose > 1:
         LOGGER.setLevel(logging.DEBUG)  # Even more info
+
+    # Check if updates are available
+    check_for_fandango_update()
 
     # Set parsing method for .fan files
     Fandango.parser = args.parser
