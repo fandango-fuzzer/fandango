@@ -431,8 +431,9 @@ def copyright_command(args: argparse.Namespace) -> None:
 # `version_command()` is called from `shell_command()`
 # with `skip_update_check=True`, so we only check for updates when
 # the user explicitly requests the version via command line.
-def version_command(args: argparse.Namespace, *,
-                    skip_update_check: bool = False) -> None:
+def version_command(
+    args: argparse.Namespace, *, skip_update_check: bool = False
+) -> None:
     if sys.stdout.isatty():
         version_line = f"💃 {styles.color.ansi256(styles.rgbToAnsi256(128, 0, 0))}Fandango{styles.color.close} {fandango.version()}"
     else:

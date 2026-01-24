@@ -23,9 +23,9 @@ CHECK_INTERVAL_SECONDS = 7 * 24 * 60 * 60  # one week
 TIMEOUT = 5  # seconds
 
 
-def check_package_for_update(package_name: str, *,
-                             cache_dir: Path | None = None,
-                             check_now: bool = False) -> bool:
+def check_package_for_update(
+    package_name: str, *, cache_dir: Path | None = None, check_now: bool = False
+) -> bool:
     """
     If `package` has an update available on PyPI, print a notification to stderr.
 
@@ -75,7 +75,8 @@ def check_package_for_update(package_name: str, *,
         print(
             f"""
 📦 Update available for '{package_name}': {installed_version} → {latest_version}. See {terminal_link(f"https://pypi.org/project/{package_name}/{latest_version}/")}
-""".strip(), file=sys.stderr
+""".strip(),
+            file=sys.stderr,
         )
         notified = True
 
@@ -84,7 +85,9 @@ def check_package_for_update(package_name: str, *,
 
     return notified
 
+
 NOTIFIED_IN_THIS_SESSION = False
+
 
 def check_for_fandango_update(check_now: bool = False) -> None:
     """Check for Fandango updates and notify the user if an update is available."""
@@ -99,12 +102,13 @@ def check_for_fandango_update(check_now: bool = False) -> None:
     if NOTIFIED_IN_THIS_SESSION:
         return  # only notify once per session
 
-    notified = check_package_for_update(DISTRIBUTION_NAME,
-                             cache_dir=get_cache_dir(),
-                             check_now=check_now)
+    notified = check_package_for_update(
+        DISTRIBUTION_NAME, cache_dir=get_cache_dir(), check_now=check_now
+    )
 
     if notified:
         NOTIFIED_IN_THIS_SESSION = True
+
 
 if __name__ == "__main__":
     check_for_fandango_update()
