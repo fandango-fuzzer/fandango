@@ -15,6 +15,11 @@ from typing import Optional
 from fandango.errors import FandangoError, FandangoValueError
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
+from typing import Hashable
+from _contextvars import ContextVar
+EnvKey = Hashable
+
+CURRENT_ENV_KEY: ContextVar[EnvKey] = ContextVar("CURRENT_ENV_KEY")
 
 
 class Protocol(enum.Enum):
@@ -106,7 +111,8 @@ class FandangoParty(ABC):
         else:
             self.party_name = party_name
         self._connection_mode = connection_mode
-        FandangoIO.instance().parties[self.party_name] = self
+        self.io_instance = FandangoIO.instance()
+        self.io_instance.parties[self.party_name] = self
 
     @classmethod
     def instance(cls, party_name: Optional[str] = None) -> "FandangoParty":
@@ -156,7 +162,7 @@ class FandangoParty(ABC):
                     lambda x: x.party_name,
                     filter(
                         lambda party: not party.is_fuzzer_controlled(),
-                        FandangoIO.instance().parties.values(),
+                        self.io_instance.parties.values(),
                     ),
                 )
             )
@@ -166,7 +172,7 @@ class FandangoParty(ABC):
                 raise FandangoValueError(
                     f"Party {self.party_name}: Could not determine sender of message received. Please explicitly provide the sender to the receive() method."
                 )
-        FandangoIO.instance().add_receive(sender, self.party_name, message)
+        self.io_instance.add_receive(sender, self.party_name, message)
 
     def on_send(self, message: DerivationTree, recipient: Optional[str]) -> None:
         """Deprecated. Use send() instead."""
@@ -717,7 +723,8 @@ class FandangoIO(object):
     Used internally by Fandango; do not use directly.
     """
 
-    _instance: Optional["FandangoIO"] = None
+    _instances: dict[EnvKey, "FandangoIO"] = {}
+    _lock = threading.Lock()
 
     @classmethod
     def instance(cls) -> "FandangoIO":
@@ -725,18 +732,22 @@ class FandangoIO(object):
         Returns the singleton instance of FandangoIO. If it does not exist, it creates one.
         Only use this method to access the FandangoIO instance.
         """
-        if cls._instance is None:
-            FandangoIO()
-        assert cls._instance is not None
-        return cls._instance
+        try:
+            env_key = CURRENT_ENV_KEY.get()
+        except LookupError:
+            raise RuntimeError(
+                "FandangoIO.instance() called without an active environment"
+            )
+
+        with cls._lock:
+            if env_key not in cls._instances:
+                cls._instances[env_key] = cls()
+            return cls._instances[env_key]
 
     def __init__(self) -> None:
         """
         Constructor for the FandangoIO class. Singleton! Do not call this method directly. Call instance() instead.
         """
-        assert FandangoIO._instance is None, "FandangoIO singleton already created"
-
-        FandangoIO._instance = self
         self.receive: list[tuple[str, str, str | bytes]] = []
         self.parties: dict[str, FandangoParty] = {}
         self.receive_lock = threading.Lock()

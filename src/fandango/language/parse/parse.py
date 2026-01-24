@@ -1,9 +1,11 @@
 import re
+import uuid
 
 from copy import deepcopy
 from typing import IO, Optional
 
 from fandango.constraints import predicates
+from fandango.io import CURRENT_ENV_KEY
 from fandango.language.parse.io import init_io
 from fandango.language.parse.slice_parties import slice_parties
 
@@ -77,6 +79,9 @@ def parse(
 
     if start_symbol is None:
         start_symbol = "<start>"
+
+    env_key = uuid.uuid4()
+    token = CURRENT_ENV_KEY.set(env_key)
     pyenv_globals = predicates.__dict__.copy()
 
     global STDLIB_SYMBOLS, STDLIB_GRAMMAR, STDLIB_CONSTRAINTS
