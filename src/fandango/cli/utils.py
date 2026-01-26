@@ -262,11 +262,10 @@ def validate(
     *,
     filename: str = "<file>",
 ) -> None:
+    assert isinstance(parsed, DerivationTree)
     if (
-        (isinstance(original, DerivationTree) and original.value() != parsed.value())
-        or (isinstance(original, bytes) and original != parsed.to_bytes())
-        or (isinstance(original, str) and original != parsed.to_string())
-    ):
+        original != parsed.value()
+    ):  # force comparison between values, rely on type coercion for different types
         exc = FandangoError(f"{filename!r}: parsed tree does not match original")
         if getattr(Exception, "add_note", None):
             # Python 3.11+ has add_note() method
@@ -281,7 +280,7 @@ def validate(
                     fromfile="original",
                     tofile="parsed",
                 )
-                out = "\n".join(line for line in diff)
+                out = "\n".join(diff)
                 exc.add_note(out)
         raise exc
 
