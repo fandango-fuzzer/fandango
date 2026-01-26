@@ -14,7 +14,7 @@ from uuid import UUID
 from _contextvars import ContextVar
 
 import fandango
-from fandango.io import FandangoIO
+from fandango.io import FandangoIO, ProcessManager
 from fandango.language.parse.spec import FandangoSpec
 from fandango.logger import LOGGER
 from xdg_base_dirs import xdg_cache_home
@@ -78,14 +78,13 @@ def load_from_cache(fan_contents: str, filename: str) -> Optional[FandangoSpec]:
                 ctx_var: ContextVar[Optional[UUID]] = ContextVar("CURRENT_ENV_KEY")
                 ctx_var.set(uuid.uuid4())
                 spec.global_vars["CURRENT_ENV_KEY"].contextVar = ctx_var
-                if (
-                    spec.global_vars["PERSISTENT_ENV_HASH"]
-                    in FandangoIO._instances.keys()
-                ):
-                    io_instance = FandangoIO._instances[
-                        spec.global_vars["PERSISTENT_ENV_HASH"]
-                    ]
+                env_hash = spec.global_vars["PERSISTENT_ENV_HASH"]
+                if env_hash in FandangoIO._instances.keys():
+                    io_instance = FandangoIO._instances[env_hash]
                     FandangoIO._instances[ctx_var] = io_instance
+                if env_hash in ProcessManager._instances.keys():
+                    pm_instance = ProcessManager._instances[env_hash]
+                    ProcessManager._instances[ctx_var] = pm_instance
                 assert isinstance(spec, FandangoSpec)
                 return spec
         except Exception as exc:
