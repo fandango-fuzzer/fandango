@@ -35,6 +35,7 @@ def parse_content(
     :return: A FandangoSpec object containing the parsed grammar, constraints, and code text.
     """
     spec: Optional[FandangoSpec] = None
+    use_cache = False
 
     if use_cache:
         spec = load_from_cache(fan_contents, filename)
