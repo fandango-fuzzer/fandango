@@ -180,7 +180,7 @@ class CachedFandangoSpec:
         )
 
     @classmethod
-    def load(cls, fan_contents: str, filename: str) -> Optional[CachedFandangoSpec]:
+    def load(cls, fan_contents: str, filename: str) -> Optional["CachedFandangoSpec"]:
         pickle_file = cls.get_pickle_file(fan_contents)
 
         if os.path.exists(pickle_file):
