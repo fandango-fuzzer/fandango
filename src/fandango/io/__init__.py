@@ -3,6 +3,8 @@
 import enum
 import logging
 import re
+from uuid import UUID
+
 import select
 import socket
 import subprocess
@@ -22,7 +24,9 @@ EnvKey = Hashable
 
 
 class EnvContext:
-    contextVar: Optional[ContextVar] = ContextVar("CURRENT_ENV_KEY")
+    contextVar: Optional[ContextVar[Optional[UUID]]] = ContextVar(
+        "CURRENT_ENV_KEY", default=None
+    )
 
 
 CURRENT_ENV_KEY: EnvContext = EnvContext()
