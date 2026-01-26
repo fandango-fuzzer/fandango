@@ -21,7 +21,7 @@ class SMTPServer:
             port=port,
             require_starttls=False,
             auth_require_tls=False,
-            read_timeout=20.0,
+            ready_timeout=20.0,
         )
 
     def authenticator_func(self, server, session, envelope, mechanism, auth_data):
