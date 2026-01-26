@@ -208,7 +208,9 @@ def fuzz_command(args: argparse.Namespace) -> None:
         output_population(population, args, file_mode=file_mode, output_on_stdout=False)
         generated_files = glob.glob(args.directory + "/*")
         generated_files.sort()
-        assert len(generated_files) == len(population)
+        assert len(generated_files) == len(
+            population
+        ), f"len(generated_files): {len(generated_files)}, len(population): {len(population)}"
 
         errors = 0
         for i in range(len(generated_files)):
