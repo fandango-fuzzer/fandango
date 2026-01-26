@@ -17,7 +17,7 @@ SRC = src/fandango
 PYTHON_SOURCES = $(wildcard $(SRC)/*.py $(SRC)/*/*.py $(SRC)/*/*/*.py)
 
 # Default targets
-web: package-info parser html
+web: package-info html
 all: package-info parser html web pdf
 
 .PHONY: web all parser install dev-tools docs html latex pdf
@@ -48,6 +48,7 @@ else ifeq ($(UNAME), Linux)
 SYSTEM_DEV_TOOLS = antlr4 pdftk-java graphviz
 TEST_TOOLS = clang
 SYSTEM_DEV_INSTALL = apt-get install
+ANTLR = antlr4
 else ifneq (,$(findstring NT,$(UNAME)))
 # Windows (all variants): Windows_NT, MINGW64_NT-10.0-20348, MSYS_NT-10.0-20348
 SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz uv

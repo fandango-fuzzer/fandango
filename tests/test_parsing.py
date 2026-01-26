@@ -44,8 +44,16 @@ class ParserTests(unittest.TestCase):
             self.grammar = grammar
 
     def test_rules(self):
-        self.assertEqual(len(self.grammar._parser._iter_parser._rules), 9)
-        self.assertEqual(len(self.grammar._parser._iter_parser._implicit_rules), 1)
+        self.assertEqual(
+            len(self.grammar._parser._iter_parser._rules),
+            9,
+            len(self.grammar._parser._iter_parser._rules),
+        )
+        self.assertEqual(
+            len(self.grammar._parser._iter_parser._implicit_rules),
+            1,
+            len(self.grammar._parser._iter_parser._implicit_rules),
+        )
         self.assertEqual(
             {((NonTerminal("<number>"), frozenset()),)},
             self.grammar._parser._iter_parser._rules[NonTerminal("<start>")],
@@ -144,7 +152,7 @@ class TestComplexParsing(unittest.TestCase):
     def _test(self, example, tree):
         for parser in [self.parser, self.iter_parser]:
             actual_tree = parser.parse(example, "<ab>")
-            self.assertEqual(tree, actual_tree)
+            self.assertEqual(tree, actual_tree, actual_tree)
 
     def test_bb(self):
         self._test(
@@ -229,7 +237,7 @@ class TestIncompleteParsing(unittest.TestCase):
             for actual_tree in parser.parse_multiple(
                 example, "<start>", mode=ParsingMode.INCOMPLETE
             ):
-                self.assertEqual(tree, actual_tree)
+                self.assertEqual(tree, actual_tree, actual_tree)
                 parsed = True
                 break
             self.assertTrue(parsed)
@@ -288,7 +296,7 @@ class TestDynamicRepetitionParsing(unittest.TestCase):
             for actual_tree in parser.parse_multiple(
                 example, mode=ParsingMode.COMPLETE
             ):
-                self.assertEqual(tree, actual_tree)
+                self.assertEqual(tree, actual_tree, actual_tree)
                 parsed = True
                 break
             self.assertTrue(parsed)
@@ -390,7 +398,7 @@ class TestEmptyParsing(unittest.TestCase):
         for parser in parsers:
             actual_tree = parser.parse(example)
             print(type(parser), type(actual_tree))
-            self.assertEqual(tree, actual_tree)
+            self.assertEqual(tree, actual_tree, actual_tree)
 
     def test_a(self):
         self._test(
@@ -463,9 +471,9 @@ class TestRegexParsing(TestCLIParsing):
             "--validate",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
-        self.assertEqual(0, code)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
+        self.assertEqual(0, code, code)
 
     def test_infinity_abcabc(self):
         command = [
@@ -478,9 +486,9 @@ class TestRegexParsing(TestCLIParsing):
             "--validate",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
-        self.assertEqual(0, code)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
+        self.assertEqual(0, code, code)
 
     def test_infinity_abcd(self):
         # This should be rejected by the grammar
@@ -493,7 +501,7 @@ class TestRegexParsing(TestCLIParsing):
             "--validate",
         ]
         out, err, code = run_command(command)
-        self.assertEqual(1, code)
+        self.assertEqual(1, code, code)
 
 
 class TestBitParsing(TestCLIParsing):
@@ -503,7 +511,7 @@ class TestBitParsing(TestCLIParsing):
             for actual_tree in parser.parse_multiple(example, start_symbol):
                 if tree is None:
                     self.fail("Expected None")
-                self.assertEqual(tree, actual_tree)
+                self.assertEqual(tree, actual_tree, actual_tree)
                 parsed = True
                 break
             if tree is None:
@@ -521,9 +529,9 @@ class TestBitParsing(TestCLIParsing):
             "--validate",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
-        self.assertEqual(0, code)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
+        self.assertEqual(0, code, code)
 
     def test_alternative_bits(self):
         with open(RESOURCES_ROOT / "byte_alternative.fan", "r") as file:
@@ -605,9 +613,9 @@ class TestGIFParsing(TestCLIParsing):
             "--no-cache",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
-        self.assertEqual(0, code)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
+        self.assertEqual(0, code, code)
 
 
 class TestBitstreamParsing(TestCLIParsing):
@@ -622,9 +630,9 @@ class TestBitstreamParsing(TestCLIParsing):
         ]
         out, err, code = run_command(command)
         # Warns that the number of bits (1..5) may not be a multiple of eight, # which is correct
-        # self.assertEqual("", err)
-        self.assertEqual("", out)
-        self.assertEqual(0, code)
+        # self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
+        self.assertEqual(0, code, code)
 
     def test_bitstream_a(self):
         command = [
@@ -636,9 +644,9 @@ class TestBitstreamParsing(TestCLIParsing):
             "--validate",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
-        self.assertEqual(0, code)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
+        self.assertEqual(0, code, code)
 
     def test_bitstream_b(self):
         command = [
@@ -652,8 +660,8 @@ class TestBitstreamParsing(TestCLIParsing):
         out, err, code = run_command(command)
         # This should fail
         self.assertNotEqual("", err)
-        self.assertEqual("", out)
-        self.assertEqual(1, code)
+        self.assertEqual("", out, out)
+        self.assertEqual(1, code, code)
 
     def test_rgb(self):
         command = [
@@ -666,8 +674,8 @@ class TestBitstreamParsing(TestCLIParsing):
         ]
         out, err, code = run_command(command)
         self.assertEqual(0, code, f"Command failed with code {code}: {err}")
-        self.assertEqual("", out)
-        self.assertEqual("", err)
+        self.assertEqual("", out, out)
+        self.assertEqual("", err, err)
 
 
 class TestImportParsing(TestCLIParsing):
@@ -681,8 +689,8 @@ class TestImportParsing(TestCLIParsing):
             "1",
         ]
         out, err, code = run_command(command)
-        self.assertEqual(0, code)
-        self.assertEqual("import\n", out)
+        self.assertEqual(0, code, code)
+        self.assertEqual("import\n", out, out)
 
 
 class TestISO8601Parsing(TestCLIParsing):
@@ -696,4 +704,4 @@ class TestISO8601Parsing(TestCLIParsing):
         ]
         out, err, code = run_command(command)
         self.assertEqual(0, code, err)
-        self.assertEqual("", err)
+        self.assertEqual("", err, err)

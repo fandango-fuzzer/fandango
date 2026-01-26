@@ -196,66 +196,42 @@ def fuzz_command(args: argparse.Namespace) -> None:
     if args.validate:
         LOGGER.debug("Validating population")
 
+        # Ensure that every generated file can be parsed
+        # and returns the same string as the original
+        try:
+            temp_dir = tempfile.TemporaryDirectory(delete=False)  # type: ignore [call-overload, unused-ignore] # delete is only available on some OSs
+        except TypeError:
+            # Python 3.11 does not know the `delete` argument
+            temp_dir = tempfile.TemporaryDirectory()
+        args.directory = temp_dir.name
+        args.format = "string"
+        output_population(population, args, file_mode=file_mode, output_on_stdout=False)
+        generated_files = glob.glob(args.directory + "/*")
+        generated_files.sort()
+        assert len(generated_files) == len(
+            population
+        ), f"len(generated_files): {len(generated_files)}, len(population): {len(population)}"
+
         errors = 0
+        for i in range(len(generated_files)):
+            generated_file = generated_files[i]
+            individual = population[i]
 
-        if args.format == "none":
-            # in this case, don't write to disk, but serialize in memory and go from there
-            population_serialized: list[tuple[DerivationTree, str | bytes]]
-            if grammar.contains_bits() or grammar.contains_bytes():
-                population_serialized = [
-                    (individual, individual.to_bytes()) for individual in population
-                ]
-            else:
-                population_serialized = [
-                    (individual, individual.to_string()) for individual in population
-                ]
-
-            for i, (individual, serialized) in enumerate(population_serialized):
-                try:
-                    all_parsed = list(fandango.parse(serialized))
-                    assert (
-                        len(all_parsed) == 1
-                    ), f"len(all_parsed): {len(all_parsed)}, individual: {individual!r}, serialized: {serialized!r}"
-                    parsed = all_parsed[0]
-                    validate(individual, parsed, filename=f"individual {i}")
-                except Exception as e:
-                    print_exception(e)
-                    errors += 1
-        else:
-
-            # Ensure that every generated file can be parsed
-            # and returns the same string as the original
             try:
-                temp_dir = tempfile.TemporaryDirectory(delete=False)  # type: ignore [call-overload, unused-ignore] # delete is only available on some OSs
-            except TypeError:
-                # Python 3.11 does not know the `delete` argument
-                temp_dir = tempfile.TemporaryDirectory()
-            args.directory = temp_dir.name
-            output_population(
-                population, args, file_mode=file_mode, output_on_stdout=False
-            )
-            generated_files = glob.glob(args.directory + "/*")
-            generated_files.sort()
-            assert len(generated_files) == len(
-                population
-            ), f"len(generated_files): {len(generated_files)}, len(population): {len(population)}, file_mode: {file_mode}, args: {args}"
+                with open_file(generated_file, file_mode, mode="r") as fd:
+                    tree = parse_file(fd, args, grammar, constraints, settings)
+                    validate(individual, tree, filename=fd.name)
 
-            for generated_file, individual in zip(generated_files, population):
-                try:
-                    with open_file(generated_file, file_mode=file_mode, mode="r") as fd:
-                        tree = parse_file(fd, args, grammar, constraints, settings)
-                        validate(individual, tree, filename=fd.name)
-
-                except Exception as e:
-                    print_exception(e)
-                    errors += 1
-
-            # If everything went well, clean up;
-            # otherwise preserve file for debugging
-            shutil.rmtree(temp_dir.name)
+            except Exception as e:
+                print_exception(e)
+                errors += 1
 
         if errors:
             raise FandangoError(f"{errors} error(s) during validation")
+
+        # If everything went well, clean up;
+        # otherwise preserve file for debugging
+        shutil.rmtree(temp_dir.name)
 
 
 def parse_command(args: argparse.Namespace) -> None:

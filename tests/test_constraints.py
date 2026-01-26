@@ -16,7 +16,7 @@ class ConstraintTest(unittest.TestCase):
             _, constraints = parse(
                 file, constraints=[constraint], use_stdlib=False, use_cache=False
             )
-        self.assertEqual(1, len(constraints))
+        self.assertEqual(1, len(constraints), len(constraints))
         return constraints[0]
 
     def test_explicit_fitness(self):
@@ -42,7 +42,11 @@ class ConstraintTest(unittest.TestCase):
                 )
             ],
         )
-        self.assertEqual(1, constraint.fitness(example).fitness())
+        self.assertEqual(
+            1,
+            constraint.fitness(example).fitness(),
+            constraint.fitness(example).fitness(),
+        )
         example = DerivationTree(
             NonTerminal("<start>"),
             [
@@ -57,7 +61,11 @@ class ConstraintTest(unittest.TestCase):
                 )
             ],
         )
-        self.assertEqual(1, constraint.fitness(example).fitness())
+        self.assertEqual(
+            1,
+            constraint.fitness(example).fitness(),
+            constraint.fitness(example).fitness(),
+        )
 
     def test_expression_constraint(self):
         constraint = self.get_constraint("'a' not in str(<ab>);")
@@ -315,7 +323,7 @@ class ConstraintTest(unittest.TestCase):
             grammar, constraints = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
 
-        self.assertEqual(1, len(constraints))
+        self.assertEqual(1, len(constraints), len(constraints))
         constraint = constraints[0]
         assert isinstance(constraint, Constraint)
 
@@ -366,7 +374,7 @@ where int(<number>) < 100000
             _, constraints = parse(
                 file, constraints=[constraint_str], use_stdlib=False, use_cache=False
             )
-        self.assertEqual(3, len(constraints))
+        self.assertEqual(3, len(constraints), len(constraints))
 
         def get_tree(x):
             return DerivationTree(
@@ -386,33 +394,39 @@ where int(<number>) < 100000
             for sat, constraint in zip((sat_even, sat_greater, sat_less), constraints):
                 assert isinstance(constraint, Constraint)
                 fitness = constraint.fitness(tree)
-                self.assertEqual(sat, fitness.success)
-                self.assertEqual(1 if sat else 0, fitness.solved)
+                self.assertEqual(sat, fitness.success, fitness.success)
+                self.assertEqual(1 if sat else 0, fitness.solved, fitness.solved)
                 if not sat:
-                    self.assertEqual(1, len(fitness.failing_trees))
-                    self.assertEqual(tree, fitness.failing_trees[0].tree)
+                    self.assertEqual(
+                        1, len(fitness.failing_trees), len(fitness.failing_trees)
+                    )
+                    self.assertEqual(
+                        tree,
+                        fitness.failing_trees[0].tree,
+                        fitness.failing_trees[0].tree,
+                    )
 
 
 class ConverterTest(unittest.TestCase):
     def test_standards(self):
         # Earlier Fandango versions overloaded int(); so check if it still works
-        self.assertEqual(int(45), 45)
-        self.assertEqual(int.from_bytes(b"\x01"), 1)
+        self.assertEqual(int(45), 45, int(45))
+        self.assertEqual(int.from_bytes(b"\x01"), 1, int.from_bytes(b"\x01"))
 
     def test_string_converters(self):
         tree = DerivationTree(Terminal("5"))
-        self.assertEqual(int(tree), 5)
-        self.assertEqual(bytes(tree), b"5")
-        self.assertEqual(str(tree), "5")
-        self.assertEqual(tree.value(), "5")
+        self.assertEqual(int(tree), 5, int(tree))
+        self.assertEqual(bytes(tree), b"5", bytes(tree))
+        self.assertEqual(str(tree), "5", str(tree))
+        self.assertEqual(tree.value(), "5", tree.value())
 
     def test_byte_converters(self):
         tree = DerivationTree(Terminal(b"\x05"))
-        self.assertEqual(bytes(tree), b"\x05")
-        self.assertEqual(str(tree), "\x05")
-        self.assertEqual(tree.value(), b"\x05")
+        self.assertEqual(bytes(tree), b"\x05", bytes(tree))
+        self.assertEqual(str(tree), "\x05", str(tree))
+        self.assertEqual(tree.value(), b"\x05", tree.value())
 
     def test_bit_converters(self):
         tree = DerivationTree(Terminal(1))
-        self.assertEqual(int(tree), 1)
-        self.assertEqual(tree.to_bits(), "1")
+        self.assertEqual(int(tree), 1, int(tree))
+        self.assertEqual(tree.to_bits(), "1", tree.to_bits())
