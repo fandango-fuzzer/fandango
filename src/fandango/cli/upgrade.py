@@ -15,7 +15,6 @@ from fandango.cli.parser import terminal_link
 from fandango import DISTRIBUTION_NAME
 from fandango.logger import LOGGER
 
-
 # How often to check for updates (in seconds)
 CHECK_INTERVAL_SECONDS = 7 * 24 * 60 * 60  # one week
 
