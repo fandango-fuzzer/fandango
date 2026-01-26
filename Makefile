@@ -17,7 +17,7 @@ SRC = src/fandango
 PYTHON_SOURCES = $(wildcard $(SRC)/*.py $(SRC)/*/*.py $(SRC)/*/*/*.py)
 
 # Default targets
-web: package-info parser html
+web: package-info html
 all: package-info parser html web pdf
 
 .PHONY: web all parser install dev-tools docs html latex pdf
