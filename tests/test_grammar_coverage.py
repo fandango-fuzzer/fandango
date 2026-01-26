@@ -21,6 +21,7 @@ class SMTPServer:
             port=port,
             require_starttls=False,
             auth_require_tls=False,
+            read_timeout=20.0,
         )
 
     def authenticator_func(self, server, session, envelope, mechanism, auth_data):
@@ -75,6 +76,9 @@ class GrammarCoverageTest(unittest.TestCase):
                 pass
         finally:
             server.stop()
+
+    def test_2(self):
+        self.test_io_smtp_inputs()
 
 
 if __name__ == "__main__":
