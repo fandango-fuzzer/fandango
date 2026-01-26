@@ -1,5 +1,6 @@
 import hashlib
 import os
+import uuid
 from pathlib import Path
 import platform
 import shutil
@@ -8,6 +9,9 @@ import time
 from traceback import print_exception
 from typing import Optional
 import warnings
+
+from _contextvars import ContextVar
+
 import fandango
 from fandango.language.parse.spec import FandangoSpec
 from fandango.logger import LOGGER
@@ -69,6 +73,10 @@ def load_from_cache(fan_contents: str, filename: str) -> Optional[FandangoSpec]:
                 LOGGER.debug(
                     f"{filename}: loaded from cache in {time.time() - start_time:.2f} seconds"
                 )
+                spec.global_vars["CURRENT_ENV_KEY"].contextVar = ContextVar(
+                    "CURRENT_ENV_KEY"
+                )
+                spec.global_vars["CURRENT_ENV_KEY"].contextVar.set(uuid.uuid4())
                 assert isinstance(spec, FandangoSpec)
                 return spec
         except Exception as exc:
@@ -81,7 +89,10 @@ def store_in_cache(spec: FandangoSpec, fan_contents: str, filename: str) -> None
     try:
         with open(pickle_file, "wb") as fp:
             LOGGER.info(f"{filename}: saving spec to cache {pickle_file}")
+            ctx_var = spec.global_vars["CURRENT_ENV_KEY"].contextVar
+            spec.global_vars["CURRENT_ENV_KEY"].contextVar = None
             pickle.dump(spec, fp)  # type: ignore[no-untyped-call, attr-defined] # dill doesn't provide types nor does it explicitly export dump
+            spec.global_vars["CURRENT_ENV_KEY"].contextVar = ctx_var
     except Exception as e:
         print_exception(e)
         try:

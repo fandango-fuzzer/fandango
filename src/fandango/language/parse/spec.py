@@ -1,7 +1,6 @@
 import ast
 import os
 import sys
-from pickle import GLOBAL
 from typing import Optional, Any
 from antlr4.tree.Tree import ParseTree
 
@@ -24,7 +23,6 @@ class FandangoSpec:
     This is necessary because the ANTLR4 parse trees cannot be pickled,
     so we pickle the code text, grammar, and constraints instead.
     """
-
 
     def __init__(
         self,
