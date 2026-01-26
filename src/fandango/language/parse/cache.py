@@ -9,6 +9,7 @@ import time
 from traceback import print_exception
 from typing import Optional
 import warnings
+from uuid import UUID
 
 from _contextvars import ContextVar
 
@@ -74,7 +75,7 @@ def load_from_cache(fan_contents: str, filename: str) -> Optional[FandangoSpec]:
                 LOGGER.debug(
                     f"{filename}: loaded from cache in {time.time() - start_time:.2f} seconds"
                 )
-                ctx_var: ContextVar = ContextVar("CURRENT_ENV_KEY")
+                ctx_var: ContextVar[Optional[UUID]] = ContextVar("CURRENT_ENV_KEY")
                 ctx_var.set(uuid.uuid4())
                 spec.global_vars["CURRENT_ENV_KEY"].contextVar = ctx_var
                 if (
