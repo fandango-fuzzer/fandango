@@ -99,7 +99,7 @@ class TestConstraintVisitor(unittest.TestCase):
             _, constraints = parse(
                 file, constraints=[constraint], use_stdlib=False, use_cache=False
             )
-        self.assertEqual(1, len(constraints))
+        self.assertEqual(1, len(constraints), len(constraints))
         return constraints[0]
 
     def test_something(self):
@@ -121,12 +121,32 @@ class TestConstraintVisitor(unittest.TestCase):
         constraint.accept(visitor)
 
         # Validate counts
-        self.assertEqual(visitor.counts["ForallConstraint"], 1)
-        self.assertEqual(visitor.counts["ExpressionConstraint"], 1)
-        self.assertEqual(visitor.counts["ComparisonConstraint"], 0)
-        self.assertEqual(visitor.counts["ExistsConstraint"], 0)
-        self.assertEqual(visitor.counts["ConjunctionConstraint"], 0)
-        self.assertEqual(visitor.counts["RepetitionBoundsConstraint"], 0)
+        self.assertEqual(
+            visitor.counts["ForallConstraint"], 1, visitor.counts["ForallConstraint"]
+        )
+        self.assertEqual(
+            visitor.counts["ExpressionConstraint"],
+            1,
+            visitor.counts["ExpressionConstraint"],
+        )
+        self.assertEqual(
+            visitor.counts["ComparisonConstraint"],
+            0,
+            visitor.counts["ComparisonConstraint"],
+        )
+        self.assertEqual(
+            visitor.counts["ExistsConstraint"], 0, visitor.counts["ExistsConstraint"]
+        )
+        self.assertEqual(
+            visitor.counts["ConjunctionConstraint"],
+            0,
+            visitor.counts["ConjunctionConstraint"],
+        )
+        self.assertEqual(
+            visitor.counts["RepetitionBoundsConstraint"],
+            0,
+            visitor.counts["RepetitionBoundsConstraint"],
+        )
 
     def test_nested_constraints(self):
         """
@@ -140,10 +160,22 @@ class TestConstraintVisitor(unittest.TestCase):
         constraint.accept(visitor)
 
         # Validate counts for nested structure
-        self.assertEqual(visitor.counts["ForallConstraint"], 1)
-        self.assertEqual(visitor.counts["ExistsConstraint"], 1)
-        self.assertEqual(visitor.counts["ComparisonConstraint"], 2)
-        self.assertEqual(visitor.counts["DisjunctionConstraint"], 1)
+        self.assertEqual(
+            visitor.counts["ForallConstraint"], 1, visitor.counts["ForallConstraint"]
+        )
+        self.assertEqual(
+            visitor.counts["ExistsConstraint"], 1, visitor.counts["ExistsConstraint"]
+        )
+        self.assertEqual(
+            visitor.counts["ComparisonConstraint"],
+            2,
+            visitor.counts["ComparisonConstraint"],
+        )
+        self.assertEqual(
+            visitor.counts["DisjunctionConstraint"],
+            1,
+            visitor.counts["DisjunctionConstraint"],
+        )
 
 
 if __name__ == "__main__":
