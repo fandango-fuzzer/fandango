@@ -77,9 +77,6 @@ class GrammarCoverageTest(unittest.TestCase):
         finally:
             server.stop()
 
-    def test_2(self):
-        self.test_io_smtp_inputs()
-
 
 if __name__ == "__main__":
     unittest.main()
