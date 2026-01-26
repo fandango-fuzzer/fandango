@@ -43,8 +43,7 @@ def get_tree(example, start="fandango"):
 
 
 def test_indents():
-    tree = get_tree(
-        r"""
+    tree = get_tree(r"""
 <a> ::= \
     "a" \
     | "a" <a>
@@ -60,8 +59,7 @@ def test_indents():
 
 
 def test_alt_indents():
-    tree = get_tree(
-        r"""
+    tree = get_tree(r"""
 <a> ::= (
     "a"
     | "a" <a>

@@ -5,6 +5,7 @@ from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.grammar import FuzzingMode
 from fandango.language.parse.parse import parse
 
+
 def main():
     # Parse grammar and constraints
     with open("dns.fan") as f:
