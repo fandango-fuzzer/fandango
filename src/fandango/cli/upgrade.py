@@ -45,9 +45,9 @@ def check_package_for_update(
         try:
             last_check = json.loads(cache_file.read_text()).get("last_check", 0)
             if now - last_check < CHECK_INTERVAL_SECONDS:
-                return
+                return False
         except Exception:
-            pass  # ignore broken cache
+            return False  # ignore broken cache
 
     LOGGER.debug(f"Checking for updates for package '{package_name}'")
 
@@ -55,7 +55,7 @@ def check_package_for_update(
     try:
         installed_version = Version(version(package_name))
     except (PackageNotFoundError, InvalidVersion):
-        return  # package not installed or invalid version
+        return False  # package not installed or invalid version
 
     # Get latest version from PyPI
     try:
@@ -66,7 +66,7 @@ def check_package_for_update(
             data = json.load(response)
             latest_version = Version(data["info"]["version"])
     except Exception:
-        return  # network error, bad response, etc.
+        return False  # network error, bad response, etc.
 
     # Compare
     notified = False
