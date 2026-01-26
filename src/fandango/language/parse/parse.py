@@ -80,10 +80,8 @@ def parse(
     if start_symbol is None:
         start_symbol = "<start>"
 
-    env_key = uuid.uuid4()
-    assert CURRENT_ENV_KEY.contextVar is not None
-    token = CURRENT_ENV_KEY.contextVar.set(env_key)
-    pyenv_globals = predicates.__dict__.copy()
+    pyenv_globals = None
+    pyenv_locals = None
 
     global STDLIB_SYMBOLS, STDLIB_GRAMMAR, STDLIB_CONSTRAINTS
     if use_stdlib and STDLIB_GRAMMAR is None:
@@ -94,9 +92,12 @@ def parse(
             use_cache=use_cache,
             max_repetitions=max_repetitions,
             pyenv_globals=pyenv_globals,
+            pyenv_locals=pyenv_locals,
         )
         STDLIB_GRAMMAR = stdlib_spec.grammar
         STDLIB_CONSTRAINTS = stdlib_spec.constraints
+        pyenv_globals = stdlib_spec.global_vars
+        pyenv_locals = stdlib_spec.local_vars
 
     used_symbols = set()
     if use_stdlib:
@@ -142,6 +143,8 @@ def parse(
         )
         parsed_constraints += new_spec.constraints
         new_grammar = new_spec.grammar
+        pyenv_globals = new_spec.global_vars
+        pyenv_locals = new_spec.local_vars
         assert new_grammar is not None
         if new_grammar.fuzzing_mode == FuzzingMode.IO:
             mode = FuzzingMode.IO
@@ -190,6 +193,8 @@ def parse(
                 pyenv_globals=pyenv_globals,
             )
         parsed_constraints += new_spec.constraints
+        pyenv_globals = new_spec.global_vars
+        pyenv_locals = new_spec.local_vars
 
     if check:
         LOGGER.debug("Checking and finalizing content")
