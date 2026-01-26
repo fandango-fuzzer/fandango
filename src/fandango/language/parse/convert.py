@@ -2003,7 +2003,7 @@ class PythonProcessor(FandangoParserVisitor):
                 else:
                     bases.append(base)
         body = self.visitBlock(ctx.block())
-        return ast.ClassDef(
+        return ast.ClassDef(  # type: ignore [call-arg] # depends on python version
             name=ctx.identifier().getText(),
             bases=bases,
             keywords=keywords,
@@ -2032,7 +2032,7 @@ class PythonProcessor(FandangoParserVisitor):
             class_ = ast.AsyncFunctionDef
         else:
             class_ = ast.FunctionDef
-        return class_(
+        return class_(  # type: ignore [call-overload] # depends on python version
             name=ctx.identifier().getText(),
             args=params,
             body=body,
