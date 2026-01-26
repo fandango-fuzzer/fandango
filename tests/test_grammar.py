@@ -62,10 +62,10 @@ class ConstraintTest(unittest.TestCase):
 
         # grammar produces 1 output
         actual = self.get_solutions(grammar, constraints, desired_solutions=1)
-        self.assertEqual(len(actual), 1)
+        self.assertEqual(len(actual), 1, len(actual))
         res = actual[0]
         self.assertIsInstance(res, DerivationTree)
-        self.assertEqual(str(res.value()), "bar")
+        self.assertEqual(str(res.value()), "bar", str(res.value()))
 
     def test_nested_generators(self):
         with open(RESOURCES_ROOT / "nested_grammar_parameters.fan", "r") as file:
@@ -73,15 +73,29 @@ class ConstraintTest(unittest.TestCase):
             assert grammar is not None
 
         for solution in self.get_solutions(grammar, c, desired_solutions=10):
-            self.assertEqual(self.count_g_params(solution), 4)
+            self.assertEqual(
+                self.count_g_params(solution), 4, self.count_g_params(solution)
+            )
             converted_inner = solution.children[0].sources[0]
-            self.assertEqual(self.count_g_params(converted_inner), 3)
+            self.assertEqual(
+                self.count_g_params(converted_inner),
+                3,
+                self.count_g_params(converted_inner),
+            )
             dummy_inner_2 = converted_inner.children[0].sources[0]
-            self.assertEqual(self.count_g_params(dummy_inner_2), 2)
+            self.assertEqual(
+                self.count_g_params(dummy_inner_2),
+                2,
+                self.count_g_params(dummy_inner_2),
+            )
             dummy_inner = dummy_inner_2.children[0].sources[0]
-            self.assertEqual(self.count_g_params(dummy_inner), 1)
+            self.assertEqual(
+                self.count_g_params(dummy_inner), 1, self.count_g_params(dummy_inner)
+            )
             source_nr = dummy_inner.children[0].children[1].sources[0]
-            self.assertEqual(self.count_g_params(source_nr), 0)
+            self.assertEqual(
+                self.count_g_params(source_nr), 0, self.count_g_params(source_nr)
+            )
 
     def test_repetitions(self):
         with open(RESOURCES_ROOT / "repetitions.fan", "r") as file:
@@ -165,5 +179,5 @@ class ConstraintTest(unittest.TestCase):
         )
         for sol in solution:
             s = str(sol).split(".")
-            self.assertEqual(s[0], "a" * 50)
+            self.assertEqual(s[0], "a" * 50, s[0])
             self.assertTrue(len(s[1]) >= 10)

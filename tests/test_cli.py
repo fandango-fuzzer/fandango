@@ -47,8 +47,8 @@ class TestCLI(unittest.TestCase):
         command = ["fandango", "--help"]
         out, err, code = run_command(command)
         _parser = get_parser(True)
-        self.assertEqual(0, code)
-        self.assertEqual(err, "")
+        self.assertEqual(0, code, code)
+        self.assertEqual(err, "", err)
 
     def test_fuzz_basic(self):
         command = [
@@ -63,9 +63,11 @@ class TestCLI(unittest.TestCase):
             "--no-cache",
         ]
         out, err, code = run_command(command)
-        self.assertEqual(0, code)
-        self.assertEqual(err, "")
-        self.assertEqual(expected_with_random_seed, out.strip().split("\n"))
+        self.assertEqual(0, code, code)
+        self.assertEqual(err, "", err)
+        self.assertEqual(
+            expected_with_random_seed, out.strip().split("\n"), out.strip().split("\n")
+        )
 
     def test_output_to_file(self):
         out_file = RESOURCES_ROOT / "test.txt"
@@ -88,12 +90,14 @@ class TestCLI(unittest.TestCase):
         ]
         out, err, code = run_command(command)
         self.maxDiff = 1000000
-        self.assertEqual(0, code)
-        self.assertEqual("", out)
-        self.assertEqual("", err)
+        self.assertEqual(0, code, code)
+        self.assertEqual("", out, out)
+        self.assertEqual("", err, err)
         with open(out_file, "r") as fd:
             actual = fd.read()
-        self.assertEqual(expected_with_random_seed, actual.split(";"))
+        self.assertEqual(
+            expected_with_random_seed, actual.split(";"), actual.split(";")
+        )
         os.remove(RESOURCES_ROOT / "test.txt")
 
     def test_output_multiple_files(self):
@@ -115,14 +119,14 @@ class TestCLI(unittest.TestCase):
             err,
             code,
         ) = run_command(command)
-        self.assertEqual(0, code)
-        self.assertEqual("", out)
-        self.assertEqual("", err)
+        self.assertEqual(0, code, code)
+        self.assertEqual("", out, out)
+        self.assertEqual("", err, err)
         for i, expected_value in enumerate(expected_with_random_seed):
             filename = RESOURCES_ROOT / "test" / f"fandango-{i:04d}.txt"
             with open(filename, "r") as fd:
                 actual = fd.read()
-            self.assertEqual(expected_value, actual)
+            self.assertEqual(expected_value, actual, actual)
 
         shutil.rmtree(RESOURCES_ROOT / "test", ignore_errors=True)
 
@@ -142,9 +146,9 @@ class TestCLI(unittest.TestCase):
         ]
         out, err, code = run_command(compile_)
 
-        self.assertEqual("", out)
-        self.assertEqual("", err)
-        self.assertEqual(0, code)
+        self.assertEqual("", out, out)
+        self.assertEqual("", err, err)
+        self.assertEqual(0, code, code)
 
         command = [
             "fandango",
@@ -166,9 +170,9 @@ class TestCLI(unittest.TestCase):
             "\n".join([f"data: {value}" for value in expected_with_random_seed]) + "\n"
         )
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual(expected_output, out)
-        self.assertEqual(0, code)
+        self.assertEqual("", err, err)
+        self.assertEqual(expected_output, out, out)
+        self.assertEqual(0, code, code)
 
     def test_infinite_mode(self):
         command = [
@@ -217,9 +221,9 @@ class TestCLI(unittest.TestCase):
 fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
 """
         out, err, code = run_command(command)
-        self.assertEqual("", out)
-        self.assertEqual(expected, err)
-        self.assertEqual(0, code)
+        self.assertEqual("", out, out)
+        self.assertEqual(expected, err, err)
+        self.assertEqual(0, code, code)
 
     def test_binfinity(self):
         command = [
@@ -235,9 +239,9 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
             "426912",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
-        self.assertEqual(0, code)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
+        self.assertEqual(0, code, code)
 
     def test_infinity(self):
         # docs/infinity.fan can only generate a limited number of individuals,
@@ -257,9 +261,9 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
             "10",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
-        self.assertEqual(0, code)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
+        self.assertEqual(0, code, code)
 
     def test_max_repetition(self):
         command = [
@@ -281,9 +285,9 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
 fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
 """
         out, err, code = run_command(command)
-        self.assertEqual(0, code)
-        self.assertEqual("", out)
-        self.assertEqual(expected, err)
+        self.assertEqual(0, code, code)
+        self.assertEqual("", out, out)
+        self.assertEqual(expected, err, err)
 
     def test_max_nodes_unsat(self):
         max_nodes = 61  # there is a off by one error in two places (this should really be 59), but for now this is just how it is
@@ -334,15 +338,15 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
             "fandango:ERROR: Population did not converge to a perfect population\nfandango:ERROR: Only found 0 perfect solutions, instead of the required 10\n",
             f"err: {err}",
         )
-        self.assertEqual(0, code)
+        self.assertEqual(0, code, code)
 
     def test_unparse_grammar(self):
         # We unparse the standard library as well as docs/persons.fan
         input_data = f"set -f {DOCS_ROOT / 'persons.fan'}\nset\n"
         out, err, code = run_command(["fandango", "shell"], input=input_data)
-        self.assertEqual(0, code)
+        self.assertEqual(0, code, code)
         self.maxDiff = 1000000
-        self.assertEqual("", err)
+        self.assertEqual("", err, err)
         self.assertTrue(out.startswith("<_char> ::= r'(.|\\n)'\n"), out)
         self.assertTrue(out.endswith("<age> ::= <digit>+\n"), out)
 
@@ -370,9 +374,9 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
         self.assertEqual(2, len(io_logs), f"err: {err}")
         result_a = io_logs[0].split(": ", 2)[2]
         result_b = io_logs[0].split(": ", 2)[2]
-        self.assertEqual(result_a, result_b)
-        self.assertEqual(0, code)
-        self.assertEqual("", out)
+        self.assertEqual(result_a, result_b, result_b)
+        self.assertEqual(0, code, code)
+        self.assertEqual("", out, out)
 
     def test_soliloquy(self):
         async def async_run():
