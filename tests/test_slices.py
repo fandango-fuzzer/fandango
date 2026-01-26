@@ -33,8 +33,8 @@ class TestSlices(unittest.TestCase):
             "10",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
         self.assertEqual(0, code)
 
     def test_slice_0(self):
@@ -55,8 +55,8 @@ class TestSlices(unittest.TestCase):
             "10",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
         self.assertEqual(0, code)
 
     def test_slice_0plus(self):
@@ -77,8 +77,8 @@ class TestSlices(unittest.TestCase):
             "10",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
         self.assertEqual(0, code)
 
     def test_slice_1plus(self):
@@ -99,8 +99,8 @@ class TestSlices(unittest.TestCase):
             "10",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
         self.assertEqual(0, code)
 
     def test_slice_str0plus1(self):
@@ -121,8 +121,8 @@ class TestSlices(unittest.TestCase):
             "10",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
         self.assertEqual(0, code)
 
     def test_slice_plus1(self):
@@ -143,8 +143,8 @@ class TestSlices(unittest.TestCase):
             "10",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
         self.assertEqual(0, code)
 
     def test_slice_plus(self):
@@ -165,8 +165,8 @@ class TestSlices(unittest.TestCase):
             "10",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
         self.assertEqual(0, code)
 
     def test_slice_str0(self):
@@ -187,8 +187,8 @@ class TestSlices(unittest.TestCase):
             "10",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
         self.assertEqual(0, code)
 
     def test_slice_paren(self):
@@ -209,8 +209,8 @@ class TestSlices(unittest.TestCase):
             "10",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
         self.assertEqual(0, code)
 
 
