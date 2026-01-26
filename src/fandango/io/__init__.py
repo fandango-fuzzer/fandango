@@ -17,9 +17,15 @@ from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
 from typing import Hashable
 from _contextvars import ContextVar
+
 EnvKey = Hashable
 
-CURRENT_ENV_KEY: ContextVar[EnvKey] = ContextVar("CURRENT_ENV_KEY")
+
+class EnvContext:
+    contextVar: Optional[ContextVar] = ContextVar("CURRENT_ENV_KEY")
+
+
+CURRENT_ENV_KEY: EnvContext = EnvContext()
 
 
 class Protocol(enum.Enum):
@@ -733,7 +739,8 @@ class FandangoIO(object):
         Only use this method to access the FandangoIO instance.
         """
         try:
-            env_key = CURRENT_ENV_KEY.get()
+            assert CURRENT_ENV_KEY.contextVar is not None
+            env_key = CURRENT_ENV_KEY.contextVar.get()
         except LookupError:
             raise RuntimeError(
                 "FandangoIO.instance() called without an active environment"
@@ -888,7 +895,8 @@ class ProcessManager(object):
         Returns the singleton instance of ProcessManager. If it does not exist, it creates one.
         """
         try:
-            env_key = CURRENT_ENV_KEY.get()
+            assert CURRENT_ENV_KEY.contextVar is not None
+            env_key = CURRENT_ENV_KEY.contextVar.get()
         except LookupError:
             raise RuntimeError(
                 "ProcessManager.instance() called without an active environment"

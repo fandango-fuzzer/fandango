@@ -81,7 +81,8 @@ def parse(
         start_symbol = "<start>"
 
     env_key = uuid.uuid4()
-    token = CURRENT_ENV_KEY.set(env_key)
+    assert CURRENT_ENV_KEY.contextVar is not None
+    token = CURRENT_ENV_KEY.contextVar.set(env_key)
     pyenv_globals = predicates.__dict__.copy()
 
     global STDLIB_SYMBOLS, STDLIB_GRAMMAR, STDLIB_CONSTRAINTS
@@ -174,7 +175,10 @@ def parse(
             first_token.startswith(kw) for kw in ["where", "minimizing", "maximizing"]
         ):
             new_spec = parse_content(
-                constraint, filename=constraint, use_cache=use_cache, lazy=lazy,
+                constraint,
+                filename=constraint,
+                use_cache=use_cache,
+                lazy=lazy,
                 pyenv_globals=pyenv_globals,
             )
         else:
