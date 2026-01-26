@@ -74,12 +74,12 @@ def load_from_cache(fan_contents: str, filename: str) -> Optional[FandangoSpec]:
                 LOGGER.debug(
                     f"{filename}: loaded from cache in {time.time() - start_time:.2f} seconds"
                 )
-                ctx_var= ContextVar(
-                    "CURRENT_ENV_KEY"
-                )
+                ctx_var: ContextVar = ContextVar("CURRENT_ENV_KEY")
                 ctx_var.set(uuid.uuid4())
                 spec.global_vars["CURRENT_ENV_KEY"].contextVar = ctx_var
-                io_instance = FandangoIO._instances[spec.global_vars["PERSISTENT_ENV_HASH"]]
+                io_instance = FandangoIO._instances[
+                    spec.global_vars["PERSISTENT_ENV_HASH"]
+                ]
                 FandangoIO._instances[ctx_var] = io_instance
                 assert isinstance(spec, FandangoSpec)
                 return spec
