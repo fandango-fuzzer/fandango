@@ -13,6 +13,7 @@ import warnings
 from _contextvars import ContextVar
 
 import fandango
+from fandango.io import FandangoIO
 from fandango.language.parse.spec import FandangoSpec
 from fandango.logger import LOGGER
 from xdg_base_dirs import xdg_cache_home
@@ -73,10 +74,13 @@ def load_from_cache(fan_contents: str, filename: str) -> Optional[FandangoSpec]:
                 LOGGER.debug(
                     f"{filename}: loaded from cache in {time.time() - start_time:.2f} seconds"
                 )
-                spec.global_vars["CURRENT_ENV_KEY"].contextVar = ContextVar(
+                ctx_var= ContextVar(
                     "CURRENT_ENV_KEY"
                 )
-                spec.global_vars["CURRENT_ENV_KEY"].contextVar.set(uuid.uuid4())
+                ctx_var.set(uuid.uuid4())
+                spec.global_vars["CURRENT_ENV_KEY"].contextVar = ctx_var
+                io_instance = FandangoIO._instances[spec.global_vars["PERSISTENT_ENV_HASH"]]
+                FandangoIO._instances[ctx_var] = io_instance
                 assert isinstance(spec, FandangoSpec)
                 return spec
         except Exception as exc:
@@ -90,6 +94,7 @@ def store_in_cache(spec: FandangoSpec, fan_contents: str, filename: str) -> None
         with open(pickle_file, "wb") as fp:
             LOGGER.info(f"{filename}: saving spec to cache {pickle_file}")
             ctx_var = spec.global_vars["CURRENT_ENV_KEY"].contextVar
+            spec.global_vars["PERSISTENT_ENV_HASH"] = hash(ctx_var)
             spec.global_vars["CURRENT_ENV_KEY"].contextVar = None
             pickle.dump(spec, fp)  # type: ignore[no-untyped-call, attr-defined] # dill doesn't provide types nor does it explicitly export dump
             spec.global_vars["CURRENT_ENV_KEY"].contextVar = ctx_var
