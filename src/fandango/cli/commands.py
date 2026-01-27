@@ -428,12 +428,15 @@ def copyright_command(args: argparse.Namespace) -> None:
     print("All rights reserved.")
 
 
-# `version_command()` is called from `shell_command()`
-# with `skip_update_check=True`, so we only check for updates when
-# the user explicitly requests the version via command line.
 def version_command(
     args: argparse.Namespace, *, skip_update_check: bool = False
 ) -> None:
+    """
+    Show Fandango version and check for updates.
+    :param: skip_update_check - if True, do not force-check for updates
+    This is set when called from `shell_command()`, which reports the version.
+    """
+
     if sys.stdout.isatty():
         version_line = f"💃 {styles.color.ansi256(styles.rgbToAnsi256(128, 0, 0))}Fandango{styles.color.close} {fandango.version()}"
     else:

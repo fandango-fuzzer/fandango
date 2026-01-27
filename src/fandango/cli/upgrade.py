@@ -23,7 +23,7 @@ TIMEOUT = 5  # seconds
 
 
 def check_package_for_update(
-    package_name: str, *, cache_dir: Path | None = None, check_now: bool = False
+    package_name: str, *, cache_dir: Path | None = None, check_now: bool = False, check_message: str | None = None
 ) -> bool:
     """
     If `package` has an update available on PyPI, print a notification to stderr.
@@ -31,6 +31,7 @@ def check_package_for_update(
     :param package_name: package name
     :param cache_dir: Where to store the cache file (default: ~/.cache)
     :param check_now: Whether to check for updates immediately, bypassing the rate limit
+    :param check_message: Optional message to print when checking for updates
     :return: True if an update notification was printed, False otherwise
     """
     if not cache_dir:
@@ -49,8 +50,6 @@ def check_package_for_update(
         except Exception:
             return False  # ignore broken cache
 
-    LOGGER.debug(f"Checking for updates for package '{package_name}'")
-
     # Get installed version
     try:
         installed_version = Version(version(package_name))
@@ -58,6 +57,9 @@ def check_package_for_update(
         return False  # package not installed or invalid version
 
     # Get latest version from PyPI
+    if check_message:
+        print(check_message, file=sys.stderr)
+
     try:
         with urllib.request.urlopen(
             f"https://pypi.org/pypi/{package_name}/json",
@@ -102,7 +104,10 @@ def check_for_fandango_update(check_now: bool = False) -> None:
         return  # only notify once per session
 
     notified = check_package_for_update(
-        DISTRIBUTION_NAME, cache_dir=get_cache_dir(), check_now=check_now
+        DISTRIBUTION_NAME, 
+        cache_dir=get_cache_dir(), 
+        check_now=check_now,
+        check_message="📦 Checking for Fandango updates... (set FANDANGO_DISABLE_UPDATE_CHECK=1 to disable)",
     )
 
     if notified:
