@@ -69,6 +69,8 @@ class Fandango:
         max_nodes: int = 200,
         max_nodes_rate: float = 0.5,
         profiling: bool = False,
+        stop_criterion: str = "lambda t: False",
+        stop_after_seconds: int = -1,
     ):
         if tournament_size > 1:
             raise FandangoValueError(
@@ -90,6 +92,8 @@ class Fandango:
         self.warnings_are_errors = warnings_are_errors
         self.best_effort = best_effort
         self.remote_response_timeout = 15.0
+        self.experiment_start_time = time.time()
+        self.stop_after_seconds = stop_after_seconds
 
         # Instantiate managers
         if self.grammar.fuzzing_mode == FuzzingMode.IO:
@@ -111,6 +115,7 @@ class Fandango:
             diversity_k,
             diversity_weight,
             warnings_are_errors,
+            eval(stop_criterion),
         )
         self.adaptive_tuner = AdaptiveTuner(
             mutation_rate,
@@ -315,6 +320,16 @@ class Fandango:
         random.shuffle(new_population)
         return new_population[: int(self.population_size * (1 - self.destruction_rate))]
 
+    def _is_time_limit_reached(self) -> bool:
+        if self.stop_after_seconds != -1:
+            elapsed_time = time.time() - self.experiment_start_time
+            if elapsed_time >= self.stop_after_seconds:
+                LOGGER.info(
+                    f"Stopping experiment after reaching the time limit ({elapsed_time} seconds)."
+                )
+                return True
+        return False
+
     def evolve(
         self,
         max_generations: Optional[int] = None,
@@ -381,6 +396,10 @@ class Fandango:
         while True:
             if max_generations is not None and generation >= max_generations:
                 break
+
+            if self._is_time_limit_reached() or self.evaluator._stop_criterion_met:
+                break
+
             generation += 1
 
             avg_fitness = sum(e[1] for e in self.evaluation) / self.population_size
@@ -463,6 +482,7 @@ class Fandango:
                 generation, self.evaluation, self.population, self.evaluator
             )
             visualize_evaluation(generation, max_generations, self.evaluation)
+
         clear_visualization()
         self._log_statistics()
 
