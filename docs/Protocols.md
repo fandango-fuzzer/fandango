@@ -548,7 +548,7 @@ $ fandango fuzz --party=Server -f smtp-extended.fan -n 1
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz --party=Server -f smtp-extended.fan -n 1 | tr -d '\015'
-assert _exit_code == 0 
+assert _exit_code == 0
 ```
 
 That's it for now. GO and thoroughly test your programs!
