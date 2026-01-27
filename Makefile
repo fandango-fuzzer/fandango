@@ -253,6 +253,7 @@ run-all: $(TEST_MARKER) $(EVALUATION_MARKER)
 ## Installation
 .PHONY: install
 install:
+	rm -f src/fandango/language/parser/sa_fandango_cpp_parser*
 	$(PIP) install -e .
 
 uninstall:
