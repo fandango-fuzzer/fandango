@@ -531,7 +531,7 @@ assert _exit_code == 0
 As described in the [chapter on checking outputs](sec:outputs), we can use the `fuzz` command to actually show generated outputs of individual parties:
 
 ```shell
-$ fandango fuzz --party=Client -f smtp-extended.fan
+$ fandango fuzz --party=Client -f smtp-extended.fan -n 1
 ```
 
 % | tr -d '\015' removes CR characters, which are rendered as NL in jupyter book
@@ -542,13 +542,13 @@ assert _exit_code == 0
 ```
 
 ```shell
-$ fandango fuzz --party=Server -f smtp-extended.fan
+$ fandango fuzz --party=Server -f smtp-extended.fan -n 1
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz --party=Server -f smtp-extended.fan -n 1 | tr -d '\015'
-assert _exit_code == 0 
+assert _exit_code == 0
 ```
 
 That's it for now. GO and thoroughly test your programs!
