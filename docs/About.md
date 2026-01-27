@@ -14,7 +14,9 @@ kernelspec:
 (sec:about)=
 # About Fandango
 
-Given the specification of a program's input language, Fandango quickly generates myriads of valid sample inputs for testing.
+Welcome to Fandango!
+Fandango is a _generator_ of inputs and interactions for software testing.
+Given the specification of a program's input or interaction language, Fandango quickly generates myriads of valid sample inputs for testing.
 
 The specification language combines a _grammar_ with _constraints_ written in Python, so it is extremely expressive and flexible.
 Most notably, you can define your own _testing goals_ in Fandango.
