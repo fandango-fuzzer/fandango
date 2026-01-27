@@ -23,7 +23,11 @@ TIMEOUT = 5  # seconds
 
 
 def check_package_for_update(
-    package_name: str, *, cache_dir: Path | None = None, check_now: bool = False, check_message: str | None = None
+    package_name: str,
+    *,
+    cache_dir: Path | None = None,
+    check_now: bool = False,
+    check_message: str | None = None,
 ) -> bool:
     """
     If `package` has an update available on PyPI, print a notification to stderr.
@@ -104,8 +108,8 @@ def check_for_fandango_update(check_now: bool = False) -> None:
         return  # only notify once per session
 
     notified = check_package_for_update(
-        DISTRIBUTION_NAME, 
-        cache_dir=get_cache_dir(), 
+        DISTRIBUTION_NAME,
+        cache_dir=get_cache_dir(),
         check_now=check_now,
         check_message="📦 Checking for Fandango updates... (set FANDANGO_DISABLE_UPDATE_CHECK=1 to disable)",
     )
