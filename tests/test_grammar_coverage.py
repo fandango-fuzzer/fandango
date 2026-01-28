@@ -1,4 +1,6 @@
+import time
 import unittest
+from asyncio import Server
 
 from aiosmtpd.handlers import Debugging
 
@@ -13,7 +15,7 @@ from tests.utils import EVALUATION_ROOT
 
 
 class SMTPServer:
-    def __init__(self, host="127.0.0.1", port=8025):
+    def __init__(self, host="localhost", port=8025):
         self.controller = Controller(
             handler=Debugging(),
             authenticator=self.authenticator_func,
@@ -47,13 +49,38 @@ class SMTPServer:
     def stop(self):
         self.controller.stop()
 
+    @property
+    def port(self):
+        assert self.controller.server is not None
+        assert isinstance(self.controller.server, Server)
+        return self.controller.server.sockets[0].getsockname()[1]
+
 
 class GrammarCoverageTest(unittest.TestCase):
     @staticmethod
-    def gen_fandango(coverage_goal: CoverageGoal) -> Fandango:
-        with open(EVALUATION_ROOT / "experiments/smtp/smtp_client.fan") as f:
+    def gen_fandango(coverage_goal: CoverageGoal, host: str, port: int) -> Fandango:
+
+        client_def = f"""
+class Client(NetworkParty):
+    def __init__(self):
+        super().__init__(
+            connection_mode=ConnectionMode.CONNECT,
+            uri="tcp://{host}:{port}"
+        )
+        self.start()
+
+class Server(NetworkParty):
+    def __init__(self):
+        super().__init__(
+            connection_mode=ConnectionMode.EXTERNAL,
+            uri="tcp://{host}:{port}"
+        )
+        self.start()
+        """
+
+        with open(EVALUATION_ROOT / "experiments/smtp/smtp.fan") as f:
             grammar, constraints = parse(
-                f,
+                [f, client_def],
                 use_stdlib=False,
             )
         assert grammar is not None
@@ -65,12 +92,19 @@ class GrammarCoverageTest(unittest.TestCase):
         )
 
     def test_io_smtp_inputs(self):
-        server = SMTPServer(port=8025)
+        import socket
+
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(("127.0.0.1", 0))
+            free_port = s.getsockname()[1]
+
+        server = SMTPServer(host="127.0.0.1", port=free_port)
         server.start()
+        time.sleep(2)
 
         try:
             fandango = GrammarCoverageTest.gen_fandango(
-                CoverageGoal.STATE_INPUTS_OUTPUTS
+                CoverageGoal.STATE_INPUTS_OUTPUTS, host="127.0.0.1", port=free_port
             )
             for solution in fandango.generate(mode=FuzzingMode.IO):
                 pass
