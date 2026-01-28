@@ -1,6 +1,5 @@
 import unittest
 
-import pytest
 from aiosmtpd.handlers import Debugging
 
 from fandango.io.navigation.coverage_goal import CoverageGoal
@@ -13,24 +12,17 @@ from aiosmtpd.smtp import AuthResult, LoginPassword
 from tests.utils import EVALUATION_ROOT
 
 
-import asyncio
-import threading
-from aiosmtpd.smtp import SMTP
-from aiosmtpd.handlers import Debugging
-from aiosmtpd.smtp import AuthResult, LoginPassword
-
-
 class SMTPServer:
-    def __init__(self, host="127.0.0.1", port=0):
-        self.host = host
-        self.port = port
-        self.loop = asyncio.new_event_loop()
-        self.thread = threading.Thread(target=self._run_loop, daemon=True)
-        self.server = None
-
-    def _run_loop(self):
-        asyncio.set_event_loop(self.loop)
-        self.loop.run_forever()
+    def __init__(self, host="127.0.0.1", port=8025):
+        self.controller = Controller(
+            handler=Debugging(),
+            authenticator=self.authenticator_func,
+            hostname=host,
+            port=port,
+            require_starttls=False,
+            auth_require_tls=False,
+            ready_timeout=60.0,
+        )
 
     def authenticator_func(self, server, session, envelope, mechanism, auth_data):
         if mechanism not in ("LOGIN", "PLAIN"):
@@ -42,6 +34,7 @@ class SMTPServer:
         if auth_data.login == b"the_user" and auth_data.password == b"the_password":
             return AuthResult(success=True, handled=True)
 
+        # Wrong credentials, connection stays open
         return AuthResult(
             success=False,
             handled=False,
@@ -49,37 +42,12 @@ class SMTPServer:
         )
 
     def start(self):
-        self.thread.start()
-
-        async def start_server():
-            self.server = await self.loop.create_server(
-                lambda: SMTP(
-                    Debugging(),
-                    authenticator=self.authenticator_func,
-                    require_starttls=False,
-                    auth_require_tls=False,
-                ),
-                host=self.host,
-                port=self.port,
-            )
-            self.port = self.server.sockets[0].getsockname()[1]
-
-        fut = asyncio.run_coroutine_threadsafe(start_server(), self.loop)
-        fut.result(timeout=10)
+        self.controller.start()
 
     def stop(self):
-        async def shutdown_server():
-            assert self.server is not None
-            self.server.close()
-            await self.server.wait_closed()
+        self.controller.stop()
 
-        fut = asyncio.run_coroutine_threadsafe(shutdown_server(), self.loop)
-        fut.result(timeout=10)
 
-        self.loop.call_soon_threadsafe(lambda: self.loop.stop())
-        self.thread.join(timeout=10)
-
-@pytest.mark.xdist_group("smtp_grammar_coverage")
 class GrammarCoverageTest(unittest.TestCase):
     @staticmethod
     def gen_fandango(coverage_goal: CoverageGoal) -> Fandango:
