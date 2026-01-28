@@ -29,6 +29,38 @@ During evaluation, any `<SYMBOL>` returns a _derivation tree_ representing the c
 This derivation tree has a type of `DerivationTree`, as do all subtrees.
 `DerivationTree` objects support *{glue:}`number_of_methods` functions, methods, and operators* directly; after converting `DerivationTree` objects into standard Python types such as `str`, the entire Python ecosystem is available.
 
+```{mermaid}
+classDiagram
+    class DerivationTree{
+      to_string(encoding: str = "latin-1") str
+      bytes() str
+      to_bytes(encoding: str = "utf-8") str
+      to_int(encoding: str = "utf-8") str
+      should_be_serialized() bool
+      contains_bits() bool
+      to_bits(encoding: str = "utf-8") str
+      is_terminal() bool
+      is_nonterminal() bool
+      getitem(n: int) DerivationTree
+      getitem(n: int, s: slice) DerivationTree
+      children() list[DerivationTree]
+      children_values() list[TreeValue]
+      descendants() list[DerivationTree]
+      descendant_values() list[TreeValue]
+      parent() DerivationTree | None,
+      sources() list[DerivationTree]
+      __eq__(DerivationTree | str | bytes | int) bool
+      __ne__(DerivationTree | str | bytes | int) bool
+      to_bits() str
+      to_grammar() str
+      to_tree() str
+      __repr__() str
+      __str__() str
+    }
+    click DerivationTree href "#" "Fandango DerivationTree class"
+```
+
+
 (sec:derivation-tree-structure)=
 ## Derivation Tree Structure
 
@@ -90,13 +122,15 @@ Concatenating all terminal symbols (using `str(<SYMBOL>)`) in a derivation tree 
 
 To write constraints, you may want to serialize derivation trees into standard Python types such as `str`ings, `bytes`, or `int`s. To do so, simply call `str(<SYMBOL>)`, `bytes(<SYMBOL>)`, or `int(<SYMBOL>)` respectively.
 
-Internally, the serialization is done in `str` objects as long as the sub-tree only contains string values, and in `bytes` otherwise. During concatenation, strings are converted to bytes in with `utf-8` encoding, for conversion from bytes to strings, `latin-1` is used to prevent breaking non-utf-8 strings. If you would like to convert them using utf-8, you can call `<SYMBOL>.to_string("utf-8")`.
+Internally, the serialization is done in `str` objects as long as the subtree only contains string values, and in `bytes` otherwise. During concatenation, strings are converted to bytes in with `utf-8` encoding, for conversion from bytes to strings, `latin-1` is used to prevent breaking non-utf-8 strings. If you would like to convert them using utf-8, you can call `<SYMBOL>.to_string("utf-8")`.
 
 Concatenation of non-bit types with bit types always triggers Fandango to convert the remaining trailing bits into `bytes` (with the first bit being the most significant). If the number of trailing bits isn't a multiple of 8, Fandango will throw an error.
 
 `int(<SYMBOL>)` on a subtree consisting only of strings will attempt to parse the string as a number. If the tree consists of bits only, it will be converted to a number with the first bit being the most significant. Bytes are converted to strings and then treated accordingly.
 
+```{deprecated} 1.0
 Previous versions of Fandango automatically converted certain values — this no longer works to prevent accidental mistakes while writing constraints.
+```
 
 ```{tip}
 It is generally unwise to rely on the type of the internal representation of linearized `DerivationTree` values as these may change with future expansions of Fandango. Use functions directly implemented on them (`<SYMBOL>.startswith("Hello")`), or explicitly convert them to a base type in Python instead (`str(<SYMBOL>)`).

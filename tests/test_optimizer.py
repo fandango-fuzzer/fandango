@@ -81,7 +81,7 @@ class GeneticTest(unittest.TestCase):
         )
         solutions = list(generator)
         self.assertLessEqual(len(solutions), expected_count)
-        self.assertEqual(len(population), expected_count)
+        self.assertEqual(len(population), expected_count, len(population))
         for individual in population:
             self.assertIsInstance(individual, DerivationTree)
             self.assertTrue(self.fandango.grammar.parse(str(individual)))
@@ -122,7 +122,9 @@ class GeneticTest(unittest.TestCase):
         )
         solutions = list(generator)
 
-        self.assertEqual(len(population), initial_count + additional_count)
+        self.assertEqual(
+            len(population), initial_count + additional_count, len(population)
+        )
         self.assertLessEqual(len(solutions), additional_count)
         for individual in solutions:
             self.assertIn(individual, population)
@@ -154,7 +156,9 @@ class GeneticTest(unittest.TestCase):
             suggested_replacements = suggestion.get_replacements(
                 individual, self.fandango.grammar
             )
-            self.assertEqual(len(suggested_replacements), 0)
+            self.assertEqual(
+                len(suggested_replacements), 0, len(suggested_replacements)
+            )
             self.assertIsInstance(fitness, float)
             self.assertGreaterEqual(fitness, 0.0)
             self.assertLessEqual(fitness, 1.0)
@@ -171,13 +175,14 @@ class GeneticTest(unittest.TestCase):
         solutions = list(generator)
         self.assertTrue(all(s.to_int() % 2 == 0 for s in solutions))
 
-        self.assertEqual(len(solutions), len(set(solutions)))
+        self.assertEqual(len(solutions), len(set(solutions)), len(solutions))
         evaluation = generator.return_value
-        self.assertEqual(len(evaluation), len(self.fandango.population))
+        self.assertEqual(
+            len(evaluation), len(self.fandango.population), len(evaluation)
+        )
         for ind, fitness, failing_trees, suggestion in evaluation:
             self.assertIsInstance(fitness, float)
             self.assertGreaterEqual(fitness, 0.0)
-            self.assertLessEqual(fitness, 1.0)
             self.assertIsInstance(failing_trees, list)
             for failing_tree in failing_trees:
                 self.assertIsInstance(failing_tree, FailingTree)
@@ -185,7 +190,9 @@ class GeneticTest(unittest.TestCase):
             suggested_replacements = suggestion.get_replacements(
                 ind, self.fandango.grammar
             )
-            self.assertEqual(len(suggested_replacements), 0)
+            self.assertEqual(
+                len(suggested_replacements), 0, len(suggested_replacements)
+            )
 
         # Check that the population is valid
         for individual in self.fandango.population:

@@ -8,7 +8,6 @@ address = {New York, NY, USA},
 volume = {2},
 number = {ISSTA},
 url = {https://doi.org/10.1145/3728915},
-ALTurl = {https://publications.cispa.de/articles/standard/FANDANGO_Evolving_Language-Based_Testing/28769252?file=53591066},
 doi = {10.1145/3728915},
 abstract = {Language-based fuzzers leverage formal input specifications (languages) to generate arbitrarily large and diverse sets of valid inputs for a program under test. Modern language-based test generators combine grammars and constraints to satisfy syntactic and semantic input constraints. ISLA, the leading input generator in that space, uses symbolic constraint solving to solve input constraints. Using solvers places ISLA among the most precise fuzzers but also makes it slow.    In this paper, we explore search-based testing as an alternative to symbolic constraint solving. We employ a genetic algorithm that iteratively generates candidate inputs from an input specification, evaluates them against defined constraints, evolving a population of inputs through syntactically valid mutations and retaining those with superior fitness until the semantic input constraints are met. This evolutionary procedure, analogous to natural genetic evolution, leads to progressively improved inputs that cover both semantics and syntax. This change boosts the efficiency of language-based testing: In our experiments, compared to ISLA, our search-based FANDANGO prototype is faster by one to three orders of magnitude without sacrificing precision.    The search-based approach no longer restricts constraints to constraint solvers' (miniature) languages. In FANDANGO, constraints can use the whole Python language and library. This expressiveness gives testers unprecedented flexibility in shaping test inputs. It allows them to state arbitrary goals for test generation: ''Please produce 1,000 valid test inputs where the voltage field follows a Gaussian distribution but never exceeds 20 mV.''},
 journal = {Proc. ACM Softw. Eng.},
@@ -123,4 +122,20 @@ numpages = {12},
 keywords = {specification language, grammars, fuzzing, constraint mining},
 location = {Singapore, Singapore},
 series = {ESEC/FSE 2022}
+}
+
+@inproceedings{havrikov2019ase,
+author = {Havrikov, Nikolas and Zeller, Andreas},
+title = {Systematically covering input structure},
+year = {2020},
+isbn = {9781728125084},
+publisher = {IEEE Press},
+url = {https://doi.org/10.1109/ASE.2019.00027},
+doi = {10.1109/ASE.2019.00027},
+abstract = {Grammar-based testing uses a given grammar to produce syntactically valid inputs. To cover program features, it is necessary to also cover input features---say, all URL variants for a URL parser. Our k-path algorithm for grammar production systematically covers syntactic elements as well as their combinations. In our evaluation, we show that this results in a significantly higher code coverage than state of the art.},
+booktitle = {Proceedings of the 34th IEEE/ACM International Conference on Automated Software Engineering},
+pages = {189–199},
+numpages = {11},
+location = {San Diego, California},
+series = {ASE '19}
 }

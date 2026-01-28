@@ -33,9 +33,9 @@ class TestSlices(unittest.TestCase):
             "10",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
-        self.assertEqual(0, code)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
+        self.assertEqual(0, code, code)
 
     def test_slice_0(self):
         command = [
@@ -55,9 +55,9 @@ class TestSlices(unittest.TestCase):
             "10",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
-        self.assertEqual(0, code)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
+        self.assertEqual(0, code, code)
 
     def test_slice_0plus(self):
         command = [
@@ -77,9 +77,9 @@ class TestSlices(unittest.TestCase):
             "10",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
-        self.assertEqual(0, code)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
+        self.assertEqual(0, code, code)
 
     def test_slice_1plus(self):
         command = [
@@ -99,9 +99,9 @@ class TestSlices(unittest.TestCase):
             "10",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
-        self.assertEqual(0, code)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
+        self.assertEqual(0, code, code)
 
     def test_slice_str0plus1(self):
         command = [
@@ -121,9 +121,9 @@ class TestSlices(unittest.TestCase):
             "10",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
-        self.assertEqual(0, code)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
+        self.assertEqual(0, code, code)
 
     def test_slice_plus1(self):
         command = [
@@ -143,9 +143,9 @@ class TestSlices(unittest.TestCase):
             "10",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
-        self.assertEqual(0, code)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
+        self.assertEqual(0, code, code)
 
     def test_slice_plus(self):
         command = [
@@ -165,9 +165,9 @@ class TestSlices(unittest.TestCase):
             "10",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
-        self.assertEqual(0, code)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
+        self.assertEqual(0, code, code)
 
     def test_slice_str0(self):
         command = [
@@ -187,9 +187,9 @@ class TestSlices(unittest.TestCase):
             "10",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
-        self.assertEqual(0, code)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
+        self.assertEqual(0, code, code)
 
     def test_slice_paren(self):
         command = [
@@ -209,9 +209,9 @@ class TestSlices(unittest.TestCase):
             "10",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
-        self.assertEqual(0, code)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
+        self.assertEqual(0, code, code)
 
 
 class TestExplicitSlices(unittest.TestCase):
@@ -326,9 +326,9 @@ class TestExplicitSlices(unittest.TestCase):
         assert isinstance(search, ItemSearch)
         base = search.base
         assert isinstance(base, RuleSearch)
-        self.assertEqual(base.symbol, NonTerminal("<a>"))
-        self.assertEqual(1, len(search.slices))
-        self.assertEqual(0, search.slices[0])
+        self.assertEqual(base.symbol, NonTerminal("<a>"), NonTerminal("<a>"))
+        self.assertEqual(1, len(search.slices), len(search.slices))
+        self.assertEqual(0, search.slices[0], search.slices[0])
 
     def test_valid(self):
         print(self.CONSTRAINT.format_as_spec())

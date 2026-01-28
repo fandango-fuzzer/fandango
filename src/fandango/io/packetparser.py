@@ -4,9 +4,9 @@ from typing import Optional
 
 from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.io import FandangoIO
-from fandango.io.packetforecaster import (
-    ForecastingPacket,
+from fandango.io.navigation.packetforecaster import (
     ForecastingResult,
+    ForecastingPacket,
 )
 from fandango.language import Grammar, NonTerminal, DerivationTree
 from fandango.language.grammar import ParsingMode
@@ -49,8 +49,8 @@ def parse_next_remote_packet(
                 raise FandangoValueError(
                     "Unexpected party sent message. Expected: "
                     + " | ".join(forecast.get_msg_parties())
-                    + f". Received: {received_parties}."
-                    + f" Messages: {io_instance.get_received_msgs()}"
+                    + f". Received: {set(received_parties)}."
+                    + f" Messages: {io_instance.get_full_fragments()}"
                 )
         time.sleep(0.025)
         received_parties = list(map(lambda x: x[0], io_instance.get_received_msgs()))
@@ -100,11 +100,29 @@ def parse_next_remote_packet(
             )
             if time.time() - start_time > wait_for_completion_time:
                 if len(complete_parses) == 0:
+                    nt_list = map(
+                        lambda x: repr(x), forecast_non_terminals.get_non_terminals()
+                    )
+                    applicable_nt_str = str(" | ".join(nt_list))
+                    current_parse_str = "Incompletely parsed NonTerminals:"
+                    for incomplete_nt in available_non_terminals:
+                        nt_parser = nt_parsers[incomplete_nt]
+                        current_parse = nt_parser.collapse(nt_parser.current_tree())
+                        current_parse_str += (
+                            f"\n{str(incomplete_nt)}: {str(current_parse)}"
+                        )
+                    received_msgs = (
+                        f"Received messages: {io_instance.get_full_fragments()}"
+                    )
+
                     raise FandangoFailedError(
-                        "Timeout while waiting for next message fragment from "
-                        + msg_sender
-                        + ". Messages: "
-                        + str(io_instance.get_received_msgs())
+                        f"Timeout while waiting for next message fragment from {msg_sender}. \n"
+                        + generate_parsing_error_msg_information(
+                            forecast_non_terminals.get_non_terminals(),
+                            available_non_terminals,
+                            nt_parsers,
+                            io_instance.get_full_fragments(),
+                        )
                     )
                 else:
                     continue_parse = False
@@ -118,18 +136,26 @@ def parse_next_remote_packet(
 
         for non_terminal in set(available_non_terminals):
             parser = nt_parsers[non_terminal]
-            parse_tree = next(parser.consume(next_fragment), None)
+            parse_tree, is_complete = next(parser.consume(next_fragment), (None, None))
             if parse_tree is not None:
                 parse_tree = parser.collapse(parse_tree)
                 assert parse_tree is not None
                 forecast_packet = forecast_non_terminals[non_terminal]
                 parse_tree.sender = forecast_packet.node.sender
                 parse_tree.recipient = forecast_packet.node.recipient
-                try:
-                    grammar.populate_sources(parse_tree)
-                    complete_parses[non_terminal] = (current_fragment_idx, parse_tree)
-                except FandangoParseError as e:
-                    parameter_parsing_exception_tuple = (non_terminal, e, parse_tree)
+                if is_complete:
+                    try:
+                        grammar.populate_sources(parse_tree)
+                        complete_parses[non_terminal] = (
+                            current_fragment_idx,
+                            parse_tree,
+                        )
+                    except FandangoParseError as e:
+                        parameter_parsing_exception_tuple = (
+                            non_terminal,
+                            e,
+                            parse_tree,
+                        )
             if not parser.can_continue():
                 available_non_terminals.remove(non_terminal)
         continue_parse = len(available_non_terminals) > 0
@@ -143,15 +169,14 @@ def parse_next_remote_packet(
                 f"Couldn't derive parameters for received packet or timed out while waiting for remaining packet. Applicable NonTerminal: {applicable_nt} Received part: {complete_msg!r}. Exception: {str(parameter_parsing_exception)}"
             )
         else:
-            nt_list = map(
-                lambda x: x.format_as_spec(), forecast_non_terminals.get_non_terminals()
-            )
-            raise FandangoValueError(
-                "Could not parse received message fragments into predicted NonTerminals. "
-                + "Predicted NonTerminals: "
-                + str(" | ".join(nt_list))
-                + " Messages: "
-                + str(io_instance.get_received_msgs())
+            raise FandangoFailedError(
+                f"Could not parse received message fragments into predicted NonTerminals.\n"
+                + generate_parsing_error_msg_information(
+                    forecast_non_terminals.get_non_terminals(),
+                    available_non_terminals,
+                    nt_parsers,
+                    io_instance.get_full_fragments(),
+                )
             )
 
     max_parse_idx = -1
@@ -167,3 +192,20 @@ def parse_next_remote_packet(
 
     io_instance.clear_by_party(msg_sender, max_parse_idx)
     return forecast_non_terminals[best_non_terminal], best_parse_tree
+
+
+def generate_parsing_error_msg_information(
+    allowed_nts: set[NonTerminal],
+    remaining_nts: set[NonTerminal],
+    parsers: dict[NonTerminal, IterativeParser],
+    received_fragments: list[tuple[str, str, str | bytes]],
+) -> str:
+    nt_list = map(lambda x: str(x), allowed_nts)
+    applicable_nt_str = "Applicable NonTerminals: " + str(" | ".join(nt_list))
+    current_parse_str = "Incompletely parsed NonTerminals:"
+    for incomplete_nt in remaining_nts:
+        nt_parser = parsers[incomplete_nt]
+        current_parse = nt_parser.collapse(nt_parser.current_tree())
+        current_parse_str += f"\n{str(incomplete_nt)}: {str(current_parse)}"
+    received_msgs = f"Received messages: {received_fragments}"
+    return f"{current_parse_str}\n{applicable_nt_str}\n{received_msgs}"

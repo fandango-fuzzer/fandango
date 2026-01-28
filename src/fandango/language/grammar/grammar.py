@@ -1,16 +1,22 @@
+import random
 from collections.abc import Generator, Iterator
 from collections import defaultdict
-from typing import Any, cast, Optional
+from typing import Any, cast, Optional, Iterable, Callable
 from collections.abc import Sequence
 import warnings
+import itertools
 
 
 from fandango.errors import FandangoValueError, FandangoParseError
+from fandango.io.navigation import coverage_goal
+from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
+from fandango.io.navigation.coverage_goal import CoverageGoal
 from fandango.language.grammar import FuzzingMode, ParsingMode, closest_match
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.literal_generator import LiteralGenerator
 from fandango.language.grammar.node_visitors.disambiguator import Disambiguator
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
+from fandango.language.grammar.nodes import node
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.char_set import CharSet
 from fandango.language.grammar.nodes.concatenation import Concatenation
@@ -26,9 +32,11 @@ from fandango.language.grammar.nodes.repetition import (
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.grammar.parser.parser import Parser
 from fandango.language.tree import DerivationTree, TreeTuple
-from fandango.language.symbols import Symbol, NonTerminal
+from fandango.language.symbols import Symbol, Terminal, NonTerminal
 from fandango.language.tree_value import TreeValueType
 from fandango.logger import LOGGER
+
+KPath = tuple[Symbol, ...]
 
 
 class Grammar(NodeVisitor[list[Node], list[Node]]):
@@ -49,6 +57,10 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         self._local_variables = local_variables or {}
         self._global_variables = global_variables or {}
         self._parser = Parser(self.rules)
+        self._k_path_cache: dict[
+            tuple[NonTerminal, bool, CoverageGoal], list[set[tuple[Symbol, ...]]]
+        ] = dict()
+        self._tree_k_path_cache: dict[int, set[tuple[Symbol, ...]]] = dict()
 
     @property
     def grammar_settings(self) -> Sequence[HasSettings]:
@@ -288,6 +300,33 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         if prime:
             self.prime()
 
+    def finalize_globals(self) -> None:
+        """Finalize global variables by evaluating any callables."""
+        for key, value in self._global_variables.items():
+            if "__globals__" in dir(value):
+                value.__globals__.update(self._global_variables)
+
+    def get_protocol_messages(
+        self, start_symbol: NonTerminal = NonTerminal("<start>")
+    ) -> set[PacketNonTerminal]:
+        work = set()
+        work.add(self.rules[start_symbol])
+        seen = set()
+        while len(work) > 0:
+            current = work.pop()
+            for node in current.descendents(self):
+                if node in seen:
+                    continue
+                seen.add(node)
+                work.add(node)
+        seen_nt = {n for n in seen if isinstance(n, NonTerminalNode)}
+        msg_nt: set[NonTerminalNode] = {n for n in seen_nt if n.sender is not None}
+        messages_set: set[PacketNonTerminal] = set()
+        for n in msg_nt:
+            assert n.sender is not None
+            messages_set.add(PacketNonTerminal(n.sender, n.recipient, n.symbol))
+        return messages_set
+
     def parse(
         self,
         word: str | bytes | int | DerivationTree,
@@ -330,6 +369,14 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         """Return the maximum position reached during last parsing."""
         return self._parser._iter_parser.max_position()
 
+    def nodes(self) -> set[Node]:
+        """Return a map of all nodes in the grammar."""
+        node_set = set()
+        for node in self.rules.values():
+            node_set.add(node)
+            node_set.update(node.descendents(self, filter_controlflow=False))
+        return node_set
+
     def __contains__(self, item: str | NonTerminal) -> bool:
         if not isinstance(item, NonTerminal):
             item = NonTerminal(item)
@@ -357,6 +404,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         return len(self.rules)
 
     def __repr__(self) -> str:
+        """Return a (canonical) string representation of the grammar."""
         return "\n".join(
             [
                 f"{key.name()} ::= {value.format_as_spec()}{' := ' + str(self.generators[key]) if key in self.generators else ''}"
@@ -364,10 +412,172 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             ]
         )
 
+    # Formats for to_states()
+    STATE_FORMAT = "state"
+    MERMAID_FORMAT = "mermaid"
+    DOT_FORMAT = "dot"
+
+    def to_states(
+        self, *, start_symbol: str = "<start>", format: str = STATE_FORMAT
+    ) -> str:
+        """Convert into a (textual) finite state machine representation."""
+
+        if format not in {self.STATE_FORMAT, self.MERMAID_FORMAT, self.DOT_FORMAT}:
+            raise ValueError(
+                f"Unknown format: {format}; must be one of {self.STATE_FORMAT}, {self.MERMAID_FORMAT}, {self.DOT_FORMAT}"
+            )
+
+        def paths(node: Node) -> list[list[Node]]:
+            """Return all possible paths starting from this node."""
+            if isinstance(node, Concatenation):
+                children_paths = []
+                for child in node.children():
+                    children_paths.append(paths(child))
+
+                all_paths = []
+                for product in itertools.product(*children_paths):
+                    p = []
+                    for subpath in product:
+                        p += subpath
+                    all_paths.append(p)
+                return all_paths
+
+            if isinstance(node, Alternative):
+                return [p for child in node.children() for p in paths(child)]
+
+            if isinstance(node, (Repetition, Plus, Star, Option)):
+                # For simplicity, we assume one repetition
+                return paths(node.children()[0])
+
+            return [[node]]
+
+        def node(s: str) -> str:
+            """Escape special characters for Mermaid."""
+            if format == self.MERMAID_FORMAT:
+                s = s.replace(":", "#colon;")
+                s = s.replace("<", "#lt;")
+                s = s.replace(">", "#gt;")
+            return s
+
+        def entry() -> str:
+            """Return the entry symbol for the given format."""
+            match format:
+                case self.MERMAID_FORMAT:
+                    return "[*]"
+                case self.DOT_FORMAT:
+                    return "_start"
+                case _:
+                    return "[*]"
+
+        def exit() -> str:
+            """Return the entry symbol for the given format."""
+            match format:
+                case self.MERMAID_FORMAT:
+                    return "[*]"
+                case self.DOT_FORMAT:
+                    return "_end"
+                case _:
+                    return "[*]"
+
+        def transition(a: str, b: str, label: Optional[str] = None) -> str:
+            """Return a transition line for the given format."""
+            match format:
+                case self.MERMAID_FORMAT:
+                    line = f"{a} --> {b}"
+                    if label:
+                        line += f": {label}"
+                    return line
+                case self.DOT_FORMAT:
+                    line = f'"{a}" -> "{b}"'
+                    if label:
+                        line += f' [label="{label}"]'
+                    return line
+                case _:
+                    line = f"{a} --> {b}"
+                    if label:
+                        line += f": {label}"
+                    return line
+
+        def transition_sep() -> str:
+            """Return the transition separator for the given format."""
+            match format:
+                case self.DOT_FORMAT:
+                    return "\\n"
+                case _:
+                    return " "
+
+        lines = []
+
+        def add_line(line: str) -> None:
+            if format in {self.MERMAID_FORMAT, self.DOT_FORMAT}:
+                line = "    " + line
+            lines.append(line)
+
+        if format == self.MERMAID_FORMAT:
+            lines.append("stateDiagram")
+        elif format == self.DOT_FORMAT:
+            lines.append("digraph finite_state_machine {")
+            # Style for start and end nodes
+            lines.append('    node [shape=point,width=0.2,label=""]_start;')
+            lines.append('    node [shape=doublecircle,label=""]_end;')
+            # Default style for all other nodes; \N inserts the node name
+            # Color and fonts are the same as in Mermaid
+            lines.append(
+                '    node [shape=ellipse,style=filled,fontname="Calibri",fillcolor="#ececfe",label="\\N"];'
+            )
+            lines.append('    edge [fontname="Calibri"];')
+
+        add_line(transition(entry(), node(start_symbol)))
+        states_seen = set()
+        start_nt = NonTerminal(start_symbol)
+        work: list[Symbol] = [start_nt]
+
+        while work:
+            from_state = work.pop()
+            if from_state in states_seen:
+                continue
+            if from_state not in self.rules:
+                continue
+
+            assert isinstance(from_state, NonTerminal)
+
+            states_seen.add(from_state)
+            value = self.rules[from_state]
+
+            all_paths = paths(value)
+
+            for p in all_paths:
+                to_state = p[-1]
+                from_str = node(from_state.format_as_spec())
+
+                if isinstance(to_state, NonTerminalNode):
+                    to_str = node(to_state.format_as_spec())
+                else:
+                    # Last element is not a nonterminal, so it's an end state
+                    to_str = node(exit())
+
+                label = None
+                transitions = p[:-1]
+                if transitions:
+                    label = transition_sep().join(
+                        node(n.format_as_spec()) for n in transitions
+                    )
+
+                add_line(transition(from_str, to_str, label))
+                next_symbol = to_state.to_symbol()
+                work.append(next_symbol)
+
+        if format == self.DOT_FORMAT:
+            lines.append("}")
+
+        return "\n".join(lines)
+
     def msg_parties(self, *, include_recipients: bool = True) -> set[str]:
         parties: set[str] = set()
         for rule in self.rules.values():
-            parties |= rule.msg_parties(include_recipients=include_recipients)
+            parties |= rule.msg_parties(
+                grammar=self, include_recipients=include_recipients
+            )
         return parties
 
     def get_repr_for_rule(self, symbol: str | NonTerminal) -> str:
@@ -412,77 +622,284 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
     def update_parser(self) -> None:
         self._parser = Parser(self.rules)
 
+    def get_uncovered_k_paths(
+        self,
+        derivation_trees: list[DerivationTree],
+        k: int,
+        non_terminal: NonTerminal = NonTerminal("<start>"),
+        overlap_to_root: bool = False,
+        coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
+        input_parties: Optional[set[str]] = None,
+    ) -> list[tuple[Symbol, ...]]:
+        """
+        Returns a list of uncovered k-paths in the grammar given a set of derivation trees.
+        """
+        all_k_paths = self.generate_all_k_paths(
+            k=k,
+            non_terminal=non_terminal,
+            overlap_to_root=overlap_to_root,
+            coverage_goal=coverage_goal,
+            input_parties=input_parties,
+        )
+        covered_k_paths = set()
+        for tree in derivation_trees:
+            covered_k_paths.update(
+                self._extract_k_paths_from_tree(
+                    tree, k, overlap_to_root, coverage_goal, input_parties=input_parties
+                )
+            )
+
+        uncovered_k_paths = all_k_paths.difference(covered_k_paths)
+        return list(uncovered_k_paths)
+
     def compute_kpath_coverage(
-        self, derivation_trees: list[DerivationTree], k: int
+        self,
+        derivation_trees: list[DerivationTree],
+        k: int,
+        non_terminal: NonTerminal = NonTerminal("<start>"),
+        overlap_to_root: bool = False,
     ) -> float:
         """
         Computes the k-path coverage of the grammar given a set of derivation trees.
         Returns a score between 0 and 1 representing the fraction of k-paths covered.
         """
         # Generate all possible k-paths in the grammar
-        all_k_paths = self._generate_all_k_paths(k)
+        all_k_paths = self.generate_all_k_paths(
+            k=k, non_terminal=non_terminal, overlap_to_root=overlap_to_root
+        )
 
         # Extract k-paths from the derivation trees
         covered_k_paths = set()
         for tree in derivation_trees:
-            covered_k_paths.update(self._extract_k_paths_from_tree(tree, k))
+            covered_k_paths.update(
+                self._extract_k_paths_from_tree(tree, k, overlap_to_root)
+            )
+            if len(covered_k_paths) == len(all_k_paths):
+                return 1.0
 
         # Compute coverage score
         if not all_k_paths:
             return 1.0  # If there are no k-paths, coverage is 100%
         return len(covered_k_paths) / len(all_k_paths)
 
-    def _generate_all_k_paths(self, k: int) -> set[tuple[Node, ...]]:
+    def generate_all_k_paths(
+        self,
+        *,
+        k: int,
+        non_terminal: NonTerminal = NonTerminal("<start>"),
+        overlap_to_root: bool = False,
+        coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
+        input_parties: Optional[set[str]] = None,
+    ) -> set[KPath]:
         """
         Computes the *k*-paths for this grammar, constructively. See: doi.org/10.1109/ASE.2019.00027
 
         :param k: The length of the paths.
+        :param non_terminal: The non-terminal from which to start generating paths.
+        :param overlap_to_root: Whether to include paths that contain the starting symbol but are overlapping with symbols towards the root direction.
+        :param coverage_goal: The coverage goal to consider when generating paths.
         :return: All paths of length up to *k* within this grammar.
         """
+        if input_parties is None:
+            input_parties = set()
+        cache_key = (non_terminal, overlap_to_root, coverage_goal)
+        if cache_key in self._k_path_cache:
+            cache_work = self._k_path_cache[cache_key]
+            if len(cache_work) >= k:
+                return cache_work[k - 1]
 
-        initial = set()
-        initial_work: list[Node] = [
-            NonTerminalNode(name, self._grammar_settings) for name in self.rules.keys()
-        ]
+        initial: set[Node] = set()
+        starter_node = NonTerminalNode(non_terminal, self._grammar_settings)
+
+        initial_work: list[Node] = [starter_node]
+        if coverage_goal == CoverageGoal.INPUTS:
+            initial_work.append(starter_node)
+            while initial_work:
+                node = initial_work.pop(0)
+                if node in initial:
+                    continue
+                initial.add(node)
+                initial_work.extend(node.descendents(self, filter_controlflow=True))
+            initial_work = [
+                node
+                for node in initial
+                if isinstance(node, NonTerminalNode) and node.sender in input_parties
+            ]
+        initial.clear()
         while initial_work:
             node = initial_work.pop(0)
             if node in initial:
                 continue
             initial.add(node)
-            initial_work.extend(node.descendents(self))
+            for descendent in node.descendents(self, filter_controlflow=True):
+                if isinstance(descendent, NonTerminalNode):
+                    if coverage_goal == CoverageGoal.STATE_INPUTS_OUTPUTS:
+                        initial_work.append(descendent)
+                    elif coverage_goal == CoverageGoal.STATE_INPUTS:
+                        if (
+                            descendent.sender is None
+                            or descendent.sender in input_parties
+                        ):
+                            initial_work.append(descendent)
+                    elif coverage_goal == CoverageGoal.INPUTS:
+                        initial_work.append(descendent)
+                    else:
+                        raise ValueError(f"Unknown coverage goal: {coverage_goal}")
+                else:
+                    initial_work.append(descendent)
 
         work: list[set[tuple[Node, ...]]] = [set((x,) for x in initial)]
 
-        for _ in range(1, k):
-            next_work = set()
+        for _ in range(len(work), k):
+            next_work = set(work[-1])
             for base in work[-1]:
-                for descendent in base[-1].descendents(self):
+                for descendent in base[-1].descendents(self, filter_controlflow=True):
+                    if isinstance(descendent, NonTerminalNode):
+                        if coverage_goal == CoverageGoal.STATE_INPUTS:
+                            if (
+                                descendent.sender is not None
+                                and descendent.sender not in input_parties
+                            ):
+                                continue
                     next_work.add(base + (descendent,))
             work.append(next_work)
 
-        # return set.union(*work)
-        return work[-1]
+        symbol_work = []
+        for work_k in work:
+            symbol_work_k: set[tuple[Symbol, ...]] = set()
+            symbol_work.append(symbol_work_k)
+            for path in work_k:
+                symbol_work_k.add(tuple(node.to_symbol() for node in path))
 
-    @staticmethod
+        if overlap_to_root:
+            all_k_paths = self.generate_all_k_paths(
+                k=k, coverage_goal=coverage_goal, input_parties=input_parties
+            )
+            for k_path in all_k_paths:
+                if non_terminal in k_path:
+                    for idx in range(len(k_path) - 1, k):
+                        symbol_work[idx].add(k_path)
+
+        self._k_path_cache[cache_key] = symbol_work
+
+        return symbol_work[k - 1]
+
     def _extract_k_paths_from_tree(
-        tree: DerivationTree, k: int
+        self,
+        tree: DerivationTree,
+        k: int,
+        overlap_to_root: bool = False,
+        coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
+        input_parties: Optional[set[str]] = None,
     ) -> set[tuple[Symbol, ...]]:
         """
         Extracts all k-length paths (k-paths) from a derivation tree.
         """
-        paths = set()
+        if input_parties is None:
+            input_parties = set()
 
-        def traverse(node: DerivationTree, current_path: tuple[Symbol, ...]) -> None:
-            new_path = current_path + (node.symbol,)
-            if len(new_path) == k:
-                paths.add(new_path)
-                # Do not traverse further to keep path length at k
+        overlap_parent = tree
+        if overlap_to_root:
+            for _ in range(k - 1):
+                if overlap_parent.parent is not None:
+                    overlap_parent = overlap_parent.parent
+
+        hash_key = hash((tree, overlap_parent, k, overlap_to_root, coverage_goal))
+        if hash_key in self._tree_k_path_cache:
+            k_paths = self._tree_k_path_cache[hash_key]
+            return k_paths
+
+        start_nodes: list[tuple[Optional[NonTerminal], DerivationTree]] = []
+
+        def collect_start_nodes(tree_root: DerivationTree) -> None:
+            if not isinstance(tree_root.symbol, NonTerminal):
                 return
-            for child in node.children:
-                traverse(child, new_path)
+            for child in tree_root.children:
+                if coverage_goal == CoverageGoal.INPUTS:
+                    if child.sender is not None and child.sender not in input_parties:
+                        continue
+                start_nodes.append((tree_root.symbol, child))
+                collect_start_nodes(child)
 
-        traverse(tree, ())
-        return paths
+        collect_start_nodes(tree)
+        start_nodes.append((None, tree))
+
+        if coverage_goal == CoverageGoal.INPUTS:
+            input_symbol_starters = [
+                (parent, child)
+                for parent, child in start_nodes
+                if isinstance(child.symbol, NonTerminal)
+                and child.sender in input_parties
+            ]
+            start_nodes.clear()
+            for parent, child in input_symbol_starters:
+                collect_start_nodes(child)
+                start_nodes.append((parent, child))
+
+        paths: list[set[tuple[Symbol, ...]]] = [set() for _ in range(k)]
+
+        def traverse(
+            parent_symbol: Optional[NonTerminal],
+            tree_node: DerivationTree,
+            path: tuple[Symbol, ...],
+        ) -> None:
+            tree_symbol = tree_node.symbol
+            assert isinstance(tree_symbol, (Terminal, NonTerminal))
+            if isinstance(tree_symbol, Terminal):
+                if parent_symbol is None:
+                    raise RuntimeError(
+                        "Received a Terminal with no parent symbol when computing k-path!"
+                    )
+                symbol_value: str | bytes | int
+                if tree_symbol.value().is_type(TreeValueType.STRING):
+                    symbol_value = tree_symbol.value().to_string()
+                elif tree_symbol.value().is_type(TreeValueType.BYTES):
+                    symbol_value = tree_symbol.value().to_bytes()
+                else:
+                    symbol_value = tree_symbol.value().to_int()
+
+                parent_rule_nodes = NonTerminalNode(
+                    parent_symbol, self.grammar_settings
+                ).descendents(self, filter_controlflow=True)
+                parent_rule_terminals = [
+                    x for x in parent_rule_nodes if isinstance(x, TerminalNode)
+                ]
+                random.shuffle(parent_rule_terminals)
+                for rule_node in parent_rule_terminals:
+                    if rule_node.symbol.check(symbol_value, False)[0]:
+                        paths[len(path)].add(path + (rule_node.symbol,))
+                return
+            new_path = path + (tree_symbol,)
+            if len(new_path) <= k:
+                paths[len(new_path) - 1].add(new_path)
+                if len(new_path) == k:
+                    return
+            for child in tree_node.children:
+                if coverage_goal == CoverageGoal.STATE_INPUTS:
+                    if child.sender is not None and child.sender not in input_parties:
+                        continue
+                traverse(tree_symbol, child, new_path)
+
+        for parent, node in start_nodes:
+            traverse(parent, node, tuple())
+
+        k_paths = set()
+        for path_set in paths:
+            k_paths.update(path_set)
+
+        if overlap_to_root:
+            for path in self._extract_k_paths_from_tree(
+                overlap_parent,
+                k,
+                False,
+                coverage_goal=coverage_goal,
+                input_parties=input_parties,
+            ):
+                if tree.symbol in path:
+                    k_paths.add(path)
+
+        self._tree_k_path_cache[hash_key] = k_paths
+        return k_paths
 
     def prime(self) -> None:
         LOGGER.debug("Priming grammar")
@@ -527,14 +944,6 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             else:
                 raise FandangoValueError(f"Unknown node type {node.node_type}")
 
-    def slice_parties(self, parties: list[str]) -> None:
-        """
-        Returns a new grammar that only contains the rules that are relevant to the given parties.
-        """
-        for expansion in self.rules.values():
-            expansion.slice_parties(parties)
-        self.fuzzing_mode = FuzzingMode.COMPLETE
-
     def default_result(self) -> list[Node]:
         return []
 
@@ -570,15 +979,6 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
 
     def visitCharSet(self, node: CharSet) -> list[Node]:
         return []
-
-    def compute_k_paths(self, k: int) -> set[tuple[Node, ...]]:
-        """
-        Computes all possible k-paths in the grammar.
-
-        :param k: The length of the paths.
-        :return: A set of tuples, each tuple representing a k-path as a sequence of symbols.
-        """
-        return self._generate_all_k_paths(k)
 
     def traverse_derivation(
         self,
@@ -622,7 +1022,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         """
 
         # Compute all possible k-paths in the grammar
-        all_k_paths = self.compute_k_paths(k)
+        all_k_paths = self.generate_all_k_paths(k=k)
 
         disambiguator = Disambiguator(self, self._grammar_settings)
 

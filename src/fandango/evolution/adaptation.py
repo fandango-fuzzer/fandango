@@ -21,6 +21,11 @@ class AdaptiveTuner:
         max_safe_repetition: int = 1000,  # default safe max repetition cap
         max_safe_nodes: int = 5000,  # default safe max nodes cap
     ):
+        self.initial_mutation_rate = initial_mutation_rate
+        self.initial_crossover_rate = initial_crossover_rate
+        self.initial_max_repetition = initial_max_repetition
+        self.initial_max_nodes = initial_max_nodes
+
         self.mutation_rate = initial_mutation_rate
         self.crossover_rate = initial_crossover_rate
         self.max_repetitions = max_repetition
@@ -31,6 +36,12 @@ class AdaptiveTuner:
         self.max_nodes_rate = max_nodes_rate
         self.max_safe_repetition = max_safe_repetition
         self.max_safe_nodes = max_safe_nodes
+
+    def reset_parameters(self) -> None:
+        self.mutation_rate = self.initial_mutation_rate
+        self.crossover_rate = self.initial_crossover_rate
+        self.current_max_repetition = self.initial_max_repetition
+        self.current_max_nodes = self.initial_max_nodes
 
     def update_parameters(
         self,

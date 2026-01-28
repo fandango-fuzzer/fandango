@@ -64,7 +64,7 @@ $ make system-dev-tools
 
 (sec:pip-install)=
 ### Step 5: Install Fandango
-
+ti
 Install your local copy of Fandango:
 
 ```shell
@@ -77,12 +77,16 @@ To install additional dependencies for unit tests, code checks, running the eval
 $ python -m pip install -e ".[test,development,evaluation,book]"
 ```
 
-```{info}
-If subsequent tests fails due to dependency breakage, use `uv` to create the virtual environment with `uv.lock`, which provides a snapshot of the dependencies that are tested on our CI.
-`uv sync --locked --all-extras && uv pip install -e ".[test,development,evaluation,book]" --no-deps`
-```
+:::{tip}
+If subsequent tests fails due to dependency breakage, use `uv` to create the virtual environment with `uv.lock`, which provides a snapshot of the dependencies that are tested on our CI:
 
-If you don't need the (much faster) C++ parser, build Fandango without:
+```shell
+$ uv sync --locked --all-extras
+```
+:::
+
+
+If you don't need the (much faster) C++ parser, build Fandango without it:
 
 ```shell
 $ FANDANGO_SKIP_CPP_PARSER=1 python -m pip install -e .
@@ -137,7 +141,7 @@ $ pre-commit install
 This will run code formatting and type checking before every commit.
 
 ```{warning}
-The [tests](sec:running-tests)= aren't run as part of pre-commit, because they take significant time to complete. Run them manually.
+The [tests](sec:running-tests) are not run as part of pre-commit, because they take significant time to complete. Run them manually.
 ```
 
 `uv.lock` is a snapshot of the (actual) dependencies used in this project.
@@ -210,7 +214,7 @@ Use
 $ make html
 ```
 
-to create a HTML version of the documentation in `docs/_build/html`.
+to create an HTML version of the documentation in `docs/_build/html`.
 
 
 ## Attributions

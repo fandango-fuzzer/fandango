@@ -311,6 +311,15 @@ class IterativeParser(
             node, nt = self._context_rules[symbol]
             self.predict_ctx_rule(state, table, k, node, nt, hookin_parent)
 
+    def current_tree(self) -> Optional[DerivationTree]:
+        if len(self._table[self._table_idx]) == 0:
+            return None
+        for col in self._table[::-1]:
+            if len(col) == 0:
+                continue
+            return self.construct_incomplete_tree(col[-1], self._table)
+        return None
+
     def construct_incomplete_tree(
         self, state: ParseState, table: list[Column]
     ) -> DerivationTree:
@@ -764,13 +773,15 @@ class IterativeParser(
         self._hookin_parent = deepcopy(hookin_parent)
         self._clear_tmp()
 
-    def consume(self, char: str | bytes | int) -> Generator[DerivationTree, None, None]:
-        for tree in self._consume(char):
-            yield self.to_derivation_tree(tree)
+    def consume(
+        self, char: str | bytes | int
+    ) -> Generator[tuple[DerivationTree, bool], None, None]:
+        for tree, is_complete in self._consume(char):
+            yield self.to_derivation_tree(tree), is_complete
 
     def _consume(
         self, char: str | bytes | int
-    ) -> Generator[DerivationTree, None, None]:
+    ) -> Generator[tuple[DerivationTree, bool], None, None]:
         assert self._start is not None, "Call new_parse() before consume()"
         if isinstance(char, int):
             char = bytes([char])
@@ -803,7 +814,7 @@ class IterativeParser(
                     if state.nonterminal == self.implicit_start:
                         if at_end:
                             for child in state.children:
-                                yield child
+                                yield child, True
 
                     self.complete(state, table, curr_table_idx)
                 else:
@@ -849,7 +860,7 @@ class IterativeParser(
                         for child in state.children:
                             if child not in self._incomplete:
                                 self._incomplete.add(child)
-                                yield child
+                                yield child, False
                     self.complete(state, table, curr_table_idx)
 
             self.place_repetition_shortcut(table, curr_table_idx)

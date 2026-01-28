@@ -7,6 +7,7 @@ TEST_ROOT = Path(__file__).parent
 RESOURCES_ROOT = TEST_ROOT / "resources"
 PROJECT_ROOT = TEST_ROOT.parent
 DOCS_ROOT = PROJECT_ROOT / "docs"
+EVALUATION_ROOT = PROJECT_ROOT / "evaluation"
 
 IS_BEARTYPE_ACTIVE = os.environ.get("FANDANGO_RUN_BEARTYPE", False)
 

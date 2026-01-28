@@ -6,10 +6,10 @@ from fandango.language.grammar.node_visitors.message_nesting_detector import (
     MessageNestingDetector,
 )
 from fandango.language.grammar.node_visitors.node_replacer import NodeReplacer
-from fandango.language.grammar.node_visitors.packet_truncator import PacketTruncator
 from fandango.language.grammar.node_visitors.symbol_finder import SymbolFinder
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.parse.slice_parties import slice_parties
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.logger import LOGGER
 
@@ -130,9 +130,7 @@ def truncate_invisible_packets(grammar: Grammar, io_instance: FandangoIO) -> Non
     for existing_party in list(keep_parties):
         if not io_instance.parties[existing_party].is_fuzzer_controlled():
             keep_parties.remove(existing_party)
-
-    for nt in grammar.rules.keys():
-        PacketTruncator(grammar, keep_parties).visit(grammar.rules[nt])
+    slice_parties(grammar, keep_parties, ignore_receivers=False)
 
 
 def assign_implicit_party(grammar: Grammar, implicit_party: str) -> None:
@@ -154,7 +152,7 @@ def assign_implicit_party(grammar: Grammar, implicit_party: str) -> None:
         child_party: set[str] = set()
 
         for c_node in rule_nts:
-            child_party |= c_node.msg_parties(include_recipients=False)
+            child_party |= c_node.msg_parties(grammar=grammar, include_recipients=False)
 
         if len(child_party) == 0:
             processed_nts.add(current_symbol)
@@ -162,7 +160,7 @@ def assign_implicit_party(grammar: Grammar, implicit_party: str) -> None:
             continue
         for c_node in rule_nts:
             seen_nts.add(c_node.symbol)
-            if len(c_node.msg_parties(include_recipients=False)) != 0:
+            if len(c_node.msg_parties(grammar=grammar, include_recipients=False)) != 0:
                 continue
             c_node.sender = implicit_party
         for t_node in symbol_finder.terminalNodes:

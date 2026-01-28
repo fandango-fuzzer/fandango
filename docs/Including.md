@@ -87,6 +87,6 @@ $ pip show fandango-fuzzer | grep Location
 
 ```{code-cell}
 :tags: ["remove-input"]
-!pip show fandango-fuzzer | grep Location
+!uv pip show fandango-fuzzer | grep Location
 assert _exit_code == 0
 ```

@@ -10,7 +10,7 @@ class test_convert(unittest.TestCase):
         command = ["fandango", "convert", str(DOCS_ROOT / "persons.fan")]
         out, err, code = run_command(command)
         self.assertEqual(0, code, f"Command failed with code {code}: {err}")
-        self.assertEqual(err, "")
+        self.assertEqual(err, "", err)
 
     def test_convert_antlr(self):
         calculator = (
@@ -22,8 +22,8 @@ class test_convert(unittest.TestCase):
             str(calculator),
         ]
         out, err, code = run_command(command)
-        self.assertEqual(0, code)
-        self.assertEqual(err, "")
+        self.assertEqual(0, code, code)
+        self.assertEqual(err, "", err)
 
     def test_convert_dtd(self):
         svg = (
@@ -41,7 +41,7 @@ class test_convert(unittest.TestCase):
         ]
         out, err, code = run_command(command)
         self.assertEqual(0, code, f"Command failed with code {code}: {err}")
-        self.assertEqual(err, "")
+        self.assertEqual(err, "", err)
 
     def test_convert_bt(self):
         gif = PROJECT_ROOT / "src" / "fandango" / "converters" / "bt" / "gif.bt"
@@ -53,8 +53,8 @@ class test_convert(unittest.TestCase):
             str(gif),
         ]
         out, err, code = run_command(command)
-        self.assertEqual(0, code)
-        self.assertEqual(err, "")
+        self.assertEqual(0, code, code)
+        self.assertEqual(err, "", err)
 
     def test_convert_bt_again(self):
         gif = PROJECT_ROOT / "src" / "fandango" / "converters" / "bt" / "gif.bt"
@@ -66,5 +66,5 @@ class test_convert(unittest.TestCase):
             str(gif),
         ]
         out, err, code = run_command(command)
-        self.assertEqual(0, code)
-        self.assertEqual(err, "")
+        self.assertEqual(0, code, code)
+        self.assertEqual(err, "", err)

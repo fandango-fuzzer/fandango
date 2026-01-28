@@ -24,5 +24,6 @@
     "python.testing.pytestEnabled": true,
     "python.envFile": "${workspaceFolder}/.env",
     "debugpy.debugJustMyCode": false,
+    "livePreview.defaultPreviewPath": "/docs/_build/html/index.html",
     // "pygls.jsonServer.exampleConfiguration": "some value here",
 }

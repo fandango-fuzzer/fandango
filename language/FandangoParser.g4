@@ -21,7 +21,7 @@ statement
 
 production
     : INDENT* nonterminal '::=' alternative (':=' expression)? (';' | NEWLINE+ | EOF) DEDENT*
-    | INDENT* nonterminal '::=' alternative ('=' expression)? (';' | NEWLINE+ | EOF) DEDENT* // deprecated
+    | INDENT* nonterminal '::=' alternative (ASSIGN expression)? (';' | NEWLINE+ | EOF) DEDENT* // deprecated
     | INDENT* nonterminal '::=' alternative (':' ':' expression)? (';' | NEWLINE+ | EOF) DEDENT* // deprecated
     ;
 
@@ -222,7 +222,7 @@ grammar_selector
     ;
 
 grammar_rule
-    : grammar_setting_key SPACES? '='? SPACES? grammar_setting_value SPACES?
+    : grammar_setting_key SPACES? ASSIGN? SPACES? grammar_setting_value SPACES?
     ;
 
 grammar_setting_key
@@ -306,10 +306,10 @@ compound_stmt
 // =================
 
 assignment
-    : identifier ':' expression ('=' annotated_rhs)?
+    : identifier ':' expression (ASSIGN annotated_rhs)?
     | ('(' single_target ')'
-         | single_subscript_attribute_target) ':' expression ('=' annotated_rhs)?
-    | (star_targets '=' )+ (yield_expr | star_expressions)
+         | single_subscript_attribute_target) ':' expression (ASSIGN annotated_rhs)?
+    | (star_targets ASSIGN )+ (yield_expr | star_expressions)
     | single_target augassign (yield_expr | star_expressions)
     ;
 
@@ -531,7 +531,7 @@ star_annotation
     ;
 
 default
-    : '=' expression
+    : ASSIGN expression
     ;
 
 // If statement
@@ -786,14 +786,14 @@ keyword_patterns
     ;
 
 keyword_pattern
-    : identifier '=' pattern
+    : identifier ASSIGN pattern
     ;
 
 // Type statement
 // ---------------
 
 type_alias
-    : 'type' identifier type_params? '=' expression
+    : 'type' identifier type_params? ASSIGN expression
     ;
 
 // Type parameter declaration
@@ -1257,7 +1257,7 @@ fstring_any
     ;
 
 fstring_replacement_field
-    : '{' (yield_expr | star_expressions) '='? fstring_conversion? fstring_full_format_spec? '}'
+    : '{' (yield_expr | star_expressions) ASSIGN? fstring_conversion? fstring_full_format_spec? '}'
     ;
 
 fstring_conversion
@@ -1377,12 +1377,12 @@ starred_expression
     ;
 
 kwarg_or_starred
-    : identifier '=' expression
+    : identifier ASSIGN expression
     | starred_expression
     ;
 
 kwarg_or_double_starred
-    : identifier '=' expression
+    : identifier ASSIGN expression
     | '**' expression
     ;
 
