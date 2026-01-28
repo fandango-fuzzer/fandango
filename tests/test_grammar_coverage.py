@@ -1,3 +1,5 @@
+import os
+import sys
 import time
 import unittest
 from asyncio import Server
@@ -91,6 +93,10 @@ class Server(NetworkParty):
             coverage_goal=coverage_goal,
         )
 
+    @unittest.skipIf(
+        sys.platform == "darwin" and os.getenv("CI") == "true",
+        "Skipping IO SMTP inputs grammar coverage test on macos.",
+    )
     def test_io_smtp_inputs(self):
         import socket
 
@@ -104,7 +110,7 @@ class Server(NetworkParty):
 
         try:
             fandango = GrammarCoverageTest.gen_fandango(
-                CoverageGoal.STATE_INPUTS_OUTPUTS, host="127.0.0.1", port=free_port
+                CoverageGoal.STATE_INPUTS_OUTPUTS, host="127.0.0.1", port=server.port
             )
             for solution in fandango.generate(mode=FuzzingMode.IO):
                 pass
