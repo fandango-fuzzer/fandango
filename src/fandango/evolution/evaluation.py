@@ -72,7 +72,9 @@ class Evaluator:
         :param population: The population to compute the mutation pool for.
         :return: The mutation pool.
         """
-        weights = [self._fitness_cache[hash((individual.get_root(), individual))][0] for ind in population]
+        weights = [
+            self._fitness_cache[hash((ind.get_root(), ind))][0] for ind in population
+        ]
         if not all(w == 0 for w in weights):
             return random.choices(population, weights=weights, k=len(population))
         else:
