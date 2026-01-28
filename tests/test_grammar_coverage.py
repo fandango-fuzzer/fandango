@@ -90,10 +90,27 @@ def wait_for_port(host, port, timeout=5.0):
 
 class GrammarCoverageTest(unittest.TestCase):
     @staticmethod
-    def gen_fandango(coverage_goal: CoverageGoal) -> Fandango:
-        with open(EVALUATION_ROOT / "experiments/smtp/smtp_client.fan") as f:
+    def gen_fandango(coverage_goal: CoverageGoal, port: int) -> Fandango:
+        client_def = f"""
+class Client(NetworkParty):
+    def __init__(self):
+        super().__init__(
+            connection_mode=ConnectionMode.CONNECT,
+            uri="tcp://127.0.0.1:{port}"
+        )
+        self.start()
+
+class Server(NetworkParty):
+    def __init__(self):
+        super().__init__(
+            connection_mode=ConnectionMode.EXTERNAL,
+            uri="tcp://127.0.0.1:{port}"
+        )
+        self.start()
+"""
+        with open(EVALUATION_ROOT / "experiments/smtp/smtp.fan") as f:
             grammar, constraints = parse(
-                f,
+                [f, client_def],
                 use_stdlib=False,
             )
         assert grammar is not None
@@ -105,13 +122,13 @@ class GrammarCoverageTest(unittest.TestCase):
         )
 
     def test_io_smtp_inputs(self):
-        server = SMTPServer(port=8025)
+        server = SMTPServer()
         server.start()
         wait_for_port("127.0.0.1", server.port)
 
         try:
             fandango = GrammarCoverageTest.gen_fandango(
-                CoverageGoal.STATE_INPUTS_OUTPUTS
+                CoverageGoal.STATE_INPUTS_OUTPUTS, port=server.port
             )
             for solution in fandango.generate(mode=FuzzingMode.IO):
                 pass
