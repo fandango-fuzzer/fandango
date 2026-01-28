@@ -1,13 +1,14 @@
 import unittest
 
 import pytest
+from aiosmtpd.handlers import Debugging
 
 from fandango.io.navigation.coverage_goal import CoverageGoal
 from fandango.language.grammar import FuzzingMode
 from fandango.language.parse.parse import parse
 from fandango.evolution.algorithm import Fandango, LoggerLevel
-import socket
-import time
+from aiosmtpd.controller import Controller
+from aiosmtpd.smtp import AuthResult, LoginPassword
 
 from tests.utils import EVALUATION_ROOT
 
@@ -18,7 +19,6 @@ from aiosmtpd.smtp import SMTP
 from aiosmtpd.handlers import Debugging
 from aiosmtpd.smtp import AuthResult, LoginPassword
 
-pytestmark = pytest.mark.xdist_group("smtp_grammar_coverage")
 
 class SMTPServer:
     def __init__(self, host="127.0.0.1", port=0):
@@ -79,42 +79,13 @@ class SMTPServer:
         self.loop.call_soon_threadsafe(lambda: self.loop.stop())
         self.thread.join(timeout=10)
 
-
-def wait_for_port(host, port, timeout=5.0):
-    end = time.time() + timeout
-    while time.time() < end:
-        try:
-            with socket.create_connection((host, port), timeout=0.5):
-                return
-        except OSError:
-            time.sleep(0.1)
-    raise RuntimeError("SMTP server did not become ready")
-
-
 @pytest.mark.xdist_group("smtp_grammar_coverage")
 class GrammarCoverageTest(unittest.TestCase):
     @staticmethod
-    def gen_fandango(coverage_goal: CoverageGoal, port: int) -> Fandango:
-        client_def = f"""
-class Client(NetworkParty):
-    def __init__(self):
-        super().__init__(
-            connection_mode=ConnectionMode.CONNECT,
-            uri="tcp://127.0.0.1:{port}"
-        )
-        self.start()
-
-class Server(NetworkParty):
-    def __init__(self):
-        super().__init__(
-            connection_mode=ConnectionMode.EXTERNAL,
-            uri="tcp://127.0.0.1:{port}"
-        )
-        self.start()
-"""
-        with open(EVALUATION_ROOT / "experiments/smtp/smtp.fan") as f:
+    def gen_fandango(coverage_goal: CoverageGoal) -> Fandango:
+        with open(EVALUATION_ROOT / "experiments/smtp/smtp_client.fan") as f:
             grammar, constraints = parse(
-                [f, client_def],
+                f,
                 use_stdlib=False,
             )
         assert grammar is not None
@@ -126,13 +97,12 @@ class Server(NetworkParty):
         )
 
     def test_io_smtp_inputs(self):
-        server = SMTPServer()
+        server = SMTPServer(port=8025)
         server.start()
-        wait_for_port("127.0.0.1", server.port)
 
         try:
             fandango = GrammarCoverageTest.gen_fandango(
-                CoverageGoal.STATE_INPUTS_OUTPUTS, port=server.port
+                CoverageGoal.STATE_INPUTS_OUTPUTS
             )
             for solution in fandango.generate(mode=FuzzingMode.IO):
                 pass
