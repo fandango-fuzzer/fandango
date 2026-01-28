@@ -72,7 +72,7 @@ class Evaluator:
         :param population: The population to compute the mutation pool for.
         :return: The mutation pool.
         """
-        weights = [self._fitness_cache[hash(ind)][0] for ind in population]
+        weights = [self._fitness_cache[hash((individual.get_root(), individual))][0] for ind in population]
         if not all(w == 0 for w in weights):
             return random.choices(population, weights=weights, k=len(population))
         else:
@@ -194,7 +194,7 @@ class Evaluator:
         self,
         individual: DerivationTree,
     ) -> Generator[DerivationTree, None, tuple[float, list[FailingTree], Suggestion]]:
-        key = hash(individual)
+        key = hash((individual.get_root(), individual))
         if key in self._fitness_cache:
             return self._fitness_cache[key]
 
