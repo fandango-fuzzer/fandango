@@ -1,5 +1,7 @@
 import unittest
 
+import pytest
+
 from fandango.io.navigation.coverage_goal import CoverageGoal
 from fandango.language.grammar import FuzzingMode
 from fandango.language.parse.parse import parse
@@ -16,6 +18,7 @@ from aiosmtpd.smtp import SMTP
 from aiosmtpd.handlers import Debugging
 from aiosmtpd.smtp import AuthResult, LoginPassword
 
+pytestmark = pytest.mark.xdist_group("smtp_grammar_coverage")
 
 class SMTPServer:
     def __init__(self, host="127.0.0.1", port=0):
@@ -88,6 +91,7 @@ def wait_for_port(host, port, timeout=5.0):
     raise RuntimeError("SMTP server did not become ready")
 
 
+@pytest.mark.xdist_group("smtp_grammar_coverage")
 class GrammarCoverageTest(unittest.TestCase):
     @staticmethod
     def gen_fandango(coverage_goal: CoverageGoal, port: int) -> Fandango:
