@@ -21,6 +21,7 @@ from fandango.cli.utils import (
     parse_file,
     validate,
 )
+from fandango.cli.upgrade import check_for_fandango_update
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
 from fandango.converters.FandangoConverter import FandangoConverter
@@ -458,12 +459,22 @@ def copyright_command(args: argparse.Namespace) -> None:
     print("All rights reserved.")
 
 
-def version_command(args: argparse.Namespace) -> None:
+def version_command(
+    args: argparse.Namespace, *, skip_update_check: bool = False
+) -> None:
+    """
+    Show Fandango version and check for updates.
+    :param: skip_update_check - if True, do not force-check for updates
+    This is set when called from `shell_command()`, which reports the version.
+    """
+
     if sys.stdout.isatty():
         version_line = f"💃 {styles.color.ansi256(styles.rgbToAnsi256(128, 0, 0))}Fandango{styles.color.close} {fandango.version()}"
     else:
         version_line = f"Fandango {fandango.version()}"
     print(version_line)
+    if not skip_update_check:
+        check_for_fandango_update(check_now=True)
 
 
 COMMANDS: dict[str, Callable[[argparse.Namespace], None]] = {
