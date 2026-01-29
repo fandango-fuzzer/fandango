@@ -428,7 +428,14 @@ You can convert these into Fandango grammars as follows:
 2. Every _transition_ $A \rightarrow B$ in the diagram becomes an _expansion_ of $A$ into $B$, or $A ::= B$.
 3. If there are multiple _alternatives_ outgoing from $A$, each of them becomes a separate alternative for the expansion of $A$.
 
-Apply these rules are to the SMTP state diagram, and check how they correspond to the Fandango SMTP spec.
+The animation below illustrates how this conversion works applied on the first states of the SMTP protocol.
+
+```{image} lts2grammar.gif
+```
+
+```{note}
+Apply these rules to the SMTP state diagram, above, and check how they correspond to the Fandango SMTP spec.
+```
 
 
 ### Modeling Errors
