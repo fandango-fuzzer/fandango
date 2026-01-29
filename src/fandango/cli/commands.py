@@ -455,7 +455,7 @@ def nop_command(args: argparse.Namespace) -> None:
 
 
 def copyright_command(args: argparse.Namespace) -> None:
-    print("Copyright (c) 2024-2025 CISPA Helmholtz Center for Information Security.")
+    print("Copyright (c) 2024-2026 CISPA Helmholtz Center for Information Security.")
     print("All rights reserved.")
 
 
