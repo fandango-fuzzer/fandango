@@ -104,14 +104,16 @@ iso8601lib += make_comment(
     "We're being lazy here and leave the checking of leap years and month lengths to the datetime module"
 )
 
-iso8601lib += make_code("""
+iso8601lib += make_code(
+    """
 def is_valid_iso8601datetime(iso8601datetime: str) -> bool:
     try:
         datetime.datetime.fromisoformat(iso8601datetime)
         return True
     except ValueError:
         return False
-""")
+"""
+)
 
 iso8601lib += make_constraint("is_valid_iso8601datetime(str(<iso8601datetime>))")
 # iso8601lib += make_constraint("<iso8601year>.startswith('20')")
