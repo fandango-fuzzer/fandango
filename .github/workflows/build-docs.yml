@@ -4,7 +4,7 @@ on:
   pull_request:
   workflow_dispatch: # Allows manual triggering from the Actions tab
   push:
-    branches: [ release ]
+    branches: [ main ]
 
 permissions:
   contents: write
@@ -41,7 +41,7 @@ jobs:
 
   deploy:
     # Only deploy on pushes to the release branch
-    if: github.event_name == 'push' && github.ref == 'refs/heads/release'
+    if: github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     steps:
