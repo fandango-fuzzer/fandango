@@ -3,6 +3,8 @@ from collections.abc import Iterable, Iterator, Sequence
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.tree import DerivationTree
+from fandango.language.symbols.symbol import Symbol
+from fandango.language.symbols.non_terminal import NonTerminal
 
 if TYPE_CHECKING:
     import fandango.language.grammar.node_visitors
@@ -18,6 +20,9 @@ class Concatenation(Node):
         self.id = id
         self.nodes = list(nodes)
         super().__init__(NodeType.CONCATENATION, grammar_settings)
+
+    def to_symbol(self) -> Symbol:
+        return NonTerminal(f"<__{self.id}>")
 
     def fuzz(
         self,
@@ -51,10 +56,6 @@ class Concatenation(Node):
     def children(self) -> list[Node]:
         return self.nodes
 
-    def slice_parties(self, parties: list[str]) -> None:
-        self.nodes = [node for node in self.nodes if node.in_parties(parties)]
-        super().slice_parties(parties)
-
     def __getitem__(self, item: int) -> Node:
         return self.nodes.__getitem__(item)
 
@@ -65,6 +66,15 @@ class Concatenation(Node):
         return " ".join(map(lambda x: x.format_as_spec(), self.nodes))
 
     def descendents(
-        self, grammar: "fandango.language.grammar.grammar.Grammar"
+        self,
+        grammar: "fandango.language.grammar.grammar.Grammar",
+        filter_controlflow: bool = False,
     ) -> Iterator["Node"]:
-        yield from self.nodes
+        if filter_controlflow:
+            for child in self.nodes:
+                if child.is_controlflow:
+                    yield from child.descendents(grammar, filter_controlflow)
+                else:
+                    yield child
+        else:
+            yield from self.nodes

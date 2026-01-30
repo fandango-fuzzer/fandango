@@ -1,9 +1,11 @@
 import re
+import uuid
 
 from copy import deepcopy
 from typing import IO, Optional
 
-
+from fandango.constraints import predicates
+from fandango.io import CURRENT_ENV_KEY
 from fandango.language.parse.io import init_io
 from fandango.language.parse.slice_parties import slice_parties
 
@@ -78,6 +80,9 @@ def parse(
     if start_symbol is None:
         start_symbol = "<start>"
 
+    pyenv_globals = None
+    pyenv_locals = None
+
     global STDLIB_SYMBOLS, STDLIB_GRAMMAR, STDLIB_CONSTRAINTS
     if use_stdlib and STDLIB_GRAMMAR is None:
         LOGGER.debug("Reading standard library")
@@ -86,9 +91,13 @@ def parse(
             filename="<stdlib>",
             use_cache=use_cache,
             max_repetitions=max_repetitions,
+            pyenv_globals=pyenv_globals,
+            pyenv_locals=pyenv_locals,
         )
         STDLIB_GRAMMAR = stdlib_spec.grammar
         STDLIB_CONSTRAINTS = stdlib_spec.constraints
+        pyenv_globals = stdlib_spec.global_vars
+        pyenv_locals = stdlib_spec.local_vars
 
     used_symbols = set()
     if use_stdlib:
@@ -130,9 +139,12 @@ def parse(
             lazy=lazy,
             max_repetitions=max_repetitions,
             used_symbols=used_symbols,
+            pyenv_globals=pyenv_globals,
         )
         parsed_constraints += new_spec.constraints
         new_grammar = new_spec.grammar
+        pyenv_globals = new_spec.global_vars
+        pyenv_locals = new_spec.local_vars
         assert new_grammar is not None
         if new_grammar.fuzzing_mode == FuzzingMode.IO:
             mode = FuzzingMode.IO
@@ -166,7 +178,11 @@ def parse(
             first_token.startswith(kw) for kw in ["where", "minimizing", "maximizing"]
         ):
             new_spec = parse_content(
-                constraint, filename=constraint, use_cache=use_cache, lazy=lazy
+                constraint,
+                filename=constraint,
+                use_cache=use_cache,
+                lazy=lazy,
+                pyenv_globals=pyenv_globals,
             )
         else:
             new_spec = parse_content(
@@ -174,8 +190,11 @@ def parse(
                 filename=constraint,
                 use_cache=use_cache,
                 lazy=lazy,
+                pyenv_globals=pyenv_globals,
             )
         parsed_constraints += new_spec.constraints
+        pyenv_globals = new_spec.global_vars
+        pyenv_locals = new_spec.local_vars
 
     if check:
         LOGGER.debug("Checking and finalizing content")
@@ -196,7 +215,7 @@ def parse(
     grammar.update(grammar, prime=check)
 
     if parties:
-        slice_parties(grammar, parties)
+        slice_parties(grammar, set(parties), ignore_receivers=True)
 
     LOGGER.debug("All contents parsed")
     return grammar, parsed_constraints

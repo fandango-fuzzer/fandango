@@ -2,9 +2,12 @@ from itertools import permutations
 import random
 from typing import TYPE_CHECKING, Any
 from collections.abc import Iterator, Sequence
+
+from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node, NodeType
+from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.tree import DerivationTree
 
 if TYPE_CHECKING:
@@ -22,6 +25,9 @@ class Alternative(Node):
         self.id = id
         self.alternatives = alternatives
         super().__init__(NodeType.ALTERNATIVE, grammar_settings)
+
+    def to_symbol(self) -> Symbol:
+        return NonTerminal(f"<__{self.id}>")
 
     def fuzz(
         self,
@@ -72,12 +78,6 @@ class Alternative(Node):
     def children(self) -> list[Node]:
         return self.alternatives
 
-    def slice_parties(self, parties: list[str]) -> None:
-        self.alternatives = [
-            node for node in self.alternatives if node.in_parties(parties)
-        ]
-        super().slice_parties(parties)
-
     def __getitem__(self, item: int) -> Node:
         return self.alternatives.__getitem__(item)
 
@@ -90,6 +90,15 @@ class Alternative(Node):
         )
 
     def descendents(
-        self, grammar: "fandango.language.grammar.grammar.Grammar"
+        self,
+        grammar: "fandango.language.grammar.grammar.Grammar",
+        filter_controlflow: bool = False,
     ) -> Iterator["Node"]:
-        yield from self.alternatives
+        if filter_controlflow:
+            for alt in self.alternatives:
+                if not alt.is_controlflow:
+                    yield alt
+                else:
+                    yield from alt.descendents(grammar, filter_controlflow)
+        else:
+            yield from self.alternatives

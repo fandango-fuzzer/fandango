@@ -71,6 +71,7 @@ class GeneticBase(abc.ABC):
     ) -> int:
         return hash(
             (
+                tree.get_root(),
                 tree,
                 tuple((scope or {}).items()),
                 tuple((local_variables or {}).items()),

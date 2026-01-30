@@ -1,5 +1,5 @@
 format: jb-book
-root: Intro
+root: index
 parts:
   - caption: About Fandango
     chapters:
@@ -7,7 +7,7 @@ parts:
     - file: ReleaseNotes
     - file: FAQ
     - file: Contributing
-  - caption: Fandango Tutorial
+  - caption: First Steps
     chapters:
     - file: Tutorial
     - file: Setup
@@ -15,24 +15,36 @@ parts:
     - file: Invoking
     - file: Fuzzing
     - file: Strategies
+  - caption: Advanced Input Generation
+    chapters:
     - file: Constraints
     - file: Shell
     - file: Generators
     - file: Regexes
     - file: Recursive
     - file: Paths
-    - file: ISO8601
     - file: Converters
-    - file: Parsing
-    - file: Outputs
+    - file: Diversity
+    - file: ISO8601
+  - caption: Generating Binary Inputs
+    chapters:
     - file: Binary
     - file: Bits
-    - file: Gif
     - file: Conversion
-    # - file: Distributions
-    - file: Protocols
-    # - file: Whitebox
+    - file: Gif
     - file: Hatching
+    # - file: Whitebox
+  - caption: Checking Responses
+    chapters:
+    - file: Parsing
+    - file: Outputs
+    # - file: Distributions
+  - caption: Testing Protocols
+    chapters:
+    - file: Protocols
+    - file: Parties
+    - file: FTP
+    - file: DNS
   - caption: Fandango Reference
     chapters:
     - file: Reference
@@ -42,5 +54,6 @@ parts:
     - file: Stdlib
     - file: DerivationTree
     - file: PythonAPI
+    - file: FandangoParty
     - file: Including
     - file: LanguageServer

@@ -7,18 +7,18 @@
 
 class Fuzzer(FandangoParty):
     def __init__(self):
-        super().__init__(ownership=Ownership.FANDANGO_PARTY)
+        super().__init__(connection_mode=ConnectionMode.OPEN)
 
-    def on_send(
+    def send(
         self,
         message: DerivationTree,
         recipient: str
     ):
         if str(message) == "ping\n":
-            self.receive_msg("Extern", "pong\n")
+            self.receive("pong\n", "Extern")
         elif str(message) == "puff\n":
-            self.receive_msg("Extern", "paff\n")
+            self.receive("paff\n", "Extern")
 
 class Extern(FandangoParty):
     def __init__(self):
-        super().__init__(ownership=Ownership.EXTERNAL_PARTY)
+        super().__init__(connection_mode=ConnectionMode.EXTERNAL)

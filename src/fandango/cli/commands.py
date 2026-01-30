@@ -33,6 +33,7 @@ from fandango.converters.bt.BTFandangoConverter import (
 )
 from fandango.converters.dtd.DTDFandangoConverter import DTDFandangoConverter
 from fandango.converters.fan.FandangoFandangoConverter import FandangoFandangoConverter
+from fandango.converters.state.FandangoStateConverter import FandangoStateConverter
 from fandango.errors import FandangoError, FandangoParseError
 from fandango.language.grammar import FuzzingMode
 from fandango.language.grammar.grammar import Grammar
@@ -154,6 +155,7 @@ def fuzz_command(args: argparse.Namespace) -> None:
 
     if grammar is None:
         raise FandangoError("Use '-f FILE.fan' to open a Fandango spec")
+    grammar.fuzzing_mode = FuzzingMode.COMPLETE
 
     # Avoid messing with default constraints
     constraints = constraints.copy()
@@ -195,66 +197,42 @@ def fuzz_command(args: argparse.Namespace) -> None:
     if args.validate:
         LOGGER.debug("Validating population")
 
+        # Ensure that every generated file can be parsed
+        # and returns the same string as the original
+        try:
+            temp_dir = tempfile.TemporaryDirectory(delete=False)  # type: ignore [call-overload, unused-ignore] # delete is only available on some OSs
+        except TypeError:
+            # Python 3.11 does not know the `delete` argument
+            temp_dir = tempfile.TemporaryDirectory()
+        args.directory = temp_dir.name
+        args.format = "string"
+        output_population(population, args, file_mode=file_mode, output_on_stdout=False)
+        generated_files = glob.glob(args.directory + "/*")
+        generated_files.sort()
+        assert len(generated_files) == len(
+            population
+        ), f"len(generated_files): {len(generated_files)}, len(population): {len(population)}"
+
         errors = 0
+        for i in range(len(generated_files)):
+            generated_file = generated_files[i]
+            individual = population[i]
 
-        if args.format == "none":
-            # in this case, don't write to disk, but serialize in memory and go from there
-            population_serialized: list[tuple[DerivationTree, str | bytes]]
-            if grammar.contains_bits() or grammar.contains_bytes():
-                population_serialized = [
-                    (individual, individual.to_bytes()) for individual in population
-                ]
-            else:
-                population_serialized = [
-                    (individual, individual.to_string()) for individual in population
-                ]
-
-            for i, (individual, serialized) in enumerate(population_serialized):
-                try:
-                    all_parsed = list(fandango.parse(serialized))
-                    assert (
-                        len(all_parsed) == 1
-                    ), f"len(all_parsed): {len(all_parsed)}, individual: {individual!r}, serialized: {serialized!r}"
-                    parsed = all_parsed[0]
-                    validate(individual, parsed, filename=f"individual {i}")
-                except Exception as e:
-                    print_exception(e)
-                    errors += 1
-        else:
-
-            # Ensure that every generated file can be parsed
-            # and returns the same string as the original
             try:
-                temp_dir = tempfile.TemporaryDirectory(delete=False)  # type: ignore [call-overload, unused-ignore] # delete is only available on some OSs
-            except TypeError:
-                # Python 3.11 does not know the `delete` argument
-                temp_dir = tempfile.TemporaryDirectory()
-            args.directory = temp_dir.name
-            output_population(
-                population, args, file_mode=file_mode, output_on_stdout=False
-            )
-            generated_files = glob.glob(args.directory + "/*")
-            generated_files.sort()
-            assert len(generated_files) == len(
-                population
-            ), f"len(generated_files): {len(generated_files)}, len(population): {len(population)}, file_mode: {file_mode}, args: {args}"
+                with open_file(generated_file, file_mode, mode="r") as fd:
+                    tree = parse_file(fd, args, grammar, constraints, settings)
+                    validate(individual, tree, filename=fd.name)
 
-            for generated_file, individual in zip(generated_files, population):
-                try:
-                    with open_file(generated_file, file_mode=file_mode, mode="r") as fd:
-                        tree = parse_file(fd, args, grammar, constraints, settings)
-                        validate(individual, tree, filename=fd.name)
-
-                except Exception as e:
-                    print_exception(e)
-                    errors += 1
-
-            # If everything went well, clean up;
-            # otherwise preserve file for debugging
-            shutil.rmtree(temp_dir.name)
+            except Exception as e:
+                print_exception(e)
+                errors += 1
 
         if errors:
             raise FandangoError(f"{errors} error(s) during validation")
+
+        # If everything went well, clean up;
+        # otherwise preserve file for debugging
+        shutil.rmtree(temp_dir.name)
 
 
 def parse_command(args: argparse.Namespace) -> None:
@@ -268,6 +246,7 @@ def parse_command(args: argparse.Namespace) -> None:
 
     if grammar is None:
         raise FandangoError("Use '-f FILE.fan' to open a Fandango spec")
+    grammar.fuzzing_mode = FuzzingMode.COMPLETE
 
     # Avoid messing with default constraints
     constraints = constraints.copy()
@@ -390,6 +369,8 @@ def convert_command(args: argparse.Namespace) -> None:
                     f"{input_file!r}: unknown file extension; use --from=FORMAT to specify the format"
                 )
 
+        to_format = args.to_format
+
         temp_file = None
         if input_file == "-":
             # Read from stdin
@@ -428,9 +409,29 @@ def convert_command(args: argparse.Namespace) -> None:
                 converter = FandangoFandangoConverter(input_file, parties=args.parties)
                 spec = converter.to_fan()
 
-        print(spec, file=output, end="")
         if temp_file:
-            # Remove temporary file
+            temp_file.close()
+            os.unlink(temp_file.name)
+            del temp_file
+
+        if to_format == "fan":
+            # Send format out as is
+            print(spec, file=output)
+        else:
+            # Since folks may want to recombine --from and --to,
+            # we need to parse the spec (again)
+            temp_file = tempfile.NamedTemporaryFile(
+                mode="w", delete=False, suffix=".tmp"
+            )
+            temp_file.write(spec)
+            temp_file.flush()
+
+            converter = FandangoStateConverter(temp_file.name, parties=args.parties)
+            converter.filename = input_file
+
+            out = converter.to_state(format=to_format)
+            print(out, file=output)
+
             temp_file.close()
             os.unlink(temp_file.name)
 
@@ -454,7 +455,7 @@ def nop_command(args: argparse.Namespace) -> None:
 
 
 def copyright_command(args: argparse.Namespace) -> None:
-    print("Copyright (c) 2024-2025 CISPA Helmholtz Center for Information Security.")
+    print("Copyright (c) 2024-2026 CISPA Helmholtz Center for Information Security.")
     print("All rights reserved.")
 
 

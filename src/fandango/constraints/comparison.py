@@ -39,6 +39,11 @@ class EqualComparisonSuggestion(Suggestion):
         self._target = target
         self._source = source
 
+    def rec_set_allow_repetition_full_delete(
+        self, allow_repetition_full_delete: bool
+    ) -> None:
+        pass
+
     def get_replacements(
         self, individual: DerivationTree, grammar: Grammar
     ) -> list[tuple[DerivationTree, DerivationTree]]:
@@ -54,16 +59,20 @@ class EqualComparisonSuggestion(Suggestion):
 
         # don't parse if same symbol
         if isinstance(self._source, DerivationTree) and symbol == self._source.symbol:
+            source_copy = self._source.deepcopy(
+                copy_children=True, copy_params=False, copy_parent=False
+            )
+            source_copy.set_all_read_only(False)
             return [
                 (
                     self._target,
-                    self._source.deepcopy(
-                        copy_children=True, copy_params=False, copy_parent=False
-                    ),
+                    source_copy,
                 )
             ]
 
         elif suggested_tree := grammar.parse(self._source, start=symbol):
+            suggested_tree.sender = self._target.sender
+            suggested_tree.recipient = self._target.recipient
             return [(self._target, suggested_tree)]
 
         return []

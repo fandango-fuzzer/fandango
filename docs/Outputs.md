@@ -21,12 +21,6 @@ Since Fandango makes use of specifications both to [_produce_](sec:fuzzing) and 
 For this purpose, Fandango provides a means to combine both input and output in a _single specification_, used by the Fandango `talk` command.
 Let us see how this works.
 
-```{admonition} Under Construction
-:class: attention
-Checking outputs is currently in beta.
-Check out [the list of open issues](https://github.com/fandango-fuzzer/fandango/issues).
-```
-
 
 ## Interaction Testing
 
@@ -37,6 +31,8 @@ In _fuzzing_, Fandango sends a synthesized input to the program under test:
 
 ```{mermaid}
 sequenceDiagram
+    participant Fandango
+    participant Program under Test
     Fandango->>Program under Test: Some input
 ```
 
@@ -44,6 +40,8 @@ During _parsing_, Fandango accepts and processes _outputs_ from the program unde
 
 ```{mermaid}
 sequenceDiagram
+    participant Fandango
+    participant Program under Test
     Program under Test-->>Fandango: Some output
 ```
 
@@ -51,6 +49,8 @@ What we want, though, is an _interaction_ - a means to _first_ send an input to 
 
 ```{mermaid}
 sequenceDiagram
+    participant Fandango
+    participant Program under Test
     Fandango->>Program under Test: Some input
     Program under Test-->>Fandango: Some output
 ```
@@ -349,3 +349,5 @@ $ fandango fuzz -f bc.fan --party=Out -n 10 --format=value
 :tags: ["remove-input"]
 !fandango fuzz -f bc.fan --party=Out -n 10 --format=value
 ```
+
+We make use of such interactions extensively in the next part on [Testing protocols](sec:protocols).

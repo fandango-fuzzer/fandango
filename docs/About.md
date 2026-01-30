@@ -26,16 +26,15 @@ Fandango supports multiple modes of operation:
 
 * By default, Fandango operates as a _black-box_ fuzzer - that is, it creates inputs from a `.fan` Fandango specification file.
 * If you have _sample inputs_, Fandango can _mutate_ these to obtain more realistic inputs.
-% * Fandango can also operate as a _white-box_ fuzzer - that is, it runs a program under test to maximize coverage. In this case, only a minimal specification may be needed.
+* Fandango can also produce _interactions_ for _protocol_ fuzzing - that is, it acts as a client or server producing and reacting to interactions according to specification.
 
 Fandango comes as a portable Python program and can easily be run on a large variety of platforms.
 
 Under the hood, Fandango uses sophisticated _evolutionary algorithms_ to produce inputs,
 it starts with a population of random inputs, and evolves these through mutations and cross-over until they fulfill the given constraints.
 
-Fandango is in active development! Features planned for 2025 include:
+Fandango is in active development! Features planned for 2026 include:
 
-* protocol testing
 * coverage-guided testing
 * code-directed testing
 * high diversity inputs
@@ -43,15 +42,11 @@ Fandango is in active development! Features planned for 2025 include:
 and many more.
 
 
+## The Fandango Paper
 
-## Refer to Fandango
+To learn more about how Fandango works, start with the [ISSTA 2025 paper "FANDANGO: Evolving Language-Based Testing"](https://doi.org/10.1145/3728915) by {cite:ts}`zamudio2025fandango`:
 
-To refer to Fandango, use its official URL:
-
-  https://fandango-fuzzer.github.io
-
-
-## Cite Fandango
+To cite this paper, use this BibTeX reference:
 
 ```{code-cell}
 :tags: ["remove-input"]
@@ -59,7 +54,7 @@ import re
 
 def find_reference(key, bibfile='fandango.bib'):
     bib = open(bibfile, 'r').read()
-    match = re.match(r'@[a-zA-Z0-9]*\{' + key + r',(.|\n)*\n\}', bib)
+    match = re.match(r'@[a-zA-Z0-9]*\{' + key + r',(.|\n)*?\n\}', bib)
     assert match is not None
     return match.group(0)
 
@@ -67,18 +62,23 @@ def print_reference(key, bibfile='fandango.bib'):
     print(find_reference(key, bibfile))
 ```
 
-If you want to cite Fandango in your academic work, use the ISSTA 2025 paper by {cite:ts}`zamudio2025fandango`.
-Note that José Antonio has two proper last names, Zamudio Amaya, so the proper way to cite the paper is like this:
-
 ```{code-cell}
 :tags: ["remove-input"]
 print_reference('zamudio2025fandango')
 ```
 
+Note that the first author's first name is "José Antonio", and his last name is "Zamudio Amaya".
+
+
+## Link to Fandango
+
+To link to Fandango, use its official URL:
+
+  https://fandango-fuzzer.github.io
+
+
 
 ## Read More
-
-To learn more about how Fandango works, start with the ISSTA 2025 paper by {cite:ts}`zamudio2025fandango`.
 
 The core idea of Fandango, namely combining grammars and constraints, was introduced as _language-based software testing_ by {cite:ts}`steinhoefel2024language` and first implemented in the _ISLa_ framework {cite}`steinhoefel2022isla`. Both of these laid the foundation for Fandango.
 

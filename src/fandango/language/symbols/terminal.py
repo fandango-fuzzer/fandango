@@ -139,8 +139,5 @@ class Terminal(Symbol):
     def __hash__(self) -> int:
         return hash((self._value, self._type))
 
-    def __repr__(self) -> str:
-        return "Terminal(" + self.format_as_spec() + ")"
-
     def __len__(self) -> int:
         return self.count_bytes()
