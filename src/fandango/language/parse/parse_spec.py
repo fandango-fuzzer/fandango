@@ -1,11 +1,6 @@
-from typing import Optional
+from typing import Optional, Any
 
-
-from fandango.language.parse.spec import FandangoSpec
-from fandango.language.parse.cache import (
-    load_from_cache,
-    store_in_cache,
-)
+from fandango.language.parse.spec import FandangoSpec, CachedFandangoSpec
 from fandango.language.parse.parse_tree import parse_tree
 from fandango.language.parse.slice_parties import slice_parties
 from fandango.logger import LOGGER
@@ -21,6 +16,8 @@ def parse_content(
     max_repetitions: int = 5,
     includes: Optional[list[str]] = None,
     used_symbols: set[str] = set(),
+    pyenv_globals: Optional[dict[str, Any]] = None,
+    pyenv_locals: Optional[dict[str, Any]] = None,
 ) -> FandangoSpec:
     """
     Parse given content into a grammar and constraints.
@@ -33,28 +30,33 @@ def parse_content(
     :param lazy: If True, the constraints are evaluated lazily
     :return: A FandangoSpec object containing the parsed grammar, constraints, and code text.
     """
-    spec: Optional[FandangoSpec] = None
+    cached_spec: Optional[CachedFandangoSpec] = None
+    use_cache = False
 
     if use_cache:
-        spec = load_from_cache(fan_contents, filename)
+        cached_spec = CachedFandangoSpec.load(fan_contents, filename)
 
-    if not spec:
+    if not cached_spec:
         tree = parse_tree(filename, fan_contents)
 
-        spec = FandangoSpec(
+        cached_spec = CachedFandangoSpec(
             tree,
             fan_contents,
             lazy,
             filename=filename,
             max_repetitions=max_repetitions,
-            includes=includes,
             used_symbols=used_symbols,
+            includes=includes,
         )
         if use_cache:
-            store_in_cache(spec, fan_contents, filename)
+            cached_spec.persist(fan_contents, filename)
 
+    spec = cached_spec.to_spec(
+        pyenv_globals=pyenv_globals,
+        pyenv_locals=pyenv_locals,
+    )
     if parties:
-        slice_parties(spec.grammar, parties)
+        slice_parties(spec.grammar, set(parties), ignore_receivers=True)
 
     LOGGER.debug(f"{filename}: parsing complete")
     return spec

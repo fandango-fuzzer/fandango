@@ -10,13 +10,14 @@ BLACK = black
 PIP = $(PYTHON) -m pip
 SED = sed
 PAGELABELS = $(PYTHON) -m pagelabels
+ANTLR = antlr
 
 # Sources
 SRC = src/fandango
 PYTHON_SOURCES = $(wildcard $(SRC)/*.py $(SRC)/*/*.py $(SRC)/*/*/*.py)
 
 # Default targets
-web: package-info parser html
+web: package-info html
 all: package-info parser html web pdf
 
 .PHONY: web all parser install dev-tools docs html latex pdf
@@ -30,7 +31,13 @@ $(EGG_INFO)/PKG-INFO: pyproject.toml
 	$(PIP) install -e .
 
 # Install tools for development
+UNAME_DETECTED := $(OS)
+ifdef UNAME_DETECTED
+UNAME := $(UNAME_DETECTED)
+else
 UNAME := $(shell uname)
+endif
+
 ifeq ($(UNAME), Darwin)
 # Mac
 SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz uv
@@ -41,11 +48,13 @@ else ifeq ($(UNAME), Linux)
 SYSTEM_DEV_TOOLS = antlr4 pdftk-java graphviz
 TEST_TOOLS = clang
 SYSTEM_DEV_INSTALL = apt-get install
+ANTLR = antlr4
 else ifneq (,$(findstring NT,$(UNAME)))
 # Windows (all variants): Windows_NT, MINGW64_NT-10.0-20348, MSYS_NT-10.0-20348
 SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz uv
 TEST_TOOLS = llvm # this is the easiest way to install clang on windows
 SYSTEM_DEV_INSTALL = choco install
+ANTLR = java -jar .\dev-dependencies\antlr-4.13.2-complete.jar
 else
 $(error Unsupported OS: $(UNAME))
 endif
@@ -78,7 +87,11 @@ parser: \
 $(PARSER)/FandangoLexer.py: $(LEXER_G4) Makefile
 	$(ANTLR) -Dlanguage=Python3 -Xexact-output-dir -o $(PARSER) \
 		-visitor -no-listener $(LEXER_G4)
+ifeq ($(UNAME), Windows_NT)
+	powershell -Command "(Get-Content '$@') -replace 'import FandangoLexerBase', 'import *' | Set-Content '$@'"
+else
 	sed 's/import FandangoLexerBase/import */' $@ > $@~ && mv $@~ $@
+endif
 
 $(PARSER)/FandangoParser.py: $(LEXER_G4) $(PARSER_G4) Makefile
 	$(ANTLR) -Dlanguage=Python3 -Xexact-output-dir -o $(PARSER) \
@@ -88,12 +101,17 @@ $(PARSER)/FandangoParser.py: $(LEXER_G4) $(PARSER_G4) Makefile
 $(CPP_PARSER)/FandangoLexer.cpp: $(LEXER_G4) Makefile
 	$(ANTLR) -Dlanguage=Cpp -Xexact-output-dir -o $(CPP_PARSER) \
 		$(LEXER_G4)
+ifeq ($(UNAME), Windows_NT)
+	powershell -Command "$$content = Get-Content '$(CPP_PARSER)/FandangoLexer.h' -Raw; $$content = $$content -replace '(#include\s+\"antlr4-runtime\.h\")', ('$$1' + [Environment]::NewLine + '#include \"FandangoLexerBase.h\"'); $$content | Set-Content '$(CPP_PARSER)/FandangoLexer.h' -NoNewline"
+else
 	sed -e '/^#include/a\'$$'\n''#include "FandangoLexerBase.h"' $(CPP_PARSER)/FandangoLexer.h > $(CPP_PARSER)/FandangoLexer.h~ && mv $(CPP_PARSER)/FandangoLexer.h~ $(CPP_PARSER)/FandangoLexer.h
+endif
+
 
 $(CPP_PARSER)/FandangoParser.cpp: $(LEXER_G4) $(PARSER_G4) $(SRC)/language/generate-parser.py Makefile
 	$(ANTLR) -Dlanguage=Cpp -Xexact-output-dir -o $(CPP_PARSER) \
 		-visitor -no-listener $(PARSER_G4)
-	cd $(SRC)/language; $(PYTHON) generate-parser.py
+	cd $(SRC)/language && $(PYTHON) generate-parser.py
 	$(BLACK) $(SRC)/language
 	@echo 'Now run "pip install -e ." to compile C++ files'
 
@@ -235,6 +253,8 @@ run-all: $(TEST_MARKER) $(EVALUATION_MARKER)
 ## Installation
 .PHONY: install
 install:
+	rm -f src/fandango/language/parser/sa_fandango_cpp_parser*.so
+	rm -f src/fandango/language/parser/sa_fandango_cpp_parser*.pdy
 	$(PIP) install -e .
 
 uninstall:

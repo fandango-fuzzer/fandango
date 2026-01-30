@@ -181,21 +181,19 @@ set_program_command([{arg_list}])
     if "client" in args and args.client:
         # Act as client
         extra_defs += f"""
-class Client(ConnectParty):
+class Client(NetworkParty):
     def __init__(self):
         super().__init__(
             "{args.client}",
-            ownership=Ownership.FANDANGO_PARTY,
-            endpoint_type=EndpointType.CONNECT,
+            connection_mode=ConnectionMode.CONNECT,
         )
         self.start()
 
-class Server(ConnectParty):
+class Server(NetworkParty):
     def __init__(self):
         super().__init__(
             "{args.client}",
-            ownership=Ownership.EXTERNAL_PARTY,
-            endpoint_type=EndpointType.OPEN,
+            connection_mode=ConnectionMode.EXTERNAL,
         )
         self.start()
 """
@@ -203,21 +201,19 @@ class Server(ConnectParty):
     if "server" in args and args.server:
         # Act as server
         extra_defs += f"""
-class Client(ConnectParty):
+class Client(NetworkParty):
     def __init__(self):
         super().__init__(
             "{args.server}",
-            ownership=Ownership.EXTERNAL_PARTY,
-            endpoint_type=EndpointType.CONNECT,
+            connection_mode=ConnectionMode.EXTERNAL,
         )
         self.start()
 
-class Server(ConnectParty):
+class Server(NetworkParty):
     def __init__(self):
         super().__init__(
             "{args.server}",
-            ownership=Ownership.FANDANGO_PARTY,
-            endpoint_type=EndpointType.OPEN,
+            connection_mode=ConnectionMode.OPEN,
         )
         self.start()
 """
@@ -321,7 +317,6 @@ def parse_file(
 
     if last_tree is not None:
         # check if any tree matched the grammar and failed constraints
-        grammar.populate_sources(last_tree)
         failed_constraints = [
             c.format_as_spec() for c in constraints if not c.check(last_tree)
         ]

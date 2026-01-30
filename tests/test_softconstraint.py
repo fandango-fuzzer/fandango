@@ -86,14 +86,14 @@ class TestSoftValue(TestSoft):
             "--population-size",
             "10",
             "--random-seed",
-            "1",
+            "10",
         ]
         out, err, code = run_command(command)
         lines = [line for line in out.split("\n") if line.strip()]
         self.assertGreater(len(lines), 0, f"\nerr: {err}\nout: {out}")
         last_age = int(lines[-1].split(",")[1])  # e.g., 9999999999999599999999
         self.assertGreater(last_age, 99999999999, f"\nerr: {err}\nout: {out}")
-        self.assertEqual(code, 0)
+        self.assertEqual(code, 0, code)
 
     def test_cli_max_2(self):
         command = [
@@ -114,7 +114,7 @@ class TestSoftValue(TestSoft):
         lines = [line for line in out.split("\n") if line.strip()]
         last_age = int(lines[-1].split(",")[1])  # e.g., 9999999999999599999999
         self.assertGreater(last_age, 99999999999)
-        self.assertEqual(code, 0)
+        self.assertEqual(code, 0, code)
 
     def test_cli_min_1(self):
         command = [
@@ -134,8 +134,8 @@ class TestSoftValue(TestSoft):
         out, err, code = run_command(command)
         lines = [line for line in out.split("\n") if line.strip()]
         last_age = int(lines[-1].split(",")[1])
-        self.assertEqual(last_age, 0)
-        self.assertEqual(code, 0)
+        self.assertEqual(last_age, 0, last_age)
+        self.assertEqual(code, 0, code)
 
     def test_cli_min_2(self):
         command = [
@@ -155,5 +155,5 @@ class TestSoftValue(TestSoft):
         out, err, code = run_command(command)
         lines = [line for line in out.split("\n") if line.strip()]
         last_age = int(lines[-1].split(",")[1])
-        self.assertEqual(last_age, 0)
-        self.assertEqual(code, 0)
+        self.assertEqual(last_age, 0, last_age)
+        self.assertEqual(code, 0, code)

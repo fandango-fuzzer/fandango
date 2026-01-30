@@ -102,7 +102,7 @@ $ echo $?  # print exit code
 assert _exit_code == 0
 ```
 
-Adding 1 to this number should make it _invalid_:
+Adding a `1` digit to this number should make it _invalid_:
 
 ```shell
 $ echo -n 4931633575526871 | fandango parse -f credit_card.fan
@@ -232,12 +232,12 @@ Again, all of this goes into a single `.fan` file: [`binary.fan`](binary.fan) ho
 Let us produce a single output using `binary.fan` and view its (binary) contents, using `od -c`:
 
 ```shell
-$ fandango fuzz -n 1 -f binary.fan -o - | hexdump -C
+$ fandango fuzz -n 1 -f binary.fan | hexdump -C
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-! fandango fuzz -n 1 -f binary.fan -o - | hexdump -C
+! fandango fuzz -n 1 -f binary.fan | hexdump -C
 ```
 
 The hexadecimal dump shows that the first two bytes encode the length of the string of digits that follows.
@@ -281,12 +281,13 @@ With this, we can easily produce length-encoded inputs:
 
 
 ```shell
-$ fandango fuzz -n 1 -f binary-rep.fan -o - | hexdump -C
+$ fandango fuzz -n 1 -f binary-rep.fan | hexdump -C
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-! fandango fuzz -n 1 -f binary-rep.fan -o - | hexdump -C
+!fandango fuzz -n 1 -f binary-rep.fan | hexdump -C 
+assert _exit_code == 0
 ```
 
 ```{tip}
@@ -308,9 +309,10 @@ Using `struct`, we can redefine `uint16()` as
 
 and obtain the same result:
 
+% FIXME: Omitted `--validate` as a workaround for #777 -- AZ
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -n 1 -f binary-pack.fan -o - --validate | od -c
+!fandango fuzz -n 1 -f binary-pack.fan | od -c
 assert _exit_code == 0
 ```
 

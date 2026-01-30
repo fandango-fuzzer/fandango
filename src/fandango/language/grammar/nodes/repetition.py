@@ -11,6 +11,8 @@ from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.symbols.terminal import Terminal
 from fandango.language.tree import DerivationTree
+from fandango.language.symbols.symbol import Symbol
+from fandango.language.symbols.non_terminal import NonTerminal
 
 if TYPE_CHECKING:
     import fandango.language.grammar.node_visitors
@@ -24,6 +26,7 @@ class Repetition(Node):
         id: str = "",
         min_: int = 0,
         max_: Optional[int] = None,
+        distance_to_completion: float = float("inf"),
     ):
         self.id = id
         self.min = min_
@@ -41,7 +44,14 @@ class Repetition(Node):
             raise FandangoValueError(
                 f"Maximum repetitions {self.max} must be greater than 0 or greater than min {min_}"
             )
-        super().__init__(NodeType.REPETITION, grammar_settings)
+        super().__init__(
+            NodeType.REPETITION,
+            grammar_settings,
+            distance_to_completion=distance_to_completion,
+        )
+
+    def to_symbol(self) -> Symbol:
+        return NonTerminal(f"<__{self.id}>")
 
     @property
     def internal_max(self) -> Optional[int]:
@@ -108,13 +118,22 @@ class Repetition(Node):
         return f"{self.node.format_as_spec()}{{{self.min},{self.max}}}"
 
     def descendents(
-        self, grammar: "fandango.language.grammar.grammar.Grammar"
+        self,
+        grammar: "fandango.language.grammar.grammar.Grammar",
+        filter_controlflow: bool = False,
     ) -> Iterator["Node"]:
         base: list[Node] = []
-        if self.min == 0:
-            base.append(TerminalNode(Terminal(""), self._grammar_settings))
-        if self.min <= 1 <= self.max:
-            base.append(self.node)
+        # if self.min == 0:
+        # base.append(TerminalNode(Terminal(""), self._grammar_settings))
+        if 0 < self.max:
+            if filter_controlflow and self.node.is_controlflow:
+                base.extend(self.node.descendents(grammar, filter_controlflow=True))
+            else:
+                base.append(self.node)
+        if filter_controlflow:
+            yield from base
+            return
+
         yield Alternative(
             base
             + [
@@ -138,7 +157,10 @@ class Star(Repetition):
         grammar_settings: Sequence[HasSettings],
         id: str = "",
     ):
-        super().__init__(node, grammar_settings, id, min_=0)
+        super().__init__(node, grammar_settings, id, min_=0, distance_to_completion=0.0)
+
+    def to_symbol(self) -> Symbol:
+        return NonTerminal(f"<__{self.id}>")
 
     def accept(
         self,
@@ -158,6 +180,9 @@ class Plus(Repetition):
         id: str = "",
     ):
         super().__init__(node, grammar_settings, id, min_=1)
+
+    def to_symbol(self) -> Symbol:
+        return NonTerminal(f"<__{self.id}>")
 
     def fuzz(
         self,
@@ -200,7 +225,12 @@ class Option(Repetition):
         grammar_settings: Sequence[HasSettings],
         id: str = "",
     ):
-        super().__init__(node, grammar_settings, id, min_=0, max_=1)
+        super().__init__(
+            node, grammar_settings, id, min_=0, max_=1, distance_to_completion=0.0
+        )
+
+    def to_symbol(self) -> Symbol:
+        return NonTerminal(f"<__{self.id}>")
 
     def fuzz(
         self,
@@ -249,8 +279,3 @@ class Option(Repetition):
 
     def format_as_spec(self) -> str:
         return self.node.format_as_spec() + "?"
-
-    def descendents(
-        self, grammar: "fandango.language.grammar.grammar.Grammar"
-    ) -> Iterator["Node"]:
-        yield from (self.node, TerminalNode(Terminal(""), self._grammar_settings))
