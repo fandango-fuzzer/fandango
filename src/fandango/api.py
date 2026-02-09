@@ -1,18 +1,19 @@
+import logging
+import signal
+import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Generator
-import itertools
-import logging
-import time
 from typing import IO, Any, Optional, cast
+
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
+from fandango.errors import FandangoFailedError, FandangoParseError
+from fandango.evolution.algorithm import Fandango as FandangoStrategy
 from fandango.language.grammar import FuzzingMode, ParsingMode
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.parse.parse import parse
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
-from fandango.evolution.algorithm import Fandango as FandangoStrategy
-from fandango.errors import FandangoFailedError, FandangoParseError
 
 DEFAULT_MAX_GENERATIONS = 500
 
@@ -136,6 +137,7 @@ class FandangoBase(ABC):
         desired_solutions: Optional[int] = None,
         max_generations: Optional[int] = None,
         infinite: bool = False,
+        infinite_timeout: int = 0,
         mode: FuzzingMode = FuzzingMode.COMPLETE,
         **settings: Any,
     ) -> list[DerivationTree]:
@@ -301,14 +303,16 @@ class Fandango(FandangoBase):
         desired_solutions: Optional[int],
         max_generations: Optional[int],
         infinite: bool,
-    ) -> tuple[Optional[int], Optional[int], bool]:
+        infinite_timeout: int = 0,
+    ) -> tuple[Optional[int], Optional[int], bool, int]:
         """
         Sanitize the runtime end settings and emit warnings if necessary.
         :param mode: The fuzzing mode
         :param desired_solutions: The desired number of solutions
         :param max_generations: The maximum number of generations
         :param infinite: Whether to run infinitely
-        :return: The sanitized max_generations, desired_solutions, and infinite values
+        :param infinite_timeout: If infinite is True, the amount of time in seconds to wait without improvement before stopping; 0 means no timeout
+        :return: The sanitized max_generations, desired_solutions, infinite values, and infinite_timeout
         """
         if mode == FuzzingMode.IO:
             match desired_solutions:
@@ -339,7 +343,7 @@ class Fandango(FandangoBase):
                 LOGGER.warning("Infinite mode is activated, overriding max_generations")
             max_generations = None  # infinite overrides max_generations
 
-        return max_generations, desired_solutions, infinite
+        return max_generations, desired_solutions, infinite, infinite_timeout
 
     def _print_warnings_if_necessary_post_fuzz(
         self,
@@ -391,45 +395,97 @@ class Fandango(FandangoBase):
         desired_solutions: Optional[int] = None,
         max_generations: Optional[int] = None,
         infinite: bool = False,
+        infinite_timeout: int = 0,
         mode: FuzzingMode = FuzzingMode.COMPLETE,
         **settings: Any,
     ) -> list[DerivationTree]:
         """
-        Create a Fandango population.
-        :param extra_constraints: Additional constraints to apply
-        :param solution_callback: What to do with each solution; receives the solution and a unique index
-        :param settings: Additional settings for the evolution algorithm
-        :return: A list of derivation trees
+        Create a Fandango population with a signal-based timeout.
         """
-        max_generations, desired_solutions, infinite = (
+        # 1. Sanitize settings
+        max_generations, desired_solutions, infinite, infinite_timeout = (
             self._sanitize_runtime_end_settings(
                 mode,
                 desired_solutions,
                 max_generations,
                 infinite,
+                infinite_timeout,
             )
         )
 
         solution_i = 0
         solutions = []
+        seen_hashes = set()
 
+        # 2. Initialize population
         self.init_population(extra_constraints=extra_constraints, **settings)
         raw_generator = self.generate_solutions(max_generations, mode)
 
-        # limit the generator to desired_solutions — no limit if desired_solutions is None
-        generator = itertools.islice(raw_generator, desired_solutions)
+        class TimeoutException(Exception):
+            pass
 
-        for s in generator:
-            solution_callback(s, solution_i)
-            solution_i += 1
-            # prevent memory buildup in infinite mode
-            if not infinite:
-                solutions.append(s)
+        def _timeout_handler(signum, frame):
+            raise TimeoutException()
 
+        # Only set up the signal if we are in infinite mode with a timeout
+        use_signal = infinite and infinite_timeout > 0
+
+        if use_signal:
+            # Register the handler and set the initial alarm
+            previous_handler = signal.signal(signal.SIGALRM, _timeout_handler)
+            signal.alarm(infinite_timeout)
+
+        try:
+            # 4. Iterate through solutions
+            for s in raw_generator:
+                # ---------------------------------------------------------
+                # NOTE: If raw_generator blocks here (stuck searching),
+                # the SIGALRM will fire, raising TimeoutException.
+                # ---------------------------------------------------------
+
+                s_str = str(s)
+                s_hash = hash(s_str)
+                # DEBUG: print(f"DEBUG: {s_str}")
+
+                if s_hash not in seen_hashes:
+                    # FOUND UNIQUE: Reset the alarm
+                    if use_signal:
+                        signal.alarm(infinite_timeout)
+
+                    if infinite:
+                        seen_hashes.add(s_hash)
+
+                    # Process the unique solution
+                    solution_callback(s, solution_i)
+                    solution_i += 1
+
+                    if not infinite:
+                        solutions.append(s)
+
+                    if (
+                        desired_solutions is not None
+                        and solution_i >= desired_solutions
+                    ):
+                        break
+
+                # If it's a duplicate, we DO NOT reset the alarm.
+                # This means if we only see duplicates for 'infinite_timeout' seconds,
+                # the alarm will eventually fire.
+
+        except TimeoutException:
+            LOGGER.info(
+                f"Campaign timed out: {infinite_timeout}s passed without a unique solution."
+            )
+        finally:
+            # Clean up: Disable the alarm and restore previous handler
+            if use_signal:
+                signal.alarm(0)
+                signal.signal(signal.SIGALRM, previous_handler)
+
+        # 5. Post-fuzzing cleanup
         padding = self._print_warnings_if_necessary_post_fuzz(
             desired_solutions, solutions, settings
         )
-
         solutions.extend(padding)
 
         return solutions

@@ -1,18 +1,20 @@
 import argparse
-from collections.abc import Callable
 import glob
 import os
-from pathlib import Path
 import shutil
-from ansi_styles import ansiStyles as styles
 import sys
 import tempfile
+from collections.abc import Callable
+from pathlib import Path
 from typing import Any, Optional
 
+from ansi_styles import ansiStyles as styles
+
 import fandango
-from fandango import Fandango, DerivationTree
+from fandango import DerivationTree, Fandango
 from fandango.cli.output import open_file, output_population, output_solution
 from fandango.cli.parser import get_parser
+from fandango.cli.upgrade import check_for_fandango_update
 from fandango.cli.utils import (
     get_file_mode,
     make_fandango_settings,
@@ -21,10 +23,8 @@ from fandango.cli.utils import (
     parse_file,
     validate,
 )
-from fandango.cli.upgrade import check_for_fandango_update
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
-from fandango.converters.FandangoConverter import FandangoConverter
 from fandango.converters.antlr.ANTLRFandangoConverter import ANTLRFandangoConverter
 from fandango.converters.bt.BTFandangoConverter import (
     BitfieldOrder,
@@ -33,6 +33,7 @@ from fandango.converters.bt.BTFandangoConverter import (
 )
 from fandango.converters.dtd.DTDFandangoConverter import DTDFandangoConverter
 from fandango.converters.fan.FandangoFandangoConverter import FandangoFandangoConverter
+from fandango.converters.FandangoConverter import FandangoConverter
 from fandango.converters.state.FandangoStateConverter import FandangoStateConverter
 from fandango.errors import FandangoError, FandangoParseError
 from fandango.language.grammar import FuzzingMode
@@ -184,12 +185,14 @@ def fuzz_command(args: argparse.Namespace) -> None:
     max_generations = args.max_generations
     desired_solutions = args.desired_solutions
     infinite = args.infinite
+    infinite_timeout = args.infinite_timeout
 
     population = fandango.fuzz(
         solution_callback=solutions_callback,
         max_generations=max_generations,
         desired_solutions=desired_solutions,
         infinite=infinite,
+        infinite_timeout=infinite_timeout,
         mode=FuzzingMode.COMPLETE,
         **settings,
     )
@@ -334,12 +337,14 @@ def talk_command(args: argparse.Namespace) -> None:
     max_generations = args.max_generations
     desired_solutions = args.desired_solutions
     infinite = args.infinite
+    infinite_timeout = args.infinite_timeout
 
     fandango.fuzz(
         solution_callback=solutions_callback,
         max_generations=max_generations,
         desired_solutions=desired_solutions,
         infinite=infinite,
+        infinite_timeout=infinite_timeout,
         mode=FuzzingMode.IO,
         **settings,
     )
