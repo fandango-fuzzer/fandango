@@ -1,6 +1,7 @@
 import logging
 import signal
 import time
+import typing
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Generator
 from typing import IO, Any, Optional, cast
@@ -424,7 +425,7 @@ class Fandango(FandangoBase):
         class TimeoutException(Exception):
             pass
 
-        def _timeout_handler(signum, frame) -> None:
+        def _timeout_handler(signum: int, frame: typing.Any) -> None:
             raise TimeoutException()
 
         # Only set up the signal if we are in infinite mode with a timeout
