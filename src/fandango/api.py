@@ -424,7 +424,7 @@ class Fandango(FandangoBase):
         class TimeoutException(Exception):
             pass
 
-        def _timeout_handler(signum, frame):
+        def _timeout_handler(signum, frame) -> None:
             raise TimeoutException()
 
         # Only set up the signal if we are in infinite mode with a timeout
