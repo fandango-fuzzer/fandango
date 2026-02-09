@@ -115,19 +115,15 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
 def _get_main_parser(in_command_line: bool) -> argparse.ArgumentParser:
     if in_command_line:
         prog = "fandango"
-        epilog = textwrap.dedent(
-            """\
+        epilog = textwrap.dedent("""\
             Use `%(prog)s help` to get a list of commands.
-            Use `%(prog)s help COMMAND` to learn more about COMMAND."""
-        )
+            Use `%(prog)s help COMMAND` to learn more about COMMAND.""")
     else:
         prog = ""
-        epilog = textwrap.dedent(
-            """\
+        epilog = textwrap.dedent("""\
             Use `help` to get a list of commands.
             Use `help COMMAND` to learn more about COMMAND.
-            Use TAB to complete commands."""
-        )
+            Use TAB to complete commands.""")
     epilog += f"\nSee {homepage_as_link()} for more information."
 
     main_parser = argparse.ArgumentParser(
