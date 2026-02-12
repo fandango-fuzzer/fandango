@@ -85,6 +85,10 @@ class Fandango:
             LOGGER.setLevel(logger_level.value)
         LOGGER.info("---------- Initializing FANDANGO algorithm ---------- ")
 
+        self._is_enable_guidance = True
+        self._time_in_measurements = 0.0
+        self.coverage_log: list[tuple[float, dict[NonTerminal, tuple[int, int]]]] = []
+        self.coverage_log_overlap: list[tuple[float, float]] = []
         self.grammar = grammar
         self.constraints = constraints
         self.population_size = population_size
@@ -496,6 +500,7 @@ class Fandango:
         self.packet_selector = PacketSelector(
             self.grammar, io_instance, history_tree, self.diversity_k
         )
+        self.packet_selector.enable_guidance(self._is_enable_guidance)
         if self.coverage_goal == CoverageGoal.SINGLE_DERIVATION:
             self.packet_selector.set_coverage_goal(CoverageGoal.STATE_INPUTS_OUTPUTS)
         else:
@@ -507,12 +512,19 @@ class Fandango:
             selected_packet_max_generations = int(max_generations / 3)
             overall_max_generations = max_generations - selected_packet_max_generations
         assert isinstance(self.evaluator, IoEvaluator)
+        iter = 0
 
         while True:
             self.packet_selector.compute(history_tree, self.past_io_derivations)
-            LOGGER.info(
-                f"Current coverage: {self.packet_selector.coverage_percent() * 100:.2f}%"
-            )
+            start_measuring = time.time()
+            iter += 1
+            if iter >= 10:
+                LOGGER.info(
+                    f"Current coverage: {self.packet_selector.coverage_percent(alt_cache=True) * 100:.2f}%"
+                )
+            self.coverage_log.append((start_measuring - self._time_in_measurements, self.packet_selector._compute_coverage_trees(False)))
+            self.coverage_log_overlap.append((start_measuring - self._time_in_measurements, self.packet_selector._compute_coverage_trees(True)))
+            self._time_in_measurements += time.time() - start_measuring
             self.evaluator.start_next_message([history_tree] + self.past_io_derivations)
 
             try:
@@ -735,3 +747,10 @@ class Fandango:
         LOGGER.info(f"Time taken: {(time.time() - start_time):.2f} seconds")
 
         return solutions
+
+    def enable_guidance(self, value: bool):
+        self._is_enable_guidance = value
+        assert isinstance(self.population_manager, IoPopulationManager)
+        self.evaluator.enable_guidance(value)
+        if hasattr(self, 'packet_selector') and self.packet_selector is not None:
+            self.packet_selector.enable_guidance(value)

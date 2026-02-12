@@ -2,6 +2,7 @@ import os
 import time
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
+from fandango.io.navigation.coverage_goal import CoverageGoal
 from fandango.language.grammar import FuzzingMode
 from fandango.language.parse.parse import parse
 
@@ -18,6 +19,7 @@ def main():
         # elitism_rate=1.0,
         max_nodes=600 * 8,
         logger_level=LoggerLevel.INFO,
+        coverage_goal=CoverageGoal.STATE_INPUTS
     )
     is_enable_guidance = True
     output_folder_name = (

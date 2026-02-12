@@ -26,7 +26,7 @@ def decode64(input):
 <state_logged_out> ::= <exchange_login_valid> | <exchange_login_invalid>
 
 # When logged in the grammar accepts either a quit (terminating the connection) or a mail exchange.
-<state_logged_in> ::= <exchange_quit> | <exchange_mail>
+<state_logged_in> ::= ((<exchange_mail> | <exchange_help> | <exchange_noop>) <state_logged_in>) | <exchange_quit>
 
 # A successful login consist of the correct username and password and leads to the logged in state.
 <exchange_login_valid> ::= <Client:request_auth><Server:response_auth_expect_user><Client:request_auth_user_correct><Server:response_auth_expect_pass> \
@@ -70,7 +70,9 @@ def decode64(input):
 <response_ehlo_param> ::= '250-' r'[a-zA-Z0-9\-\.=\[\]\, ]+' '\r\n'
 <response_ehlo_end> ::= '250 ' r'[a-zA-Z0-9\-\.=\[\]\, ]+' '\r\n'
 
-<exchange_quit> ::= <Client:request_quit><Server:response_quit>
+<exchange_quit> ::= <Client:request_quit> <Server:response_quit>
+<exchange_noop> ::= <Client:request_noop> <Server:positive_response>
+<exchange_help> ::= <Client:request_help> <Server:response_help>
 <request_quit> ::= 'QUIT\r\n'
 <response_quit> ::= '221 ' r'[a-zA-Z0-9\-\. ]+' '\r\n'
 
@@ -79,7 +81,7 @@ def decode64(input):
 <exchange_mail> ::= <Client:request_mail_from><Server:response_mail_from> \
     <Client:request_mail_to><Server:response_mail_to> \
     <Client:request_mail_data><Server:response_mail_data> \
-    <Client:Server:mail_data><Server:response_submit><state_logged_in>
+    <Client:Server:mail_data><Server:positive_response>
 
 <mail_data> ::= <mail_header><mail_body>
 <mail_header> ::= <mail_header_subject> \
@@ -99,6 +101,9 @@ def decode64(input):
 <response_mail_to> ::= '250 ' r'[a-zA-Z0-9\-\.\: ]+' '\r\n'
 <request_mail_data> ::= 'DATA\r\n'
 <response_mail_data> ::= '354 ' r'[a-zA-Z0-9\-\.\,\"\:\<\> ]+' '\r\n'
+<request_noop> ::= "NOOP" (' ' r"[^ \r\n]*")? '\r\n'
+<request_help> ::= 'HELP' '\r\n'
+<response_help> ::= ("214" "-" (r"[^\r\n\x80-\xFF]*")? '\r\n')* "214" (' ' r"[^\r\n\x80-\xFF]*")? '\r\n'
 
 <mail_body_end> ::= '\r\n\r\n.\r\n'
 <mail_contents_64> ::= r'[a-zA-Z0-9\+\\\=]+' := encode64(<mail_contents>)
@@ -113,7 +118,7 @@ def decode64(input):
 <mail_header_content_type> ::= 'content-type: text/plain; charset=utf-8\r\n'
 <mail_header_encoding> ::= 'content-transfer-encoding: base64\r\n'
 <mail_header_end> ::= '\r\n'
-<response_submit> ::= '250 ' r'[a-zA-Z0-9\-\.: ]+' '\r\n'
+<positive_response> ::= '250' (' ' r'[a-zA-Z0-9\-\.: ]+')? '\r\n'
 <email_address> ::= r'[a-z]+@[a-z]+\.de'
 <unix_time_formatted> ::= r'[a-zA-Z0-9\:\+\, ]+' := format_unix_time(int(<unix_time>))
 <unix_time> ::= <unix_time_number> := str(str_to_unix_time(str(<unix_time_formatted>)))
@@ -122,3 +127,19 @@ def decode64(input):
 where forall <mail> in <mail_data>:
     (str(<mail>..<request_mail_from>.<email_address>) == str(<mail>..<mail_header_from>.<email_address>)
     and str(<mail>..<request_mail_to>.<email_address>) == str(<mail>..<mail_header_to>.<email_address>))
+
+class Client(NetworkParty):
+    def __init__(self):
+        super().__init__(
+            connection_mode=ConnectionMode.CONNECT,
+            uri="tcp://127.0.0.1:8025"
+        )
+        self.start()
+
+class Server(NetworkParty):
+    def __init__(self):
+        super().__init__(
+            connection_mode=ConnectionMode.EXTERNAL,
+            uri="tcp://127.0.0.1:8025"
+        )
+        self.start()

@@ -61,6 +61,10 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             tuple[NonTerminal, bool, CoverageGoal], list[set[tuple[Symbol, ...]]]
         ] = dict()
         self._tree_k_path_cache: dict[int, set[tuple[Symbol, ...]]] = dict()
+        self._alt_k_path_cache: dict[
+            tuple[NonTerminal, bool, CoverageGoal], list[set[tuple[Symbol, ...]]]
+        ] = dict()
+        self._alt_tree_k_path_cache: dict[int, set[tuple[Symbol, ...]]] = dict()
 
     @property
     def grammar_settings(self) -> Sequence[HasSettings]:
@@ -630,6 +634,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         overlap_to_root: bool = False,
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
         input_parties: Optional[set[str]] = None,
+        alt_cache: bool = False,
     ) -> list[tuple[Symbol, ...]]:
         """
         Returns a list of uncovered k-paths in the grammar given a set of derivation trees.
@@ -640,12 +645,13 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             overlap_to_root=overlap_to_root,
             coverage_goal=coverage_goal,
             input_parties=input_parties,
+            alt_cache=alt_cache
         )
         covered_k_paths = set()
         for tree in derivation_trees:
             covered_k_paths.update(
                 self._extract_k_paths_from_tree(
-                    tree, k, overlap_to_root, coverage_goal, input_parties=input_parties
+                    tree, k, overlap_to_root, coverage_goal, input_parties=input_parties, alt_cache=alt_cache
                 )
             )
 
@@ -690,6 +696,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         overlap_to_root: bool = False,
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
         input_parties: Optional[set[str]] = None,
+        alt_cache: bool = False,
     ) -> set[KPath]:
         """
         Computes the *k*-paths for this grammar, constructively. See: doi.org/10.1109/ASE.2019.00027
@@ -703,8 +710,11 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         if input_parties is None:
             input_parties = set()
         cache_key = (non_terminal, overlap_to_root, coverage_goal)
-        if cache_key in self._k_path_cache:
-            cache_work = self._k_path_cache[cache_key]
+        cache = self._k_path_cache
+        if alt_cache:
+            cache = self._alt_k_path_cache
+        if cache_key in cache:
+            cache_work = cache[cache_key]
             if len(cache_work) >= k:
                 return cache_work[k - 1]
 
@@ -773,14 +783,14 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
 
         if overlap_to_root:
             all_k_paths = self.generate_all_k_paths(
-                k=k, coverage_goal=coverage_goal, input_parties=input_parties
+                k=k, coverage_goal=coverage_goal, input_parties=input_parties, alt_cache=alt_cache
             )
             for k_path in all_k_paths:
                 if non_terminal in k_path:
                     for idx in range(len(k_path) - 1, k):
                         symbol_work[idx].add(k_path)
 
-        self._k_path_cache[cache_key] = symbol_work
+        cache[cache_key] = symbol_work
 
         return symbol_work[k - 1]
 
@@ -791,6 +801,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         overlap_to_root: bool = False,
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
         input_parties: Optional[set[str]] = None,
+        alt_cache: bool = False,
     ) -> set[tuple[Symbol, ...]]:
         """
         Extracts all k-length paths (k-paths) from a derivation tree.
@@ -805,8 +816,11 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                     overlap_parent = overlap_parent.parent
 
         hash_key = hash((tree, overlap_parent, k, overlap_to_root, coverage_goal))
-        if hash_key in self._tree_k_path_cache:
-            k_paths = self._tree_k_path_cache[hash_key]
+        cache = self._tree_k_path_cache
+        if alt_cache:
+            cache = self._alt_tree_k_path_cache
+        if hash_key in cache:
+            k_paths = cache[hash_key]
             return k_paths
 
         start_nodes: list[tuple[Optional[NonTerminal], DerivationTree]] = []
@@ -894,11 +908,12 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                 False,
                 coverage_goal=coverage_goal,
                 input_parties=input_parties,
+                alt_cache=alt_cache,
             ):
                 if tree.symbol in path:
                     k_paths.add(path)
 
-        self._tree_k_path_cache[hash_key] = k_paths
+        cache[hash_key] = k_paths
         return k_paths
 
     def prime(self) -> None:

@@ -322,6 +322,10 @@ class IoEvaluator(Evaluator):
         self._submitted_solutions: set[int] = set()
         self._hold_back_solutions: set[DerivationTree] = set()
         self._past_trees: list[DerivationTree] = []
+        self._is_enable_guidance = True
+
+    def enable_guidance(self, value):
+        self._is_enable_guidance = value
 
     def get_past_msgs(
         self, packet_type: Optional[PacketNonTerminal] = None
@@ -384,6 +388,12 @@ class IoEvaluator(Evaluator):
             msg = None
             msg_key = None
             msg_hash = None
+
+        if not self._is_enable_guidance:
+            if key not in self._solution_set:
+                self._solution_set.add(key)
+                yield individual
+            return fitness, failing_trees, suggestion
 
         if fitness >= self._expected_fitness:
             if msg is None:
