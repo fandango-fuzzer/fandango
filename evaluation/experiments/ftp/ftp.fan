@@ -181,10 +181,10 @@ def open_data_port(port) -> int:
         # Party instances not created
         return port
 
+    client_data.stop()
     if client_data.port != port:
-        client_data.stop()
         client_data.port = port
+    client_data.start()
     if server_data.port != port:
-        server_data.stop()
         server_data.port = port
     return port

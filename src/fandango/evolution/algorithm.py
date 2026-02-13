@@ -88,7 +88,7 @@ class Fandango:
         self._is_enable_guidance = True
         self._time_in_measurements = 0.0
         self.coverage_log: list[tuple[float, dict[NonTerminal, tuple[int, int]]]] = []
-        self.coverage_log_overlap: list[tuple[float, float]] = []
+        self.coverage_log_overlap: list[tuple[float, dict[NonTerminal, tuple[int, int]]]] = []
         self.grammar = grammar
         self.constraints = constraints
         self.population_size = population_size
@@ -518,10 +518,9 @@ class Fandango:
             self.packet_selector.compute(history_tree, self.past_io_derivations)
             start_measuring = time.time()
             iter += 1
-            if iter >= 10:
-                LOGGER.info(
-                    f"Current coverage: {self.packet_selector.coverage_percent(alt_cache=True) * 100:.2f}%"
-                )
+            LOGGER.info(
+                f"Current coverage: {self.packet_selector.coverage_percent(alt_cache=True) * 100:.2f}%"
+            )
             self.coverage_log.append((start_measuring - self._time_in_measurements, self.packet_selector._compute_coverage_trees(False)))
             self.coverage_log_overlap.append((start_measuring - self._time_in_measurements, self.packet_selector._compute_coverage_trees(True)))
             self._time_in_measurements += time.time() - start_measuring
@@ -708,6 +707,7 @@ class Fandango:
                 self._initial_solutions.clear()
                 yield history_tree
                 log_guidance_hint("Starting new protocol run.")
+                print(io_instance.get_full_fragments())
                 io_instance.reset_parties()
                 history_tree = DerivationTree(NonTerminal(self.start_symbol), [])
 

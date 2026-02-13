@@ -10,11 +10,15 @@ class ClientControl(NetworkParty):
         self.start()
 
     def send(self, message: str | bytes, recipient: Optional[str]) -> None:
-        if str(message).startswith("LIST"):
-            ClientData.instance().start()
+        #if str(message).startswith("229"):
+        #    ClientData.instance().stop()
+        #    ClientData.instance().start()
         super().send(message, recipient)
 
     def receive(self, message: str | bytes, sender: Optional[str]) -> None:
+        #if str(message).startswith("229"):
+        #    ClientData.instance().stop()
+        #    ClientData.instance().start()
         # 150 indicates the start of a data transfer. We start the data parties then in order to connect to the ftp servers data socket.
         if message.decode("utf-8").startswith("226"):
             ClientData.instance().stop()

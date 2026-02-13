@@ -333,7 +333,6 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
             return
         if not self._party_instance.is_fuzzer_controlled():
             return
-        self.stop()
         self._create_socket()
         self._connect()
 
@@ -364,6 +363,7 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
         self._send_thread = threading.Thread(target=self._listen, daemon=True)
         self._send_thread.daemon = True
         self._send_thread.start()
+        print(f"{self.party_name}: connecting to {self.port}")
 
     def stop(self) -> None:
         """Stops the current party."""
@@ -391,6 +391,7 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
             except OSError:
                 pass
             self._sock = None
+        print(f"{self.party_name}: disconnecting from {self.port}")
 
     def _wait_accept(self) -> None:
         """
