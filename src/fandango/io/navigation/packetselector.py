@@ -308,8 +308,8 @@ class PacketSelector:
 
     def _select_next_packet(self) -> list[ForecastingPacket]:
         if not self._is_enable_guidance:
-            if len(self._uncovered_paths(alt_cache=True)) == 0:
-                return self._get_guide_to_end_packet()
+            #if len(self._uncovered_paths(alt_cache=True)) == 0:
+            #    return self._get_guide_to_end_packet()
             return self.get_fuzzer_packets()
 
         if len(self.next_fuzzer_parties()) == 0:

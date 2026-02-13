@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 
 from evaluation.experiments.utils import write_coverage_log
@@ -9,12 +10,13 @@ from fandango.language.parse.parse import parse
 
 
 def main():
+    sys.setrecursionlimit(10**6)
     # Parse grammar and constraints
     #protocols = [("dune", "dune.fan"), ("smtp", "smtp_client.fan"), ("ftp", "ftp_client.fan")]
     protocols = [("ftp", "ftp_client.fan")]
     for folder, spec in protocols:
-        for enable_guidance in [True, False]:
-            for _ in range(10):
+        for enable_guidance in [False]:
+            for _ in range(9):
                 with open(f"{folder}/{spec}") as f:
                     grammar, constraints = parse(
                         f,
@@ -29,6 +31,7 @@ def main():
                     logger_level=LoggerLevel.INFO,
                     coverage_goal=CoverageGoal.STATE_INPUTS_OUTPUTS
                 )
+                fandango.coverage_log_interval = 20
                 fandango.enable_guidance(enable_guidance)
                 output_folder_name = f"{folder}/" + ("coverage_w_guidance" if enable_guidance else "coverage_wo_guidance")
 

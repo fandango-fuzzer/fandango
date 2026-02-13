@@ -86,6 +86,8 @@ class Fandango:
         LOGGER.info("---------- Initializing FANDANGO algorithm ---------- ")
 
         self._is_enable_guidance = True
+        self.stop_on_full_coverage = True
+        self.coverage_log_interval = 0
         self._time_in_measurements = 0.0
         self.coverage_log: list[tuple[float, dict[NonTerminal, tuple[int, int]]]] = []
         self.coverage_log_overlap: list[tuple[float, dict[NonTerminal, tuple[int, int]]]] = []
@@ -518,11 +520,12 @@ class Fandango:
             self.packet_selector.compute(history_tree, self.past_io_derivations)
             start_measuring = time.time()
             iter += 1
-            LOGGER.info(
-                f"Current coverage: {self.packet_selector.coverage_percent(alt_cache=True) * 100:.2f}%"
-            )
-            self.coverage_log.append((start_measuring - self._time_in_measurements, self.packet_selector._compute_coverage_trees(False)))
-            self.coverage_log_overlap.append((start_measuring - self._time_in_measurements, self.packet_selector._compute_coverage_trees(True)))
+            if self.coverage_log_interval > 0 and iter % self.coverage_log_interval == 0:
+                LOGGER.info(
+                    f"Current coverage: {self.packet_selector.coverage_percent(alt_cache=True) * 100:.2f}%"
+                )
+                self.coverage_log.append((start_measuring - self._time_in_measurements, self.packet_selector._compute_coverage_trees(False)))
+                self.coverage_log_overlap.append((start_measuring - self._time_in_measurements, self.packet_selector._compute_coverage_trees(True)))
             self._time_in_measurements += time.time() - start_measuring
             self.evaluator.start_next_message([history_tree] + self.past_io_derivations)
 
@@ -547,8 +550,10 @@ class Fandango:
                     if self.coverage_goal == CoverageGoal.SINGLE_DERIVATION:
                         return
                     if self.packet_selector.coverage_percent() == 1.0:
-                        log_guidance_hint("Full coverage reached, stopping evolution.")
-                        return
+                        if self.stop_on_full_coverage:
+                            log_guidance_hint("Full coverage reached, stopping evolution.")
+                            return
+                        self.enable_guidance(False)
                     log_guidance_hint("Starting new protocol run.")
                     io_instance.reset_parties()
                     history_tree = DerivationTree(NonTerminal(self.start_symbol), [])
