@@ -406,7 +406,7 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
                     if self.connection_mode == ConnectionMode.OPEN:
                         assert self._sock is not None
                         while self._running:
-                            rlist, _, _ = select.select([self._sock], [], [], 0.00001)
+                            rlist, _, _ = select.select([self._sock], [], [], 0.0000000001)
                             if rlist:
                                 self._connection, _ = self._sock.accept()
                                 break
