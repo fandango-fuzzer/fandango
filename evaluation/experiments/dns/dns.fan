@@ -271,19 +271,13 @@ where forall <ex> in <start>.<exchange>:
 <h_rcode_other> ::= (1 <bit>{3, 3}) | (0 1 1 <bit>)
 <bit> ::= 0 | 1
 <byte> ::= <bit>{8}
-<label_len_octet_non_zero> ::= (1 <bit>{7}) | 0 <label_len_octet_non_zero_bit_2>
-<label_len_octet_non_zero_bit_2> ::= 1 <bit>{6} | 0 <label_len_octet_non_zero_bit_3>
-<label_len_octet_non_zero_bit_3> ::= 1 <bit>{5} | 0 <label_len_octet_non_zero_bit_4>
-<label_len_octet_non_zero_bit_4> ::= 1 <bit>{4} | 0 <label_len_octet_non_zero_bit_5>
-<label_len_octet_non_zero_bit_5> ::= 1 <bit>{3} | 0 <label_len_octet_non_zero_bit_6>
-<label_len_octet_non_zero_bit_6> ::= 1 <bit>{2} | 0 <label_len_octet_non_zero_bit_7>
-<label_len_octet_non_zero_bit_7> ::= 1 <bit> | 0 1
+<label_len_octet> ::= <byte>
 
 
 <question> ::= <q_name> <q_type> <rr_class>
 <q_name_optional> ::= <q_name_written>? 0{8}
 <q_name> ::= <q_name_written> 0{8}
-<q_name_written> ::= (<label_len_octet_non_zero> <byte>{byte_to_int(b'\x00' + bytes(<label_len_octet_non_zero>))})+ := gen_q_name()
+<q_name_written> ::= (<label_len_octet> <byte>{byte_to_int(b'\x00' + bytes(<label_len_octet>))})+ := gen_q_name()
 <q_type> ::= <type_id_cname> | <type_id_a> | <type_id_ns>
 <rr_class> ::= 0{15} 1 # Equals class IN (Internet)
 
