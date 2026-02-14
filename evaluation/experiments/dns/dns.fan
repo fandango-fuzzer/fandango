@@ -271,12 +271,19 @@ where forall <ex> in <start>.<exchange>:
 <h_rcode_other> ::= (1 <bit>{3, 3}) | (0 1 1 <bit>)
 <bit> ::= 0 | 1
 <byte> ::= <bit>{8}
-<label_len_octet> ::= <byte>
+<label_len_octet_non_zero> ::= (1 <bit>{7}) | 0 <label_len_octet_non_zero_bit_2>
+<label_len_octet_non_zero_bit_2> ::= 1 <bit>{6} | 0 <label_len_octet_non_zero_bit_3>
+<label_len_octet_non_zero_bit_3> ::= 1 <bit>{5} | 0 <label_len_octet_non_zero_bit_4>
+<label_len_octet_non_zero_bit_4> ::= 1 <bit>{4} | 0 <label_len_octet_non_zero_bit_5>
+<label_len_octet_non_zero_bit_5> ::= 1 <bit>{3} | 0 <label_len_octet_non_zero_bit_6>
+<label_len_octet_non_zero_bit_6> ::= 1 <bit>{2} | 0 <label_len_octet_non_zero_bit_7>
+<label_len_octet_non_zero_bit_7> ::= 1 <bit> | 0 1
+
 
 <question> ::= <q_name> <q_type> <rr_class>
 <q_name_optional> ::= <q_name_written>? 0{8}
 <q_name> ::= <q_name_written> 0{8}
-<q_name_written> ::= (<label_len_octet> <byte>{byte_to_int(b'\x00' + bytes(<label_len_octet>))})+ := gen_q_name()
+<q_name_written> ::= (<label_len_octet_non_zero> <byte>{byte_to_int(b'\x00' + bytes(<label_len_octet_non_zero>))})+ := gen_q_name()
 <q_type> ::= <type_id_cname> | <type_id_a> | <type_id_ns>
 <rr_class> ::= 0{15} 1 # Equals class IN (Internet)
 
@@ -289,7 +296,7 @@ where forall <ex> in <start>.<exchange>:
             verify_transitive(<q>, <ex>.<dns_resp>) or bytes(<a>.<answer_an_type>)[0:2] == bytes(<q>.<q_type>) and bytes(<a>.<q_name_optional>) == bytes(<q>.<q_name>)
 
 <answer_au> ::= <q_name_optional> <type_soa>
-<answer_opt> ::= <q_name_optional> (<type_opt>|<type_a>)
+<answer_opt> ::= <q_name_optional> (<type_opt>|<type_a>|<type_aaaa>)
 <answer_an> ::= <q_name_optional> <answer_an_type>
 <a_ttl> ::= 0 <bit>{7} <byte>{3}
 <a_rd_length> ::= <byte>{2} := pack(">H", randint(0, 0))
@@ -301,8 +308,11 @@ where forall <ex> in <start>.<exchange>:
 <type_id_soa> ::= 0{13} 1 1 0
 <type_id_cname> ::= 0{13} 1 0 1
 <type_id_opt> ::= 0{10} 1 0 1 0 0 1
+<type_id_aaaa> ::= 0{11} 1 1 1 0 0
 <type_a> ::= <type_id_a> <rr_class> <a_ttl> 0{13} 1 0 0 <ip_address>
+<type_aaaa> ::= <type_id_aaaa> <rr_class> <a_ttl> 0{11} 1 0 0 0 0 <ip_address_v6>
 <ip_address> ::= <byte>{4}
+<ip_address_v6> ::= <byte>{16}
 <type_ns> ::= <type_id_ns> <rr_class> <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
 <type_soa> ::= <type_id_soa> <rr_class> <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
 <type_opt> ::= <type_id_opt> <udp_payload_size> <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
