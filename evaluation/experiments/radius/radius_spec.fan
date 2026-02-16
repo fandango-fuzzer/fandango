@@ -91,6 +91,15 @@ SHARED_SECRET = b"testing123"
 <byte> ::= <bit>{8}
 <bit> ::= 0 | 1
 
+def get_radius_user_password(username: bytes,
+                            shared_secret: bytes,
+                            request_authenticator: bytes) -> bytes:
+    if username == b"username":
+        return radius_user_password(b"password", shared_secret, request_authenticator)
+    elif username == b"challengeuser":
+        return radius_user_password(b"test123", shared_secret, request_authenticator)
+    return b"\x00" * 16 # Default or error case
+
 # Constraints
 
 # 1. Length field must match packet length
@@ -135,13 +144,11 @@ where forall <ex> in <exchange_challenge>:
 
 # 5. User-Password encoding
 where forall <ex> in <exchange_normal>:
-    if bytes(<ex>.<access_request_initial>.<attributes_request_initial>.<attr_user_name>.<attr_val_user_name>) == b"username":
-        bytes(<ex>.<access_request_initial>.<attributes_request_initial>.<attr_user_password>.<attr_val_user_password>) == radius_user_password(b"password", SHARED_SECRET, bytes(<ex>.<access_request_initial>.<request_authenticator>))
+    bytes(<ex>.<access_request_initial>.<attributes_request_initial>.<attr_user_password>.<attr_val_user_password>) == get_radius_user_password(bytes(<ex>.<access_request_initial>.<attributes_request_initial>.<attr_user_name>.<attr_val_user_name>), SHARED_SECRET, bytes(<ex>.<access_request_initial>.<request_authenticator>))
 
 where forall <ex> in <exchange_challenge>:
-    if bytes(<ex>.<access_request_initial>.<attributes_request_initial>.<attr_user_name>.<attr_val_user_name>) == b"challengeuser":
-        bytes(<ex>.<access_request_initial>.<attributes_request_initial>.<attr_user_password>.<attr_val_user_password>) == radius_user_password(b"test123", SHARED_SECRET, bytes(<ex>.<access_request_initial>.<request_authenticator>)) and \
-        bytes(<ex>.<access_request_challenge>.<attributes_request_challenge>.<attr_user_password>.<attr_val_user_password>) == radius_user_password(b"test123", SHARED_SECRET, bytes(<ex>.<access_request_challenge>.<request_authenticator>))
+    bytes(<ex>.<access_request_initial>.<attributes_request_initial>.<attr_user_password>.<attr_val_user_password>) == get_radius_user_password(bytes(<ex>.<access_request_initial>.<attributes_request_initial>.<attr_user_name>.<attr_val_user_name>), SHARED_SECRET, bytes(<ex>.<access_request_initial>.<request_authenticator>)) and \
+    bytes(<ex>.<access_request_challenge>.<attributes_request_challenge>.<attr_user_password>.<attr_val_user_password>) == get_radius_user_password(bytes(<ex>.<access_request_initial>.<attributes_request_initial>.<attr_user_name>.<attr_val_user_name>), SHARED_SECRET, bytes(<ex>.<access_request_challenge>.<request_authenticator>))
 
 # 6. State handling in Challenge-Response
 where forall <ex> in <exchange_challenge>:
