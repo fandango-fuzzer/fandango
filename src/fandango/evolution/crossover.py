@@ -1,33 +1,53 @@
 import random
 from abc import ABC, abstractmethod
-from typing import Optional
+from beartype.typing import Generic, Optional, Tuple, TypeVar
 
+from fandango.evolution.chromosomes.base import Chromosome
+from fandango.evolution.chromosomes.individual import Individual
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.tree import DerivationTree
 
+T = TypeVar("T", bound=Chromosome)
 
-class CrossoverOperator(ABC):
+
+class CrossoverOperator(ABC, Generic[T]):
     @abstractmethod
     def crossover(
-        self, grammar: Grammar, parent1: DerivationTree, parent2: DerivationTree
-    ) -> Optional[tuple[DerivationTree, DerivationTree]]:
+        self, grammar: Grammar, parent1: T, parent2: T
+    ) -> Optional[Tuple[T, T]]:
+        """
+        Abstract method to perform crossover on two parent individuals.
+
+        Generic over Chromosome type T for supporting both Individual and Suite chromosomes.
+
+        :param grammar: The Grammar used for crossover operations.
+        :param parent1: The first parent (chromosome of type T).
+        :param parent2: The second parent (chromosome of type T).
+        :return: A tuple of two offspring (chromosomes of type T) or None if crossover is not possible.
+        """
         pass
 
 
-class SimpleSubtreeCrossover(CrossoverOperator):
+class SimpleSubtreeCrossover(CrossoverOperator[Individual]):
     def crossover(
-        self, grammar: Grammar, parent1: DerivationTree, parent2: DerivationTree
-    ) -> Optional[tuple[DerivationTree, DerivationTree]]:
-        symbols1 = parent1.get_non_terminal_symbols()
-        symbols2 = parent2.get_non_terminal_symbols()
+        self, grammar: Grammar, parent1: Individual, parent2: Individual
+    ) -> Optional[Tuple[Individual, Individual]]:
+        # Unwrap DerivationTree from Individual
+        tree1 = parent1.tree
+        tree2 = parent2.tree
+
+        symbols1 = tree1.get_non_terminal_symbols()
+        symbols2 = tree2.get_non_terminal_symbols()
         common_symbols = symbols1.intersection(symbols2)
         if not common_symbols:
             return None
         symbol = random.choice(list(common_symbols))
-        nodes1 = parent1.find_all_nodes(symbol)
-        nodes2 = parent2.find_all_nodes(symbol)
+        nodes1 = tree1.find_all_nodes(symbol)
+        nodes2 = tree2.find_all_nodes(symbol)
         node1 = random.choice(nodes1)
         node2 = random.choice(nodes2)
-        child1 = parent1.replace(grammar, node1, node2)
-        child2 = parent2.replace(grammar, node2, node1)
-        return child1, child2
+        child1_tree = tree1.replace(grammar, node1, node2)
+        child2_tree = tree2.replace(grammar, node2, node1)
+
+        # Wrap results back in Individual
+        return Individual(child1_tree), Individual(child2_tree)
