@@ -5,5 +5,15 @@ from fandango.evolution.fitness.base import (
     IndividualFitnessFunction,
     SuiteFitnessFunction,
 )
+from fandango.evolution.fitness.suite import (
+    SymbolCoverageFitnessFunction,
+    PathCoverageFitnessFunction,
+)
 
-__all__ = ["FitnessFunction", "IndividualFitnessFunction", "SuiteFitnessFunction"]
+__all__ = [
+    "FitnessFunction",
+    "IndividualFitnessFunction",
+    "SuiteFitnessFunction",
+    "SymbolCoverageFitnessFunction",
+    "PathCoverageFitnessFunction",
+]
