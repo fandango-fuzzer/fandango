@@ -514,7 +514,7 @@ def parse(
     mode = FuzzingMode.COMPLETE
 
     while FILES_TO_PARSE:
-        (file, depth) = FILES_TO_PARSE.pop(0)
+        file, depth = FILES_TO_PARSE.pop(0)
         if isinstance(file, str):
             file = StringIO(file)
             file.name = "<string>"

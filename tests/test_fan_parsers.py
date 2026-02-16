@@ -7,7 +7,6 @@ import pytest
 
 from .utils import RESOURCES_ROOT, DOCS_ROOT, run_command
 
-
 files = glob.glob(str(RESOURCES_ROOT / "*.fan")) + glob.glob(str(DOCS_ROOT / "*.fan"))
 
 
