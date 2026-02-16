@@ -54,12 +54,41 @@ authorize {
 	expiration
 	logintime
 	pap
+
+	#
+	# Only challenge THIS user
+	#
+	if (&User-Name == "challengeuser" && !&State) {
+		update control {
+			Auth-Type := Challenge-Step1
+		}
+	}
+
 	Autz-Type New-TLS-Connection {
 		  ok
 	}
 }
 
 authenticate {
+
+	#
+	# Challenge flow ONLY for challengeuser
+	#
+	Auth-Type Challenge-Step1 {
+
+		pap
+
+		update session-state {
+			Tmp-String-0 := "replayme" # "%{randstr:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}"
+		}
+
+		update reply {
+			Reply-Message := &session-state:Tmp-String-0
+		}
+
+		challenge
+	}
+
 	Auth-Type PAP {
 		pap
 	}
