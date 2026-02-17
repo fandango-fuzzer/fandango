@@ -269,6 +269,10 @@ class Fandango(FandangoBase):
             from fandango.evolution.algorithms.random import RandomSuiteAlgorithm
 
             self.fandango = RandomSuiteAlgorithm(self.grammar, constraints, **settings)
+        elif algorithm == "whole-suite":
+            from fandango.evolution.algorithms.wholesuite import WholeSuiteAlgorithm
+
+            self.fandango = WholeSuiteAlgorithm(self.grammar, constraints, **settings)
         else:
             self.fandango = FandangoStrategy(
                 self.grammar, constraints, start_symbol=start_symbol, **settings
