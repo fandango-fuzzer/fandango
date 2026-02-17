@@ -3,10 +3,11 @@
 from abc import ABC, abstractmethod
 
 from fandango.evolution.algorithms import CoverageArchive, Archive
-from beartype.typing import Optional, Generic, TypeVar, Any, Sequence
+from beartype.typing import Optional, Generic, TypeVar, Any, Sequence, List
 
 from fandango.evolution.chromosomes import Suite
 from fandango.evolution.chromosomes.base import Chromosome
+from fandango.evolution.evaluation import Evaluator
 from fandango.language.tree import DerivationTree
 from fandango.language.grammar.grammar import Grammar
 from fandango.constraints.constraint import Constraint
@@ -25,7 +26,7 @@ class GenerationAlgorithm(ABC, Generic[T]):
     def __init__(
         self,
         grammar: Grammar,
-        constraints: Sequence[Constraint | SoftValue],
+        constraints: List[Constraint | SoftValue],
         population_size: int = 10,
         initial_population: Optional[Sequence[DerivationTree | str]] = None,
         **kwargs: Any,  # Algorithm-specific parameters
@@ -34,6 +35,18 @@ class GenerationAlgorithm(ABC, Generic[T]):
         self.constraints = constraints
         self.population_size = population_size
         self.archive: Archive = CoverageArchive(grammar)
+
+        # Only to be compatible with Fandango (class)
+        # TODO(lk): In the long term we probably want to make Fandango a subclass of this
+        self.average_population_fitness: float = -1.0
+        self.evaluator = Evaluator(
+            grammar,
+            constraints,
+            expected_fitness=1.0,
+            diversity_k=1,
+            diversity_weight=0.0,
+        )
+        self.population: List[DerivationTree] = []
 
     @abstractmethod
     def generate(

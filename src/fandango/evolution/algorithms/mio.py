@@ -22,9 +22,5 @@ class MIOAlgorithm(GenerationAlgorithm[Individual]):
         raise NotImplementedError("MIOAlgorithm is not yet implemented")
 
     @property
-    def population(self) -> Sequence[Individual]:
-        raise NotImplementedError("MIOAlgorithm is not yet implemented")
-
-    @property
     def evaluation(self) -> Sequence[Any]:
         raise NotImplementedError("MIOAlgorithm is not yet implemented")

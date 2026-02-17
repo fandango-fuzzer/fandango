@@ -23,11 +23,6 @@ class DynaMOSAAlgorithm(GenerationAlgorithm[Individual]):
         raise NotImplementedError("DynaMOSAAlgorithm is not yet implemented")
 
     @property
-    def population(self) -> Sequence[Individual]:
-        """Returns the current population."""
-        raise NotImplementedError("DynaMOSAAlgorithm is not yet implemented")
-
-    @property
     def evaluation(self) -> Sequence[Any]:
         """Returns the current fitness evaluations."""
         raise NotImplementedError("DynaMOSAAlgorithm is not yet implemented")
