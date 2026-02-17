@@ -1,9 +1,10 @@
 import random
 from abc import ABC, abstractmethod
-from beartype.typing import Generic, Optional, Tuple, TypeVar
+from beartype.typing import Generic, List, Optional, Tuple, TypeVar
 
 from fandango.evolution.chromosomes.base import Chromosome
 from fandango.evolution.chromosomes.individual import Individual
+from fandango.evolution.chromosomes.suite import Suite
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.tree import DerivationTree
 
@@ -51,3 +52,20 @@ class SimpleSubtreeCrossover(CrossoverOperator[Individual]):
 
         # Wrap results back in Individual
         return Individual(child1_tree), Individual(child2_tree)
+
+
+class SuiteCrossover(CrossoverOperator[Suite]):
+    def crossover(
+        self, grammar: Grammar, parent1: Suite, parent2: Suite
+    ) -> Optional[Tuple[Suite, Suite]]:
+        if len(parent1) == 0 or len(parent2) == 0:
+            return None
+        point1 = random.randint(0, len(parent1))
+        point2 = random.randint(0, len(parent2))
+        inds1: List[Individual] = list(parent1)
+        inds2: List[Individual] = list(parent2)
+        child1 = Suite([ind.clone() for ind in inds1[:point1] + inds2[point2:]])
+        child2 = Suite([ind.clone() for ind in inds2[:point2] + inds1[point1:]])
+        if len(child1) == 0 or len(child2) == 0:
+            return None
+        return child1, child2
