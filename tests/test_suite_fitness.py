@@ -6,6 +6,7 @@ from fandango.evolution.chromosomes.suite import Suite
 from fandango.evolution.fitness.base import SuiteFitnessFunction
 from fandango.evolution.fitness.suite import (
     SymbolCoverageFitnessFunction,
+    KPathCoverageFitnessFunction,
     PathCoverageFitnessFunction,
 )
 from fandango.language.parse.parse import parse
@@ -266,36 +267,46 @@ class TestSymbolCoverageFitnessFunction:
         assert len(fitness_fn.cache) == 0
 
 
-class TestPathCoverageFitnessFunction:
-    """Test PathCoverageFitnessFunction."""
+class TestKPathCoverageFitnessFunction:
+    """Test KPathCoverageFitnessFunction."""
 
-    def test_construction(self, simple_grammar):
-        """Test creating a PathCoverageFitnessFunction."""
-        fitness_fn = PathCoverageFitnessFunction(simple_grammar)
+    @pytest.mark.parametrize("k", [1, 2, 3])
+    def test_construction(self, simple_grammar, k):
+        """Test creating a KPathCoverageFitnessFunction."""
+        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=k)
         assert fitness_fn is not None
         assert isinstance(fitness_fn, SuiteFitnessFunction)
 
-    def test_construction_with_custom_start_symbol(self, simple_grammar):
+    @pytest.mark.parametrize("k", [1, 2, 3])
+    def test_construction_with_custom_start_symbol(self, simple_grammar, k):
         """Test construction with custom start symbol."""
-        fitness_fn = PathCoverageFitnessFunction(
-            simple_grammar, start_symbol=NonTerminal("<digit>")
+        fitness_fn = KPathCoverageFitnessFunction(
+            simple_grammar, k=k, start_symbol=NonTerminal("<digit>")
         )
         assert fitness_fn is not None
 
-    def test_is_maximising(self, simple_grammar):
-        """Test that PathCoverageFitnessFunction is maximizing."""
-        fitness_fn = PathCoverageFitnessFunction(simple_grammar)
+    def test_invalid_k_raises_value_error(self, simple_grammar):
+        """Test that k < 1 raises ValueError."""
+        with pytest.raises(ValueError):
+            KPathCoverageFitnessFunction(simple_grammar, k=0)
+
+    @pytest.mark.parametrize("k", [1, 2, 3])
+    def test_is_maximising(self, simple_grammar, k):
+        """Test that KPathCoverageFitnessFunction is maximizing."""
+        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=k)
         assert fitness_fn.is_maximising() is True
 
-    def test_cache_property(self, simple_grammar):
+    @pytest.mark.parametrize("k", [1, 2, 3])
+    def test_cache_property(self, simple_grammar, k):
         """Test that cache property returns a dictionary."""
-        fitness_fn = PathCoverageFitnessFunction(simple_grammar)
+        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=k)
         cache = fitness_fn.cache
         assert isinstance(cache, dict)
 
-    def test_type_checking_raises_on_individual(self, simple_grammar):
+    @pytest.mark.parametrize("k", [1, 2, 3])
+    def test_type_checking_raises_on_individual(self, simple_grammar, k):
         """Test that passing an Individual raises TypeError."""
-        fitness_fn = PathCoverageFitnessFunction(simple_grammar)
+        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=k)
         tree = simple_grammar.fuzz("<start>", max_nodes=10)
         individual = Individual(tree)
 
@@ -304,25 +315,28 @@ class TestPathCoverageFitnessFunction:
         assert "Suite" in str(exc_info.value)
         assert "Individual" in str(exc_info.value)
 
-    def test_empty_suite_returns_zero(self, simple_grammar, empty_suite):
+    @pytest.mark.parametrize("k", [1, 2, 3])
+    def test_empty_suite_returns_zero(self, simple_grammar, empty_suite, k):
         """Test that empty suite returns 0.0 fitness."""
-        fitness_fn = PathCoverageFitnessFunction(simple_grammar)
+        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=k)
         fitness_value = fitness_fn.fitness(empty_suite)
         assert fitness_value == 0.0
 
+    @pytest.mark.parametrize("k", [1, 2, 3])
     def test_single_tree_partial_coverage(
-        self, simple_grammar, single_individual_suite
+        self, simple_grammar, single_individual_suite, k
     ):
         """Test that single tree gives partial coverage."""
-        fitness_fn = PathCoverageFitnessFunction(simple_grammar)
+        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=k)
         fitness_value = fitness_fn.fitness(single_individual_suite)
 
         # Should be > 0 (some coverage) but may not be 1.0 (full coverage)
         assert 0.0 < fitness_value <= 1.0
 
-    def test_multiple_trees_increase_coverage(self, simple_grammar):
+    @pytest.mark.parametrize("k", [1, 2, 3])
+    def test_multiple_trees_increase_coverage(self, simple_grammar, k):
         """Test that adding more trees increases or maintains coverage."""
-        fitness_fn = PathCoverageFitnessFunction(simple_grammar)
+        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=k)
 
         # Single tree
         tree1 = simple_grammar.fuzz("<start>", max_nodes=10)
@@ -337,9 +351,10 @@ class TestPathCoverageFitnessFunction:
         # Adding more trees should not decrease coverage (monotonicity)
         assert fitness2 >= fitness1
 
-    def test_full_coverage_achievable(self, simple_grammar):
+    @pytest.mark.parametrize("k", [1, 2, 3])
+    def test_full_coverage_achievable(self, simple_grammar, k):
         """Test that full coverage is achievable with sufficient trees."""
-        fitness_fn = PathCoverageFitnessFunction(simple_grammar)
+        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=k)
 
         # Generate many trees to achieve full coverage
         trees = [simple_grammar.fuzz("<start>", max_nodes=20) for _ in range(100)]
@@ -351,9 +366,10 @@ class TestPathCoverageFitnessFunction:
         # With enough trees, should eventually reach good coverage
         assert 0.0 < fitness_value <= 1.0
 
-    def test_is_covered_true_when_full_coverage(self, simple_grammar):
+    @pytest.mark.parametrize("k", [1, 2, 3])
+    def test_is_covered_true_when_full_coverage(self, simple_grammar, k):
         """Test that is_covered returns True when fitness >= 1.0."""
-        fitness_fn = PathCoverageFitnessFunction(simple_grammar)
+        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=k)
 
         # Generate many trees to achieve full coverage
         trees = [simple_grammar.fuzz("<start>", max_nodes=20) for _ in range(100)]
@@ -363,25 +379,26 @@ class TestPathCoverageFitnessFunction:
         fitness = fitness_fn.fitness(suite)
         assert (
             fitness >= 1.0
-        ), "100 trees should achieve full path coverage of simple_digits grammar"
+        ), f"100 trees should achieve full {k}-path coverage of simple_digits grammar"
         assert fitness_fn.is_covered(suite) is True
 
+    @pytest.mark.parametrize("k", [1, 2, 3])
     def test_is_covered_false_when_partial_coverage(
-        self, simple_grammar, single_individual_suite
+        self, simple_grammar, single_individual_suite, k
     ):
         """Test that is_covered returns False when fitness < 1.0."""
-        fitness_fn = PathCoverageFitnessFunction(simple_grammar)
+        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=k)
 
         fitness = fitness_fn.fitness(single_individual_suite)
-        # Test the is_covered logic based on actual fitness
         if fitness < 1.0:
             assert fitness_fn.is_covered(single_individual_suite) is False
         else:
             assert fitness_fn.is_covered(single_individual_suite) is True
 
-    def test_caching_same_suite(self, simple_grammar, sample_suite):
+    @pytest.mark.parametrize("k", [1, 2, 3])
+    def test_caching_same_suite(self, simple_grammar, sample_suite, k):
         """Test that caching works for same suite."""
-        fitness_fn = PathCoverageFitnessFunction(simple_grammar)
+        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=k)
 
         # First call
         fitness1 = fitness_fn.fitness(sample_suite)
@@ -392,16 +409,18 @@ class TestPathCoverageFitnessFunction:
         assert fitness1 == fitness2
         assert hash(sample_suite) in fitness_fn.cache
 
-    def test_fitness_range_invariant(self, simple_grammar, sample_suite):
+    @pytest.mark.parametrize("k", [1, 2, 3])
+    def test_fitness_range_invariant(self, simple_grammar, sample_suite, k):
         """Test that fitness is always in [0.0, 1.0]."""
-        fitness_fn = PathCoverageFitnessFunction(simple_grammar)
+        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=k)
         fitness_value = fitness_fn.fitness(sample_suite)
 
         assert 0.0 <= fitness_value <= 1.0
 
-    def test_monotonicity_adding_trees(self, simple_grammar):
+    @pytest.mark.parametrize("k", [1, 2, 3])
+    def test_monotonicity_adding_trees(self, simple_grammar, k):
         """Test that adding trees never decreases coverage."""
-        fitness_fn = PathCoverageFitnessFunction(simple_grammar)
+        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=k)
 
         individuals = []
         previous_fitness = 0.0
@@ -417,11 +436,11 @@ class TestPathCoverageFitnessFunction:
             previous_fitness = current_fitness
 
     def test_no_paths_returns_one(self):
-        """Test that grammar with no 2-paths returns 1.0."""
+        """Test that grammar with no k-paths returns 1.0."""
         from fandango.language.grammar.grammar import Grammar
 
         empty_grammar = Grammar(grammar_settings=[], rules={})
-        fitness_fn = PathCoverageFitnessFunction(empty_grammar)
+        fitness_fn = KPathCoverageFitnessFunction(empty_grammar, k=2)
 
         suite = Suite([])
         fitness_value = fitness_fn.fitness(suite)
@@ -429,9 +448,10 @@ class TestPathCoverageFitnessFunction:
         # No paths to cover = full coverage
         assert fitness_value == 1.0
 
-    def test_different_suites_different_fitness(self, simple_grammar):
+    @pytest.mark.parametrize("k", [1, 2, 3])
+    def test_different_suites_different_fitness(self, simple_grammar, k):
         """Test that different suites may have different fitness values."""
-        fitness_fn = PathCoverageFitnessFunction(simple_grammar)
+        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=k)
 
         # Small suite
         tree1 = simple_grammar.fuzz("<start>", max_nodes=5)
@@ -447,14 +467,15 @@ class TestPathCoverageFitnessFunction:
         # Larger suite should have equal or better coverage
         assert fitness2 >= fitness1
 
-    def test_instanceof_suite_fitness_function(self, simple_grammar):
-        """Test that PathCoverageFitnessFunction is a SuiteFitnessFunction."""
-        fitness_fn = PathCoverageFitnessFunction(simple_grammar)
+    @pytest.mark.parametrize("k", [1, 2, 3])
+    def test_instanceof_suite_fitness_function(self, simple_grammar, k):
+        """Test that KPathCoverageFitnessFunction is a SuiteFitnessFunction."""
+        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=k)
         assert isinstance(fitness_fn, SuiteFitnessFunction)
 
     def test_2path_extraction_works(self, simple_grammar):
         """Test that 2-path extraction is working correctly."""
-        fitness_fn = PathCoverageFitnessFunction(simple_grammar)
+        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=2)
 
         # Generate a tree and check that some paths are covered
         tree = simple_grammar.fuzz("<start>", max_nodes=20)
@@ -466,7 +487,7 @@ class TestPathCoverageFitnessFunction:
         assert fitness_value > 0.0
 
     def test_deterministic_path_coverage(self, simple_grammar):
-        """Test path coverage with hand-crafted tree with known expected fitness."""
+        """Test k=2 path coverage with hand-crafted tree with known expected fitness."""
         from fandango.language.tree import DerivationTree
 
         # Create a hand-crafted tree: <start> -> <digit> -> "5"
@@ -480,7 +501,7 @@ class TestPathCoverageFitnessFunction:
         )
 
         suite = Suite([Individual(start_tree)])
-        fitness_fn = PathCoverageFitnessFunction(simple_grammar)
+        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=2)
 
         # Get total number of 2-paths in grammar
         total_paths = len(fitness_fn._all_paths)
@@ -489,9 +510,10 @@ class TestPathCoverageFitnessFunction:
             # This tree should cover at least the (<start>, <digit>) path
             assert fitness_value > 0.0, f"Expected > 0.0, got {fitness_value}"
 
-    def test_clear_cache_method(self, simple_grammar, sample_suite):
+    @pytest.mark.parametrize("k", [1, 2, 3])
+    def test_clear_cache_method(self, simple_grammar, sample_suite, k):
         """Test that clear_cache method works correctly."""
-        fitness_fn = PathCoverageFitnessFunction(simple_grammar)
+        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=k)
 
         # Evaluate to populate cache
         fitness_fn.fitness(sample_suite)
@@ -500,6 +522,12 @@ class TestPathCoverageFitnessFunction:
         # Clear cache
         fitness_fn.clear_cache()
         assert len(fitness_fn.cache) == 0
+
+    def test_path_coverage_alias_is_k2(self, simple_grammar, sample_suite):
+        """Test that PathCoverageFitnessFunction alias produces same results as k=2."""
+        alias = PathCoverageFitnessFunction(simple_grammar)
+        k2 = KPathCoverageFitnessFunction(simple_grammar, k=2)
+        assert alias.fitness(sample_suite) == k2.fitness(sample_suite)
 
 
 class TestSuiteFitnessInterface:
@@ -511,8 +539,8 @@ class TestSuiteFitnessInterface:
         assert isinstance(fitness_fn, SuiteFitnessFunction)
 
     def test_path_coverage_isinstance_check(self, simple_grammar):
-        """Test PathCoverageFitnessFunction isinstance check."""
-        fitness_fn = PathCoverageFitnessFunction(simple_grammar)
+        """Test KPathCoverageFitnessFunction isinstance check."""
+        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=2)
         assert isinstance(fitness_fn, SuiteFitnessFunction)
 
     def test_symbol_coverage_has_required_methods(self, simple_grammar):
@@ -529,8 +557,8 @@ class TestSuiteFitnessInterface:
         assert callable(fitness_fn.is_maximising)
 
     def test_path_coverage_has_required_methods(self, simple_grammar):
-        """Test PathCoverageFitnessFunction has all required methods."""
-        fitness_fn = PathCoverageFitnessFunction(simple_grammar)
+        """Test KPathCoverageFitnessFunction has all required methods."""
+        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=2)
 
         assert hasattr(fitness_fn, "fitness")
         assert hasattr(fitness_fn, "is_covered")
@@ -549,18 +577,22 @@ class TestImports:
         """Test importing from fandango.evolution.fitness."""
         from fandango.evolution.fitness import (
             SymbolCoverageFitnessFunction,
+            KPathCoverageFitnessFunction,
             PathCoverageFitnessFunction,
         )
 
         assert SymbolCoverageFitnessFunction is not None
+        assert KPathCoverageFitnessFunction is not None
         assert PathCoverageFitnessFunction is not None
 
     def test_import_from_suite_submodule(self):
         """Test importing from fandango.evolution.fitness.suite."""
         from fandango.evolution.fitness.suite import (
             SymbolCoverageFitnessFunction,
+            KPathCoverageFitnessFunction,
             PathCoverageFitnessFunction,
         )
 
         assert SymbolCoverageFitnessFunction is not None
+        assert KPathCoverageFitnessFunction is not None
         assert PathCoverageFitnessFunction is not None

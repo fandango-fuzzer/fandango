@@ -182,14 +182,15 @@ class SymbolCoverageFitnessFunction(SuiteFitnessFunction):
         self._cache.clear()
 
 
-class PathCoverageFitnessFunction(SuiteFitnessFunction):
+class KPathCoverageFitnessFunction(SuiteFitnessFunction):
     """
-    Measures the fraction of grammar 2-paths (edges) exercised by a suite.
+    Measures the fraction of grammar k-paths exercised by a suite.
 
-    This fitness function evaluates how many distinct 2-paths (edges in the
-    grammar graph) are covered by the derivation trees in a test suite.
+    This fitness function evaluates how many distinct k-paths (sequences of k
+    symbols in the grammar graph) are covered by the derivation trees in a test
+    suite.
 
-    Formula: fitness = |covered 2-paths| / |total 2-paths in grammar|
+    Formula: fitness = |covered k-paths| / |total k-paths in grammar|
 
     The fitness value ranges from 0.0 (no paths covered) to 1.0 (all paths covered).
     This is a maximizing fitness function.
@@ -200,22 +201,32 @@ class PathCoverageFitnessFunction(SuiteFitnessFunction):
     """
 
     def __init__(
-        self, grammar: Grammar, start_symbol: NonTerminal = NonTerminal("<start>")
+        self,
+        grammar: Grammar,
+        k: int = 2,
+        start_symbol: NonTerminal = NonTerminal("<start>"),
     ):
         """
-        Initialize the PathCoverageFitnessFunction.
+        Initialize the KPathCoverageFitnessFunction.
 
         Args:
             grammar: The grammar defining the universe of paths
+            k: The path length (k >= 1); k=2 gives edges, k=1 gives individual nodes
             start_symbol: The start symbol for path generation (default: <start>)
+
+        Raises:
+            ValueError: If k < 1
         """
+        if k < 1:
+            raise ValueError(f"k must be >= 1, got {k}")
         self._grammar = grammar
+        self._k = k
         self._start_symbol = start_symbol
-        # Generate all 2-paths from the grammar (cached at grammar level)
+        # Generate all k-paths from the grammar
         # Handle case where start_symbol doesn't exist in grammar
         if start_symbol in grammar.rules:
             self._all_paths = grammar.generate_all_k_paths(
-                k=2, non_terminal=start_symbol
+                k=k, non_terminal=start_symbol
             )
         else:
             self._all_paths = set()
@@ -229,14 +240,14 @@ class PathCoverageFitnessFunction(SuiteFitnessFunction):
             chromosome: A Suite chromosome to evaluate
 
         Returns:
-            Fitness value in [0.0, 1.0] representing the fraction of 2-paths covered
+            Fitness value in [0.0, 1.0] representing the fraction of k-paths covered
 
         Raises:
             TypeError: If chromosome is not a Suite
         """
         if not isinstance(chromosome, Suite):
             raise TypeError(
-                f"PathCoverageFitnessFunction requires a Suite, got {type(chromosome).__name__}"
+                f"KPathCoverageFitnessFunction requires a Suite, got {type(chromosome).__name__}"
             )
 
         # Check cache first
@@ -246,7 +257,7 @@ class PathCoverageFitnessFunction(SuiteFitnessFunction):
 
         # Handle edge cases
         if len(self._all_paths) == 0:
-            # No 2-paths in grammar - consider it fully covered
+            # No k-paths in grammar - consider it fully covered
             self._cache[suite_hash] = 1.0
             return 1.0
 
@@ -259,7 +270,7 @@ class PathCoverageFitnessFunction(SuiteFitnessFunction):
         covered_paths = set()
         for individual in chromosome:
             tree = individual.tree
-            tree_paths = self._grammar._extract_k_paths_from_tree(tree, k=2)
+            tree_paths = self._grammar._extract_k_paths_from_tree(tree, k=self._k)
             # Only count paths that exist in the grammar
             covered_paths.update(tree_paths.intersection(self._all_paths))
 
@@ -281,7 +292,7 @@ class PathCoverageFitnessFunction(SuiteFitnessFunction):
             suite: The suite to check
 
         Returns:
-            True if all 2-paths are covered (fitness >= 1.0), False otherwise
+            True if all k-paths are covered (fitness >= 1.0), False otherwise
         """
         return self.fitness(suite) >= 1.0
 
@@ -312,3 +323,11 @@ class PathCoverageFitnessFunction(SuiteFitnessFunction):
         to ensure fresh fitness computation on the next call.
         """
         self._cache.clear()
+
+
+def PathCoverageFitnessFunction(
+    grammar: Grammar,
+    start_symbol: NonTerminal = NonTerminal("<start>"),
+) -> KPathCoverageFitnessFunction:
+    """Backward-compatible alias for KPathCoverageFitnessFunction(k=2)."""
+    return KPathCoverageFitnessFunction(grammar, k=2, start_symbol=start_symbol)
