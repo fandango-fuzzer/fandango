@@ -4,6 +4,7 @@ from beartype.typing import Optional, Any, Sequence, List
 from fandango.evolution.algorithms.base import GenerationAlgorithm
 from fandango.evolution.chromosomes import Individual, Chromosome
 from fandango.evolution.chromosomes.suite import Suite
+from fandango.evolution.fitness.suite import GraphCoverageFitnessFunction
 from fandango.language import Grammar
 from fandango.language.tree import DerivationTree
 
@@ -70,6 +71,8 @@ class RandomIndividualAlgorithm(GenerationAlgorithm[Individual]):
         solutions: List[Individual] = [
             s for s in self.archive.solutions if isinstance(s, Individual)
         ]
+        # TODO(lk): Individuals would need to be sorted by fitness and cut-off at
+        #  population size for a fair comparison
         return Suite(solutions)
 
     @property
@@ -90,20 +93,19 @@ class RandomSuiteAlgorithm(GenerationAlgorithm[Suite]):
         self._initial_population: List[Suite] = [
             _to_suite(self.grammar, kwargs.pop("initial_population", None))
         ]
-        self.archive.update(self._initial_population)
+        self._fitness_fn = GraphCoverageFitnessFunction(self.grammar)
 
     def generate(self, max_generations: Optional[int] = None) -> Suite:
         solution = _generate_suite(self.grammar)
-        self.archive.update(solution)
         generation = 1
         while max_generations is None or generation < max_generations:
             candidate = _generate_suite(self.grammar)
-            self.archive.update(candidate)
+            candidate_fitness = self._fitness_fn.fitness(candidate)
+            solution_fitness = self._fitness_fn.fitness(solution)
+            if candidate_fitness > solution_fitness:
+                solution = candidate
             generation += 1
-        solutions: List[Individual] = [
-            s for s in self.archive.solutions if isinstance(s, Individual)
-        ]
-        return Suite(solutions)
+        return solution
 
     @property
     def evaluation(self) -> Sequence[Any]:
