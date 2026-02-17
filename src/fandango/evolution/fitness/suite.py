@@ -325,6 +325,82 @@ class KPathCoverageFitnessFunction(SuiteFitnessFunction):
         self._cache.clear()
 
 
+class GraphCoverageFitnessFunction(SuiteFitnessFunction):
+    """
+    Measures graph coverage as a normalized weighted sum of k-path coverages.
+
+    Formula: fitness = (∑_{k=1}^{max_k} (1/k) * cov(k)) / H_{max_k}
+
+    where cov(k) = KPathCoverageFitnessFunction(k).fitness(suite)
+    and H_{max_k} = ∑_{k=1}^{max_k} 1/k (harmonic normalization).
+
+    The fitness value ranges from 0.0 to 1.0. This is a maximizing fitness function.
+    """
+
+    def __init__(
+        self,
+        grammar: Grammar,
+        max_k: int = 3,
+        start_symbol: NonTerminal = NonTerminal("<start>"),
+    ):
+        """
+        Args:
+            grammar: The grammar defining the universe of paths
+            max_k: Upper bound for k (inclusive); computes coverage for k ∈ [1, max_k]
+            start_symbol: The start symbol for path generation (default: <start>)
+
+        Raises:
+            ValueError: If max_k < 1
+        """
+        if max_k < 1:
+            raise ValueError(f"max_k must be >= 1, got {max_k}")
+        self._grammar = grammar
+        self._max_k = max_k
+        self._start_symbol = start_symbol
+
+        # Pre-instantiate one KPathCoverageFitnessFunction per k
+        self._k_fns: list[tuple[int, KPathCoverageFitnessFunction]] = [
+            (k, KPathCoverageFitnessFunction(grammar, k=k, start_symbol=start_symbol))
+            for k in range(1, max_k + 1)
+        ]
+
+        # Pre-compute harmonic normalization constant H_{max_k}
+        self._h_max_k: float = sum(1.0 / k for k in range(1, max_k + 1))
+
+        self._cache: Dict[Any, float] = {}
+
+    def fitness(self, chromosome: Chromosome) -> float:
+        if not isinstance(chromosome, Suite):
+            raise TypeError(
+                f"GraphCoverageFitnessFunction requires a Suite, got {type(chromosome).__name__}"
+            )
+
+        suite_hash = hash(chromosome)
+        if suite_hash in self._cache:
+            return self._cache[suite_hash]
+
+        weighted_sum = sum(
+            (1.0 / k) * k_fn.fitness(chromosome) for k, k_fn in self._k_fns
+        )
+
+        fitness_value = weighted_sum / self._h_max_k
+        self._cache[suite_hash] = fitness_value
+        return fitness_value
+
+    def is_covered(self, suite: Suite) -> bool:
+        return self.fitness(suite) >= 1.0
+
+    def is_maximising(self) -> bool:
+        return True
+
+    @property
+    def cache(self) -> Dict[Any, Any]:
+        return self._cache
+
+    def clear_cache(self) -> None:
+        self._cache.clear()
+
+
 def PathCoverageFitnessFunction(
     grammar: Grammar,
     start_symbol: NonTerminal = NonTerminal("<start>"),

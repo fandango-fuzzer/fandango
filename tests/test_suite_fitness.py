@@ -7,6 +7,7 @@ from fandango.evolution.fitness.base import SuiteFitnessFunction
 from fandango.evolution.fitness.suite import (
     SymbolCoverageFitnessFunction,
     KPathCoverageFitnessFunction,
+    GraphCoverageFitnessFunction,
     PathCoverageFitnessFunction,
 )
 from fandango.language.parse.parse import parse
@@ -530,6 +531,125 @@ class TestKPathCoverageFitnessFunction:
         assert alias.fitness(sample_suite) == k2.fitness(sample_suite)
 
 
+class TestGraphCoverageFitnessFunction:
+    """Test GraphCoverageFitnessFunction."""
+
+    @pytest.mark.parametrize("max_k", [1, 2, 3])
+    def test_construction(self, simple_grammar, max_k):
+        """Test creating a GraphCoverageFitnessFunction."""
+        fitness_fn = GraphCoverageFitnessFunction(simple_grammar, max_k=max_k)
+        assert fitness_fn is not None
+        assert isinstance(fitness_fn, SuiteFitnessFunction)
+
+    def test_invalid_max_k_raises(self, simple_grammar):
+        """Test that max_k=0 raises ValueError."""
+        with pytest.raises(ValueError):
+            GraphCoverageFitnessFunction(simple_grammar, max_k=0)
+
+    @pytest.mark.parametrize("max_k", [1, 2, 3])
+    def test_is_maximising(self, simple_grammar, max_k):
+        """Test that GraphCoverageFitnessFunction is maximizing."""
+        fitness_fn = GraphCoverageFitnessFunction(simple_grammar, max_k=max_k)
+        assert fitness_fn.is_maximising() is True
+
+    @pytest.mark.parametrize("max_k", [1, 2, 3])
+    def test_type_checking_raises_on_individual(self, simple_grammar, max_k):
+        """Test that passing an Individual raises TypeError."""
+        fitness_fn = GraphCoverageFitnessFunction(simple_grammar, max_k=max_k)
+        tree = simple_grammar.fuzz("<start>", max_nodes=10)
+        individual = Individual(tree)
+
+        with pytest.raises(TypeError) as exc_info:
+            fitness_fn.fitness(individual)
+        assert "Suite" in str(exc_info.value)
+        assert "Individual" in str(exc_info.value)
+
+    @pytest.mark.parametrize("max_k", [1, 2, 3])
+    def test_empty_suite_returns_zero(self, simple_grammar, empty_suite, max_k):
+        """Test that empty suite returns 0.0 fitness."""
+        fitness_fn = GraphCoverageFitnessFunction(simple_grammar, max_k=max_k)
+        assert fitness_fn.fitness(empty_suite) == 0.0
+
+    @pytest.mark.parametrize("max_k", [1, 2, 3])
+    def test_monotonicity_adding_trees(self, simple_grammar, max_k):
+        """Test that adding trees never decreases coverage."""
+        fitness_fn = GraphCoverageFitnessFunction(simple_grammar, max_k=max_k)
+
+        individuals = []
+        previous_fitness = 0.0
+
+        for _ in range(10):
+            tree = simple_grammar.fuzz("<start>", max_nodes=15)
+            individuals.append(Individual(tree))
+            suite = Suite(individuals.copy())
+            current_fitness = fitness_fn.fitness(suite)
+            assert current_fitness >= previous_fitness
+            previous_fitness = current_fitness
+
+    @pytest.mark.parametrize("max_k", [1, 2, 3])
+    def test_clear_cache_method(self, simple_grammar, sample_suite, max_k):
+        """Test that clear_cache method works correctly."""
+        fitness_fn = GraphCoverageFitnessFunction(simple_grammar, max_k=max_k)
+
+        fitness_fn.fitness(sample_suite)
+        assert len(fitness_fn.cache) > 0
+
+        fitness_fn.clear_cache()
+        assert len(fitness_fn.cache) == 0
+
+    @pytest.mark.parametrize("max_k", [1, 2, 3])
+    def test_caching_same_suite(self, simple_grammar, sample_suite, max_k):
+        """Test that same suite returns identical result on second call."""
+        fitness_fn = GraphCoverageFitnessFunction(simple_grammar, max_k=max_k)
+
+        fitness1 = fitness_fn.fitness(sample_suite)
+        fitness2 = fitness_fn.fitness(sample_suite)
+
+        assert fitness1 == fitness2
+        assert hash(sample_suite) in fitness_fn.cache
+
+    def test_single_tree_partial_coverage(
+        self, simple_grammar, single_individual_suite
+    ):
+        """Test that a single tree gives positive coverage."""
+        fitness_fn = GraphCoverageFitnessFunction(simple_grammar, max_k=2)
+        fitness_value = fitness_fn.fitness(single_individual_suite)
+        assert 0.0 < fitness_value <= 1.0
+
+    def test_max_k_1_equals_k1_normalized(self, simple_grammar, sample_suite):
+        """When max_k=1, GraphCoverage equals KPathCoverage(k=1) since H_1=1."""
+        graph_fn = GraphCoverageFitnessFunction(simple_grammar, max_k=1)
+        k1_fn = KPathCoverageFitnessFunction(simple_grammar, k=1)
+
+        assert graph_fn.fitness(sample_suite) == pytest.approx(
+            k1_fn.fitness(sample_suite)
+        )
+
+    def test_full_coverage_achievable(self, simple_grammar):
+        """Test that fitness is in (0, 1] with 100 trees."""
+        fitness_fn = GraphCoverageFitnessFunction(simple_grammar, max_k=2)
+
+        trees = [simple_grammar.fuzz("<start>", max_nodes=20) for _ in range(100)]
+        suite = Suite([Individual(tree) for tree in trees])
+
+        fitness_value = fitness_fn.fitness(suite)
+        assert 0.0 < fitness_value <= 1.0
+
+    def test_different_suites_different_fitness(self, simple_grammar):
+        """Test that a larger suite has equal or better coverage than a smaller one."""
+        fitness_fn = GraphCoverageFitnessFunction(simple_grammar, max_k=2)
+
+        suite1 = Suite([Individual(simple_grammar.fuzz("<start>", max_nodes=5))])
+        suite2 = Suite(
+            [
+                Individual(simple_grammar.fuzz("<start>", max_nodes=20))
+                for _ in range(10)
+            ]
+        )
+
+        assert fitness_fn.fitness(suite2) >= fitness_fn.fitness(suite1)
+
+
 class TestSuiteFitnessInterface:
     """Test that both fitness functions comply with SuiteFitnessFunction interface."""
 
@@ -578,11 +698,13 @@ class TestImports:
         from fandango.evolution.fitness import (
             SymbolCoverageFitnessFunction,
             KPathCoverageFitnessFunction,
+            GraphCoverageFitnessFunction,
             PathCoverageFitnessFunction,
         )
 
         assert SymbolCoverageFitnessFunction is not None
         assert KPathCoverageFitnessFunction is not None
+        assert GraphCoverageFitnessFunction is not None
         assert PathCoverageFitnessFunction is not None
 
     def test_import_from_suite_submodule(self):
@@ -590,9 +712,11 @@ class TestImports:
         from fandango.evolution.fitness.suite import (
             SymbolCoverageFitnessFunction,
             KPathCoverageFitnessFunction,
+            GraphCoverageFitnessFunction,
             PathCoverageFitnessFunction,
         )
 
         assert SymbolCoverageFitnessFunction is not None
         assert KPathCoverageFitnessFunction is not None
+        assert GraphCoverageFitnessFunction is not None
         assert PathCoverageFitnessFunction is not None

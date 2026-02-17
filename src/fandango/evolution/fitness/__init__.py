@@ -8,6 +8,7 @@ from fandango.evolution.fitness.base import (
 from fandango.evolution.fitness.suite import (
     SymbolCoverageFitnessFunction,
     KPathCoverageFitnessFunction,
+    GraphCoverageFitnessFunction,
     PathCoverageFitnessFunction,
 )
 
@@ -17,5 +18,6 @@ __all__ = [
     "SuiteFitnessFunction",
     "SymbolCoverageFitnessFunction",
     "KPathCoverageFitnessFunction",
+    "GraphCoverageFitnessFunction",
     "PathCoverageFitnessFunction",
 ]
