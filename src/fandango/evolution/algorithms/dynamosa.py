@@ -21,8 +21,3 @@ class DynaMOSAAlgorithm(GenerationAlgorithm[Individual]):
     def generate(self, max_generations: Optional[int] = None) -> Suite:
         """Generates solutions for the grammar."""
         raise NotImplementedError("DynaMOSAAlgorithm is not yet implemented")
-
-    @property
-    def evaluation(self) -> Sequence[Any]:
-        """Returns the current fitness evaluations."""
-        raise NotImplementedError("DynaMOSAAlgorithm is not yet implemented")

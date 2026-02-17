@@ -63,13 +63,3 @@ class GenerationAlgorithm(ABC, Generic[T]):
             DerivationTree objects as solutions are discovered
         """
         pass
-
-    @property
-    @abstractmethod
-    def evaluation(self) -> Sequence[Any]:
-        """
-        Return current fitness evaluations.
-
-        Typically a sequence of tuples: (chromosome, fitness, ...).
-        """
-        pass

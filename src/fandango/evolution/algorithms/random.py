@@ -75,10 +75,6 @@ class RandomIndividualAlgorithm(GenerationAlgorithm[Individual]):
         #  population size for a fair comparison
         return Suite(solutions)
 
-    @property
-    def evaluation(self) -> Sequence[Any]:
-        return []
-
 
 class RandomSuiteAlgorithm(GenerationAlgorithm[Suite]):
     """
@@ -106,7 +102,3 @@ class RandomSuiteAlgorithm(GenerationAlgorithm[Suite]):
                 solution = candidate
             generation += 1
         return solution
-
-    @property
-    def evaluation(self) -> Sequence[Any]:
-        return []

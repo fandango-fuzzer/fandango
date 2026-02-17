@@ -20,7 +20,3 @@ class MIOAlgorithm(GenerationAlgorithm[Individual]):
 
     def generate(self, max_generations: Optional[int] = None) -> Suite:
         raise NotImplementedError("MIOAlgorithm is not yet implemented")
-
-    @property
-    def evaluation(self) -> Sequence[Any]:
-        raise NotImplementedError("MIOAlgorithm is not yet implemented")

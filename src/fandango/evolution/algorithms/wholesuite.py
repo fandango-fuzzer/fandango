@@ -151,7 +151,3 @@ class WholeSuiteAlgorithm(GenerationAlgorithm[Suite]):
             generation += 1
 
         return self._get_solution()
-
-    @property
-    def evaluation(self) -> Sequence[Any]:
-        return [(suite, self._fitness_fn.fitness(suite)) for suite in self._population]
