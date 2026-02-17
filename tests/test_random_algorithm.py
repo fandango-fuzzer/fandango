@@ -4,7 +4,9 @@ import pytest
 
 from fandango.evolution.algorithms.random import (
     RandomIndividualAlgorithm,
+    RandomSuiteAlgorithm,
 )
+from fandango.evolution.fitness.suite import GraphCoverageFitnessFunction
 from fandango.language.parse.parse import parse
 from tests.utils import RESOURCES_ROOT
 
@@ -22,6 +24,26 @@ def simple_grammar():
 def empty_constraints():
     """Empty constraint list for testing."""
     return []
+
+
+class TestRandomSuiteAlgorithm:
+    """Integration tests for RandomSuiteAlgorithm."""
+
+    def test_generate_improves_over_single_generation(
+        self, simple_grammar, empty_constraints
+    ):
+        """Running multiple generations yields a suite with fitness >= a one-generation baseline."""
+        fitness_fn = GraphCoverageFitnessFunction(simple_grammar)
+
+        single_gen = RandomSuiteAlgorithm(simple_grammar, empty_constraints)
+        baseline_suite = single_gen.generate(max_generations=1)
+        baseline_fitness = fitness_fn.fitness(baseline_suite)
+
+        multi_gen = RandomSuiteAlgorithm(simple_grammar, empty_constraints)
+        result_suite = multi_gen.generate(max_generations=20)
+        result_fitness = fitness_fn.fitness(result_suite)
+
+        assert result_fitness >= baseline_fitness
 
 
 class TestRandomIndividualAlgorithm:

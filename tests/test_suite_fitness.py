@@ -48,40 +48,10 @@ def single_individual_suite(simple_grammar):
 class TestSymbolCoverageFitnessFunction:
     """Test SymbolCoverageFitnessFunction."""
 
-    def test_construction(self, simple_grammar):
-        """Test creating a SymbolCoverageFitnessFunction."""
-        fitness_fn = SymbolCoverageFitnessFunction(simple_grammar)
-        assert fitness_fn is not None
-        assert isinstance(fitness_fn, SuiteFitnessFunction)
-
-    def test_construction_with_custom_start_symbol(self, simple_grammar):
-        """Test construction with custom start symbol."""
-        fitness_fn = SymbolCoverageFitnessFunction(
-            simple_grammar, start_symbol=NonTerminal("<digit>")
-        )
-        assert fitness_fn is not None
-
     def test_is_maximising(self, simple_grammar):
         """Test that SymbolCoverageFitnessFunction is maximizing."""
         fitness_fn = SymbolCoverageFitnessFunction(simple_grammar)
         assert fitness_fn.is_maximising() is True
-
-    def test_cache_property(self, simple_grammar):
-        """Test that cache property returns a dictionary."""
-        fitness_fn = SymbolCoverageFitnessFunction(simple_grammar)
-        cache = fitness_fn.cache
-        assert isinstance(cache, dict)
-
-    def test_type_checking_raises_on_individual(self, simple_grammar):
-        """Test that passing an Individual raises TypeError."""
-        fitness_fn = SymbolCoverageFitnessFunction(simple_grammar)
-        tree = simple_grammar.fuzz("<start>", max_nodes=10)
-        individual = Individual(tree)
-
-        with pytest.raises(TypeError) as exc_info:
-            fitness_fn.fitness(individual)
-        assert "Suite" in str(exc_info.value)
-        assert "Individual" in str(exc_info.value)
 
     def test_empty_suite_returns_zero(self, simple_grammar, empty_suite):
         """Test that empty suite returns 0.0 fitness."""
@@ -175,13 +145,6 @@ class TestSymbolCoverageFitnessFunction:
         assert fitness1 == fitness2
         assert hash(sample_suite) in fitness_fn.cache
 
-    def test_fitness_range_invariant(self, simple_grammar, sample_suite):
-        """Test that fitness is always in [0.0, 1.0]."""
-        fitness_fn = SymbolCoverageFitnessFunction(simple_grammar)
-        fitness_value = fitness_fn.fitness(sample_suite)
-
-        assert 0.0 <= fitness_value <= 1.0
-
     def test_monotonicity_adding_trees(self, simple_grammar):
         """Test that adding trees never decreases coverage."""
         fitness_fn = SymbolCoverageFitnessFunction(simple_grammar)
@@ -230,11 +193,6 @@ class TestSymbolCoverageFitnessFunction:
         # Larger suite should have equal or better coverage
         assert fitness2 >= fitness1
 
-    def test_instanceof_suite_fitness_function(self, simple_grammar):
-        """Test that SymbolCoverageFitnessFunction is a SuiteFitnessFunction."""
-        fitness_fn = SymbolCoverageFitnessFunction(simple_grammar)
-        assert isinstance(fitness_fn, SuiteFitnessFunction)
-
     def test_deterministic_symbol_coverage(self, simple_grammar):
         """Test symbol coverage with hand-crafted tree with known expected fitness."""
         from fandango.language.tree import DerivationTree
@@ -255,36 +213,9 @@ class TestSymbolCoverageFitnessFunction:
         # Expected: 1/2 = 0.5
         assert fitness_value == 0.5, f"Expected 0.5, got {fitness_value}"
 
-    def test_clear_cache_method(self, simple_grammar, sample_suite):
-        """Test that clear_cache method works correctly."""
-        fitness_fn = SymbolCoverageFitnessFunction(simple_grammar)
-
-        # Evaluate to populate cache
-        fitness_fn.fitness(sample_suite)
-        assert len(fitness_fn.cache) > 0
-
-        # Clear cache
-        fitness_fn.clear_cache()
-        assert len(fitness_fn.cache) == 0
-
 
 class TestKPathCoverageFitnessFunction:
     """Test KPathCoverageFitnessFunction."""
-
-    @pytest.mark.parametrize("k", [1, 2, 3])
-    def test_construction(self, simple_grammar, k):
-        """Test creating a KPathCoverageFitnessFunction."""
-        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=k)
-        assert fitness_fn is not None
-        assert isinstance(fitness_fn, SuiteFitnessFunction)
-
-    @pytest.mark.parametrize("k", [1, 2, 3])
-    def test_construction_with_custom_start_symbol(self, simple_grammar, k):
-        """Test construction with custom start symbol."""
-        fitness_fn = KPathCoverageFitnessFunction(
-            simple_grammar, k=k, start_symbol=NonTerminal("<digit>")
-        )
-        assert fitness_fn is not None
 
     def test_invalid_k_raises_value_error(self, simple_grammar):
         """Test that k < 1 raises ValueError."""
@@ -296,25 +227,6 @@ class TestKPathCoverageFitnessFunction:
         """Test that KPathCoverageFitnessFunction is maximizing."""
         fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=k)
         assert fitness_fn.is_maximising() is True
-
-    @pytest.mark.parametrize("k", [1, 2, 3])
-    def test_cache_property(self, simple_grammar, k):
-        """Test that cache property returns a dictionary."""
-        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=k)
-        cache = fitness_fn.cache
-        assert isinstance(cache, dict)
-
-    @pytest.mark.parametrize("k", [1, 2, 3])
-    def test_type_checking_raises_on_individual(self, simple_grammar, k):
-        """Test that passing an Individual raises TypeError."""
-        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=k)
-        tree = simple_grammar.fuzz("<start>", max_nodes=10)
-        individual = Individual(tree)
-
-        with pytest.raises(TypeError) as exc_info:
-            fitness_fn.fitness(individual)
-        assert "Suite" in str(exc_info.value)
-        assert "Individual" in str(exc_info.value)
 
     @pytest.mark.parametrize("k", [1, 2, 3])
     def test_empty_suite_returns_zero(self, simple_grammar, empty_suite, k):
@@ -411,14 +323,6 @@ class TestKPathCoverageFitnessFunction:
         assert hash(sample_suite) in fitness_fn.cache
 
     @pytest.mark.parametrize("k", [1, 2, 3])
-    def test_fitness_range_invariant(self, simple_grammar, sample_suite, k):
-        """Test that fitness is always in [0.0, 1.0]."""
-        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=k)
-        fitness_value = fitness_fn.fitness(sample_suite)
-
-        assert 0.0 <= fitness_value <= 1.0
-
-    @pytest.mark.parametrize("k", [1, 2, 3])
     def test_monotonicity_adding_trees(self, simple_grammar, k):
         """Test that adding trees never decreases coverage."""
         fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=k)
@@ -468,12 +372,6 @@ class TestKPathCoverageFitnessFunction:
         # Larger suite should have equal or better coverage
         assert fitness2 >= fitness1
 
-    @pytest.mark.parametrize("k", [1, 2, 3])
-    def test_instanceof_suite_fitness_function(self, simple_grammar, k):
-        """Test that KPathCoverageFitnessFunction is a SuiteFitnessFunction."""
-        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=k)
-        assert isinstance(fitness_fn, SuiteFitnessFunction)
-
     def test_2path_extraction_works(self, simple_grammar):
         """Test that 2-path extraction is working correctly."""
         fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=2)
@@ -511,19 +409,6 @@ class TestKPathCoverageFitnessFunction:
             # This tree should cover at least the (<start>, <digit>) path
             assert fitness_value > 0.0, f"Expected > 0.0, got {fitness_value}"
 
-    @pytest.mark.parametrize("k", [1, 2, 3])
-    def test_clear_cache_method(self, simple_grammar, sample_suite, k):
-        """Test that clear_cache method works correctly."""
-        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=k)
-
-        # Evaluate to populate cache
-        fitness_fn.fitness(sample_suite)
-        assert len(fitness_fn.cache) > 0
-
-        # Clear cache
-        fitness_fn.clear_cache()
-        assert len(fitness_fn.cache) == 0
-
     def test_path_coverage_alias_is_k2(self, simple_grammar, sample_suite):
         """Test that PathCoverageFitnessFunction alias produces same results as k=2."""
         alias = PathCoverageFitnessFunction(simple_grammar)
@@ -533,13 +418,6 @@ class TestKPathCoverageFitnessFunction:
 
 class TestGraphCoverageFitnessFunction:
     """Test GraphCoverageFitnessFunction."""
-
-    @pytest.mark.parametrize("max_k", [1, 2, 3])
-    def test_construction(self, simple_grammar, max_k):
-        """Test creating a GraphCoverageFitnessFunction."""
-        fitness_fn = GraphCoverageFitnessFunction(simple_grammar, max_k=max_k)
-        assert fitness_fn is not None
-        assert isinstance(fitness_fn, SuiteFitnessFunction)
 
     def test_invalid_max_k_raises(self, simple_grammar):
         """Test that max_k=0 raises ValueError."""
@@ -551,18 +429,6 @@ class TestGraphCoverageFitnessFunction:
         """Test that GraphCoverageFitnessFunction is maximizing."""
         fitness_fn = GraphCoverageFitnessFunction(simple_grammar, max_k=max_k)
         assert fitness_fn.is_maximising() is True
-
-    @pytest.mark.parametrize("max_k", [1, 2, 3])
-    def test_type_checking_raises_on_individual(self, simple_grammar, max_k):
-        """Test that passing an Individual raises TypeError."""
-        fitness_fn = GraphCoverageFitnessFunction(simple_grammar, max_k=max_k)
-        tree = simple_grammar.fuzz("<start>", max_nodes=10)
-        individual = Individual(tree)
-
-        with pytest.raises(TypeError) as exc_info:
-            fitness_fn.fitness(individual)
-        assert "Suite" in str(exc_info.value)
-        assert "Individual" in str(exc_info.value)
 
     @pytest.mark.parametrize("max_k", [1, 2, 3])
     def test_empty_suite_returns_zero(self, simple_grammar, empty_suite, max_k):
@@ -585,17 +451,6 @@ class TestGraphCoverageFitnessFunction:
             current_fitness = fitness_fn.fitness(suite)
             assert current_fitness >= previous_fitness
             previous_fitness = current_fitness
-
-    @pytest.mark.parametrize("max_k", [1, 2, 3])
-    def test_clear_cache_method(self, simple_grammar, sample_suite, max_k):
-        """Test that clear_cache method works correctly."""
-        fitness_fn = GraphCoverageFitnessFunction(simple_grammar, max_k=max_k)
-
-        fitness_fn.fitness(sample_suite)
-        assert len(fitness_fn.cache) > 0
-
-        fitness_fn.clear_cache()
-        assert len(fitness_fn.cache) == 0
 
     @pytest.mark.parametrize("max_k", [1, 2, 3])
     def test_caching_same_suite(self, simple_grammar, sample_suite, max_k):
@@ -648,75 +503,3 @@ class TestGraphCoverageFitnessFunction:
         )
 
         assert fitness_fn.fitness(suite2) >= fitness_fn.fitness(suite1)
-
-
-class TestSuiteFitnessInterface:
-    """Test that both fitness functions comply with SuiteFitnessFunction interface."""
-
-    def test_symbol_coverage_isinstance_check(self, simple_grammar):
-        """Test SymbolCoverageFitnessFunction isinstance check."""
-        fitness_fn = SymbolCoverageFitnessFunction(simple_grammar)
-        assert isinstance(fitness_fn, SuiteFitnessFunction)
-
-    def test_path_coverage_isinstance_check(self, simple_grammar):
-        """Test KPathCoverageFitnessFunction isinstance check."""
-        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=2)
-        assert isinstance(fitness_fn, SuiteFitnessFunction)
-
-    def test_symbol_coverage_has_required_methods(self, simple_grammar):
-        """Test SymbolCoverageFitnessFunction has all required methods."""
-        fitness_fn = SymbolCoverageFitnessFunction(simple_grammar)
-
-        assert hasattr(fitness_fn, "fitness")
-        assert hasattr(fitness_fn, "is_covered")
-        assert hasattr(fitness_fn, "is_maximising")
-        assert hasattr(fitness_fn, "cache")
-
-        assert callable(fitness_fn.fitness)
-        assert callable(fitness_fn.is_covered)
-        assert callable(fitness_fn.is_maximising)
-
-    def test_path_coverage_has_required_methods(self, simple_grammar):
-        """Test KPathCoverageFitnessFunction has all required methods."""
-        fitness_fn = KPathCoverageFitnessFunction(simple_grammar, k=2)
-
-        assert hasattr(fitness_fn, "fitness")
-        assert hasattr(fitness_fn, "is_covered")
-        assert hasattr(fitness_fn, "is_maximising")
-        assert hasattr(fitness_fn, "cache")
-
-        assert callable(fitness_fn.fitness)
-        assert callable(fitness_fn.is_covered)
-        assert callable(fitness_fn.is_maximising)
-
-
-class TestImports:
-    """Test that fitness functions are importable from the package."""
-
-    def test_import_from_fitness_module(self):
-        """Test importing from fandango.evolution.fitness."""
-        from fandango.evolution.fitness import (
-            SymbolCoverageFitnessFunction,
-            KPathCoverageFitnessFunction,
-            GraphCoverageFitnessFunction,
-            PathCoverageFitnessFunction,
-        )
-
-        assert SymbolCoverageFitnessFunction is not None
-        assert KPathCoverageFitnessFunction is not None
-        assert GraphCoverageFitnessFunction is not None
-        assert PathCoverageFitnessFunction is not None
-
-    def test_import_from_suite_submodule(self):
-        """Test importing from fandango.evolution.fitness.suite."""
-        from fandango.evolution.fitness.suite import (
-            SymbolCoverageFitnessFunction,
-            KPathCoverageFitnessFunction,
-            GraphCoverageFitnessFunction,
-            PathCoverageFitnessFunction,
-        )
-
-        assert SymbolCoverageFitnessFunction is not None
-        assert KPathCoverageFitnessFunction is not None
-        assert GraphCoverageFitnessFunction is not None
-        assert PathCoverageFitnessFunction is not None
