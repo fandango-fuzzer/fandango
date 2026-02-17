@@ -2,7 +2,7 @@
 
 from beartype.typing import Optional, Any, Sequence, List
 from fandango.evolution.algorithms.base import GenerationAlgorithm
-from fandango.evolution.chromosomes import Individual
+from fandango.evolution.chromosomes import Individual, Chromosome
 from fandango.evolution.chromosomes.suite import Suite
 from fandango.language import Grammar
 from fandango.language.tree import DerivationTree
@@ -48,6 +48,7 @@ class RandomIndividualAlgorithm(GenerationAlgorithm[Individual]):
         self._initial_population: List[Individual] = _to_individuals(
             self.grammar, kwargs.pop("initial_population", None)
         )
+        self.archive.update(self._initial_population)
 
     def generate_initial_population(self) -> Suite:
         while len(self._population) < self.population_size:
@@ -57,17 +58,19 @@ class RandomIndividualAlgorithm(GenerationAlgorithm[Individual]):
         return Suite(self._population)
 
     def generate(self, max_generations: Optional[int] = None) -> Suite:
-        generation = 0
+        tree = self.grammar.fuzz("<start>")
+        solution = Individual(tree)
+        self.archive.update([solution])
+        generation = 1
         while max_generations is None or generation < max_generations:
             tree = self.grammar.fuzz("<start>")
             individual = Individual(tree)
-            self._population.append(individual)
+            self.archive.update([individual])
             generation += 1
-        return Suite(self._population)
-
-    @property
-    def population(self) -> Sequence[Individual]:
-        return self._population
+        solutions: List[Individual] = [
+            s for s in self.archive.solutions if isinstance(s, Individual)
+        ]
+        return Suite(solutions)
 
     @property
     def evaluation(self) -> Sequence[Any]:
@@ -106,11 +109,7 @@ class RandomSuiteAlgorithm(GenerationAlgorithm[Suite]):
             suite = Suite([individual])
             self._population.append(suite)
             generation += 1
-        return self._population[0]
-
-    @property
-    def population(self) -> Sequence[Suite]:
-        return self._population
+        return self._population[-1]
 
     @property
     def evaluation(self) -> Sequence[Any]:

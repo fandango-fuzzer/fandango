@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 from beartype.typing import Iterator, List
+
+from fandango.evolution.chromosomes import Individual
 from fandango.evolution.chromosomes.base import Chromosome
-from fandango.evolution.chromosomes.individual import Individual
 from fandango.language.tree import DerivationTree
 
 
@@ -19,7 +22,7 @@ class Suite(Chromosome):
         """Total size of all individuals in the suite."""
         return sum(ind.size() for ind in self._individuals)
 
-    def clone(self) -> "Suite":
+    def clone(self) -> Suite:
         """Return a deep copy of this suite."""
         return Suite([ind.clone() for ind in self._individuals])
 

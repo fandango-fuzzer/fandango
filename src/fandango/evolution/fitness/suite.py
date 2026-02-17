@@ -124,8 +124,12 @@ class SymbolCoverageFitnessFunction(SuiteFitnessFunction):
 
         # Collect covered symbols from all trees in the suite
         covered_symbols: set[NonTerminal] = set()
-        for individual in chromosome:
-            tree = individual.tree
+        trees = [
+            tree
+            for individual in chromosome
+            for tree in individual.to_derivation_trees()
+        ]
+        for tree in trees:
             tree_symbols = tree.get_non_terminal_symbols(exclude_read_only=False)
 
             # Only count symbols that exist in the grammar
@@ -268,8 +272,12 @@ class KPathCoverageFitnessFunction(SuiteFitnessFunction):
 
         # Collect covered paths from all trees in the suite
         covered_paths = set()
-        for individual in chromosome:
-            tree = individual.tree
+        trees = [
+            tree
+            for individual in chromosome
+            for tree in individual.to_derivation_trees()
+        ]
+        for tree in trees:
             tree_paths = self._grammar._extract_k_paths_from_tree(tree, k=self._k)
             # Only count paths that exist in the grammar
             covered_paths.update(tree_paths.intersection(self._all_paths))

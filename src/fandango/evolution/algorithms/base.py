@@ -2,6 +2,7 @@
 
 from abc import ABC, abstractmethod
 
+from fandango.evolution.algorithms import CoverageArchive, Archive
 from beartype.typing import Optional, Generic, TypeVar, Any, Sequence
 
 from fandango.evolution.chromosomes import Suite
@@ -32,6 +33,7 @@ class GenerationAlgorithm(ABC, Generic[T]):
         self.grammar = grammar
         self.constraints = constraints
         self.population_size = population_size
+        self.archive: Archive = CoverageArchive(grammar)
 
     @abstractmethod
     def generate_initial_population(self) -> Suite:
@@ -57,12 +59,6 @@ class GenerationAlgorithm(ABC, Generic[T]):
         Yields:
             DerivationTree objects as solutions are discovered
         """
-        pass
-
-    @property
-    @abstractmethod
-    def population(self) -> Sequence[T]:
-        """Return current population of chromosomes."""
         pass
 
     @property
