@@ -18,9 +18,6 @@ class MIOAlgorithm(GenerationAlgorithm[Individual]):
     TODO(lk): Implement MIO.
     """
 
-    def generate_initial_population(self) -> Suite:
-        raise NotImplementedError("MIOAlgorithm is not yet implemented")
-
     def generate(self, max_generations: Optional[int] = None) -> Suite:
         raise NotImplementedError("MIOAlgorithm is not yet implemented")
 

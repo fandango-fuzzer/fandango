@@ -27,11 +27,21 @@ def _to_individuals(
     return individuals
 
 
-def _to_suites(
+def _to_suite(
     grammar: Grammar, population: Sequence[str | DerivationTree] | None
-) -> List[Suite]:
+) -> Suite:
     individuals: List[Individual] = _to_individuals(grammar, population)
-    return [Suite(individuals)]
+    return Suite(individuals)
+
+
+def _generate_individual(grammar: Grammar) -> Individual:
+    tree = grammar.fuzz("<start>")
+    return Individual(tree)
+
+
+def _generate_suite(grammar: Grammar, size: int = 10) -> Suite:
+    individuals: List[Individual] = [_generate_individual(grammar) for _ in range(size)]
+    return Suite(individuals)
 
 
 class RandomIndividualAlgorithm(GenerationAlgorithm[Individual]):
@@ -44,28 +54,18 @@ class RandomIndividualAlgorithm(GenerationAlgorithm[Individual]):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self._population: List[Individual] = []
         self._initial_population: List[Individual] = _to_individuals(
             self.grammar, kwargs.pop("initial_population", None)
         )
         self.archive.update(self._initial_population)
 
-    def generate_initial_population(self) -> Suite:
-        while len(self._population) < self.population_size:
-            tree = self.grammar.fuzz("<start>")
-            individual = Individual(tree)
-            self._population.append(individual)
-        return Suite(self._population)
-
     def generate(self, max_generations: Optional[int] = None) -> Suite:
-        tree = self.grammar.fuzz("<start>")
-        solution = Individual(tree)
-        self.archive.update([solution])
+        candidate = _generate_individual(self.grammar)
+        self.archive.update([candidate])
         generation = 1
         while max_generations is None or generation < max_generations:
-            tree = self.grammar.fuzz("<start>")
-            individual = Individual(tree)
-            self.archive.update([individual])
+            candidate = _generate_individual(self.grammar)
+            self.archive.update([candidate])
             generation += 1
         solutions: List[Individual] = [
             s for s in self.archive.solutions if isinstance(s, Individual)
@@ -87,29 +87,23 @@ class RandomSuiteAlgorithm(GenerationAlgorithm[Suite]):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self._population: List[Suite] = []
-        self._initial_population: List[Suite] = _to_suites(
-            self.grammar, kwargs.pop("initial_population", None)
-        )
-
-    def generate_initial_population(self) -> Suite:
-        while len(self._population) < self.population_size:
-            tree = self.grammar.fuzz("<start>")
-            individual = Individual(tree)
-            suite = Suite([individual])
-            self._population.append(suite)
-        return self._population[0]
+        self._initial_population: List[Suite] = [
+            _to_suite(self.grammar, kwargs.pop("initial_population", None))
+        ]
+        self.archive.update(self._initial_population)
 
     def generate(self, max_generations: Optional[int] = None) -> Suite:
-        self.generate_initial_population()
+        solution = _generate_suite(self.grammar)
+        self.archive.update(solution)
         generation = 1
         while max_generations is None or generation < max_generations:
-            tree = self.grammar.fuzz("<start>")
-            individual = Individual(tree)
-            suite = Suite([individual])
-            self._population.append(suite)
+            candidate = _generate_suite(self.grammar)
+            self.archive.update(candidate)
             generation += 1
-        return self._population[-1]
+        solutions: List[Individual] = [
+            s for s in self.archive.solutions if isinstance(s, Individual)
+        ]
+        return Suite(solutions)
 
     @property
     def evaluation(self) -> Sequence[Any]:

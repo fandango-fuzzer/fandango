@@ -17,9 +17,6 @@ class WholeSuiteAlgorithm(GenerationAlgorithm[Suite]):
     TODO(lk): Implement WholeSuiteAlgorithm.
     """
 
-    def generate_initial_population(self) -> Suite:
-        raise NotImplementedError("WholeSuiteAlgorithm is not yet implemented")
-
     def generate(self, max_generations: Optional[int] = None) -> Suite:
         raise NotImplementedError("WholeSuiteAlgorithm is not yet implemented")
 

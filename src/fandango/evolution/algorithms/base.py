@@ -26,7 +26,7 @@ class GenerationAlgorithm(ABC, Generic[T]):
         self,
         grammar: Grammar,
         constraints: Sequence[Constraint | SoftValue],
-        population_size: int = 100,
+        population_size: int = 10,
         initial_population: Optional[Sequence[DerivationTree | str]] = None,
         **kwargs: Any,  # Algorithm-specific parameters
     ) -> None:
@@ -34,16 +34,6 @@ class GenerationAlgorithm(ABC, Generic[T]):
         self.constraints = constraints
         self.population_size = population_size
         self.archive: Archive = CoverageArchive(grammar)
-
-    @abstractmethod
-    def generate_initial_population(self) -> Suite:
-        """
-        Generate the initial population up to population_size.
-
-        Yields:
-            DerivationTree objects as solutions are discovered during initialization
-        """
-        pass
 
     @abstractmethod
     def generate(

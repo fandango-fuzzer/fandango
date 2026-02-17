@@ -18,10 +18,6 @@ class DynaMOSAAlgorithm(GenerationAlgorithm[Individual]):
     TODO(lk): Implement DynaMOSA.
     """
 
-    def generate_initial_population(self) -> Suite:
-        """Generates the initial population."""
-        raise NotImplementedError("DynaMOSAAlgorithm is not yet implemented")
-
     def generate(self, max_generations: Optional[int] = None) -> Suite:
         """Generates solutions for the grammar."""
         raise NotImplementedError("DynaMOSAAlgorithm is not yet implemented")
