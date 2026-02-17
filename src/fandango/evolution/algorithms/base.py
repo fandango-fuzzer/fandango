@@ -2,7 +2,9 @@
 
 from abc import ABC, abstractmethod
 
-from beartype.typing import Generator, Optional, Generic, TypeVar, Any, Sequence
+from beartype.typing import Optional, Generic, TypeVar, Any, Sequence
+
+from fandango.evolution.chromosomes import Suite
 from fandango.evolution.chromosomes.base import Chromosome
 from fandango.language.tree import DerivationTree
 from fandango.language.grammar.grammar import Grammar
@@ -32,7 +34,7 @@ class GenerationAlgorithm(ABC, Generic[T]):
         self.population_size = population_size
 
     @abstractmethod
-    def generate_initial_population(self) -> Generator[DerivationTree, None, None]:
+    def generate_initial_population(self) -> Suite:
         """
         Generate the initial population up to population_size.
 
@@ -45,7 +47,7 @@ class GenerationAlgorithm(ABC, Generic[T]):
     def generate(
         self,
         max_generations: Optional[int] = None,
-    ) -> Generator[DerivationTree, None, None]:
+    ) -> Suite:
         """
         Main evolution loop.
 

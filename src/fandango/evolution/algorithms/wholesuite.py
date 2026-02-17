@@ -3,7 +3,6 @@
 from beartype.typing import Generator, Optional, Any, Sequence
 from fandango.evolution.algorithms.base import GenerationAlgorithm
 from fandango.evolution.chromosomes.suite import Suite
-from fandango.language.tree import DerivationTree
 
 
 class WholeSuiteAlgorithm(GenerationAlgorithm[Suite]):
@@ -18,15 +17,11 @@ class WholeSuiteAlgorithm(GenerationAlgorithm[Suite]):
     TODO(lk): Implement WholeSuiteAlgorithm.
     """
 
-    def generate_initial_population(self) -> Generator[DerivationTree, None, None]:
+    def generate_initial_population(self) -> Suite:
         raise NotImplementedError("WholeSuiteAlgorithm is not yet implemented")
-        yield  # Make this a generator function
 
-    def generate(
-        self, max_generations: Optional[int] = None
-    ) -> Generator[DerivationTree, None, None]:
+    def generate(self, max_generations: Optional[int] = None) -> Suite:
         raise NotImplementedError("WholeSuiteAlgorithm is not yet implemented")
-        yield  # Make this a generator function
 
     @property
     def population(self) -> Sequence[Suite]:

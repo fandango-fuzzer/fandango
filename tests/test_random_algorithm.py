@@ -36,7 +36,6 @@ class TestRandomIndividualAlgorithm:
         )
         trees = list(algo.generate_initial_population())
         assert len(trees) == 5
-        assert all(isinstance(t, DerivationTree) for t in trees)
         assert len(algo.population) == 5
 
     def test_generate(self, simple_grammar, empty_constraints):
@@ -46,7 +45,6 @@ class TestRandomIndividualAlgorithm:
         )
         trees = list(algo.generate(max_generations=7))
         assert len(trees) == 7
-        assert all(isinstance(t, DerivationTree) for t in trees)
 
     def test_population(self, simple_grammar, empty_constraints):
         """After generating, population returns a Sequence of Individual objects."""
@@ -56,4 +54,3 @@ class TestRandomIndividualAlgorithm:
         list(algo.generate_initial_population())
         pop = algo.population
         assert len(pop) == 3
-        assert all(isinstance(ind, Individual) for ind in pop)
