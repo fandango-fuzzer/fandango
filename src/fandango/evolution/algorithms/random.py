@@ -48,7 +48,6 @@ class RandomIndividualAlgorithm(GenerationAlgorithm[Individual]):
         self._initial_population: List[Individual] = _to_individuals(
             self.grammar, kwargs.pop("initial_population", None)
         )
-        self.generate_initial_population()
 
     def generate_initial_population(self) -> Generator[DerivationTree, None, None]:
         while len(self._population) < self.population_size:
@@ -91,7 +90,6 @@ class RandomSuiteAlgorithm(GenerationAlgorithm[Suite]):
         self._initial_population: List[Suite] = _to_suites(
             self.grammar, kwargs.pop("initial_population", None)
         )
-        self.generate_initial_population()
 
     def generate_initial_population(self) -> Generator[DerivationTree, None, None]:
         while len(self._population) < self.population_size:
@@ -104,7 +102,8 @@ class RandomSuiteAlgorithm(GenerationAlgorithm[Suite]):
     def generate(
         self, max_generations: Optional[int] = None
     ) -> Generator[DerivationTree, None, None]:
-        generation = 0
+        self.generate_initial_population()
+        generation = 1
         while max_generations is None or generation < max_generations:
             tree = self.grammar.fuzz("<start>")
             individual = Individual(tree)

@@ -25,15 +25,11 @@ class GenerationAlgorithm(ABC, Generic[T]):
         constraints: Sequence[Constraint | SoftValue],
         population_size: int = 100,
         initial_population: Optional[Sequence[DerivationTree | str]] = None,
-        expected_fitness: float = 1.0,
-        random_seed: Optional[int] = None,
         **kwargs: Any,  # Algorithm-specific parameters
     ) -> None:
         self.grammar = grammar
         self.constraints = constraints
         self.population_size = population_size
-        self.expected_fitness = expected_fitness
-        self.random_seed = random_seed
 
     @abstractmethod
     def generate_initial_population(self) -> Generator[DerivationTree, None, None]:
