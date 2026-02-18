@@ -186,6 +186,13 @@ def _get_algorithm_parser() -> argparse.ArgumentParser:
         default=False,
     )
     algorithm_group.add_argument(
+        "--infinite-timeout",
+        type=int,
+        metavar="SECONDS",
+        help="Stop the infinite campaign if no new solution is found for SECONDS seconds.",
+        default=0,
+    )
+    algorithm_group.add_argument(
         "--population-size", type=int, help="Size of the population.", default=None
     )
     algorithm_group.add_argument(

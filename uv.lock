@@ -710,6 +710,7 @@ book = [
     { name = "types-setuptools" },
 ]
 development = [
+    { name = "aiosmtpd" },
     { name = "black" },
     { name = "docutils" },
     { name = "faker" },
@@ -731,6 +732,7 @@ development = [
     { name = "types-setuptools" },
 ]
 test = [
+    { name = "aiosmtpd" },
     { name = "docutils" },
     { name = "faker" },
     { name = "pytest" },
@@ -747,7 +749,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aiosmtpd", marker = "extra == 'book'", specifier = ">=1.4.6" },
+    { name = "aiosmtpd", marker = "extra == 'test'", specifier = ">=1.4.6" },
     { name = "ansi-styles", specifier = ">=0.2.2" },
     { name = "antlr4-python3-runtime", specifier = ">=4.13" },
     { name = "astar", specifier = ">=0.99" },
