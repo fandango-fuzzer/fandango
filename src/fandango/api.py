@@ -7,7 +7,7 @@ from typing import IO, Any, Optional, cast
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
 from fandango.evolution.algorithms import GenerationAlgorithm
-from fandango.evolution.chromosomes import Suite
+from fandango.evolution.chromosomes import Suite, Individual
 from fandango.language.grammar import FuzzingMode, ParsingMode
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.parse.parse import parse
@@ -203,7 +203,11 @@ class Fandango(FandangoBase):
             start_symbol=start_symbol,
             includes=includes,
         )
-        self.fandango: Optional[GenerationAlgorithm[Suite] | FandangoStrategy] = None
+        self.fandango: Optional[
+            FandangoStrategy
+            | GenerationAlgorithm[Individual]
+            | GenerationAlgorithm[Suite]
+        ] = None
 
     @classmethod
     def _with_parsed(
@@ -273,6 +277,10 @@ class Fandango(FandangoBase):
             from fandango.evolution.algorithms.wholesuite import WholeSuiteAlgorithm
 
             self.fandango = WholeSuiteAlgorithm(self.grammar, constraints, **settings)
+        elif algorithm == "dynamosa":
+            from fandango.evolution.algorithms.dynamosa import DynaMOSAAlgorithm
+
+            self.fandango = DynaMOSAAlgorithm(self.grammar, constraints, **settings)
         else:
             self.fandango = FandangoStrategy(
                 self.grammar, constraints, start_symbol=start_symbol, **settings

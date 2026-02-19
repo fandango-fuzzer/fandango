@@ -272,13 +272,14 @@ def _get_algorithm_parser() -> argparse.ArgumentParser:
     )
     algorithm_group.add_argument(
         "--algorithm",
-        choices=["genetic", "random-suite", "whole-suite"],
+        choices=["genetic", "random-suite", "whole-suite", "dynamosa"],
         default=None,
         help=(
             "Search algorithm to use. "
             "'genetic' (default) uses the evolutionary algorithm with selection, crossover, and mutation. "
             "'random-suite' uses random suite generation optimized for grammar coverage. "
-            "'whole-suite' uses the Whole Suite algorithm for grammar coverage."
+            "'whole-suite' uses the Whole Suite algorithm for grammar coverage. "
+            "'dynamosa' uses the Dynamic Many-Objective Sorting Algorithm for k-path coverage."
         ),
     )
 
