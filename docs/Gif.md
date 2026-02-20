@@ -11,20 +11,39 @@ kernelspec:
 ---
 
 (sec:gif)=
-# Case Study: The GIF Format
-
-```{admonition} Under Construction
-:class: attention
-To be added later.
-```
+# Case Study: A GIF Spec
 
 The [GIF format](https://www.fileformat.info/format/gif/egff.htm) is widely used to encode image sequences.
 
-We start with a very short GIF to keep things simple ([source](http://probablyprogramming.com/2009/03/15/the-tiniest-gif-ever)): [tinytrans.gif](tinytrans.gif).
+As with the [PNG format](sec:png), we asked ChatGPT for help.
+Our prompt was the same as the [PNG prompt](prompt.txt), except that we also asked to "make the resulting file as simple as possible".
 
-We can parse this file using Fandango:
+The resulting GIF file [gif.fan](gif.fan) is reproduced verbatim below.
+It can be directly used in Fandango:
+
+```shell
+$ fandango fuzz -f gif.fan -n 1 --population-size=1 -o 1x1.gif 
+```
+
+produces a [1x1 pixel GIF file](1x1.gif) (which is probably invisible):
+
+```{image} 1x1.gif
+:alt: Generated GIF file
+:class: bg-primary mb-1
+:width: 100px
+:align: center
+```
+
+Here is the generated `gif.fan` constructor.
+Note that due to the structure of the file, it can only be used for producing, but not parsing or mutating.
+For this, one would have to change it as follows:
+
+* Many of the `<byte>*` fields could actually be turned into fixed-length values (e.g., `<byte>4`)
+* Many of the generator functions `<elem> ::= <byte>* := f()` could be turned into constraints `where <elem> == f()`.
+* Length encodings and checksums should be expressed as constraints, expressing lengths and checksums of the payloads
+* There are many more fields and alternatives in GIF
 
 ```{code-cell}
-!fandango parse -f gif89a.fan tinytrans.gif -o - --format=grammar --validate
-assert _exit_code == 0
+:tags: ["remove-input"]
+!cat gif.fan
 ```
