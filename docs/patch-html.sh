@@ -70,3 +70,8 @@ patch -c -N $file <<EOF
 
 EOF
 done
+
+# Cleanup
+echo 'Cleaning up...\c' 1>&2
+(cd _build/html && rm -f *.rej *.orig)
+echo 'done.' 1>&2
