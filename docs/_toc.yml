@@ -27,6 +27,7 @@ parts:
     - file: Outputs
     - file: Binary
     - file: Bits
+    - file: Png
     - file: Gif
     - file: Conversion
     # - file: Distributions

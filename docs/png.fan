@@ -208,14 +208,11 @@ where <ihdr_crc> == crc(b'IHDR', bytes(<ihdr_body>))
     <interlace>)
 
 <width> ::= <uint32>
-where 1 <= to_u32(<width>) <= 32
-
 <height> ::= <uint32>
-where 1 <= to_u32(<height>) <= 32
 
 # We fix width and height to 1 to avoid generating huge IDAT data.
-where <width> == from_u32(1)
-where <height> == from_u32(1)
+where <width> == from_u32(10)
+where <height> == from_u32(10)
 
 <bitdepth> ::= b'\x08' | b'\x10'
 
@@ -247,8 +244,8 @@ where <plte_crc> == crc(b'PLTE', bytes(<plte_data>))
 <idat> ::= <generated_idat>
 
 <generated_idat> ::= <len_idat> b'IDAT' <idat_data> <idat_crc> := generate_idat(
-        1, # to_u32(<width>),
-        1, # to_u32(<height>),
+        10, # to_u32(<width>),
+        10, # to_u32(<height>),
         1, # <bitdepth>[0],
         0, # <colortype>[0]
     )
@@ -281,7 +278,7 @@ where <iend_crc> == crc(b'IEND', b'')
 <start> ::= (
     <signature>
     <ihdr>
-    # <plte>?
+    <plte>?
     <idat>
     <iend>
 )

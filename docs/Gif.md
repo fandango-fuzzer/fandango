@@ -11,7 +11,7 @@ kernelspec:
 ---
 
 (sec:gif)=
-# Case Study: The GIF Format
+# Case Study: GIF
 
 ```{admonition} Under Construction
 :class: attention
