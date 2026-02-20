@@ -15,13 +15,14 @@ kernelspec:
 
 This document lists major changes across releases.
 
-```{versionadded} 1.1 (January 2026)
+```{versionadded} 1.1 (February 2026)
 * Much enhanced [protocol fuzzing](sec:protocols):
    * Protocol fuzzing is now out of beta.
    * `fandango talk` now keeps on producing diverse interactions, systematically covering states and messages until stopped or 100% coverage is reached.
    * Detailed documentation with [FTP](sec:ftp) and [DNS](sec:dns) case studies.
    * `fandango convert` can now produce [state diagrams from grammars](sec:extracting-state-diagrams).
-* You can now [download the documentation as a PDF](_static/fandango.pdf) from the upper-right download icon.
+* You can now use ChatGPT to create fully working Fandango specs; see our [PNG](sec:png) and [GIF](sec:gif) case studies.
+* You can now [download the **documentation** as a PDF](_static/fandango.pdf) from the upper-right download icon.
 * Lots of minor bug fixes.
 * [development] Major internal refactorings and code quality improvements.
 * [development] Added support for the `uv` package manager, including appropriate lock files to ensure compatible and fixed dependency versions
