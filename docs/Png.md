@@ -121,7 +121,7 @@ def crc(t: bytes, d: bytes) -> bytes:
 
 The header body contains essential data of the PNG image:
 
-```
+```python
 <ihdr_body> ::= (
     <width>
     <height>
@@ -135,10 +135,18 @@ The header body contains essential data of the PNG image:
 <height> ::= <uint32>
 ```
 
-We fix width and height to 10 to avoid generating huge IDAT data.
+We fix width and height to `WIDTH` and `HEIGHT` to avoid generating huge IDAT data.
+
 ```python
-where <width> == from_u32(10)
-where <height> == from_u32(10)
+<width> ::= <uint32> := from_u32(WIDTH)
+<height> ::= <uint32> := from_u32(HEIGHT)
+```
+
+with
+
+```python
+WIDTH = 10
+HEIGHT = 10
 ```
 
 We have various choices of bit depth and color type...
@@ -181,6 +189,14 @@ def valid_ihdr(bitdepth: int, colortype: int) -> bool:
 ```
 
 
+We also fix the bit depths and color type.
+
+```python
+<bitdepth> ::= b'\x08'
+<colortype> ::= b'\x02'
+```
+
+
 ### Palettes
 
 In our generator, color palettes are just random sequences of bytes.
@@ -205,10 +221,10 @@ Again, we fix the size of the PNG to 10x10.
 <idat> ::= <generated_idat>
 
 <generated_idat> ::= <len_idat> b'IDAT' <idat_data> <idat_crc> := generate_idat(
-        10, # to_u32(<width>),
-        10, # to_u32(<height>),
-        1, # <bitdepth>[0],
-        0, # <colortype>[0]
+        to_u32(<width>),
+        to_u32(<height>),
+        ord(bytes(<bitdepth>)),
+        ord(bytes(<colortype>))
     )
 
 <len_idat> ::= <uint32>
@@ -350,3 +366,184 @@ and you will obtain a 10x10 image [10x10.png](10x10.png) such as this one:
 :width: 100px
 :align: center
 ```
+
+(sec:sec:chatgpt-png)=
+## How we obtained the PNG file from ChatGPT
+
+The above file [png.fan](png.fan) was actually obtained from the _ChatGPT_ large language model.
+The prompts were:
+
+1. What is a png file made of?
+2. Can you express the structure as a grammar?
+3. Express it in a formal attribute grammar notation
+4. Express this as a Fandango specification (see https://fandango-fuzzer.github.io/)
+5. Provide a full .fan file, including pixel decompression and filter constraints
+6. Add a custom generator for IDAT payload
+7. Add docstrings to these functions
+
+At this point, the returned specification file looked like this: [png-chatgpt.fan](png-chatgpt.fan),
+which is remarkably close to a correct PNG spec.
+However, this file was still somewhat erroneous.
+
+### Fixing Syntax Errors
+
+ChatGPT assumed that in Fandango, Python `import` commands would be prefixed by a `:`:
+
+```python
+:import struct
+:import zlib
+:import math
+:import random
+```
+
+This was easily fixed by replacing `:import` with `import`.
+
+Also, the generated code assumed that rules would continue while being indented:
+
+```python
+<start> ::=
+    <signature>
+    <ihdr>
+    <plte>?
+    <idat>
+    <iend>
+```
+
+This was easily fixed by putting parentheses around the expansion:
+
+```python
+<start> ::= (
+    <signature>
+    <ihdr>
+    <plte>?
+    <idat>
+    <iend>)
+```
+
+
+### Fixing Semantic Errors
+
+ChatGPT knows how to invoke a generator function.
+However, fields like `<width>` and `<height>` would be generated anew every time,
+so this only works if they are set to fixed values.
+
+```python
+<generated_idat> ::=
+    :python generate_idat(
+        to_u32(<width>),
+        to_u32(<height>),
+        <bitdepth>[0],
+        <colortype>[0]
+    )
+```
+
+The fixed version reads like this.
+Note that we also parse (and check) the returned byte string.
+
+```python
+<generated_idat> ::= <len_idat> b'IDAT' <idat_data> <idat_crc> := generate_idat(
+        to_u32(<width>),
+        to_u32(<height>),
+        ord(bytes(<bitdepth>)),
+        ord(bytes(<colortype>))
+    )
+
+# Basic parameters
+WIDTH = 10
+HEIGHT = 10
+
+# We fix width and height to 10 to avoid generating huge IDAT data.
+<width> ::= <uint32> := from_u32(WIDTH)
+<height> ::= <uint32> := from_u32(HEIGHT)
+
+# We stick with simple bit depths and color types
+<bitdepth> ::= b'\x08'
+<colortype> ::= b'\x02'
+```
+
+A final bummer was that the ChatGPT-generated version redefined `<byte>` to a single dot:
+
+```python
+<byte> ::= b'.'
+```
+
+This is wrong - even if a dot were a regular expression, it would not match newlines.
+So this had to be removed.
+
+
+### Scoping
+
+The ChatGPT-generated specification reused the same identifiers over and over, notably lengths and CRC checksums:
+
+```python
+<plte> ::= <len_plte> b'PLTE' <data> <crc>
+where crc_ok(b'PLTE', <data>, <crc>)
+```
+
+```python
+<ihdr> ::= <len_13> b'IHDR' <ihdr_body> <crc>
+where crc_ok(b'IHDR', <ihdr_body>, <crc>)
+```
+
+Alas, in Fandango, all nonterminals have a global scope.
+Hence, the above constraints would thus enforce that _any_ `<crc>` element be _both_ the checksum over `<data>` and `<ihrd_body>`.
+This is easily fixed by introducing separate `<plte_crc>` and `<ihdr_crc>` elements, each with its own constraints.
+
+
+### Optimizations
+
+The ChatGPT-produced PNG spec uses a `crc_ok()` function that would check whether a CRC is correct, as in:
+
+```python
+where crc_ok(b'IHDR', <ihdr_body>, <crc>)
+```
+
+The `crc_ok()` function would check if the given field type, body, and CRC all match each other:
+
+```python
+def crc_ok(t, d, c):
+    """
+    Verify that a PNG chunk CRC is correct.
+
+    The CRC is computed over:
+        chunk_type || chunk_data
+
+    Args:
+        t (list[int]): 4-byte chunk type.
+        d (list[int]): Chunk payload.
+        c (list[int]): 4-byte CRC field.
+
+    Returns:
+        bool: True if CRC matches PNG specification.
+    """
+    return (zlib.crc32(bytes(t + d)) & 0xffffffff) == to_u32(c)
+```
+
+Such a function is useful for _validating_ a CRC during parsing.
+For _producing_, however, it is not very helpful.
+This is because Fandango has to _solve_ the checksum constraint - that is, finding a pair of payload and CRC that march each other.
+Since CRCs are essentially chaotic, the evolutionary algorithm would have no guidance, and degrade to a _very_ lengthy 
+trial-and-error process – on average, $2^{32} = 4,294,967,296$ trials until it finds a valid CRC.
+
+This is easily fixed by replacing the constraint with a _constructive_ computation, using a new `crc()` function:
+
+```python
+where <idat_crc> == crc(b'IDAT', bytes(<idat_data>))
+```
+
+Here, Fandango can easily solve the constraint by computing the right-hand side of the equation from given `<idat_data>`, and thus obtaining a straightforward solution for the `<idat_crc>` field.
+
+
+### Correct parts
+
+* The basic structure of the PNG file was correct
+* The PNG signature, header, ending were correct
+* Conversion functions and CRC computation was correct
+* `generate_idat()` and all its code for producing PNG data was correct
+
+All in all, applying the above fixes to obtain a valid PNG specification for Fandango (and thus a PNG fuzzer) took about 30 minutes; and then, the final [png.fan](png.fan) was ready.
+
+
+### One prompt to have it all?
+
+Can one have it all in one prompt?

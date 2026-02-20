@@ -2,20 +2,16 @@
 # PNG specification with constructive IDAT
 # ==========================================
 
-import struct
-import zlib
-import math
-import random
-
-# Basic parameters
-WIDTH = 10
-HEIGHT = 10
+:import struct
+:import zlib
+:import math
+:import random
 
 # ------------------------------------------
 # Helpers
 # ------------------------------------------
 
-def to_u32(bs: bytes) -> int:
+def to_u32(bs):
     """
     Convert a sequence of 4 bytes (big-endian) into
     an unsigned 32-bit integer.
@@ -29,7 +25,7 @@ def to_u32(bs: bytes) -> int:
     return struct.unpack(">I", bytes(bs))[0]
 
 
-def from_u32(n: int) -> bytes:
+def from_u32(n):
     """
     Convert an integer into a 4-byte big-endian list.
 
@@ -37,26 +33,44 @@ def from_u32(n: int) -> bytes:
         n (int): Integer in range [0, 2^32-1].
 
     Returns:
-        bytes: 4-byte big-endian representation.
+        list[int]: 4-byte big-endian representation.
     """
-    return bytes(struct.pack(">I", n))
+    return list(struct.pack(">I", n))
 
 
-def crc(t: bytes, d: bytes) -> bytes:
+def crc_ok(t, d, c):
+    """
+    Verify that a PNG chunk CRC is correct.
+
+    The CRC is computed over:
+        chunk_type || chunk_data
+
+    Args:
+        t (list[int]): 4-byte chunk type.
+        d (list[int]): Chunk payload.
+        c (list[int]): 4-byte CRC field.
+
+    Returns:
+        bool: True if CRC matches PNG specification.
+    """
+    return (zlib.crc32(bytes(t + d)) & 0xffffffff) == to_u32(c)
+
+
+def crc_bytes(t, d):
     """
     Compute the PNG CRC field for a chunk.
 
     Args:
-        t (bytes): 4-byte chunk type.
-        d (bytes): Chunk payload.
+        t (bytes or list[int]): 4-byte chunk type.
+        d (list[int]): Chunk payload.
 
     Returns:
-        bytes: 4-byte big-endian CRC.
+        list[int]: 4-byte big-endian CRC.
     """
     return from_u32(zlib.crc32(bytes(t + d)) & 0xffffffff)
 
 
-def valid_ihdr(bitdepth: int, colortype: int) -> bool:
+def valid_ihdr(bitdepth, colortype):
     """
     Check whether a (bitdepth, colortype) combination
     is valid according to the PNG specification.
@@ -81,7 +95,7 @@ def valid_ihdr(bitdepth: int, colortype: int) -> bool:
     return colortype in valid and bitdepth in valid[colortype]
 
 
-def channels(colortype: int) -> int:
+def channels(colortype):
     """
     Return number of color channels for a PNG color type.
 
@@ -101,7 +115,7 @@ def channels(colortype: int) -> int:
     return {0:1, 2:3, 3:1, 4:2, 6:4}[colortype]
 
 
-def scanline_size(width: int, bitdepth: int, colortype: int) -> int:
+def scanline_size(width, bitdepth, colortype):
     """
     Compute number of bytes in a PNG scanline
     excluding the filter byte.
@@ -121,7 +135,7 @@ def scanline_size(width: int, bitdepth: int, colortype: int) -> int:
     return math.ceil(bits / 8)
 
 
-def generate_scanlines(width: int, height: int, bitdepth: int, colortype: int) -> bytes:
+def generate_scanlines(width, height, bitdepth, colortype):
     """
     Construct raw PNG image data (before compression).
 
@@ -139,7 +153,7 @@ def generate_scanlines(width: int, height: int, bitdepth: int, colortype: int) -
         colortype (int)
 
     Returns:
-        bytes: Raw uncompressed image bytes.
+        list[int]: Raw uncompressed image bytes.
     """
     size = scanline_size(width, bitdepth, colortype)
     raw = []
@@ -147,11 +161,10 @@ def generate_scanlines(width: int, height: int, bitdepth: int, colortype: int) -
         filter_type = random.randint(0,4)
         raw.append(filter_type)
         raw.extend(random.randint(0,255) for _ in range(size))
-    return bytes(raw)
+    return raw
 
 
-def generate_idat(width: int, height: int, bitdepth: int,
-                  colortype: int) -> bytes:
+def generate_idat(width, height, bitdepth, colortype):
     """
     Generate a complete, valid PNG IDAT chunk.
 
@@ -168,51 +181,52 @@ def generate_idat(width: int, height: int, bitdepth: int,
         colortype (int)
 
     Returns:
-        bytes: Full IDAT chunk bytes including:
+        list[int]: Full IDAT chunk bytes including:
             length || 'IDAT' || compressed_data || crc
     """
     raw = generate_scanlines(width, height, bitdepth, colortype)
-    compressed = bytes(list(zlib.compress(bytes(raw))))
+    compressed = list(zlib.compress(bytes(raw)))
     length = from_u32(len(compressed))
-    crc_value = crc(b'IDAT', bytes(compressed))
-    return bytes(length + b'IDAT' + compressed + crc_value)
+    crc = crc_bytes(b'IDAT', compressed)
+    return length + list(b'IDAT') + compressed + crc
 
 # ------------------------------------------
 # Basic terminals
 # ------------------------------------------
 
+<byte> ::= b'.'
 <uint32> ::= <byte>{4}
 
 # ------------------------------------------
 # PNG signature
 # ------------------------------------------
 
-# <signature> ::= b'\x89PNG\r\n\x1a\n'
-<signature> ::= b'\211PNG\r\n\032\n'
+<signature> ::= b'\x89PNG\r\n\x1a\n'
 
 # ------------------------------------------
 # IHDR
 # ------------------------------------------
 
-<ihdr> ::= <len_ihdr> b'IHDR' <ihdr_body> <ihdr_crc>
+<ihdr> ::= <len_13> b'IHDR' <ihdr_body> <crc>
+where crc_ok(b'IHDR', <ihdr_body>, <crc>)
 
-<len_ihdr> ::= <uint32>
-where <len_ihdr> == from_u32(len(bytes(<ihdr_body>)))
+<len_13> ::= <uint32>
+where to_u32(<len_13>) == 13
 
-<ihdr_crc> ::= <uint32>
-where <ihdr_crc> == crc(b'IHDR', bytes(<ihdr_body>))
-
-<ihdr_body> ::= (
+<ihdr_body> ::=
     <width>
     <height>
     <bitdepth>
     <colortype>
-    b'\x00'     # compression - (deflate/inflate compression with a 32K sliding window)
+    b'\x00'     # compression
     b'\x00'     # filter
-    <interlace>)
+    <interlace>
 
 <width> ::= <uint32>
+where 1 <= to_u32(<width>) <= 32
+
 <height> ::= <uint32>
+where 1 <= to_u32(<height>) <= 32
 
 <bitdepth> ::= b'\x08' | b'\x10'
 
@@ -220,31 +234,19 @@ where <ihdr_crc> == crc(b'IHDR', bytes(<ihdr_body>))
 
 <interlace> ::= b'\x00'
 
-# We fix width and height to 10 to avoid generating huge IDAT data.
-<width> ::= <uint32> := from_u32(WIDTH)
-<height> ::= <uint32> := from_u32(HEIGHT)
+where valid_ihdr(<bitdepth>[0], <colortype>[0])
 
-# We stick with simple bit depths and color types
-<bitdepth> ::= b'\x08'
-<colortype> ::= b'\x02'
-
-
-# Note: ord(b'\x02') == 2
-where valid_ihdr(ord(bytes(<bitdepth>)), ord(bytes(<colortype>)))
-
+<crc> ::= <uint32>
 
 # ------------------------------------------
 # PLTE (optional)
 # ------------------------------------------
 
-<plte> ::= <len_plte> b'PLTE' <plte_data> <plte_crc>
+<plte> ::= <len_plte> b'PLTE' <data> <crc>
 where to_u32(<len_plte>) % 3 == 0
-where <len_plte> == from_u32(len(bytes(<plte_data>)))
-where <plte_crc> == crc(b'PLTE', bytes(<plte_data>))
+where crc_ok(b'PLTE', <data>, <crc>)
 
-<plte_data> ::= <byte>*
 <len_plte> ::= <uint32>
-<plte_crc> ::= <uint32>
 
 # ------------------------------------------
 # Custom IDAT generator
@@ -252,42 +254,27 @@ where <plte_crc> == crc(b'PLTE', bytes(<plte_data>))
 
 <idat> ::= <generated_idat>
 
-<generated_idat> ::= <len_idat> b'IDAT' <idat_data> <idat_crc> := generate_idat(
+<generated_idat> ::=
+    :python generate_idat(
         to_u32(<width>),
         to_u32(<height>),
-        ord(bytes(<bitdepth>)),
-        ord(bytes(<colortype>))
+        <bitdepth>[0],
+        <colortype>[0]
     )
-
-<len_idat> ::= <uint32>
-<idat_crc> ::= <uint32>
-<idat_data> ::= <byte>*
-
-# where to_u32(<len_idat>) % 3 == 0
-where <len_idat> == from_u32(len(bytes(<idat_data>)))
-where <idat_crc> == crc(b'IDAT', bytes(<idat_data>))
 
 # ------------------------------------------
 # IEND
 # ------------------------------------------
 
-# <iend> ::= b'\x00\x00\x00\x00IEND\xaeB`\x82'
-<iend> ::= <len_iend> b'IEND' <iend_crc>
-where <len_iend> == from_u32(0)
-where <iend_crc> == crc(b'IEND', b'')
-
-<len_iend> ::= <uint32>
-<iend_crc> ::= <uint32>
-
+<iend> ::= b'\x00\x00\x00\x00IEND\xaeB`\x82'
 
 # ------------------------------------------
 # Top-level PNG
 # ------------------------------------------
 
-<start> ::= (
+<start> ::=
     <signature>
     <ihdr>
     <plte>?
     <idat>
     <iend>
-)
