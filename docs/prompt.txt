@@ -1,0 +1,16 @@
+Please express the structure of a PNG file using a grammar.
+Express it as a Fandango specification (see https://fandango-fuzzer.github.io/).
+Provide a full .fan file, including constraints and helper functions with docstrings.
+
+Note:
+* In Fandango, to import a Python module M, just use `import M`
+* A constraint `where <elem> == value` is much more efficient than a constraint `where ok(<elem>, value)`
+* A generator `<elem> ::= <byte>* := value` is even more efficient
+* If an element like `<checksum>` or `<length>` appears in multiple contexts C, give it a separate prefix for each context: `<C_crc>` and `<C_checksum>`.
+* Use _constructive_ helper functions (rather than _checking_ helper functions) whenever possible.
+* Do not redefine given types such as `<byte>`, `<int>`, etc.
+* If you break lines, end the broken line with a backslash
+* All nonterminals must have a definition with `::=` in the grammar, even if there is already a `where` constraint
+* Prefer grammar rules over generators
+* Prefer generators over `where` constraints
+* Prefix binary strings with `b` (as in `b"\x02"`)
