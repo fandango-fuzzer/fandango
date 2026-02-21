@@ -11,20 +11,43 @@ kernelspec:
 ---
 
 (sec:gif)=
-# Case Study: The GIF Format
-
-```{admonition} Under Construction
-:class: attention
-To be added later.
-```
+# Case Study: GIF x ChatGPT
 
 The [GIF format](https://www.fileformat.info/format/gif/egff.htm) is widely used to encode image sequences.
 
-We start with a very short GIF to keep things simple ([source](http://probablyprogramming.com/2009/03/15/the-tiniest-gif-ever)): [tinytrans.gif](tinytrans.gif).
+As with the [GIF format](sec:png), we asked ChatGPT for help.
+Our prompt was the same as the [PNG prompt](prompt.txt), except that we replaced "PNG" with "GIF".
 
-We can parse this file using Fandango:
+The resulting GIF file [gif.fan](gif.fan) is reproduced verbatim below.
+It can be directly used in Fandango:
+
+```shell
+$ fandango fuzz -f gif.fan -n 1 --population-size=1 -o 32x32.gif 
+```
+
+produces a [32x32 pixel GIF file](32x32.gif):
+
+```{image} 32x32.gif
+:alt: Generated GIF file
+:class: bg-primary mb-1
+:width: 200px
+:align: center
+```
+
+Here is the generated `gif.fan` specification file.
+As far as we can tell, structure and documentation are accurate.
 
 ```{code-cell}
-!fandango parse -f gif89a.fan tinytrans.gif -o - --format=grammar --validate
-assert _exit_code == 0
+:tags: ["remove-input"]
+!cat gif.fan 
+```
+
+```{note}
+Note that `gif.fan` does not support only all GIF features, so it cannot be used to [parse](sec:parsing) arbitrary GIF files.
+Feel free to use ChatGPT to add any extensions you'd like, or add them manually.
+```
+
+```{tip}
+Be aware that every invocation of ChatGPT produces somewhat different code,
+so you may need to provide further instructions to obtain your favorite `.fan` file.
 ```
