@@ -210,8 +210,10 @@ $(PDF_TARGET): $(PDF_BODY)
 view-pdf: $(PDF_TARGET)
 	$(VIEW_PDF)
 
-clean-docs:
+clean-docs: clean-docs-cache
 	$(JB) clean $(DOCS)
+clean-docs-cache:
+	$(RM) -r $(DOCS)/_build/.jupyter_cache
 
 
 ## Tests
