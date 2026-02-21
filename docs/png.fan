@@ -1,211 +1,237 @@
-# png.fan
-# Constructive PNG grammar for Fandango
-
+# png_32x32.fan
+# Fandango specification for a structurally valid 32x32 PNG file.
 
 import struct
 import zlib
 import binascii
 import random
 
+# ----------------------------------------------------------------------
+# Global Constants
+# ----------------------------------------------------------------------
 
-###############################################################################
-# Constructive Helper Functions
-###############################################################################
-
-def png_signature():
-    """
-    Return the fixed 8-byte PNG file signature.
-    """
-    return bytes([137,80,78,71,13,10,26,10])
+IMAGE_WIDTH: int = 32
+IMAGE_HEIGHT: int = 32
+TEXT_LENGTH: int = 100
 
 
-def be32(n):
-    """
-    Encode integer n as 4-byte big-endian.
-    """
-    return struct.pack(">I", n)
+# ----------------------------------------------------------------------
+# Start Symbol
+# ----------------------------------------------------------------------
 
-
-def crc32_chunk(chunk_type, data):
-    """
-    Construct PNG CRC over chunk_type + data.
-    Returns 4-byte big-endian encoded CRC.
-    """
-    return be32(binascii.crc32(chunk_type + data) & 0xffffffff)
-
-
-def ihdr_payload(width, height):
-    """
-    Construct a valid IHDR payload:
-      - bit depth 8
-      - color type 2 (truecolor)
-      - compression 0
-      - filter 0
-      - interlace 0
-    """
-    return \
-        be32(width) + \
-        be32(height) + \
-        bytes([8,2,0,0,0])
-
-
-def raw_scanlines(width, height):
-    """
-    Construct raw scanlines using filter type 0.
-    Produces random RGB pixels.
-    """
-    rows = []
-    for _ in range(height):
-        pixels = bytes(random.randint(0,255) for _ in range(width * 3))
-        rows.append(bytes([0]) + pixels)
-    return b"".join(rows)
-
-
-def idat_payload(width, height):
-    """
-    Construct compressed IDAT payload.
-    """
-    raw = raw_scanlines(width, height)
-    return zlib.compress(raw)
-
-
-###############################################################################
-# Grammar
-###############################################################################
-
-<start> ::= <png>
-
-<png> ::= \
-( \
-    <signature> \
+# Complete PNG file:
+#   Signature
+#   IHDR
+#   Optional tEXt chunks
+#   One or more IDAT
+#   IEND
+<start> ::= \
+    <png_signature> \
     <ihdr_chunk> \
-    <idat_chunk> \
-    <iend_chunk> \
-)
+    <text_chunk>* \
+    <idat_chunk>+ \
+    <iend_chunk>
 
 
-###############################################################################
+# ----------------------------------------------------------------------
 # PNG Signature
-###############################################################################
+# ----------------------------------------------------------------------
 
-<signature> ::= <signature_bytes>
+# Fixed 8-byte PNG signature
+<png_signature> ::= b"\x89PNG\r\n\x1a\n"
 
-<signature_bytes> ::= <byte>* := png_signature()
 
-
-###############################################################################
+# ----------------------------------------------------------------------
 # IHDR Chunk
-###############################################################################
+# ----------------------------------------------------------------------
 
+# IHDR chunk
 <ihdr_chunk> ::= \
-( \
-    <IHDR_length> \
-    <IHDR_type> \
-    <IHDR_data> \
-    <IHDR_crc> \
+    <ihdr_length> \
+    <ihdr_type> \
+    <ihdr_data> \
+    <ihdr_crc>
+
+# IHDR data length (13 bytes)
+<ihdr_length> ::= <byte>{4}
+where <ihdr_length> == int_to_be_bytes(13)
+
+# IHDR chunk type
+<ihdr_type> ::= b"IHDR"
+
+# IHDR payload (13 bytes total)
+<ihdr_data> ::= \
+    <ihdr_width> \
+    <ihdr_height> \
+    <ihdr_bit_depth> \
+    <ihdr_color_type> \
+    <ihdr_compression> \
+    <ihdr_filter> \
+    <ihdr_interlace>
+
+# Width (32 pixels)
+<ihdr_width> ::= <byte>{4} := int_to_be_bytes(IMAGE_WIDTH)
+
+# Height (32 pixels)
+<ihdr_height> ::= <byte>{4} := int_to_be_bytes(IMAGE_HEIGHT)
+
+# Bit depth (8 bits per channel)
+<ihdr_bit_depth> ::= b"\x08"
+
+# Color type (2 = truecolor RGB)
+<ihdr_color_type> ::= b"\x02"
+
+# Compression method (0)
+<ihdr_compression> ::= b"\x00"
+
+# Filter method (0)
+<ihdr_filter> ::= b"\x00"
+
+# Interlace method (0 = no interlace)
+<ihdr_interlace> ::= b"\x00"
+
+# CRC of IHDR (computed over type + data)
+<ihdr_crc> ::= <byte>{4}
+where <ihdr_crc> == crc32_bytes( \
+    bytes(<ihdr_type>) + bytes(<ihdr_data>) \
 )
 
-<IHDR_type> ::= b"IHDR"
 
-<IHDR_length> ::= <IHDR_length_bytes>
+# ----------------------------------------------------------------------
+# tEXt Chunk (Optional, Repeatable)
+# ----------------------------------------------------------------------
 
-<IHDR_length_bytes> ::= <byte>* := be32(13)
+# Single tEXt chunk
+<text_chunk> ::= \
+    <text_length> \
+    <text_type> \
+    <text_data> \
+    <text_crc>
 
+# Length of text payload
+<text_length> ::= <byte>{4}
+where <text_length> == int_to_be_bytes(len(bytes(<text_data>)))
 
-<IHDR_data> ::= \
-( \
-    <IHDR_width> \
-    <IHDR_height> \
-    <IHDR_bit_depth> \
-    <IHDR_color_type> \
-    <IHDR_compression> \
-    <IHDR_filter> \
-    <IHDR_interlace> \
+# tEXt chunk type
+<text_type> ::= b"tEXt"
+
+# Fixed-length ASCII text payload
+<text_data> ::= <byte>{TEXT_LENGTH} := generate_ascii_text(TEXT_LENGTH)
+
+# CRC of tEXt
+<text_crc> ::= <byte>{4}
+where <text_crc> == crc32_bytes( \
+    bytes(<text_type>) + bytes(<text_data>) \
 )
 
-<IHDR_width> ::= <IHDR_width_bytes>
 
-<IHDR_width_bytes> ::= <byte>* := be32(32)
+# ----------------------------------------------------------------------
+# IDAT Chunks
+# ----------------------------------------------------------------------
 
-
-<IHDR_height> ::= <IHDR_height_bytes>
-
-<IHDR_height_bytes> ::= <byte>* := be32(32)
-
-
-<IHDR_bit_depth> ::= b"\x08"
-
-<IHDR_color_type> ::= b"\x02"
-
-<IHDR_compression> ::= b"\x00"
-
-<IHDR_filter> ::= b"\x00"
-
-<IHDR_interlace> ::= b"\x00"
-
-
-<IHDR_crc> ::= <IHDR_crc_bytes>
-
-<IHDR_crc_bytes> ::= <byte>* := \
-    crc32_chunk( \
-        b"IHDR", \
-        ihdr_payload(32,32) \
-    )
-
-
-###############################################################################
-# IDAT Chunk
-###############################################################################
-
+# Single IDAT chunk
 <idat_chunk> ::= \
-( \
-    <IDAT_length> \
-    <IDAT_type> \
-    <IDAT_data> \
-    <IDAT_crc> \
+    <idat_length> \
+    <idat_type> \
+    <idat_data> \
+    <idat_crc>
+
+# Length of compressed image data
+<idat_length> ::= <byte>{4}
+where <idat_length> == int_to_be_bytes(len(bytes(<idat_data>)))
+
+# IDAT chunk type
+<idat_type> ::= b"IDAT"
+
+# Compressed scanline data for 32x32 RGB image
+<idat_data> ::= <byte>* := generate_idat_data(IMAGE_WIDTH, IMAGE_HEIGHT)
+
+# CRC of IDAT
+<idat_crc> ::= <byte>{4}
+where <idat_crc> == crc32_bytes( \
+    bytes(<idat_type>) + bytes(<idat_data>) \
 )
 
-<IDAT_type> ::= b"IDAT"
 
-<IDAT_data> ::= <IDAT_data_bytes>
+# ----------------------------------------------------------------------
+# IEND Chunk
+# ----------------------------------------------------------------------
 
-<IDAT_data_bytes> ::= <byte>* := idat_payload(32,32)
+# Final PNG chunk
+<iend_chunk> ::= \
+    <iend_length> \
+    <iend_type> \
+    <iend_crc>
+
+# Length (always 0)
+<iend_length> ::= <byte>{4}
+where <iend_length> == int_to_be_bytes(0)
+
+# IEND type
+<iend_type> ::= b"IEND"
+
+# CRC of IEND (computed over type only)
+<iend_crc> ::= <byte>{4}
+where <iend_crc> == crc32_bytes(bytes(<iend_type>))
 
 
-<IDAT_length> ::= <IDAT_length_bytes>
+# ----------------------------------------------------------------------
+# Helper Functions
+# ----------------------------------------------------------------------
 
-<IDAT_length_bytes> ::= <byte>* := \
-    be32(len(idat_payload(32,32)))
+def int_to_be_bytes(value: int) -> bytes:
+    """
+    Convert integer to 4-byte big-endian format.
+
+    :param value: Integer value.
+    :return: 4-byte big-endian byte sequence.
+    """
+    return struct.pack(">I", value)
 
 
-<IDAT_crc> ::= <IDAT_crc_bytes>
+def crc32_bytes(data: bytes) -> bytes:
+    """
+    Compute PNG CRC32 checksum.
 
-<IDAT_crc_bytes> ::= <byte>* := \
-    crc32_chunk( \
-        b"IDAT", \
-        idat_payload(32,32) \
+    :param data: Input bytes.
+    :return: 4-byte big-endian CRC.
+    """
+    crc: int = binascii.crc32(bytes(data)) & 0xffffffff
+    return struct.pack(">I", crc)
+
+
+def generate_ascii_text(length: int) -> bytes:
+    """
+    Generate ASCII text of fixed length.
+
+    :param length: Number of characters.
+    :return: ASCII byte string.
+    """
+    return bytes(
+        random.randint(32, 126)
+        for _ in range(length)
     )
 
 
-###############################################################################
-# IEND Chunk
-###############################################################################
+def generate_idat_data(width: int, height: int) -> bytes:
+    """
+    Generate valid PNG scanlines and compress them.
 
-<iend_chunk> ::= \
-( \
-    <IEND_length> \
-    <IEND_type> \
-    <IEND_crc> \
-)
+    For each scanline:
+      - 1 filter byte (0)
+      - width * 3 RGB bytes
 
-<IEND_type> ::= b"IEND"
+    The concatenated raw data is zlib-compressed.
 
-<IEND_length> ::= <IEND_length_bytes>
+    :param width: Image width.
+    :param height: Image height.
+    :return: zlib-compressed image data.
+    """
+    raw: bytearray = bytearray()
 
-<IEND_length_bytes> ::= <byte>* := be32(0)
+    for _ in range(height):
+        raw.append(0)
+        for _ in range(width * 3):
+            raw.append(random.getrandbits(8))
 
-
-<IEND_crc> ::= <IEND_crc_bytes>
-
-<IEND_crc_bytes> ::= <byte>* := \
-    crc32_chunk(b"IEND", b"")
+    return zlib.compress(bytes(raw))
