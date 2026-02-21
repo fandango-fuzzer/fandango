@@ -53,18 +53,19 @@ produces a nice [32x32 pixel PNG file](32x32.png):
 ```
 
 The resulting PNG file [png.fan](png.fan) is reproduced verbatim below.
-
-```{note}
-Note that `png.fan` supports only a limited set of PNG fields, so it cannot be used to _parse_ arbitrary PNG files.
-Feel free to use ChatGPT to add any extensions you'd like.
-```
+As far as we can tell, structure and documentation are accurate.
 
 ```{code-cell}
 :tags: ["remove-input"]
 !cat png.fan
 ```
 
+```{note}
+Note that `png.fan` supports only a limited set of PNG fields, so it cannot be used to [parse](sec:parsing) arbitrary PNG files.
+Feel free to use ChatGPT to add any extensions you'd like, or add them manually;
+```
+
 ```{tip}
-Be aware that every invocation of ChatGPT produces somewhat different code.
-Feel free to provide further instructions to obtain your favorite `.fan` file.
+Be aware that every invocation of ChatGPT produces somewhat different code,
+so you may need to provide further instructions to obtain your favorite `.fan` file.
 ```
