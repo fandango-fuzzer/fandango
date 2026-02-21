@@ -3,34 +3,34 @@ Express it as a Fandango specification (see https://fandango-fuzzer.github.io/).
 Provide a full .fan file, including constraints and helper functions.
 
 Follow these hard rules regarding syntax:
-* In Fandango, to import a Python module M, just use `import M`
-* `where` clauses start on their own line, and are _not_ continuations of previous lines
-* `:=` generators come in the same line
-* Prefix binary strings with `b` (as in `b"\x02"`)
+* In Fandango, to import a Python module M, just use `import M`.
+* `where` clauses start on their own line, and are _not_ continuations of previous lines.
+* `:=` generators come in the same line.
+* Prefix binary strings with `b` (as in `b"\x02"`).
 * Use `""` to denote an empty string.
 * Prefer `+` and `*` to denote repetitions.
 * Prefer `?` to denote optional elements.
-* An expansion `"" | <foo>+` is better expressed as `<foo>*`
-* If you break lines (especially in grammar rules), end the broken line with a backslash
-* All nonterminals must have a definition with `::=` in the grammar, even if there is already a `where` constraint
+* An expansion `"" | <foo>+` is better expressed as `<foo>*`.
+* If you break lines (especially in grammar rules), end the broken line with a backslash.
+* All nonterminals must have a definition with `::=` in the grammar, even if there is already a `where` constraint.
 * Do not redefine given types such as `<byte>`, `<int>`, etc.
-* Use `<start>` as the start symbol
+* Use `<start>` as the start symbol.
 
 Follow these preferences regarding structure:
-* Use comments to document the individual grammar elements.
-* Provide docstrings and type annotations for all functions.
+* Use _comments_ to document the individual grammar elements.
+* Provide _docstrings_ and _type annotations_ for all functions.
 * If an element like `<checksum>` or `<length>` appears in multiple contexts C, give it a separate prefix for each context: `<C_crc>` and `<C_checksum>`.
-* Prefer grammar rules over generators and constraints
-* Prefer constraints over generators.
-* A constraint `where <elem> == VALUE` is much more efficient than a constraint `where ok(<elem>, VALUE)`
-* A constraint `where <elem> == CONSTANT` is better expressed with `CONSTANT` as an alternative in the grammar
+* Prefer _grammar rules_ over generators and constraints.
+* Prefer _constraints_ over generators.
+* A constraint `where <elem> == VALUE` is much more efficient than a constraint `where ok(<elem>, VALUE)`.
+* A constraint `where <elem> == CONSTANT` is better expressed with `CONSTANT` as an alternative in the grammar.
 * Use _constructive_ helper functions (rather than _checking_ helper functions) whenever possible.
-* If you know the length of a field is `N` bytes, use `<byte>{N}` instead of `<byte>*`
-* If you invoke helper functions with grammar elements, be sure to convert grammar elements using `str()` or `bytes()`
+* If you know the length of a field is `N` bytes, use `<byte>{N}` instead of `<byte>*`.
+* If you invoke helper functions with grammar elements as arguments, be sure to convert grammar elements using `str()` or `bytes()`.
 * When compressed or complex data is involved, have helpers that produce this data in the proper format.
-* Helper functions that produce data must be invoked using `:=` generators.
+* Helper functions that _produce data_ must be invoked using `:=` generators.
 
 Follow these preferences regarding dimensions:
 * For variable document dimensions, add a generator `:= VALUE`, where `VALUE` is a global Python constant defined at the top.
-* Image dimensions should be 32x32 pixels
-* Text dimensions should be 100 characters
+* Image dimensions should be 32x32 pixels.
+* Text dimensions should be 100 characters.
