@@ -521,9 +521,12 @@ class Fandango:
             start_measuring = time.time()
             iter += 1
             if self.coverage_log_interval > 0 and iter % self.coverage_log_interval == 0:
+                current_cov = self.packet_selector.coverage_percent(alt_cache=True) * 100
                 LOGGER.info(
-                    f"Current coverage: {self.packet_selector.coverage_percent(alt_cache=True) * 100:.2f}%"
+                    f"Current coverage: {current_cov:.2f}%"
                 )
+                if current_cov > 90:
+                    print(f"Missing paths: {self.packet_selector._uncovered_paths(alt_cache=True)}")
                 self.coverage_log.append((start_measuring - self._time_in_measurements, self.packet_selector._compute_coverage_trees(False)))
                 self.coverage_log_overlap.append((start_measuring - self._time_in_measurements, self.packet_selector._compute_coverage_trees(True)))
             self._time_in_measurements += time.time() - start_measuring
