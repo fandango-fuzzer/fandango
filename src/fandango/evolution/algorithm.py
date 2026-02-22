@@ -534,7 +534,10 @@ class Fandango:
                     len(self.packet_selector.get_next_parties()) == 0
                     and not self.packet_selector.is_complete()
                 ):
+                    self.packet_selector.compute(history_tree, self.past_io_derivations)
+                    res = self.packet_selector.get_next_parties()
                     raise FandangoFailedError("Could not forecast next packet")
+
 
                 if (
                     len(self.packet_selector.get_next_parties()) == 0
@@ -584,6 +587,10 @@ class Fandango:
                     self.grammar.set_max_repetition(
                         self.adaptive_tuner.current_max_repetition
                     )
+                    preferred_symbols: list[str] = []
+                    for pkg in self.population_manager.fuzzable_packets:
+                        preferred_symbols.append(str(pkg.node.symbol))
+                    print(f"Trying to generate: {', '.join(preferred_symbols)}")
 
                     try:
                         solutions = [

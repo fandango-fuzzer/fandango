@@ -160,12 +160,14 @@ class FandangoParty(ABC):
         """
         print(f"({self.party_name}): {str(message)}")
 
-    def receive(self, message: str | bytes, sender: Optional[str]) -> None:
+    def receive(self, message: str | bytes | None, sender: Optional[str]) -> None:
         """
         Called when a message has been received by this party.
         :param message: The content of the message.
         :param sender: The sender of the message.
         """
+        if message is None:
+            raise FandangoValueError(f"Party {self.party_name} received None-type message. This indicates a socket closing event. Overload the receive() method of {self.party_name} to handle this case.")
         if sender is None:
             parties = list(
                 map(
@@ -440,14 +442,16 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
         while self._running:
             try:
                 assert self._connection is not None
-                rlist, _, _ = select.select([self._connection], [], [], 0.00001)
+                rlist, _, _ = select.select([self._connection], [], [], 0.01)
                 if rlist and self._running:
                     if self.protocol_type == Protocol.TCP:
                         data = self._connection.recv(self._buffer_size)
                     else:
                         data, addr = self._connection.recvfrom(self._buffer_size)
                         self.current_remote_addr = addr
-                    if len(data) == 0:
+                    if len(data) == 0 and self._running:
+                        self._party_instance.receive(None, None)
+                        self._running = False
                         continue  # Keep waiting if connection is open but no data
                     self._party_instance.receive(data, None)
             except Exception:
@@ -768,12 +772,15 @@ class FandangoIO(object):
         """
         Restart all parties.
         """
+        party_instances = set(self.parties.values())
+        for party in self.parties.values():
+            party.stop()
+        self.parties.clear()
         with self.receive_lock:
-            for party in self.parties.values():
-                party.stop()
             self.receive.clear()
-            for party in self.parties.values():
-                party.start()
+            for party in party_instances:
+                cls = party.__class__
+                cls()
 
     def get_fuzzer_parties(self) -> set[FandangoParty]:
         """
@@ -781,7 +788,7 @@ class FandangoIO(object):
         """
         return set(filter(lambda i: i.is_fuzzer_controlled(), self.parties.values()))
 
-    def add_receive(self, sender: str, receiver: str, message: str | bytes) -> None:
+    def add_receive(self, sender: str, receiver: str, message: str | bytes | None) -> None:
         """
         Forwards an external received message to Fandango for processing.
         :param sender: The sender of the message.
