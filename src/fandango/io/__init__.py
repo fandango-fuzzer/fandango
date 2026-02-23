@@ -279,7 +279,7 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
     """
 
     BUFFER_SIZE_UDP = 1024  # Size of the buffer for receiving data
-    BUFFER_SIZE_TCP = 1  # Size of the buffer for receiving data
+    BUFFER_SIZE_TCP = 4096  # Size of the buffer for receiving data
 
     def __init__(
         self,
