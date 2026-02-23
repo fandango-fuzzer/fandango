@@ -439,6 +439,7 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
         if not self._running:
             return
 
+        eof_seen = False
         while self._running:
             try:
                 assert self._connection is not None
@@ -450,13 +451,15 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
                         data, addr = self._connection.recvfrom(self._buffer_size)
                         self.current_remote_addr = addr
                     if len(data) == 0 and self._running:
-                        self._party_instance.receive(None, None)
+                        eof_seen = True
                         self._running = False
-                        continue  # Keep waiting if connection is open but no data
+                        break
                     self._party_instance.receive(data, None)
             except Exception:
                 self._running = False
                 break
+        if eof_seen:
+            self._party_instance.receive(None, None)
 
     def send(
         self, message: DerivationTree | str | bytes, recipient: Optional[str]
