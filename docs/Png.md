@@ -55,6 +55,10 @@ produces a nice [32x32 pixel PNG file](32x32.png):
 The resulting PNG file [png.fan](png.fan) is reproduced verbatim below.
 As far as we can tell, structure and documentation are accurate.
 
+```{versionadded} 1.1
+`png.fan` requires Fandango 1.1 or later.
+```
+
 ```{code-cell}
 :tags: ["remove-input"]
 !cat png.fan

@@ -18,8 +18,7 @@ The [GIF format](https://www.fileformat.info/format/gif/egff.htm) is widely used
 As with the [GIF format](sec:png), we asked ChatGPT for help.
 Our prompt was the same as the [PNG prompt](prompt.txt), except that we replaced "PNG" with "GIF".
 
-The resulting GIF file [gif.fan](gif.fan) is reproduced verbatim below.
-It can be directly used in Fandango:
+The resulting GIF file [gif.fan](gif.fan) can be directly used in Fandango:
 
 ```shell
 $ fandango fuzz -f gif.fan -n 1 --population-size=1 -o 32x32.gif 
@@ -36,6 +35,10 @@ produces a [32x32 pixel GIF file](32x32.gif):
 
 Here is the generated `gif.fan` specification file.
 As far as we can tell, structure and documentation are accurate.
+
+```{versionadded} 1.1
+`gif.fan` requires Fandango 1.1 or later.
+```
 
 ```{code-cell}
 :tags: ["remove-input"]
