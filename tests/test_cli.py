@@ -101,6 +101,7 @@ class TestCLI(unittest.TestCase):
         os.remove(RESOURCES_ROOT / "test.txt")
 
     def test_output_multiple_files(self):
+        out_dir = RESOURCES_ROOT / "test_multiple_files"
         command = [
             "fandango",
             "fuzz",
@@ -111,24 +112,20 @@ class TestCLI(unittest.TestCase):
             "--random-seed",
             "426912",
             "-d",
-            str(RESOURCES_ROOT / "test"),
+            str(out_dir),
             "--no-cache",
         ]
-        (
-            out,
-            err,
-            code,
-        ) = run_command(command)
-        self.assertEqual(0, code, code)
+        out, err, code = run_command(command)
         self.assertEqual("", out, out)
         self.assertEqual("", err, err)
+        self.assertEqual(0, code, code)
         for i, expected_value in enumerate(expected_with_random_seed):
-            filename = RESOURCES_ROOT / "test" / f"fandango-{i:04d}.txt"
+            filename = out_dir / f"fandango-{i:04d}.txt"
             with open(filename, "r") as fd:
                 actual = fd.read()
             self.assertEqual(expected_value, actual, actual)
 
-        shutil.rmtree(RESOURCES_ROOT / "test", ignore_errors=True)
+        shutil.rmtree(out_dir, ignore_errors=True)
 
     def test_output_with_libfuzzer_harness(self):
         if sys.platform.startswith("win"):
@@ -377,6 +374,92 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
         self.assertEqual(result_a, result_b, result_b)
         self.assertEqual(0, code, code)
         self.assertEqual("", out, out)
+
+    def test_output_file_already_exists(self):
+        out_file = RESOURCES_ROOT / "existing_output.txt"
+        try:
+            out_file.write_text("pre-existing content")
+            command = [
+                "fandango",
+                "fuzz",
+                "-f",
+                str(RESOURCES_ROOT / "digit.fan"),
+                "-n",
+                "1",
+                "-o",
+                str(out_file),
+                "--no-cache",
+            ]
+            out, err, code = run_command(command)
+            self.assertEqual(1, code)
+            self.assertIn("already exists", err)
+        finally:
+            out_file.unlink(missing_ok=True)
+
+    def test_output_directory_is_file(self):
+        out_dir = RESOURCES_ROOT / "not_a_directory"
+        try:
+            out_dir.write_text("I am a file, not a directory")
+            command = [
+                "fandango",
+                "fuzz",
+                "-f",
+                str(RESOURCES_ROOT / "digit.fan"),
+                "-n",
+                "1",
+                "-d",
+                str(out_dir),
+                "--no-cache",
+            ]
+            out, err, code = run_command(command)
+            self.assertEqual(1, code)
+            self.assertIn("already exists as a non-file or is not empty", err)
+        finally:
+            out_dir.unlink(missing_ok=True)
+
+    def test_output_directory_not_empty(self):
+        out_dir = RESOURCES_ROOT / "non_empty_dir"
+        try:
+            out_dir.mkdir(exist_ok=True)
+            (out_dir / "dummy.txt").write_text("occupying space")
+            command = [
+                "fandango",
+                "fuzz",
+                "-f",
+                str(RESOURCES_ROOT / "digit.fan"),
+                "-n",
+                "1",
+                "-d",
+                str(out_dir),
+                "--no-cache",
+            ]
+            out, err, code = run_command(command)
+            self.assertEqual(1, code)
+            self.assertIn("already exists as a non-file or is not empty", err)
+        finally:
+            shutil.rmtree(out_dir, ignore_errors=True)
+
+    def test_output_directory_empty_succeeds(self):
+        out_dir = RESOURCES_ROOT / "empty_dir"
+        try:
+            out_dir.mkdir(exist_ok=True)
+            command = [
+                "fandango",
+                "fuzz",
+                "-f",
+                str(RESOURCES_ROOT / "digit.fan"),
+                "-n",
+                "1",
+                "-d",
+                str(out_dir),
+                "--random-seed",
+                "426912",
+                "--no-cache",
+            ]
+            out, err, code = run_command(command)
+            self.assertEqual(0, code, f"stderr: {err}")
+        finally:
+            shutil.rmtree(out_dir, ignore_errors=True)
 
     def test_soliloquy(self):
         async def async_run():
