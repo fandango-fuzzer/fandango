@@ -525,8 +525,6 @@ class Fandango:
                 LOGGER.info(
                     f"Current coverage: {current_cov:.2f}%"
                 )
-                if current_cov > 90:
-                    print(f"Missing paths: {self.packet_selector._uncovered_paths(alt_cache=True)}")
                 self.coverage_log.append((start_measuring - self._time_in_measurements, self.packet_selector._compute_coverage_trees(False)))
                 self.coverage_log_overlap.append((start_measuring - self._time_in_measurements, self.packet_selector._compute_coverage_trees(True)))
             self._time_in_measurements += time.time() - start_measuring
@@ -593,7 +591,7 @@ class Fandango:
                     preferred_symbols: list[str] = []
                     for pkg in self.population_manager.fuzzable_packets:
                         preferred_symbols.append(str(pkg.node.symbol))
-                    print(f"Trying to generate: {', '.join(preferred_symbols)}")
+                    LOGGER.debug(f"Trying to generate: {', '.join(preferred_symbols)}")
 
                     try:
                         solutions = [
@@ -717,12 +715,12 @@ class Fandango:
                         )
                 history_tree.set_all_read_only(True)
             except FandangoFailedError as e:
-                print(e)
+                print_exception(e)
                 self.past_io_derivations.append(history_tree)
                 self._initial_solutions.clear()
                 yield history_tree
                 log_guidance_hint("Starting new protocol run.")
-                print(io_instance.get_full_fragments())
+                LOGGER.debug(io_instance.get_full_fragments())
                 io_instance.reset_parties()
                 history_tree = DerivationTree(NonTerminal(self.start_symbol), [])
 
