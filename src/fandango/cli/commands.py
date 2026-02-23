@@ -178,6 +178,16 @@ def fuzz_command(args: argparse.Namespace) -> None:
     )
     LOGGER.debug("Evolving population")
 
+    if "output" in args and Path(args.output).exists():
+        raise FandangoError(f"Output file {args.output} already exists")
+
+    if "directory" in args:
+        out_dir = Path(args.directory)
+        if out_dir.exists() and (not out_dir.is_dir() or len(os.listdir(out_dir)) > 0):
+            raise FandangoError(
+                f"Output directory {out_dir} already exists as a non-file or is not empty"
+            )
+
     def solutions_callback(sol: DerivationTree, i: int) -> None:
         return output_solution(sol, args, i, file_mode)
 
