@@ -521,8 +521,9 @@ class Fandango:
             start_measuring = time.time()
             iter += 1
             if self.coverage_log_interval > 0 and iter % self.coverage_log_interval == 0:
+                current_cov = self.packet_selector.coverage_percent(alt_cache=True) * 100
                 LOGGER.info(
-                    f"Current coverage: {self.packet_selector.coverage_percent(alt_cache=True) * 100:.2f}%"
+                    f"Current coverage: {current_cov:.2f}%"
                 )
                 self.coverage_log.append((start_measuring - self._time_in_measurements, self.packet_selector._compute_coverage_trees(False)))
                 self.coverage_log_overlap.append((start_measuring - self._time_in_measurements, self.packet_selector._compute_coverage_trees(True)))
@@ -534,7 +535,10 @@ class Fandango:
                     len(self.packet_selector.get_next_parties()) == 0
                     and not self.packet_selector.is_complete()
                 ):
+                    self.packet_selector.compute(history_tree, self.past_io_derivations)
+                    res = self.packet_selector.get_next_parties()
                     raise FandangoFailedError("Could not forecast next packet")
+
 
                 if (
                     len(self.packet_selector.get_next_parties()) == 0
@@ -584,6 +588,10 @@ class Fandango:
                     self.grammar.set_max_repetition(
                         self.adaptive_tuner.current_max_repetition
                     )
+                    preferred_symbols: list[str] = []
+                    for pkg in self.population_manager.fuzzable_packets:
+                        preferred_symbols.append(str(pkg.node.symbol))
+                    LOGGER.debug(f"Trying to generate: {', '.join(preferred_symbols)}")
 
                     try:
                         solutions = [
@@ -707,12 +715,12 @@ class Fandango:
                         )
                 history_tree.set_all_read_only(True)
             except FandangoFailedError as e:
-                print(e)
+                print_exception(e)
                 self.past_io_derivations.append(history_tree)
                 self._initial_solutions.clear()
                 yield history_tree
                 log_guidance_hint("Starting new protocol run.")
-                print(io_instance.get_full_fragments())
+                LOGGER.debug(io_instance.get_full_fragments())
                 io_instance.reset_parties()
                 history_tree = DerivationTree(NonTerminal(self.start_symbol), [])
 
