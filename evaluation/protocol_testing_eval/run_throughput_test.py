@@ -11,7 +11,8 @@ from fandango.language.parse.parse import parse
 def main():
     sys.setrecursionlimit(10**6)
     protocols = [("dune", "dune.fan"), ("smtp", "smtp_client.fan"), ("dns", "dns.fan"), ("ftp", "ftp_client.fan"), ("chatgpt", "chatgpt.fan")]
-    experiment_time_in_s = 3600
+    protocols = [("ftp", "ftp_client.fan")]
+    experiment_time_in_s = 20
     for folder, spec in protocols:
         start_time = time.time()
         with open(f"{folder}/{spec}") as f:
@@ -42,19 +43,21 @@ def main():
                 current_id += 1
                 file_path = f"{output_folder_name}/throughput_metrics_{current_id}.md"
             with open(file_path, "w") as f:
-                f.write(
-                    f"Nr trees generated: {len(fandango.packet_selector._all_derivation_trees())}\n"
-                )
-                f.write(
-                    f"Nr messages exchanged: {sum(len(sol.protocol_msgs()) for sol in fandango.packet_selector._all_derivation_trees())}\n"
-                )
                 msgs_by_sender: dict[str, int] = dict()
                 ignore_parties = {'SocketControlServer', 'SocketControlClient'}
+                overall_msgs = 0
                 for session in fandango.packet_selector._all_derivation_trees():
                     for msg in session.protocol_msgs():
                         if msg.sender in ignore_parties:
                             continue
                         msgs_by_sender[msg.sender] = msgs_by_sender.get(msg.sender, 0) + 1
+                        overall_msgs += 1
+                f.write(
+                    f"Nr trees generated: {len(fandango.packet_selector._all_derivation_trees())}\n"
+                )
+                f.write(
+                    f"Nr messages exchanged: {overall_msgs}\n"
+                )
 
                 for sender, count in msgs_by_sender.items():
                     f.write(f"Nr messages sent by {sender}: {count}\n")
