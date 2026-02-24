@@ -40,9 +40,7 @@ def limit_errors(tree):
 <state_logged_in> ::= (<logged_in_cmds><state_logged_in>) | (<exchange_set_type><state_in_binary>) | (<exchange_set_epassive><state_in_passive>)
 <state_in_binary> ::= (<logged_in_cmds><state_in_binary>) | (<exchange_set_epassive><state_in_binary_passive>)
 <state_in_passive> ::= (<logged_in_cmds><state_in_passive>) | (<exchange_set_type> <state_in_binary_passive>)
-<state_in_binary_passive> ::= (<logged_in_cmds><state_in_binary_passive>) | (<exchange_list><state_in_binary>) | (<exchange_quit><state_finished>)
-
-<state_finished> ::= ''
+<state_in_binary_passive> ::= (<logged_in_cmds><state_in_binary_passive>) | (<exchange_list><state_in_binary>) | <exchange_quit>
 
 # The logged in state. If the client is logged in, it is allowed to send the following commands.
 <logged_in_cmds> ::= <exchange_pwd> | <exchange_syst> | <exchange_feat> | <exchange_set_utf8>
@@ -125,8 +123,9 @@ def feat_response():
 <open_list> ::= '150 ' <command_tail> '\r\n'
 # <open_list_already_open> ::= '150 ' <command_tail> '\r\n'
 # <list_data> gets sent using the data-channel. Therefore, we use ServerData and ClientData as sending and receiving parties.
-<list_transfer> ::= <ServerData:ClientData:list_data>?<ServerControl:ClientControl:finalize_list>
+<list_transfer> ::= <ServerData:ClientData:list_data>?(<SocketControlServer:close_data><ServerControl:ClientControl:finalize_list>|<ServerControl:ClientControl:finalize_list><ServerData:ClientData:list_data>?<SocketControlServer:close_data>)
 <finalize_list> ::= '226 ' <command_tail> '\r\n'
+<close_data> ::=  'Data socket closed.\r\n'
 <list_data> ::= (<list_data_file>)+
 <list_data_file> ::= <permissions> ' '+ <link_count> ' ' <user> ' '+ <group> ' '+ <file_size> ' ' <date> ' ' <filename> '\r\n'
 <filename>    ::= r'[\x20-\x7E]+'
@@ -182,9 +181,11 @@ def open_data_port(port) -> int:
         return port
 
     client_data.stop()
+    server_data.stop()
     if client_data.port != port:
         client_data.port = port
     client_data.start()
     if server_data.port != port:
         server_data.port = port
+    server_data.start()
     return port

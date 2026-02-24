@@ -49,8 +49,11 @@ def main():
                     f"Nr messages exchanged: {sum(len(sol.protocol_msgs()) for sol in fandango.packet_selector._all_derivation_trees())}\n"
                 )
                 msgs_by_sender: dict[str, int] = dict()
+                ignore_parties = {'SocketControlServer', 'SocketControlClient'}
                 for session in fandango.packet_selector._all_derivation_trees():
                     for msg in session.protocol_msgs():
+                        if msg.sender in ignore_parties:
+                            continue
                         msgs_by_sender[msg.sender] = msgs_by_sender.get(msg.sender, 0) + 1
 
                 for sender, count in msgs_by_sender.items():

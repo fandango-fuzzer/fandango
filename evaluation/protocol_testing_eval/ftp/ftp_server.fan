@@ -21,12 +21,6 @@ class ServerControl(NetworkParty):
     def receive(self, message: str | bytes, sender: Optional[str]) -> None:
         super().receive(message.decode("utf-8"), sender="ClientControl")
 
-    def send(self, message: DerivationTree, recipient: str):
-        super().send(message, recipient)
-        # 226 indicates the end of a data transfer. We stop the data parties then in order to disconnect from the ftp servers data socket.
-        if message.to_string().startswith("226"):
-            ServerData.instance().stop()
-
 
 # The classes ClientData and ServerData are the party definitions for the data connection.
 class ClientData(NetworkParty):
@@ -47,3 +41,31 @@ class ServerData(NetworkParty):
     # Tell FANDANGO that all received messages come from ClientData.
     def receive(self, message: str | bytes, sender: Optional[str]) -> None:
         super().receive(message.decode("utf-8"), sender="ClientData")
+
+class SocketControlServer(FandangoParty):
+    def __init__(self):
+        super().__init__(
+            connection_mode=ConnectionMode.OPEN
+        )
+
+    def send(self, message: str | bytes, recipient: Optional[str]) -> None:
+        if str(message).startswith("Data socket closed.\r\n"):
+            ServerData.instance().stop()
+
+    def start(self):
+        pass
+
+    def stop(self):
+        pass
+
+class SocketControlClient(FandangoParty):
+    def __init__(self):
+        super().__init__(
+            connection_mode=ConnectionMode.EXTERNAL
+        )
+
+    def start(self):
+        pass
+
+    def stop(self):
+        pass
