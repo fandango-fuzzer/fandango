@@ -1,2 +1,0 @@
-username Cleartext-Password := "password"
-challengeuser Cleartext-Password := "test123"

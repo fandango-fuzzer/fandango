@@ -10,8 +10,7 @@ from fandango.language.parse.parse import parse
 
 def main():
     sys.setrecursionlimit(10**6)
-    #protocols = [("dune", "dune.fan"), ("smtp", "smtp_client.fan"), ("ftp", "ftp_client.fan")]
-    protocols = [("dns", "dns.fan")] #, ("dune", "dune.fan"), ("smtp", "smtp_client.fan"), ("ftp", "ftp_client.fan")]
+    protocols = [("dune", "dune.fan"), ("smtp", "smtp_client.fan"), ("dns", "dns.fan"), ("ftp", "ftp_client.fan"), ("chatgpt", "chatgpt.fan")]
     experiment_time_in_s = 3600
     for folder, spec in protocols:
         start_time = time.time()
