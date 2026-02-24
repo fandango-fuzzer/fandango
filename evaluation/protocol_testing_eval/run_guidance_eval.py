@@ -11,13 +11,21 @@ from fandango.language.parse.parse import parse
 
 def main():
     sys.setrecursionlimit(10**6)
+    nr_of_runs_per_target = 10
+
     # Parse grammar and constraints
-    protocols = [("dune", "dune.fan"), ("smtp", "smtp_client.fan"), ("dns", "dns.fan"), ("ftp", "ftp_client.fan"), ("chatgpt", "chatgpt.fan")]
-    for folder, spec in protocols:
+    protocols = [
+        ("dune", "dune.fan", False),
+        ("smtp", "smtp_client.fan", False),
+        ("dns", "dns.fan", True),
+        ("ftp", "ftp_client.fan", False),
+        ("chatgpt", "chatgpt.fan", False)
+    ]
+    for folder, spec, enable_auto_stop in protocols:
         overall_max_coverage_guided = 0.0
         nr_failed_new_coverage = 0
         for enable_guidance in [True, False]:
-            for _ in range(10):
+            for _ in range(nr_of_runs_per_target):
                 max_coverage_guided = 0.0
                 with open(f"{folder}/{spec}") as f:
                     grammar, constraints = parse(
@@ -44,18 +52,19 @@ def main():
                         else:
                             print(str(solution))
                         current_cov = fandango.packet_selector.coverage_percent(alt_cache=True)
-                        if enable_guidance:
-                            if current_cov > max_coverage_guided:
-                                max_coverage_guided = current_cov
-                                overall_max_coverage_guided = max(overall_max_coverage_guided, max_coverage_guided)
-                                nr_failed_new_coverage = 0
+                        if enable_auto_stop:
+                            if enable_guidance:
+                                if current_cov > max_coverage_guided:
+                                    max_coverage_guided = current_cov
+                                    overall_max_coverage_guided = max(overall_max_coverage_guided, max_coverage_guided)
+                                    nr_failed_new_coverage = 0
+                                else:
+                                    nr_failed_new_coverage += 1
+                                    if nr_failed_new_coverage >= 10:
+                                        break
                             else:
-                                nr_failed_new_coverage += 1
-                                if nr_failed_new_coverage >= 10:
+                                if current_cov - overall_max_coverage_guided >= -0.0001:
                                     break
-                        else:
-                            if current_cov - overall_max_coverage_guided >= -0.0001:
-                                break
                 finally:
                     current_id = 1
                     os.path.exists(output_folder_name) or os.makedirs(output_folder_name)

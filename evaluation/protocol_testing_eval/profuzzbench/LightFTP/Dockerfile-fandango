@@ -41,7 +41,7 @@ RUN python3.11 -m pip install -U pip setuptools wheel
 
 RUN git clone https://github.com/fandango-fuzzer/fandango.git && \
     cd fandango && \
-    git checkout io_benchmark && \
+    git checkout io_replication && \
     python3.11 -m pip install --no-cache-dir -e ".[test]"
 
 # Use ubuntu as default username
