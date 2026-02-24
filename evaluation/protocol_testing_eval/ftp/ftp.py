@@ -20,7 +20,7 @@ def main():
         logger_level=LoggerLevel.INFO,
     )
     fandango.coverage_log_interval = 10
-    fandango.enable_guidance(False)
+    fandango.enable_guidance(True)
 
     for solution in fandango.generate(mode=FuzzingMode.IO):
         pass

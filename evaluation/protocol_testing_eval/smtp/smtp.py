@@ -1,7 +1,7 @@
 import os
 import time
 
-from evaluation.experiments.utils import write_coverage_log
+from evaluation.protocol_testing_eval.utils import write_coverage_log
 from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.io.navigation.coverage_goal import CoverageGoal
 from fandango.language.grammar import FuzzingMode
@@ -25,20 +25,11 @@ def main():
             logger_level=LoggerLevel.INFO,
             coverage_goal=CoverageGoal.STATE_INPUTS_OUTPUTS
         )
-        fandango.enable_guidance(False)
-        output_folder_name = "coverage_w_guidance" if fandango._is_enable_guidance else "coverage_wo_guidance"
+        fandango.coverage_log_interval = 10
+        fandango.enable_guidance(True)
 
-        try:
-            for solution in fandango.generate(mode=FuzzingMode.IO):
-                if solution.contains_bytes():
-                    print(bytes(solution))
-                else:
-                    print(str(solution))
-        finally:
-            current_id = 1
-            while os.path.exists(f"{output_folder_name}/run_{current_id}_grammar_coverage.csv"):
-                current_id += 1
-            write_coverage_log(fandango, output_folder_name, current_id, time_start)
+        for solution in fandango.generate(mode=FuzzingMode.IO):
+            pass
 
 if __name__ == "__main__":
     main()
