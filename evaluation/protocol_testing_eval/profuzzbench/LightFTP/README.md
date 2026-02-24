@@ -20,16 +20,16 @@ docker build . -t lightftp-aflnet
 The following commands run 4 instances of AFLNet and 4 instances of AFLnwe to simultaenously fuzz LightFTP in 60 minutes.
 
 ```bash
-mkdir results-lightftp
+mkdir results-aflnet
 
-profuzzbench_exec_common.sh lightftp-aflnet 4 results-lightftp aflnet out-lightftp-aflnet "-m none -P FTP -D 10000 -q 3 -s 3 -E -K" 3600 5
+profuzzbench_exec_common.sh lightftp-aflnet 4 results-aflnet aflnet out-lightftp-aflnet "-m none -P FTP -D 10000 -q 3 -s 3 -E -K" 3600 5
 ```
 
 ## Step-3. Collect the results
 The following commands collect the  code coverage results produced by AFLNet and AFLnwe and save them to results.csv.
 
 ```bash
-cd $PFBENCH/results-lightftp
+cd $PFBENCH/results-aflnet
 profuzzbench_generate_csv.sh lightftp 4 aflnet results.csv 0
 ```
 
