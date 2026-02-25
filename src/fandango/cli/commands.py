@@ -178,6 +178,19 @@ def fuzz_command(args: argparse.Namespace) -> None:
     )
     LOGGER.debug("Evolving population")
 
+    if getattr(args, "output", None) is not None:
+        p = Path(args.output)
+        if p.exists():
+            LOGGER.info(f"Removing existing output file {p}")
+            p.unlink()
+
+    if getattr(args, "directory", None) is not None:
+        out_dir = Path(args.directory)
+        if out_dir.exists() and (not out_dir.is_dir() or len(os.listdir(out_dir)) > 0):
+            raise FandangoError(
+                f"Output directory {out_dir} is not a directory or is not empty"
+            )
+
     def solutions_callback(sol: DerivationTree, i: int) -> None:
         return output_solution(sol, args, i, file_mode)
 
