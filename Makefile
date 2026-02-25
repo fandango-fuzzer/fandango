@@ -231,7 +231,7 @@ evaluation $(EVALUATION_MARKER): $(PYTHON_SOURCES) $(EVALUATION_SOURCES)
 
 fcc:
 	rm -fr fcc
-	git clone https://github.com/leonbett/fcc.git
+	git clone https://github.com/fandango-fuzzer/fcc.git
 	make -C fcc install
 
 ## All
