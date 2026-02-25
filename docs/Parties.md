@@ -136,14 +136,13 @@ Whenever Fandango receives messages from a party, it invokes its `receive()` mes
 Again, you can extend this for your own needs.
 
 Here is an example in which we decompress the message received via a `decompress()` function.
-
 ```python
 def decompress(msg: bytes) -> bytes:
     decompressed_message = ... # Your code goes here
     return decompressed_message
 
 class Server(Server):
-    def receive(self, message: str | bytes, sender: Optional[str]):
+    def receive(self, message: str | bytes | None, sender: Optional[str]):
         decompressed_message = decompress(message)
         super().receive(decompressed_message, sender)
 ```
