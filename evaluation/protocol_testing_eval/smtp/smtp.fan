@@ -103,7 +103,7 @@ def decode64(input):
 <response_mail_data> ::= '354 ' r'[a-zA-Z0-9\-\.\,\"\:\<\> ]+' '\r\n'
 <request_noop> ::= "NOOP" (' ' r"[^ \r\n]*")? '\r\n'
 <request_help> ::= 'HELP' '\r\n'
-<response_help> ::= ("214" "-" (r"[^\r\n\x80-\xFF]*")? '\r\n')* "214" (' ' r"[^\r\n\x80-\xFF]*")? '\r\n'
+<response_help> ::= (r"2\d\d" "-" (r"[^\r\n\x80-\xFF]*")? '\r\n')* r"2\d\d" (' ' r"[^\r\n\x80-\xFF]*")? '\r\n'
 
 <mail_body_end> ::= '\r\n\r\n.\r\n'
 <mail_contents_64> ::= r'[a-zA-Z0-9\+\\\=]+' := encode64(<mail_contents>)

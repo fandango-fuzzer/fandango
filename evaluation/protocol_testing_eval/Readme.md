@@ -128,6 +128,11 @@ with your actual API token.
 
 ---
 
+## Comparison against AflNet
+The folder `profuzzbench/LightFTP` contains the scripts to reproduce the experiments from the paper and a readme with further instructions.
+
+---
+
 ## Notes
 
 * Make sure all required services are running before starting evaluations.
