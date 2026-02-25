@@ -28,12 +28,32 @@ def limit_failed_logins(tree, symbol_to_find):
 
 # Limits number of errors to 10. Our testing target (vsftpd) disconnects the client at 10 failed attempts in a row.
 def limit_errors(tree):
-    nts = [NonTerminal('<request_auth_ssl>'), NonTerminal('<response_auth_ssl>'), NonTerminal('<request_auth_tls>'), NonTerminal('<response_auth_tls>')]
+    auth_error_symbols = [
+        NonTerminal('<request_auth_ssl>'),
+        NonTerminal('<response_auth_ssl>'),
+        NonTerminal('<request_auth_tls>'),
+        NonTerminal('<response_auth_tls>'),
+    ]
+    request_login_pass_fail = NonTerminal('<request_login_pass_fail>')
+    request_login_user_fail = NonTerminal('<request_login_user_fail>')
+    login_symbols = [
+        NonTerminal('<request_login_user_ok>'), request_login_user_fail,
+        request_login_pass_fail, NonTerminal('<request_login_pass_ok>'),
+        NonTerminal('<response_login_pass_fail>'), NonTerminal('<response_login_user>')
+    ]
     count = 0
+    login_command_counted = False
     for msg in tree.protocol_msgs()[::-1]:
-        if msg.msg.symbol not in nts:
+        symbol = msg.msg.symbol
+        if symbol in auth_error_symbols:
+            count += 1
+        elif symbol in login_symbols:
+            # Failed login attempts are multi-step; count at most 2 errors per attempt:
+            if (symbol == request_login_user_fail or symbol == request_login_pass_fail) and not login_command_counted:
+                count += 2
+                login_command_counted = True
+        else:
             return True
-        count += 1
         if count > 10:
             return False
 
