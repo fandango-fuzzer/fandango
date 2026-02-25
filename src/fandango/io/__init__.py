@@ -160,12 +160,16 @@ class FandangoParty(ABC):
         """
         print(f"({self.party_name}): {str(message)}")
 
-    def receive(self, message: str | bytes, sender: Optional[str]) -> None:
+    def receive(self, message: str | bytes | None, sender: Optional[str]) -> None:
         """
         Called when a message has been received by this party.
         :param message: The content of the message.
         :param sender: The sender of the message.
         """
+        if message is None:
+            raise FandangoValueError(
+                f"Party {self.party_name} received None-type message. This indicates a socket closing event. Overload the receive() method of {self.party_name} to handle this case."
+            )
         if sender is None:
             parties = list(
                 map(
@@ -233,6 +237,7 @@ class ProtocolImplementation(ABC):
         self.port = port
         self.ip_type = ip_type
         self._party_instance = party_instance
+        self.io_instance = party_instance.io_instance
 
     def send(
         self, message: DerivationTree | str | bytes, recipient: Optional[str]
@@ -277,7 +282,7 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
     """
 
     BUFFER_SIZE_UDP = 1024  # Size of the buffer for receiving data
-    BUFFER_SIZE_TCP = 1  # Size of the buffer for receiving data
+    BUFFER_SIZE_TCP = 4096  # Size of the buffer for receiving data
 
     def __init__(
         self,
@@ -333,7 +338,6 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
             return
         if not self._party_instance.is_fuzzer_controlled():
             return
-        self.stop()
         self._create_socket()
         self._connect()
 
@@ -405,7 +409,9 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
                     if self.connection_mode == ConnectionMode.OPEN:
                         assert self._sock is not None
                         while self._running:
-                            rlist, _, _ = select.select([self._sock], [], [], 0.00001)
+                            rlist, _, _ = select.select(
+                                [self._sock], [], [], 0.0000000001
+                            )
                             if rlist:
                                 self._connection, _ = self._sock.accept()
                                 break
@@ -439,15 +445,18 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
         while self._running:
             try:
                 assert self._connection is not None
-                rlist, _, _ = select.select([self._connection], [], [], 0.00001)
+                rlist, _, _ = select.select([self._connection], [], [], 0.01)
                 if rlist and self._running:
                     if self.protocol_type == Protocol.TCP:
                         data = self._connection.recv(self._buffer_size)
                     else:
                         data, addr = self._connection.recvfrom(self._buffer_size)
                         self.current_remote_addr = addr
-                    if len(data) == 0:
-                        continue  # Keep waiting if connection is open but no data
+                    if len(data) == 0 and self._running:
+                        self._party_instance.receive(None, None)
+                        self._running = False
+                        self._connection.shutdown(socket.SHUT_RDWR)
+                        continue
                     self._party_instance.receive(data, None)
             except Exception:
                 self._running = False
@@ -767,12 +776,16 @@ class FandangoIO(object):
         """
         Restart all parties.
         """
+        party_instances = set(self.parties.values())
+        for party in self.parties.values():
+            party.stop()
+        self.parties.clear()
         with self.receive_lock:
-            for party in self.parties.values():
-                party.stop()
             self.receive.clear()
-            for party in self.parties.values():
-                party.start()
+            for party in party_instances:
+                cls = party.__class__
+                # Guaranteed to not have an argument
+                cls()  # type: ignore[call-arg]
 
     def get_fuzzer_parties(self) -> set[FandangoParty]:
         """
