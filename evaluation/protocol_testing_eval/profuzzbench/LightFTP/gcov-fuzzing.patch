@@ -1,0 +1,124 @@
+diff --git a/Source/Release/makefile b/Source/Release/makefile
+index 2241106..6248625 100644
+--- a/Source/Release/makefile
++++ b/Source/Release/makefile
+@@ -28,7 +28,7 @@ all: fftp
+ fftp: $(OBJS) $(USER_OBJS)
+ 	@echo 'Building target: $@'
+ 	@echo 'Invoking: GCC C Linker'
+-	gcc  -o "fftp" $(OBJS) $(USER_OBJS) $(LIBS)
++	$(CC) $(CFLAGS)  -o "fftp" $(OBJS) $(USER_OBJS) $(LIBS)
+ 	@echo 'Finished building target: $@'
+ 	@echo ' '
+ 
+diff --git a/Source/Release/subdir.mk b/Source/Release/subdir.mk
+index f520c4d..bcf6f32 100644
+--- a/Source/Release/subdir.mk
++++ b/Source/Release/subdir.mk
+@@ -26,7 +26,7 @@ C_DEPS += \
+ %.o: ../%.c
+ 	@echo 'Building file: $<'
+ 	@echo 'Invoking: GCC C Compiler'
+-	gcc -std=c99 -O3 -Wall -Wextra -c -fmessage-length=0 -Wno-unused-parameter -Wno-unused-result -fno-ident -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
++	$(CC) $(CFLAGS) -std=c99 -O3 -Wall -Wextra -c -fmessage-length=0 -Wno-unused-parameter -Wno-unused-result -fno-ident -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
+ 	@echo 'Finished building: $<'
+ 	@echo ' '
+ 
+diff --git a/Source/ftpserv.c b/Source/ftpserv.c
+index d63d993..8b7bd62 100644
+--- a/Source/ftpserv.c
++++ b/Source/ftpserv.c
+@@ -33,6 +33,7 @@ static const char *ftpcmds[MAX_CMDS] = {
+ #define FTP_PASSCMD_INDEX	13
+ 
+ unsigned int g_newid = 0;
++extern volatile sig_atomic_t g_terminate_requested;
+ 
+ void delete_last_slash(char *s)
+ {
+@@ -2013,7 +2014,7 @@ void *ftpmain(void *p)
+ 	writelogentry(NULL, success220, "");
+ 
+ 	socketret = listen(ftpsocket, SOMAXCONN);
+-	while ( socketret == 0 ) {
++	while ( socketret == 0 && (g_terminate_requested == 0)) {
+ 		memset(&laddr, 0, sizeof(laddr));
+ 		asz = sizeof(laddr);
+ 		clientsocket = accept(ftpsocket, (struct sockaddr *)&laddr, &asz);
+@@ -2036,6 +2037,9 @@ void *ftpmain(void *p)
+ 				close(clientsocket);
+ 			}
+ 		}
++    //Terminate the main thread when the child thread terminates
++		pthread_join(th, NULL);
++    break;
+ 	}
+ 
+ 	free(scb);
+diff --git a/Source/main.c b/Source/main.c
+index eaa1a55..8281f75 100644
+--- a/Source/main.c
++++ b/Source/main.c
+@@ -11,6 +11,8 @@
+ #include "ftpserv.h"
+ #include "cfgparse.h"
+ #include "x_malloc.h"
++#include <signal.h>
++#include <unistd.h>
+ 
+ FTP_CONFIG	g_cfg;
+ int			g_log = -1;
+@@ -24,6 +26,15 @@ static	char	CAFILE[PATH_MAX],
+ 				KEYFILE[PATH_MAX],
+ 				KEYFILE_PASS[256];
+ 
++extern void __gcov_dump(void);
++volatile sig_atomic_t g_terminate_requested = 0;
++
++void sig_handler(int signo)
++{
++  if (signo == SIGUSR1)
++    exit(0);
++}
++
+ void TLSInit()
+ {
+ 	while (gnutls_global_init() >= 0)
+@@ -76,7 +87,7 @@ int main(int argc, char *argv[])
+ 	int			c;
+ 	uint32_t	bufsize = 65536;
+ 	pthread_t	thid;
+-
++        signal(SIGUSR1, sig_handler);
+ 	if (sizeof (off_t) != 8)
+ 	{
+ 		printf("off_t is not 64 bits long");
+@@ -106,9 +117,10 @@ int main(int argc, char *argv[])
+ 		if (ParseConfig(cfg, CONFIG_SECTION_NAME, "local_mask", textbuf, bufsize))
+ 			g_cfg.LocalIPMask = inet_addr(textbuf);
+ 
+-		g_cfg.Port = DEFAULT_FTP_PORT;
+-		if (ParseConfig(cfg, CONFIG_SECTION_NAME, "port", textbuf, bufsize))
+-			g_cfg.Port = strtoul(textbuf, NULL, 10);
++		//g_cfg.Port = DEFAULT_FTP_PORT;
++		//if (ParseConfig(cfg, CONFIG_SECTION_NAME, "port", textbuf, bufsize))
++		//	g_cfg.Port = strtoul(textbuf, NULL, 10);
++    g_cfg.Port = strtoul(argv[2], NULL, 10);
+ 
+ 		g_cfg.MaxUsers = 1;
+ 		if (ParseConfig(cfg, CONFIG_SECTION_NAME, "maxusers", textbuf, bufsize))
+@@ -190,9 +202,13 @@ int main(int argc, char *argv[])
+ 
+ 		do {
+ 			c = getc(stdin);
+-			sleep(1);
++		while (g_terminate_requested == 0)
++ 			sleep(1);
+ 		} while ((c != 'q') && (c != 'Q'));
+ 
++		pthread_join(thid, NULL);
++		__gcov_dump();
++
+ 		break;
+ 	}
+ 

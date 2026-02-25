@@ -63,19 +63,22 @@ sequenceDiagram
     ServerControl ->> ClientControl: 331 Password required for the_user.
     ClientControl ->> ServerControl: PASS the_password
     ServerControl ->> ClientControl: 230 User the_user logged in.
+    ClientControl ->> ServerControl: EPSV
+    ServerControl ->> ClientControl: 229 Entering Extended Passive Mode (|||50100|)
+    ClientData ->> ServerData: (connect)
     ClientControl ->> ServerControl: LIST
     ServerControl ->> ClientControl: 150 Opening ASCII mode data connection for file list
     ServerData ->> ClientData: (data)
     ServerControl ->> ClientControl: 226 Transfer complete.
-    ClientControl ->> ServerControl: (disconnect)
+    ServerData ->> ClientData: (disconnect)
 ```
 
 ### Control Parties
 
 In our setting, we assume that Fandango is acting as _client_ to test an FTP server.
 Fandango connects to a server running on port 25521 on the local host.
-Whenever it receives a `150` message initiating a data transfer, it starts the `ClientData` party.
-Here, we use the [`instance()`](sec:party-instance) method to access and reconfigure the individual parties.
+Whenever received a message using the `ClientControl` party, it marks the message as received from the `ServerControl` party.
+The call to `self.start()` in the constructior starts the party and lets it connect to the socket.
 
 
 ```python
@@ -87,13 +90,14 @@ class ClientControl(NetworkParty):
         )
         self.start()
 
-    def receive(self, message: str | bytes, sender: Optional[str]) -> None:
-        if message.decode("utf-8").startswith("150"):
-            ClientData.instance().start()
+    def receive(self, message: str | bytes | None, sender: Optional[str]) -> None:
+        super().receive(message.decode("utf-8"), sender="ServerControl")
+
 ```
 
-When the server sends a `226` message, this indicates the end of a data transfer;
-so we stop the `ServerData` instance to disconnect.
+The `ServerControl` party is the counterpart to `ClientControl`.
+As in our scenario we are assuming that Fandango is acting as _client_ we set the `connection_mode` to `ConnectionMode.EXTERNAL`.
+The party does, therefore, not connect to a socket. The call to `self.start()` in the constructior is ignored.
 
 ```python
 class ServerControl(NetworkParty):
@@ -104,19 +108,21 @@ class ServerControl(NetworkParty):
         )
         self.start()
 
-    def receive(self, message: str | bytes, sender: Optional[str]) -> None:
+    def receive(self, message: str | bytes | None, sender: Optional[str]) -> None:
         super().receive(message.decode("utf-8"), sender="ClientControl")
-
-    def send(self, message: DerivationTree, recipient: str):
-        super().send(message, recipient)
-        if message.to_string().startswith("226"):
-            ServerData.instance().stop()
 ```
 
 
 ### Data Parties
 
 In our setting, the FTP data transfer takes place via port 50100 on the local host.
+In our setting, the FTP data port is updated at runtime, the port number specified in the `uri` is a placeholder.
+When starting a new protocol interaction, this party is not connected to a socket.
+We therefore don't call `self.start()` in the constructor.
+The updating procedure of the port number is performed in the [`open_data_port(port)-function`](sec:ftp-epsv).
+Whenever `ClientData`'s data socket is closed by the server, it received a `None` message.
+This automatically shuts down the `ClientData` party. `ClientData` forwards a `Data socket closed.` message to `SocketControlServer`
+which is a dummy party, that we use to describe port disconnections in the grammar.
 
 ```python
 class ClientData(NetworkParty):
@@ -126,7 +132,11 @@ class ClientData(NetworkParty):
             uri="tcp://[::1]:50100"
         )
 
-    def receive(self, message: str | bytes, sender: Optional[str]) -> None:
+    # Tell FANDANGO that all received messages come from ServerData.
+    def receive(self, message: str | bytes | None, sender: Optional[str]) -> None:
+        if message is None:
+            super().receive("Data socket closed.\r\n", sender="SocketControlServer")
+            return
         super().receive(message.decode("utf-8"), sender="ServerData")
 ```
 
@@ -137,9 +147,54 @@ class ServerData(NetworkParty):
             connection_mode=ConnectionMode.EXTERNAL,
             uri="tcp://[::1]:50100"
         )
-
-    def receive(self, message: str | bytes, sender: Optional[str]) -> None:
+    def receive(self, message: str | bytes | None, sender: Optional[str]) -> None:
+        if message is None:
+            super().receive("Data socket closed.\r\n", sender="SocketControlClient")
+            return
         super().receive(message.decode("utf-8"), sender="ClientData")
+```
+
+### Dummy socket control parties
+
+`SocketControlClient` is a dummy party used to describe socket closures in the grammar.
+Whenever FANDANGO produces a message sent as `SocketControlClient`, the party implementation doesn't send the message.
+Instead, it treats the message as a command to stop the `ClientData` party.
+Here, we use the [`instance()`](sec:party-instance) method to access and stop the data party and therefore closing the data socket.
+
+```python
+class SocketControlClient(FandangoParty):
+    def __init__(self):
+        super().__init__(
+            connection_mode=ConnectionMode.CONNECT
+        )
+        
+    def send(self, message: str | bytes, recipient: Optional[str]) -> None:
+        if str(message).startswith("Data socket closed.\r\n"):
+            ClientData.instance().stop()
+
+    def start(self):
+        pass
+
+    def stop(self):
+        pass
+```
+
+```python
+class SocketControlServer(FandangoParty):
+    def __init__(self):
+        super().__init__(
+            connection_mode=ConnectionMode.EXTERNAL
+        )
+
+    def send(self, message: str | bytes, recipient: Optional[str]) -> None:
+        if str(message).startswith("Data socket closed.\r\n"):
+            ServerData.instance().stop()
+
+    def start(self):
+        pass
+
+    def stop(self):
+        pass
 ```
 
 
@@ -546,10 +601,12 @@ The FTP `LIST` command makes the FTP server send the contents of the current dir
 
 `<list_data>` gets sent using the data channel.
 Therefore, we use `ServerData` and `ClientData` as sending and receiving parties.
+`SocketControlServer` is used to specify situations where the data channel should be closed by the server.
 
 ```python
-<list_transfer> ::= <ServerData:ClientData:list_data>?<ServerControl:ClientControl:finalize_list>
+<list_transfer> ::= <ServerData:ClientData:list_data>?(<SocketControlServer:close_data><ServerControl:ClientControl:finalize_list>|<ServerControl:ClientControl:finalize_list><ServerData:ClientData:list_data>?<SocketControlServer:close_data>)
 <finalize_list> ::= '226 ' <command_tail> '\r\n'
+<close_data> ::=  'Data socket closed.\r\n'
 ```
 
 The list data itself contains file names, user names, permissions, and dates:
