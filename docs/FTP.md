@@ -78,6 +78,7 @@ sequenceDiagram
 In our setting, we assume that Fandango is acting as _client_ to test an FTP server.
 Fandango connects to a server running on port 25521 on the local host.
 Whenever received a message using the `ClientControl` party, it marks the message as received from the `ServerControl` party.
+The call to `self.start()` in the constructior starts the party and lets it connect to the socket.
 
 
 ```python
@@ -94,8 +95,9 @@ class ClientControl(NetworkParty):
 
 ```
 
-When the server sends a `226` message, this indicates the end of a data transfer;
-so we stop the `ServerData` instance to disconnect.
+The `ServerControl` party is the counterpart to `ClientControl`.
+As in our scenario we are assuming that Fandango is acting as _client_ we set the `connection_mode` to `ConnectionMode.EXTERNAL`.
+The party does, therefore, not connect to a socket. The call to `self.start()` in the constructior is ignored.
 
 ```python
 class ServerControl(NetworkParty):
@@ -115,6 +117,8 @@ class ServerControl(NetworkParty):
 
 In our setting, the FTP data transfer takes place via port 50100 on the local host.
 In our setting, the FTP data port is updated at runtime, the port number specified in the `uri` is a placeholder.
+When starting a new protocol interaction, this party is not connected to a socket.
+We therefore don't call `self.start()` in the constructor.
 The updating procedure of the port number is performed in the [`open_data_port(port)-function`](sec:ftp-epsv).
 Whenever `ClientData`'s data socket is closed by the server, it received a `None` message.
 This automatically shuts down the `ClientData` party. `ClientData` forwards a `Data socket closed.` message to `SocketControlServer`
@@ -144,6 +148,9 @@ class ServerData(NetworkParty):
             uri="tcp://[::1]:50100"
         )
     def receive(self, message: str | bytes | None, sender: Optional[str]) -> None:
+        if message is None:
+            super().receive("Data socket closed.\r\n", sender="SocketControlClient")
+            return
         super().receive(message.decode("utf-8"), sender="ClientData")
 ```
 
