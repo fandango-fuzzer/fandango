@@ -381,6 +381,7 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
             out_file.write_text("pre-existing content")
             command = [
                 "fandango",
+                "-v",
                 "fuzz",
                 "-f",
                 str(RESOURCES_ROOT / "digit.fan"),
@@ -391,8 +392,8 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
                 "--no-cache",
             ]
             out, err, code = run_command(command)
-            self.assertEqual(1, code)
-            self.assertIn("already exists", err)
+            self.assertEqual(0, code)
+            self.assertIn("Removing existing output file", err)
         finally:
             out_file.unlink(missing_ok=True)
 
