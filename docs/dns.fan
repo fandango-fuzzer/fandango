@@ -1,1 +1,1 @@
-../evaluation/experiments/dns/dns.fan
+../evaluation/protocol_testing_eval/dns/dns.fan
