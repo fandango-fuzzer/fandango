@@ -242,6 +242,7 @@ def decompress_msg(compressed: bytes) -> bytes:
 # The DNS message identifier (ID) (<h_id>)
 # The question that the response aims to answer is the same as the question in the request (<question>)
 # The question count in the response matches the question count in the request (<req_qd_count>)
+# Counted as 4 constraints
 where forall <ex> in <start>.<exchange>:
     <ex>.<dns_resp>.<header_resp>.<h_rd> == <ex>.<dns_req>.<header_req>.<h_rd> and <ex>.<dns_resp>.<header_resp>.<h_id> == <ex>.<dns_req>.<header_req>.<h_id> and <ex>.<dns_resp>.<question_section>.<question> == <ex>.<dns_req>.<question> and bytes(<ex>.<dns_resp>.<header_resp>.<resp_qd_count>) == bytes(<ex>.<dns_req>.<header_req>.<req_qd_count>)
 
@@ -284,6 +285,7 @@ where forall <ex> in <start>.<exchange>:
 # Checks if a dns response answers the corresponding dns question using the verify_transitive-function.
 # The second part of the `or` clause `bytes(<a>.<answer_an_type>)[0:2]...` also checks this, but only for direct answers without allowing transitive response chains.
 # This allows Fandango optimizations to be used to generate a valid answer more efficiently.
+# Counted as 2 constraints
 where forall <ex> in <start>.<exchange>:
     forall <a> in <ex>.<dns_resp>.<answer_an_section>.<answer_an>:
         exists <q> in <ex>.<dns_req>.<question>:
@@ -314,6 +316,7 @@ where forall <ex> in <start>.<exchange>:
 <udp_payload_size> ::= <bit>{16}
 
 # <type_cname> responses must have the correct length in the <a_rd_length> field (r data length), which corresponds to the following <q_name> field.
+# Counted as one constraint
 where forall <t> in <type_cname>:
     bytes(<t>.<a_rd_length>) == pack('>H', len(bytes(<t>.<q_name>)))
 
