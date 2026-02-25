@@ -1,7 +1,3 @@
-import os
-import time
-
-from evaluation.protocol_testing_eval.utils import write_coverage_log
 from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.io.navigation.coverage_goal import CoverageGoal
 from fandango.language.grammar import FuzzingMode
