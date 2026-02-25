@@ -237,7 +237,10 @@ class ProtocolImplementation(ABC):
         self.port = port
         self.ip_type = ip_type
         self._party_instance = party_instance
-        self.io_instance = party_instance.io_instance
+
+    @property
+    def io_instance(self) -> FandangoIO:
+        return self._party_instance.io_instance
 
     def send(
         self, message: DerivationTree | str | bytes, recipient: Optional[str]
