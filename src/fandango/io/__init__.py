@@ -239,7 +239,7 @@ class ProtocolImplementation(ABC):
         self._party_instance = party_instance
 
     @property
-    def io_instance(self) -> FandangoIO:
+    def io_instance(self) -> "FandangoIO":
         return self._party_instance.io_instance
 
     def send(
