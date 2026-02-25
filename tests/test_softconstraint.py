@@ -82,6 +82,8 @@ class TestSoftValue(TestSoft):
             "-c",
             "maximizing int(<age>)",
             "-n",
+            "20",
+            "--max-generations",
             "50",
             "--population-size",
             "10",
@@ -104,6 +106,8 @@ class TestSoftValue(TestSoft):
             "--maximize",
             "int(<age>)",
             "-n",
+            "20",
+            "--max-generations",
             "50",
             "--population-size",
             "10",
@@ -112,7 +116,7 @@ class TestSoftValue(TestSoft):
         ]
         out, err, code = run_command(command)
         lines = [line for line in out.split("\n") if line.strip()]
-        last_age = int(lines[-1].split(",")[1])  # e.g., 9999999999999599999999
+        last_age = int(lines[-1].split(",")[1])
         self.assertGreater(last_age, 99999999999)
         self.assertEqual(code, 0, code)
 
@@ -126,6 +130,8 @@ class TestSoftValue(TestSoft):
             "minimizing int(<age>)",
             "-n",
             "20",
+            "--max-generations",
+            "50",
             "--population-size",
             "10",
             "--random-seed",
@@ -147,6 +153,8 @@ class TestSoftValue(TestSoft):
             "int(<age>)",
             "-n",
             "20",
+            "--max-generations",
+            "50",
             "--population-size",
             "10",
             "--random-seed",
