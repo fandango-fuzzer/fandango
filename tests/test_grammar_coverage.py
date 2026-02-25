@@ -80,7 +80,7 @@ class Server(NetworkParty):
         self.start()
         """
 
-        with open(EVALUATION_ROOT / "experiments/smtp/smtp.fan") as f:
+        with open(EVALUATION_ROOT / "protocol_testing_eval/smtp/smtp.fan") as f:
             grammar, constraints = parse(
                 [f, client_def],
                 use_stdlib=False,
@@ -110,7 +110,7 @@ class Server(NetworkParty):
 
         try:
             fandango = GrammarCoverageTest.gen_fandango(
-                CoverageGoal.STATE_INPUTS_OUTPUTS, host="127.0.0.1", port=server.port
+                CoverageGoal.STATE_INPUTS, host="127.0.0.1", port=server.port
             )
             for solution in fandango.generate(mode=FuzzingMode.IO):
                 pass

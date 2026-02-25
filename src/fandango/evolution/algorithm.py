@@ -568,6 +568,10 @@ class Fandango:
                     self.grammar.set_max_repetition(
                         self.adaptive_tuner.current_max_repetition
                     )
+                    preferred_symbols: list[str] = []
+                    for pkg in self.population_manager.fuzzable_packets:
+                        preferred_symbols.append(str(pkg.node.symbol))
+                    LOGGER.debug(f"Trying to generate: {', '.join(preferred_symbols)}")
 
                     try:
                         solutions = [
@@ -691,11 +695,12 @@ class Fandango:
                         )
                 history_tree.set_all_read_only(True)
             except FandangoFailedError as e:
-                print(e)
+                print_exception(e)
                 self.past_io_derivations.append(history_tree)
                 self._initial_solutions.clear()
                 yield history_tree
                 log_guidance_hint("Starting new protocol run.")
+                LOGGER.debug(io_instance.get_full_fragments())
                 io_instance.reset_parties()
                 history_tree = DerivationTree(NonTerminal(self.start_symbol), [])
 
