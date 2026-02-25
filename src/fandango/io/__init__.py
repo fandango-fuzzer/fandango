@@ -168,7 +168,7 @@ class FandangoParty(ABC):
         """
         if message is None:
             raise FandangoValueError(
-                f"Party {self.party_name} received None-type message. This indicates a socket closing event. Overload the receive() method of {self.party_name} to handle this case."
+                f"Party {self.party_name} received None-type message. This indicates a socket closing event. Override the receive() method of {self.party_name} to handle this case."
             )
         if sender is None:
             parties = list(
