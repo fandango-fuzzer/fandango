@@ -167,7 +167,9 @@ class FandangoParty(ABC):
         :param sender: The sender of the message.
         """
         if message is None:
-            raise FandangoValueError(f"Party {self.party_name} received None-type message. This indicates a socket closing event. Overload the receive() method of {self.party_name} to handle this case.")
+            raise FandangoValueError(
+                f"Party {self.party_name} received None-type message. This indicates a socket closing event. Overload the receive() method of {self.party_name} to handle this case."
+            )
         if sender is None:
             parties = list(
                 map(
@@ -409,7 +411,9 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
                     if self.connection_mode == ConnectionMode.OPEN:
                         assert self._sock is not None
                         while self._running:
-                            rlist, _, _ = select.select([self._sock], [], [], 0.0000000001)
+                            rlist, _, _ = select.select(
+                                [self._sock], [], [], 0.0000000001
+                            )
                             if rlist:
                                 self._connection, _ = self._sock.accept()
                                 break
@@ -783,7 +787,7 @@ class FandangoIO(object):
             for party in party_instances:
                 cls = party.__class__
                 # Guaranteed to not have an argument
-                cls() # type: ignore[call-arg]
+                cls()  # type: ignore[call-arg]
 
     def get_fuzzer_parties(self) -> set[FandangoParty]:
         """

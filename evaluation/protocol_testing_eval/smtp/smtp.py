@@ -23,13 +23,14 @@ def main():
             grammar=grammar,
             constraints=constraints,
             logger_level=LoggerLevel.INFO,
-            coverage_goal=CoverageGoal.STATE_INPUTS_OUTPUTS
+            coverage_goal=CoverageGoal.STATE_INPUTS_OUTPUTS,
         )
         fandango.coverage_log_interval = 10
         fandango.enable_guidance(True)
 
         for solution in fandango.generate(mode=FuzzingMode.IO):
             pass
+
 
 if __name__ == "__main__":
     main()

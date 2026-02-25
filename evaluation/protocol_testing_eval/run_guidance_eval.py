@@ -19,7 +19,7 @@ def main():
         ("smtp", "smtp_client.fan", False),
         ("dns", "dns.fan", True),
         ("ftp", "ftp_client.fan", False),
-        ("chatgpt", "chatgpt.fan", False)
+        ("chatgpt", "chatgpt.fan", False),
     ]
     for folder, spec, enable_auto_stop in protocols:
         overall_max_coverage_guided = 0.0
@@ -39,11 +39,13 @@ def main():
                     grammar=grammar,
                     constraints=constraints,
                     logger_level=LoggerLevel.INFO,
-                    coverage_goal=CoverageGoal.STATE_INPUTS_OUTPUTS
+                    coverage_goal=CoverageGoal.STATE_INPUTS_OUTPUTS,
                 )
                 fandango.coverage_log_interval = 20
                 fandango.enable_guidance(enable_guidance)
-                output_folder_name = f"{folder}/" + ("coverage_w_guidance" if enable_guidance else "coverage_wo_guidance")
+                output_folder_name = f"{folder}/" + (
+                    "coverage_w_guidance" if enable_guidance else "coverage_wo_guidance"
+                )
 
                 try:
                     for solution in fandango.generate(mode=FuzzingMode.IO):
@@ -51,12 +53,16 @@ def main():
                             print(bytes(solution))
                         else:
                             print(str(solution))
-                        current_cov = fandango.packet_selector.coverage_percent(alt_cache=True)
+                        current_cov = fandango.packet_selector.coverage_percent(
+                            alt_cache=True
+                        )
                         if enable_auto_stop:
                             if enable_guidance:
                                 if current_cov > max_coverage_guided:
                                     max_coverage_guided = current_cov
-                                    overall_max_coverage_guided = max(overall_max_coverage_guided, max_coverage_guided)
+                                    overall_max_coverage_guided = max(
+                                        overall_max_coverage_guided, max_coverage_guided
+                                    )
                                     nr_failed_new_coverage = 0
                                 else:
                                     nr_failed_new_coverage += 1
@@ -69,10 +75,18 @@ def main():
                     current_id = 1
                     if not os.path.exists(output_folder_name):
                         os.makedirs(output_folder_name)
-                    while os.path.exists(f"{output_folder_name}/run_{current_id}_grammar_coverage.csv"):
+                    while os.path.exists(
+                        f"{output_folder_name}/run_{current_id}_grammar_coverage.csv"
+                    ):
                         current_id += 1
-                    print("Writing coverage log to", f"{output_folder_name}/run_{current_id}_grammar_coverage.csv")
-                    write_coverage_log(fandango, output_folder_name, current_id, time_start)
+                    print(
+                        "Writing coverage log to",
+                        f"{output_folder_name}/run_{current_id}_grammar_coverage.csv",
+                    )
+                    write_coverage_log(
+                        fandango, output_folder_name, current_id, time_start
+                    )
+
 
 if __name__ == "__main__":
     main()

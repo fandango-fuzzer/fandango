@@ -19,7 +19,7 @@ def main():
         # elitism_rate=1.0,
         max_nodes=600 * 8,
         logger_level=LoggerLevel.INFO,
-        coverage_goal=CoverageGoal.STATE_INPUTS
+        coverage_goal=CoverageGoal.STATE_INPUTS,
     )
     fandango.coverage_log_interval = 10
     fandango.enable_guidance(True)

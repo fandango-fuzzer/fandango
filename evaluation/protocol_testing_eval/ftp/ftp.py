@@ -25,5 +25,6 @@ def main():
     for solution in fandango.generate(mode=FuzzingMode.IO):
         pass
 
+
 if __name__ == "__main__":
     main()

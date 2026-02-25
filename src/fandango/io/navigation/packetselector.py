@@ -229,7 +229,7 @@ class PacketSelector:
             self.start_symbol,
             coverage_goal=self.coverage_goal,
             input_parties=self._input_parties(),
-            alt_cache=alt_cache
+            alt_cache=alt_cache,
         )
 
     def _select_next_target(self) -> KPath:
@@ -308,7 +308,7 @@ class PacketSelector:
 
     def _select_next_packet(self) -> list[ForecastingPacket]:
         if not self._is_enable_guidance:
-            #if len(self._uncovered_paths(alt_cache=True)) == 0:
+            # if len(self._uncovered_paths(alt_cache=True)) == 0:
             #    return self._get_guide_to_end_packet()
             return self.get_fuzzer_packets()
 
@@ -451,23 +451,24 @@ class PacketSelector:
             k=self.diversity_k,
             coverage_goal=self.coverage_goal,
             input_parties=self._input_parties(),
-            alt_cache=alt_cache
+            alt_cache=alt_cache,
         )
         if len(all_paths) == 0:
             return 1.0
         return 1.0 - (len(u_paths) / len(all_paths))
 
-
-    def _compute_coverage_trees(self, overlap_to_root: bool = False) -> dict[NonTerminal, tuple[int, int]]:
+    def _compute_coverage_trees(
+        self, overlap_to_root: bool = False
+    ) -> dict[NonTerminal, tuple[int, int]]:
         messages_by_nt = self._group_messages_by_nt(self._all_derivation_trees())
         paths_by_role: dict[str, Any] = {}
         roles_by_symbol: dict[NonTerminal, Any] = dict()
-        paths_by_role['all_party'] = {
-            'covered': list(),
-            'covered_unique': set(),
-            'all': list(),
-            'all_unique': set(),
-            'symbols': set()
+        paths_by_role["all_party"] = {
+            "covered": list(),
+            "covered_unique": set(),
+            "all": list(),
+            "all_unique": set(),
+            "symbols": set(),
         }
         for pnt in self.grammar.get_protocol_messages(self.start_symbol):
             sender = pnt.sender
@@ -475,40 +476,51 @@ class PacketSelector:
             if sender not in paths_by_role:
                 assert sender is not None
                 paths_by_role[sender] = {
-                    'covered': list(),
-                    'covered_unique': set(),
-                    'all': list(),
-                    'all_unique': set(),
-                    'symbols': set()
+                    "covered": list(),
+                    "covered_unique": set(),
+                    "all": list(),
+                    "all_unique": set(),
+                    "symbols": set(),
                 }
-            paths_by_role[sender]['symbols'].add(symbol)
-            paths_by_role['all_party']['symbols'].add(symbol)
+            paths_by_role[sender]["symbols"].add(symbol)
+            paths_by_role["all_party"]["symbols"].add(symbol)
             roles_by_symbol.setdefault(symbol, set()).add(sender)
-            roles_by_symbol[symbol].add('all_party')
-
+            roles_by_symbol[symbol].add("all_party")
 
         nt_coverage = {}
         for symbol in self.state_grammar_symbols:
-            all_k_paths = self.grammar.generate_all_k_paths(k=self.diversity_k, non_terminal=symbol, overlap_to_root=overlap_to_root, alt_cache=True)
+            all_k_paths = self.grammar.generate_all_k_paths(
+                k=self.diversity_k,
+                non_terminal=symbol,
+                overlap_to_root=overlap_to_root,
+                alt_cache=True,
+            )
 
             covered_k_paths = set()
             if symbol in messages_by_nt:
                 for tree in messages_by_nt[symbol]:
                     covered_k_paths.update(
-                        self.grammar._extract_k_paths_from_tree(tree, self.diversity_k, overlap_to_root, alt_cache=True)
+                        self.grammar._extract_k_paths_from_tree(
+                            tree, self.diversity_k, overlap_to_root, alt_cache=True
+                        )
                     )
             if symbol in roles_by_symbol:
                 for role in roles_by_symbol[symbol]:
-                    paths_by_role[role]['all'].extend(all_k_paths)
-                    paths_by_role[role]['all_unique'].update(all_k_paths)
-                    paths_by_role[role]['covered'].extend(covered_k_paths)
-                    paths_by_role[role]['covered_unique'].update(covered_k_paths)
+                    paths_by_role[role]["all"].extend(all_k_paths)
+                    paths_by_role[role]["all_unique"].update(all_k_paths)
+                    paths_by_role[role]["covered"].extend(covered_k_paths)
+                    paths_by_role[role]["covered_unique"].update(covered_k_paths)
             nt_coverage[symbol] = (len(covered_k_paths), len(all_k_paths))
         for role, paths in paths_by_role.items():
-            nt_coverage[NonTerminal("__role_" + role)] = (len(paths['covered']), len(paths['all']))
-            nt_coverage[NonTerminal("__role_unique_" + role)] = (len(paths['covered_unique']), len(paths['all_unique']))
+            nt_coverage[NonTerminal("__role_" + role)] = (
+                len(paths["covered"]),
+                len(paths["all"]),
+            )
+            nt_coverage[NonTerminal("__role_unique_" + role)] = (
+                len(paths["covered_unique"]),
+                len(paths["all_unique"]),
+            )
         return nt_coverage
-
 
     """
     def _compute_coverage_trees(

@@ -90,7 +90,9 @@ class Fandango:
         self.coverage_log_interval = 0
         self._time_in_measurements = 0.0
         self.coverage_log: list[tuple[float, dict[NonTerminal, tuple[int, int]]]] = []
-        self.coverage_log_overlap: list[tuple[float, dict[NonTerminal, tuple[int, int]]]] = []
+        self.coverage_log_overlap: list[
+            tuple[float, dict[NonTerminal, tuple[int, int]]]
+        ] = []
         self.grammar = grammar
         self.constraints = constraints
         self.population_size = population_size
@@ -520,13 +522,26 @@ class Fandango:
             self.packet_selector.compute(history_tree, self.past_io_derivations)
             start_measuring = time.time()
             iter += 1
-            if self.coverage_log_interval > 0 and iter % self.coverage_log_interval == 0:
-                current_cov = self.packet_selector.coverage_percent(alt_cache=True) * 100
-                LOGGER.info(
-                    f"Current coverage: {current_cov:.2f}%"
+            if (
+                self.coverage_log_interval > 0
+                and iter % self.coverage_log_interval == 0
+            ):
+                current_cov = (
+                    self.packet_selector.coverage_percent(alt_cache=True) * 100
                 )
-                self.coverage_log.append((start_measuring - self._time_in_measurements, self.packet_selector._compute_coverage_trees(False)))
-                self.coverage_log_overlap.append((start_measuring - self._time_in_measurements, self.packet_selector._compute_coverage_trees(True)))
+                LOGGER.info(f"Current coverage: {current_cov:.2f}%")
+                self.coverage_log.append(
+                    (
+                        start_measuring - self._time_in_measurements,
+                        self.packet_selector._compute_coverage_trees(False),
+                    )
+                )
+                self.coverage_log_overlap.append(
+                    (
+                        start_measuring - self._time_in_measurements,
+                        self.packet_selector._compute_coverage_trees(True),
+                    )
+                )
             self._time_in_measurements += time.time() - start_measuring
             self.evaluator.start_next_message([history_tree] + self.past_io_derivations)
 
@@ -538,7 +553,6 @@ class Fandango:
                     self.packet_selector.compute(history_tree, self.past_io_derivations)
                     res = self.packet_selector.get_next_parties()
                     raise FandangoFailedError("Could not forecast next packet")
-
 
                 if (
                     len(self.packet_selector.get_next_parties()) == 0
@@ -555,7 +569,9 @@ class Fandango:
                         return
                     if self.packet_selector.coverage_percent() == 1.0:
                         if self.stop_on_full_coverage:
-                            log_guidance_hint("Full coverage reached, stopping evolution.")
+                            log_guidance_hint(
+                                "Full coverage reached, stopping evolution."
+                            )
                             return
                         self.enable_guidance(False)
                     log_guidance_hint("Starting new protocol run.")
@@ -766,5 +782,5 @@ class Fandango:
         assert isinstance(self.population_manager, IoPopulationManager)
         assert isinstance(self.evaluator, IoEvaluator)
         self.evaluator.enable_guidance(value)
-        if hasattr(self, 'packet_selector') and self.packet_selector is not None:
+        if hasattr(self, "packet_selector") and self.packet_selector is not None:
             self.packet_selector.enable_guidance(value)
