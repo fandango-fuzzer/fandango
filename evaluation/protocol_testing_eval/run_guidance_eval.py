@@ -67,7 +67,8 @@ def main():
                                     break
                 finally:
                     current_id = 1
-                    os.path.exists(output_folder_name) or os.makedirs(output_folder_name)
+                    if not os.path.exists(output_folder_name):
+                        os.makedirs(output_folder_name)
                     while os.path.exists(f"{output_folder_name}/run_{current_id}_grammar_coverage.csv"):
                         current_id += 1
                     print("Writing coverage log to", f"{output_folder_name}/run_{current_id}_grammar_coverage.csv")

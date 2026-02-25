@@ -18,7 +18,7 @@ class ServerControl(NetworkParty):
         self.start()
 
     # Tell FANDANGO that all received messages come from ClientControl.
-    def receive(self, message: str | bytes, sender: Optional[str]) -> None:
+    def receive(self, message: str | bytes | None, sender: Optional[str]) -> None:
         super().receive(message.decode("utf-8"), sender="ClientControl")
 
 
@@ -39,7 +39,7 @@ class ServerData(NetworkParty):
         )
 
     # Tell FANDANGO that all received messages come from ClientData.
-    def receive(self, message: str | bytes, sender: Optional[str]) -> None:
+    def receive(self, message: str | bytes | None, sender: Optional[str]) -> None:
         super().receive(message.decode("utf-8"), sender="ClientData")
 
 class SocketControlServer(FandangoParty):

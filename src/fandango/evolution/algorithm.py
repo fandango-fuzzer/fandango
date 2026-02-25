@@ -761,9 +761,10 @@ class Fandango:
 
         return solutions
 
-    def enable_guidance(self, value: bool):
+    def enable_guidance(self, value: bool) -> None:
         self._is_enable_guidance = value
         assert isinstance(self.population_manager, IoPopulationManager)
+        assert isinstance(self.evaluator, IoEvaluator)
         self.evaluator.enable_guidance(value)
         if hasattr(self, 'packet_selector') and self.packet_selector is not None:
             self.packet_selector.enable_guidance(value)

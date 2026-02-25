@@ -324,7 +324,7 @@ class IoEvaluator(Evaluator):
         self._past_trees: list[DerivationTree] = []
         self._is_enable_guidance = True
 
-    def enable_guidance(self, value):
+    def enable_guidance(self, value: bool) -> None:
         self._is_enable_guidance = value
 
     def get_past_msgs(

@@ -12,7 +12,7 @@ class ClientControl(NetworkParty):
     def send(self, message: str | bytes, recipient: Optional[str]) -> None:
         super().send(message, recipient)
 
-    def receive(self, message: str | bytes, sender: Optional[str]) -> None:
+    def receive(self, message: str | bytes | None, sender: Optional[str]) -> None:
         # We set ServerControl as the sender for all received messages.
         # Fandango can only automatically infer the sender of a message for specification 2 two party definitions.
         # In this specification we have 4 parties, so we need to set the sender incoming messages manually.
@@ -36,7 +36,7 @@ class ClientData(NetworkParty):
         )
 
     # Tell FANDANGO that all received messages come from ServerData.
-    def receive(self, message: str | bytes, sender: Optional[str]) -> None:
+    def receive(self, message: str | bytes | None, sender: Optional[str]) -> None:
         if message is None:
             super().receive("Data socket closed.\r\n", sender="SocketControlServer")
             return

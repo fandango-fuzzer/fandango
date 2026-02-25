@@ -645,13 +645,18 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             overlap_to_root=overlap_to_root,
             coverage_goal=coverage_goal,
             input_parties=input_parties,
-            alt_cache=alt_cache
+            alt_cache=alt_cache,
         )
         covered_k_paths = set()
         for tree in derivation_trees:
             covered_k_paths.update(
                 self._extract_k_paths_from_tree(
-                    tree, k, overlap_to_root, coverage_goal, input_parties=input_parties, alt_cache=alt_cache
+                    tree,
+                    k,
+                    overlap_to_root,
+                    coverage_goal,
+                    input_parties=input_parties,
+                    alt_cache=alt_cache,
                 )
             )
 
@@ -783,7 +788,10 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
 
         if overlap_to_root:
             all_k_paths = self.generate_all_k_paths(
-                k=k, coverage_goal=coverage_goal, input_parties=input_parties, alt_cache=alt_cache
+                k=k,
+                coverage_goal=coverage_goal,
+                input_parties=input_parties,
+                alt_cache=alt_cache,
             )
             for k_path in all_k_paths:
                 if non_terminal in k_path:

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Any
 
 from fandango.io import FandangoIO
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
@@ -54,7 +54,7 @@ class PacketSelector:
         self._all_past_covered_k_paths: set[KPath] = set()
         self.compute(history_tree, self.parst_derivations)
 
-    def enable_guidance(self, enable: bool):
+    def enable_guidance(self, enable: bool) -> None:
         self._is_enable_guidance = enable
 
     def _input_parties(self) -> set[str]:
@@ -460,8 +460,8 @@ class PacketSelector:
 
     def _compute_coverage_trees(self, overlap_to_root: bool = False) -> dict[NonTerminal, tuple[int, int]]:
         messages_by_nt = self._group_messages_by_nt(self._all_derivation_trees())
-        paths_by_role = {}
-        roles_by_symbol = dict()
+        paths_by_role: dict[str, Any] = {}
+        roles_by_symbol: dict[NonTerminal, Any] = dict()
         paths_by_role['all_party'] = {
             'covered': list(),
             'covered_unique': set(),
@@ -471,9 +471,9 @@ class PacketSelector:
         }
         for pnt in self.grammar.get_protocol_messages(self.start_symbol):
             sender = pnt.sender
-            receiver = pnt.recipient
             symbol = pnt.symbol
             if sender not in paths_by_role:
+                assert sender is not None
                 paths_by_role[sender] = {
                     'covered': list(),
                     'covered_unique': set(),

@@ -781,7 +781,8 @@ class FandangoIO(object):
             self.receive.clear()
             for party in party_instances:
                 cls = party.__class__
-                cls()
+                # Guaranteed to not have an argument
+                cls() # type: ignore[call-arg]
 
     def get_fuzzer_parties(self) -> set[FandangoParty]:
         """
@@ -789,7 +790,7 @@ class FandangoIO(object):
         """
         return set(filter(lambda i: i.is_fuzzer_controlled(), self.parties.values()))
 
-    def add_receive(self, sender: str, receiver: str, message: str | bytes | None) -> None:
+    def add_receive(self, sender: str, receiver: str, message: str | bytes) -> None:
         """
         Forwards an external received message to Fandango for processing.
         :param sender: The sender of the message.

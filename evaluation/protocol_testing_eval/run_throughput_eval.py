@@ -42,7 +42,8 @@ def main():
                     break
         finally:
             current_id = 1
-            os.path.exists(output_folder_name) or os.makedirs(output_folder_name)
+            if not os.path.exists(output_folder_name):
+                os.makedirs(output_folder_name)
             file_path = f"{output_folder_name}/throughput_metrics_{current_id}.md"
             while os.path.exists(file_path):
                 current_id += 1
