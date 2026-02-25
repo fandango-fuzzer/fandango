@@ -373,7 +373,7 @@ sequenceDiagram
 ## A Bigger Protocol Spec
 
 So far, our SMTP server is not great at testing SMTP clients – all it can handle is a single `QUIT` command.
-Let us extend it a bit with a few more commands, reflecting the interaction in the introduction:
+The spec [smtp-extended.fan](smtp-extended.fan) extends it a bit with a few more commands, reflecting the interaction in the introduction:
 
 ```{code-cell}
 :tags: ["remove-input"]
