@@ -35,12 +35,12 @@ UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
 # Mac
 SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli uv
-TEST_TOOLS =  # clang is installed by default on Mac
+TEST_TOOLS = # clang is installed by default on Mac
 SYSTEM_DEV_INSTALL = brew install
 else ifeq ($(UNAME), Linux)
 # Linux
 SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli uv
-TEST_TOOLS = clang
+TEST_TOOLS = clang llvm
 SYSTEM_DEV_INSTALL = apt-get install
 else ifneq (,$(findstring NT,$(UNAME)))
 # Windows (all variants): Windows_NT, MINGW64_NT-10.0-20348, MSYS_NT-10.0-20348
@@ -228,6 +228,25 @@ EVALUATION_SOURCES = $(wildcard $(EVALUATION)/*.py $(EVALUATION)/*/*.py $(EVALUA
 .PHONY: evaluation
 evaluation $(EVALUATION_MARKER): $(PYTHON_SOURCES) $(EVALUATION_SOURCES)
 	$(PYTHON) -m evaluation.run_evaluation 1
+
+LLVM_MIN_VERSION := 18
+LLVM_VERSION := $(shell llvm-config --version 2>/dev/null)
+LLVM_MAJOR := $(firstword $(subst ., ,$(LLVM_VERSION)))
+
+fcc:
+	@echo "Required LLVM version: at least $(LLVM_MIN_VERSION)"
+	@echo "Detected LLVM version: $(LLVM_VERSION)"
+	@if [ -z "$(LLVM_VERSION)" ]; then \
+		echo "Error: llvm-config not found"; \
+		exit 1; \
+	fi
+	@if [ $(LLVM_MAJOR) -lt $(LLVM_MIN_VERSION) ]; then \
+		echo "Error: LLVM version too old! Required at least $(LLVM_MIN_VERSION), found $(LLVM_VERSION)"; \
+		exit 1; \
+	fi
+	rm -fr fcc
+	git clone https://github.com/fandango-fuzzer/fcc.git
+	make -C fcc install
 
 ## All
 .PHONY: run-all

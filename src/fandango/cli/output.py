@@ -203,7 +203,7 @@ def output_solution(
         output_solution_to_file(solution, args, file_mode)
         output_on_stdout = False
 
-    if "test_command" in args and args.test_command:
+    if not args.use_fcc and "test_command" in args and args.test_command:
         output_solution_with_test_command(solution, args, file_mode)
         output_on_stdout = False
 
