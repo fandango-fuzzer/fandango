@@ -414,7 +414,7 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
             ]
             out, err, code = run_command(command)
             self.assertEqual(1, code)
-            self.assertIn("already exists as a non-file or is not empty", err)
+            self.assertIn(f"{out_dir} is not a directory or is not empty", err)
         finally:
             out_dir.unlink(missing_ok=True)
 
@@ -436,7 +436,7 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
             ]
             out, err, code = run_command(command)
             self.assertEqual(1, code)
-            self.assertIn("already exists as a non-file or is not empty", err)
+            self.assertIn(f"{out_dir} is not a directory or is not empty", err)
         finally:
             shutil.rmtree(out_dir, ignore_errors=True)
 

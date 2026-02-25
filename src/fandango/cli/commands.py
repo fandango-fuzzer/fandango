@@ -188,7 +188,7 @@ def fuzz_command(args: argparse.Namespace) -> None:
         out_dir = Path(args.directory)
         if out_dir.exists() and (not out_dir.is_dir() or len(os.listdir(out_dir)) > 0):
             raise FandangoError(
-                f"Output directory {out_dir} already exists as a non-file or is not empty"
+                f"Output directory {out_dir} is not a directory or is not empty"
             )
 
     def solutions_callback(sol: DerivationTree, i: int) -> None:
