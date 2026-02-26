@@ -68,9 +68,9 @@ development = [
     "black>=25.1.0",
     "mypy>=1.16.0",
     "pre-commit>=4.2.0",
-    "pygls>=2.0.0a4",           # language server
+    "pygls>=2.0.0a4",            # language server
     "speedy-antlr-tool>=1.4.3",
-    "types-setuptools>=73.0.1", # enable mypy to check setup.py
+    "types-setuptools>=73.0.1",  # enable mypy to check setup.py
     "scikit-build-core>=0.11.6", # For type checking
 ]
 
@@ -110,6 +110,7 @@ exclude = [
     'src/fandango/language/parser/sa_fandango\.py$',
     'src/fandango/converters/antlr/ANTLRv4[^.]*\.py$',
     'src/fandango/converters/antlr/LexerAdaptor[^.]*\.py$',
+    'fcc',
 ]
 
 [tool.pytest.ini_options]
