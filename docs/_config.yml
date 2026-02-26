@@ -46,7 +46,7 @@ parse:
 html:
   use_issues_button: true
   use_repository_button: true
-  announcement: "<a href=\"https://pypi.org/project/fandango-fuzzer/1.1.0rc1/\" style=\"color:white;\">Fandango 1.1.0rc1</a> is now available! Check out the <a href=\"https://fandango-fuzzer.github.io/ReleaseNotes.html#\" style=\"color:white;\">release notes</a> for details."
+  announcement: "<a href=\"https://pypi.org/project/fandango-fuzzer/1.1.0rc1/\" style=\"color:white;\">Fandango 1.1.0</a> is now available! Check out the <a href=\"https://fandango-fuzzer.github.io/ReleaseNotes.html#\" style=\"color:white;\">release notes</a> for details."
 
 repository:
   url: "https://github.com/fandango-fuzzer/fandango"
