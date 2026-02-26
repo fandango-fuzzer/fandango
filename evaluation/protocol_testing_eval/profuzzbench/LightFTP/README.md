@@ -37,7 +37,16 @@ profuzzbench_generate_csv.sh lightftp 4 aflnet results.csv 0
 The results collected in step 3 (i.e., results.csv) can be used for plotting. Use the following command to plot the coverage over time and save it to a file.
 
 ```
-cd $PFBENCH/results-lightftp
+cd $PFBENCH/results-aflnet
 
 profuzzbench_plot.py -i results.csv -p lightftp -r 4 -c 60 -s 1 -o cov_over_time.png
+```
+
+## Step-5. Run Fandango
+The following command runs Fandango to measure coverage of LightFTP.
+```
+cd $PFBENCH
+
+mkdir results-fandango
+./run-fandango-standalone.sh
 ```
