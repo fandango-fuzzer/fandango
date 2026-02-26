@@ -46,7 +46,7 @@ SYSTEM_DEV_INSTALL = apt-get install
 else ifneq (,$(findstring NT,$(UNAME)))
 # Windows (all variants): Windows_NT, MINGW64_NT-10.0-20348, MSYS_NT-10.0-20348
 SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli uv
-TEST_TOOLS = llvm --version=18  # Specify version 18 for Chocolatey on Windows
+TEST_TOOLS = llvm --version=18 --allow-downgrade
 SYSTEM_DEV_INSTALL = choco install
 else
 $(error Unsupported OS: $(UNAME))
