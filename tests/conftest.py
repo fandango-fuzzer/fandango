@@ -26,7 +26,7 @@ def pytest_configure(config: pytest.Config):
         os.environ["PATH"] = os.environ["PATH"] + os.pathsep + str(tool_dir)
 
     if which("llvm-config") is None:
-        homebrew_llvm_path = Path("/opt/homebrew/opt/llvm@18/bin")
+        homebrew_llvm_path = Path("/opt/homebrew/opt/llvm/bin")
         if homebrew_llvm_path.exists():
             os.environ["PATH"] = (
                 str(homebrew_llvm_path) + os.pathsep + os.environ["PATH"]

@@ -35,18 +35,18 @@ UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
 # Mac
 SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli uv
-TEST_TOOLS = llvm@18
+TEST_TOOLS = llvm
 SYSTEM_DEV_INSTALL = brew install
 else ifeq ($(UNAME), Linux)
 # Linux
 SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli uv
 # Debian/Ubuntu-style versioned LLVM/Clang packages
-TEST_TOOLS = llvm-18 clang
+TEST_TOOLS = llvm clang
 SYSTEM_DEV_INSTALL = apt-get install
 else ifneq (,$(findstring NT,$(UNAME)))
 # Windows (all variants): Windows_NT, MINGW64_NT-10.0-20348, MSYS_NT-10.0-20348
 SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli uv
-TEST_TOOLS = llvm --version=18 --allow-downgrade
+TEST_TOOLS = llvm
 SYSTEM_DEV_INSTALL = choco install
 else
 $(error Unsupported OS: $(UNAME))
@@ -238,9 +238,11 @@ fcc:
 	@git clone https://github.com/fandango-fuzzer/fcc.git
 
 	@LLVM_CONFIG=$$(command -v llvm-config || true)
-	if [ -z "$$LLVM_CONFIG" ] && [ -x "/opt/homebrew/opt/llvm@18/bin/llvm-config" ]; then \
+
+	# Adjust PATH for Homebrew LLVM
+	if [ -z "$$LLVM_CONFIG" ] && [ -x "/opt/homebrew/opt/llvm/bin/llvm-config" ]; then \
 		echo "Adding Homebrew LLVM to PATH"; \
-		export PATH="/opt/homebrew/opt/llvm@18/bin:$$PATH"; \
+		export PATH="/opt/homebrew/opt/llvm/bin:$$PATH"; \
 	fi; \
 	$(MAKE) -C fcc llvm
 
