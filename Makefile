@@ -35,17 +35,18 @@ UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
 # Mac
 SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli uv
-TEST_TOOLS = # clang is installed by default on Mac
+TEST_TOOLS = llvm
 SYSTEM_DEV_INSTALL = brew install
 else ifeq ($(UNAME), Linux)
 # Linux
 SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli uv
-TEST_TOOLS = clang llvm
+# Debian/Ubuntu-style versioned LLVM/Clang packages
+TEST_TOOLS = llvm clang
 SYSTEM_DEV_INSTALL = apt-get install
 else ifneq (,$(findstring NT,$(UNAME)))
 # Windows (all variants): Windows_NT, MINGW64_NT-10.0-20348, MSYS_NT-10.0-20348
 SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli uv
-TEST_TOOLS = llvm # this is the easiest way to install clang on windows
+TEST_TOOLS = llvm
 SYSTEM_DEV_INSTALL = choco install
 else
 $(error Unsupported OS: $(UNAME))
@@ -59,8 +60,11 @@ system-dev-tools:
 	$(SYSTEM_DEV_INSTALL) $(SYSTEM_DEV_TOOLS) $(TEST_TOOLS)
 
 test-tools:
-ifneq ($(TEST_TOOLS),)
 	$(SYSTEM_DEV_INSTALL) $(TEST_TOOLS)
+ifneq (,$(findstring NT,$(UNAME)))
+	@echo "Skipping fcc build on Windows"
+else
+	@$(MAKE) fcc # needs some tools
 endif
 
 ## Parser
@@ -229,24 +233,18 @@ EVALUATION_SOURCES = $(wildcard $(EVALUATION)/*.py $(EVALUATION)/*/*.py $(EVALUA
 evaluation $(EVALUATION_MARKER): $(PYTHON_SOURCES) $(EVALUATION_SOURCES)
 	$(PYTHON) -m evaluation.run_evaluation 1
 
-LLVM_MIN_VERSION := 18
-LLVM_VERSION := $(shell llvm-config --version 2>/dev/null)
-LLVM_MAJOR := $(firstword $(subst ., ,$(LLVM_VERSION)))
-
 fcc:
-	@echo "Required LLVM version: at least $(LLVM_MIN_VERSION)"
-	@echo "Detected LLVM version: $(LLVM_VERSION)"
-	@if [ -z "$(LLVM_VERSION)" ]; then \
-		echo "Error: llvm-config not found"; \
-		exit 1; \
-	fi
-	@if [ $(LLVM_MAJOR) -lt $(LLVM_MIN_VERSION) ]; then \
-		echo "Error: LLVM version too old! Required at least $(LLVM_MIN_VERSION), found $(LLVM_VERSION)"; \
-		exit 1; \
-	fi
-	rm -fr fcc
-	git clone https://github.com/fandango-fuzzer/fcc.git
-	make -C fcc install
+	@rm -fr fcc
+	@git clone https://github.com/fandango-fuzzer/fcc.git
+
+	@LLVM_CONFIG=$$(command -v llvm-config || true)
+
+	# Adjust PATH for Homebrew LLVM
+	if [ -z "$$LLVM_CONFIG" ] && [ -x "/opt/homebrew/opt/llvm/bin/llvm-config" ]; then \
+		echo "Adding Homebrew LLVM to PATH"; \
+		export PATH="/opt/homebrew/opt/llvm/bin:$$PATH"; \
+	fi; \
+	$(MAKE) -C fcc llvm
 
 ## All
 .PHONY: run-all
