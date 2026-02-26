@@ -25,17 +25,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
           needs-sudo: ${{ matrix.os == 'ubuntu-latest' }}
 
-      - name: Set path for macOS
-        if: matrix.os == 'macos-latest'
-        run: |
-          echo "Adding Homebrew LLVM@18 to PATH"
-          echo "/opt/homebrew/opt/llvm@18/bin" >> "$GITHUB_PATH"
-
-      - name: Install fcc
-        if: matrix.os != 'windows-latest'
-        run: |
-          make fcc
-
       # Run tests or coverage depending on branch and OS
       - name: Run tests
         run: |
