@@ -655,7 +655,7 @@ wheels = [
 
 [[package]]
 name = "fandango-fuzzer"
-version = "1.1.0rc2"
+version = "1.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "ansi-styles" },
