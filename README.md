@@ -1,38 +1,31 @@
-# Generating Test Inputs and Interactions with Fandango
+# Welcome to Fandango!
 
 [![PyPI Release](https://img.shields.io/pypi/v/fandango-fuzzer)](https://pypi.org/project/fandango-fuzzer/) [![Last Release](https://img.shields.io/github/release-date/fandango-fuzzer/fandango)](https://github.com/fandango-fuzzer/fandango/releases)
-[![Tests](https://github.com/fandango-fuzzer/fandango/actions/workflows/python-tests.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/python-tests.yml) [![Code Quality Checks](https://github.com/fandango-fuzzer/fandango/actions/workflows/code-checks.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/code-checks.yml) [![CodeQL Analysis](https://github.com/fandango-fuzzer/fandango/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/github-code-scanning/codeql) [![Docs Deployment](https://github.com/fandango-fuzzer/fandango/actions/workflows/build-docs.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/build-docs.yml) [![Build & Publish](https://github.com/fandango-fuzzer/fandango/actions/workflows/build-and-publish.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/build-and-publish.yml) [![Coverage Status](https://coveralls.io/repos/github/fandango-fuzzer/fandango/badge.svg?branch=main)](https://coveralls.io/github/fandango-fuzzer/fandango?branch=main) [![PyPI Downloads](https://img.shields.io/pypi/dm/fandango-fuzzer)](https://pypi.org/project/fandango-fuzzer/) [![PyPI Downloads](https://static.pepy.tech/badge/fandango-fuzzer)](https://pepy.tech/projects/fandango-fuzzer) [![GitHub stars](https://img.shields.io/github/stars/fandango-fuzzer/fandango?style=social)](https://github.com/fandango-fuzzer/fandango/stargazers)
+[![Tests](https://github.com/fandango-fuzzer/fandango/actions/workflows/python-tests.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/python-tests.yml) [![Code Quality Checks](https://github.com/fandango-fuzzer/fandango/actions/workflows/code-checks.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/code-checks.yml) [![CodeQL Analysis](https://github.com/fandango-fuzzer/fandango/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/github-code-scanning/codeql) [![PyPI Downloads](https://img.shields.io/pypi/dm/fandango-fuzzer)](https://pypi.org/project/fandango-fuzzer/) [![PyPI Downloads](https://static.pepy.tech/badge/fandango-fuzzer)](https://pepy.tech/projects/fandango-fuzzer) [![GitHub stars](https://img.shields.io/github/stars/fandango-fuzzer/fandango)](https://github.com/fandango-fuzzer/fandango/stargazers)
 
-Welcome to Fandango!
-Fandango is a _generator_ of inputs and interactions for software testing.
-Given the specification of a program's input or interaction language, Fandango quickly generates myriads of valid sample inputs for testing.
+> **Fandango** is a powerful generator of inputs and interactions designed for software testing. Given the specification of a program's input or interaction language, Fandango quickly generates a myriad of valid inputs to test your systems.
 
-The specification language combines a _grammar_ with _constraints_ written in Python, so it is extremely expressive and flexible.
-Most notably, you can define your own _testing goals_ in Fandango.
-If you need the inputs to have particular values or distributions, you can express all these right away in Fandango.
+### ✨ Expressive & Flexible Specifications
+Fandango's specification language combines a **grammar** with **constraints written in Python**, making it incredibly expressive. 
+* **Custom Testing Goals:** Define exactly what you need. If you require your inputs to have particular values or follow specific distributions, you can express these testing goals directly in Fandango right out of the box.
 
-Fandango supports multiple modes of operation:
+### 🚀 Versatile Modes of Operation
+Fandango adapts to your workflow by supporting multiple operating modes:
+* **Black-Box Fuzzing (Default):** Generate inputs directly from a `.fan` Fandango specification file.
+* **Input Mutation:** Feed Fandango your sample inputs, and it will mutate them to obtain more complex and realistic test cases.
+* **Protocol Fuzzing:** Generate dynamic interactions. Fandango can act as a client or server, producing and reacting to interactions according to your protocol specifications.
 
-* By default, Fandango operates as a _black-box_ fuzzer - that is, it creates inputs from a `.fan` Fandango specification file.
-* If you have _sample inputs_, Fandango can _mutate_ these to obtain more realistic inputs.
-* Fandango can also produce _interactions_ for _protocol fuzzing_ - that is, it acts as a client or server producing and reacting to interactions according to specification.
+### 🧠 Under the Hood
+Fandango comes as a portable Python program, meaning it runs easily on a large variety of platforms. To produce its inputs, it leverages sophisticated **evolutionary algorithms**. It starts with a population of random inputs and systematically evolves them through mutations and cross-overs until they perfectly fulfill your given constraints.
 
-Fandango comes as a portable Python program and can easily be run on a large variety of platforms.
+### 🗺️ Road to 2026
+Fandango is in active development! We are constantly expanding its capabilities. Features planned for 2026 include:
+* Coverage-guided testing
+* Code-directed testing
+* High-diversity input generation
+* ...and much more!
 
-Under the hood, Fandango uses sophisticated _evolutionary algorithms_ to produce inputs,
-it starts with a population of random inputs, and evolves these through mutations and cross-over until they fulfill the given constraints.
-
-Fandango is in active development! Features planned for 2026 include:
-
-* coverage-guided testing
-* code-directed testing
-* high diversity inputs
-
-and many more.
-
-For the complete Fandango documentation, including tutorials, references, and advanced usage guides, visit the [Fandango documentation](https://fandango-fuzzer.github.io/)
-
----
+📚 **Ready to dive deeper?** For complete documentation, including tutorials, references, and advanced usage guides, visit the [Fandango Documentation](https://fandango-fuzzer.github.io/).
 
 ## License
 
