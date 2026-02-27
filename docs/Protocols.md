@@ -104,7 +104,7 @@ import time
 
 os.system("pkill -f aiosmtpd")
 os.system("python -m aiosmtpd -n &")
-time.sleep(1);  # Wait for server to be ready
+time.sleep(2);  # Wait for server to be ready
 ```
 
 % Check if everything works
@@ -341,7 +341,7 @@ import time
 
 os.system("pkill -f smtp-simple.fan")
 os.system("fandango talk -f smtp-simple.fan -n 100 --server 8125 &")
-time.sleep(1);  # Wait for server to be ready
+time.sleep(5);  # Wait for server to be ready
 ```
 
 we can then connect to our running Fandango "SMTP Server" and interact with it according to the `smtp-simple.fan` spec:
