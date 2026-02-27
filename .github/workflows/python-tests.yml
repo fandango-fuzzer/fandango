@@ -27,12 +27,5 @@ jobs:
 
       # Run tests or coverage depending on branch and OS
       - name: Run tests
-        if: matrix.os != 'windows-latest'
         run: |
           pytest -v
-
-      # Run tests or coverage depending on branch and OS
-      - name: Run tests
-        if: matrix.os == 'windows-latest'
-        run: |
-          pytest -v -n 3
