@@ -115,6 +115,7 @@ class FandangoBase(ABC):
         self,
         max_generations: Optional[int] = None,
         mode: FuzzingMode = FuzzingMode.COMPLETE,
+        **settings: Any,
     ) -> Generator[DerivationTree, None, None]:
         """
         Generate trees that conform to the language.
@@ -271,6 +272,7 @@ class Fandango(FandangoBase):
         self,
         max_generations: Optional[int] = None,
         mode: FuzzingMode = FuzzingMode.COMPLETE,
+        **settings: Any,
     ) -> Generator[DerivationTree, None, None]:
         """
         Generate trees that conform to the language.
@@ -282,7 +284,7 @@ class Fandango(FandangoBase):
         :return: A generator for solutions to the language
         """
         if self.fandango is None:
-            self.init_population()
+            self.init_population(**settings)
             assert self.fandango is not None
 
         LOGGER.info(
