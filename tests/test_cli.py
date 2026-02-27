@@ -12,7 +12,12 @@ from unittest.mock import patch
 
 from fandango import DISTRIBUTION_NAME
 from fandango.cli import get_parser
-from fandango.cli.upgrade import check_for_fandango_update
+from fandango.cli.upgrade import (
+    check_for_fandango_update,
+    check_package_for_update,
+    Version,
+    version,
+)
 
 from .utils import DOCS_ROOT, IS_BEARTYPE_ACTIVE, RESOURCES_ROOT, run_command
 
@@ -552,12 +557,11 @@ def test_fandango_version_upgrade():
 
 def test_fandango_version_check_path_works(tmp_path, monkeypatch, capsys):
     """Ensure the version check path works and the distribution is installed."""
-    from fandango.cli import upgrade
 
     # This will fail if the distribution is not installed or packaging is missing
-    installed_version = upgrade.Version(upgrade.version(DISTRIBUTION_NAME))
+    installed_version = Version(version(DISTRIBUTION_NAME))
 
-    latest_version = upgrade.Version(
+    latest_version = Version(
         f"{installed_version.major}.{installed_version.minor}.{installed_version.micro + 1}"
     )
 
@@ -580,7 +584,7 @@ def test_fandango_version_check_path_works(tmp_path, monkeypatch, capsys):
 
     monkeypatch.setattr("fandango.cli.upgrade.urllib.request.urlopen", fake_urlopen)
 
-    notified = upgrade.check_package_for_update(
+    notified = check_package_for_update(
         DISTRIBUTION_NAME,
         cache_dir=tmp_path,
         check_now=True,
