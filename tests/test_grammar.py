@@ -173,6 +173,7 @@ class ConstraintTest(unittest.TestCase):
         with open(RESOURCES_ROOT / "gen_number.fan", "r") as file:
             grammar, c = parse(file, use_cache=False, use_stdlib=True)
 
+        #no start symbol, so we need to disable checks
         _, extra_constraints = parse("where len(str(<start>)) > 60", check=False)
         solution = self.get_solutions(
             grammar, c + extra_constraints, desired_solutions=10
