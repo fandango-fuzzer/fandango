@@ -49,6 +49,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
+    "aiosmtpd>=1.4.6",              # example server for protocol testing
     "Faker>=30.4.0",
     "pytest>=8.3.5",
     "pytest-benchmark>=5.1.0",
@@ -78,7 +79,6 @@ development = [
 
 book = [
     "fandango-fuzzer[development]", # need black and faker
-    "aiosmtpd>=1.4.6",              # example server for protocol testing
     "docutils>=0.20.1",             # Jupyter-book needs docutils<=0.20
     "ghp-import>=2.1.0",
     "graphviz>=0.20.3",
