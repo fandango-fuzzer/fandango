@@ -118,6 +118,15 @@ class ConstraintTest(unittest.TestCase):
             self.assertGreaterEqual(len(str(solution)), 3)
             self.assertLessEqual(len(str(solution)), 10)
 
+    def test_repetition_global_var(self):
+        with open(RESOURCES_ROOT / "global_var_bounds.fan", "r") as file:
+            grammar, c = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
+
+        solutions = self.get_solutions(grammar, c, desired_solutions=1)
+        for solution in solutions:
+            self.assertEqual(str(solution), "baz" * 10)
+
     def test_repetition_min(self):
         with open(RESOURCES_ROOT / "min_reps.fan", "r") as file:
             grammar, c = parse(file, use_stdlib=False, use_cache=False)
