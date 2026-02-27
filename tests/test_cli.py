@@ -1,5 +1,6 @@
 #!/usr/bin/env pytest
 import asyncio
+import json
 import os
 import re
 import shutil
@@ -7,8 +8,16 @@ import subprocess
 import sys
 import time
 import unittest
+from unittest.mock import patch
 
+from fandango import DISTRIBUTION_NAME
 from fandango.cli import get_parser
+from fandango.cli.upgrade import (
+    check_for_fandango_update,
+    check_package_for_update,
+    Version,
+    version,
+)
 
 from .utils import DOCS_ROOT, IS_BEARTYPE_ACTIVE, RESOURCES_ROOT, run_command
 
@@ -517,3 +526,76 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
             client_code,
             f"Client error: {client_err}\n\nClient output: {client_out}",
         )
+
+
+def test_fandango_version_upgrade_skip_set():
+    """Ensure the env var short-circuits the update check without network calls."""
+    with (
+        patch.dict(os.environ, {"FANDANGO_DISABLE_UPDATE_CHECK": "1"}, clear=False),
+        patch("sys.stdout.isatty", return_value=True),
+        patch("fandango.cli.upgrade.check_package_for_update") as mock_check,
+    ):
+        check_for_fandango_update(check_now=True)
+
+    mock_check.assert_not_called()
+
+
+def test_fandango_version_upgrade():
+    """Ensure the update check runs when the env var is not set/falsey."""
+    with (
+        patch.dict(os.environ, {"FANDANGO_DISABLE_UPDATE_CHECK": ""}, clear=False),
+        patch("sys.stdout.isatty", return_value=True),
+        patch("fandango.cli.upgrade.NOTIFIED_IN_THIS_SESSION", False),
+        patch(
+            "fandango.cli.upgrade.check_package_for_update", return_value=False
+        ) as mock_check,
+    ):
+        check_for_fandango_update(check_now=True)
+
+    mock_check.assert_called_once()
+
+
+def test_fandango_version_check_path_works(tmp_path, monkeypatch, capsys):
+    """Ensure the version check path works and the distribution is installed."""
+
+    # This will fail if the distribution is not installed or packaging is missing
+    installed_version = Version(version(DISTRIBUTION_NAME))
+
+    latest_version = Version(
+        f"{installed_version.major}.{installed_version.minor}.{installed_version.micro + 1}"
+    )
+
+    payload = json.dumps({"info": {"version": str(latest_version)}}).encode()
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def read(self):
+            return payload
+
+    def fake_urlopen(url, timeout):
+        # Make sure we are querying PyPI for the right package
+        assert f"/{DISTRIBUTION_NAME}/" in url
+        return FakeResponse()
+
+    monkeypatch.setattr("fandango.cli.upgrade.urllib.request.urlopen", fake_urlopen)
+
+    notified = check_package_for_update(
+        DISTRIBUTION_NAME,
+        cache_dir=tmp_path,
+        check_now=True,
+    )
+
+    assert notified is True
+
+    out, err = capsys.readouterr()
+    assert out == ""
+    expected_prefix = (
+        f"📦 Update available for '{DISTRIBUTION_NAME}': "
+        f"{installed_version} → {latest_version}. See "
+    )
+    assert err.startswith(expected_prefix)

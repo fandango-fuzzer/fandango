@@ -13,7 +13,6 @@ from packaging.version import Version, InvalidVersion
 from fandango.language.parse.cache import get_cache_dir
 from fandango.cli.parser import terminal_link
 from fandango import DISTRIBUTION_NAME
-from fandango.logger import LOGGER
 
 # How often to check for updates (in seconds)
 CHECK_INTERVAL_SECONDS = 7 * 24 * 60 * 60  # one week
@@ -98,8 +97,6 @@ def check_for_fandango_update(check_now: bool = False) -> None:
     """Check for Fandango updates and notify the user if an update is available."""
     global NOTIFIED_IN_THIS_SESSION
 
-    if os.environ.get("CI"):
-        return  # skip checks in CI environments
     if os.environ.get("FANDANGO_DISABLE_UPDATE_CHECK"):
         return  # user disabled update checks
     if not sys.stdout.isatty():
