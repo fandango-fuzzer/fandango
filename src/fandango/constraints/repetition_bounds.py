@@ -399,6 +399,7 @@ class RepetitionBoundsConstraint(Constraint):
             first_iteration = iter_list[smallest_rep][0]
             last_iteration = iter_list[highest_rep][-1]
 
+            # We get the last not applicable for containing a referenced encoding in the grammar.
             max_bounds_search = first_iteration
             assert max_bounds_search.parent is not None
             while (
