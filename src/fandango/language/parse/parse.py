@@ -79,8 +79,9 @@ def parse(
     pyenv_globals = None
     pyenv_locals = None
 
-    stdlib_grammar: Optional[Grammar] = None
-    stdlib_constraints: Optional[list[Constraint | SoftValue]] = None
+    used_symbols = set()
+    grammars = []
+    parsed_constraints: list[Constraint | SoftValue] = []
     if use_stdlib:
         LOGGER.debug("Reading standard library")
         stdlib_spec = parse_content(
@@ -96,20 +97,12 @@ def parse(
         pyenv_globals = stdlib_spec.global_vars
         pyenv_locals = stdlib_spec.local_vars
 
-    used_symbols = set()
-    if use_stdlib:
-        assert stdlib_grammar is not None
         for symbol in stdlib_grammar.rules.keys():
             # Do not complain about unused symbols in the standard library
             used_symbols.add(symbol.name())
 
-    grammars = []
-    parsed_constraints: list[Constraint | SoftValue] = []
-    if use_stdlib:
-        assert stdlib_grammar is not None
-        assert stdlib_constraints is not None
-        grammars = [stdlib_grammar]
-        parsed_constraints = stdlib_constraints
+        grammars.append(stdlib_grammar)
+        parsed_constraints.append(stdlib_constraints)
 
     grammars += given_grammars
 
