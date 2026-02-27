@@ -30,6 +30,7 @@ from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree_value import TreeValueType
 from fandango.logger import LOGGER
 
+
 def parse(
     fan_files: str | IO[str] | list[str | IO[str]],
     constraints: Optional[list[str]] = None,
