@@ -102,7 +102,7 @@ def parse(
             used_symbols.add(symbol.name())
 
         grammars.append(stdlib_grammar)
-        parsed_constraints.append(stdlib_constraints)
+        parsed_constraints.extend(stdlib_constraints)
 
     grammars += given_grammars
 
