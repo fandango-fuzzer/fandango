@@ -30,11 +30,6 @@ from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree_value import TreeValueType
 from fandango.logger import LOGGER
 
-# Save the standard library grammar and constraints
-STDLIB_GRAMMAR: Optional[Grammar] = None
-STDLIB_CONSTRAINTS: Optional[list[Constraint | SoftValue]] = None
-
-
 def parse(
     fan_files: str | IO[str] | list[str | IO[str]],
     constraints: Optional[list[str]] = None,
@@ -83,8 +78,9 @@ def parse(
     pyenv_globals = None
     pyenv_locals = None
 
-    global STDLIB_SYMBOLS, STDLIB_GRAMMAR, STDLIB_CONSTRAINTS
-    if use_stdlib and STDLIB_GRAMMAR is None:
+    stdlib_grammar: Optional[Grammar] = None
+    stdlib_constraints: Optional[list[Constraint | SoftValue]] = None
+    if use_stdlib:
         LOGGER.debug("Reading standard library")
         stdlib_spec = parse_content(
             stdlib,
@@ -94,29 +90,25 @@ def parse(
             pyenv_globals=pyenv_globals,
             pyenv_locals=pyenv_locals,
         )
-        STDLIB_GRAMMAR = stdlib_spec.grammar
-        STDLIB_CONSTRAINTS = stdlib_spec.constraints
+        stdlib_grammar = stdlib_spec.grammar
+        stdlib_constraints = stdlib_spec.constraints
         pyenv_globals = stdlib_spec.global_vars
         pyenv_locals = stdlib_spec.local_vars
 
     used_symbols = set()
     if use_stdlib:
-        assert STDLIB_GRAMMAR is not None
-        for symbol in STDLIB_GRAMMAR.rules.keys():
+        assert stdlib_grammar is not None
+        for symbol in stdlib_grammar.rules.keys():
             # Do not complain about unused symbols in the standard library
             used_symbols.add(symbol.name())
 
     grammars = []
     parsed_constraints: list[Constraint | SoftValue] = []
     if use_stdlib:
-        assert STDLIB_GRAMMAR is not None
-        assert STDLIB_CONSTRAINTS is not None
-        try:
-            grammars = [deepcopy(STDLIB_GRAMMAR)]
-        except TypeError:
-            # This can happen if we invoke parse() from a notebook
-            grammars = [STDLIB_GRAMMAR]
-        parsed_constraints = STDLIB_CONSTRAINTS.copy()
+        assert stdlib_grammar is not None
+        assert stdlib_constraints is not None
+        grammars = [stdlib_grammar]
+        parsed_constraints = stdlib_constraints
 
     grammars += given_grammars
 
