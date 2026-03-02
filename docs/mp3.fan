@@ -1,56 +1,41 @@
 # ============================================================
-# MP3 File Format – Grammar-Based Tags (Documented)
+# Minimal Valid MP3 File (ID3v2 + MPEG1 Layer III + ID3v1)
+# Produces exactly one second of silence.
 # ============================================================
 
-import random
 import struct
+import random
+
 
 # ============================================================
-# Global Configuration
+# Global Constants
 # ============================================================
 
-MIN_FRAMES = 1
-MAX_FRAMES = 4
-FRAME_PAYLOAD_SIZE = 100
+# MPEG-1 Layer III, 128 kbps, 44.1 kHz, no CRC, stereo
+BITRATE_INDEX = 9              # 128 kbps
+SAMPLING_INDEX = 0             # 44.1 kHz
+PADDING_BIT = 0
+CHANNEL_MODE = 0               # stereo
+SAMPLES_PER_FRAME = 1152
+SAMPLING_RATE = 44100
+BITRATE = 128000
+FRAME_LENGTH = 417             # floor(144*bitrate/sr)
+FRAMES_PER_SECOND = 38         # ceil(44100/1152)
+TEXT_DIMENSION = 100           # required preference
+
 
 # ============================================================
 # Helper Functions
 # ============================================================
 
-def syncsafe(size: int) -> bytes:
-    """
-    Convert integer to 4-byte syncsafe representation
-    (7 bits per byte, ID3v2 requirement).
-    """
-    b1 = (size >> 21) & 0x7F
-    b2 = (size >> 14) & 0x7F
-    b3 = (size >> 7) & 0x7F
-    b4 = size & 0x7F
-    return bytes([b1, b2, b3, b4])
-
-
-def compute_id3v2_size(payload: bytes) -> bytes:
-    """
-    Compute syncsafe size for ID3v2 header.
-    """
-    return syncsafe(len(payload))
-
-
-def pack_u32_be(value: int) -> bytes:
-    """
-    Pack 32-bit unsigned integer as big-endian.
-    """
-    return struct.pack(">I", value)
-
-
-def build_frame(payload_size: int) -> bytes:
-    """
-    Construct a simple MPEG1 Layer III frame
-    with fixed valid header.
-    """
-    header = b"\xFF\xFB\x90\x64"
-    payload = random.randbytes(payload_size)
-    return header + payload
+def synchsafe(n: int) -> bytes:
+    """Convert integer to 4-byte synchsafe representation."""
+    return bytes([
+        (n >> 21) & 0x7F,
+        (n >> 14) & 0x7F,
+        (n >> 7) & 0x7F,
+        n & 0x7F,
+    ])
 
 
 # ============================================================
@@ -61,121 +46,144 @@ def build_frame(payload_size: int) -> bytes:
 # Start Symbol
 # ------------------------------------------------------------
 
-# Root symbol of an MP3 document
 <start> ::= <mp3_file>
+
 
 # ------------------------------------------------------------
 # Complete MP3 File
 # ------------------------------------------------------------
 
-# Full MP3 file:
-#   Optional ID3v2 tag
-#   One or more MPEG audio frames
-#   Optional ID3v1 tag
-<mp3_file> ::= <id3v2_tag>? <audio_frames> <id3v1_tag>?
-
-# ============================================================
-# ID3v2 Tag (Header + Frames)
-# ============================================================
-
-# ID3v2 tag structure:
-#   "ID3" magic
-#   version
-#   flags
-#   syncsafe size
-#   frames
-<id3v2_tag> ::= \
-    "ID3" \
-    <id3v2_version> \
-    <id3v2_flags> \
-    <id3v2_size> \
-    <id3v2_frames>
-
-# ID3v2 version 2.3.0
-<id3v2_version> ::= b"\x03\x00"
-
-# ID3v2 flags (no flags set)
-<id3v2_flags> ::= b"\x00"
-
-# 4-byte syncsafe size of the ID3v2 frame section
-<id3v2_size> ::= <id3v2_size_raw>
-
-# Construct syncsafe size from frame payload
-<id3v2_size_raw> ::= <byte>* := compute_id3v2_size(bytes(<id3v2_frames>))
+<mp3_file> ::= <id3v2> <mpeg_audio> <id3v1>
 
 # ------------------------------------------------------------
-# ID3v2 Frames
+# MPEG Audio
 # ------------------------------------------------------------
 
-# Zero or more ID3v2 frames
-<id3v2_frames> ::= <id3v2_frame>*
+<mpeg_audio> ::= <mpeg_audio_frame>{FRAMES_PER_SECOND}
 
-# Single ID3v2 frame:
-#   4-byte frame ID
-#   4-byte size
-#   2-byte flags
-#   payload
+
+# ------------------------------------------------------------
+# MPEG Audio Frame
+# ------------------------------------------------------------
+
+# <mpeg_audio_frame> ::= <byte>* := build_frame()
+
+<mpeg_audio_frame> ::= \
+    <mpeg_audio_header> \
+    <mpeg_audio_side_info> \
+    <mpeg_audio_main_data>
+
+# Frame Header (4 bytes, fully bit modeled)
+<mpeg_audio_header> ::= \
+    <mpeg_audio_sync_bits> \
+    <mpeg_audio_version_id> \
+    <mpeg_audio_layer_bits> \
+    <mpeg_audio_protection_bit> \
+    <mpeg_audio_bitrate_bits> \
+    <mpeg_audio_sampling_bits> \
+    <mpeg_audio_padding_bit> \
+    <mpeg_audio_private_bit> \
+    <mpeg_audio_channel_mode_bits> \
+    <mpeg_audio_mode_extension_bits> \
+    <mpeg_audio_copyright_bit> \
+    <mpeg_audio_original_bit> \
+    <mpeg_audio_emphasis_bits>
+
+
+# 11 sync bits: 11111111111
+<mpeg_audio_sync_bits> ::= 1 1 1 1 1 1 1 1 1 1 1
+
+# MPEG Version 1: 11
+<mpeg_audio_version_id> ::= 1 1
+
+# Layer III: 01
+<mpeg_audio_layer_bits> ::= 0 1
+
+# No CRC
+<mpeg_audio_protection_bit> ::= 1
+
+# 128 kbps: 1001
+<mpeg_audio_bitrate_bits> ::= 1 0 0 1
+
+# 44.1 kHz: 00
+<mpeg_audio_sampling_bits> ::= 0 0
+
+# No padding
+<mpeg_audio_padding_bit> ::= 0
+
+<mpeg_audio_private_bit> ::= 0
+
+# Stereo: 00
+<mpeg_audio_channel_mode_bits> ::= 0 0
+
+# Mode extension (unused in stereo)
+<mpeg_audio_mode_extension_bits> ::= 0 0
+
+<mpeg_audio_copyright_bit> ::= 0
+<mpeg_audio_original_bit> ::= 0
+
+# No emphasis: 00
+<mpeg_audio_emphasis_bits> ::= 0 0
+
+  
+# Side information (32 bytes for stereo MPEG1)
+<mpeg_audio_side_info> ::= b"\x00"{32}
+
+# Main data (rest of frame) - all silence
+MAIN_DATA_SIZE = FRAME_LENGTH - 4 - 32
+<mpeg_audio_main_data> ::= b"\x00"{MAIN_DATA_SIZE}
+
+# <mpeg_audio_main_data> ::= <byte>{MAIN_DATA_SIZE} := white_noise(MAIN_DATA_SIZE)
+#
+# def white_noise(size: int) -> bytes:
+#     return bytes([random.randint(1, 255) for _ in range(size)])
+
+
+# ------------------------------------------------------------
+# ID3v2 Section
+# ------------------------------------------------------------
+
+# This is a minimal ID3v2.3 tag with one TIT2 frame
+
+<id3v2> ::= <id3v2_header> <id3v2_frame>
+
+# <id3v2> ::= <byte>* := build_id3v2()
+
+<id3v2_header> ::= b"ID3" b"\x03\x00" b"\x00" <id3v2_len>
+
+<id3v2_len> ::= <byte>{4} 
+where <id3v2_len> == synchsafe(len(bytes(<id3v2_frame>)))
+
 <id3v2_frame> ::= \
     <id3v2_frame_id> \
     <id3v2_frame_size> \
-    <id3v2_frame_flags> \
-    <id3v2_frame_payload>
+    <id3v2_flags> \
+    <id3v2_encoding> \
+    <id3v2_text>
+    
+<id3v2_frame_id> ::= b"TIT2"
 
-# Supported frame identifiers:
-#   TIT2 – Title
-#   TALB – Album
-#   TPE1 – Artist
-<id3v2_frame_id> ::= "TIT2" | "TALB" | "TPE1"
+<id3v2_frame_size> ::= <byte>{4}
+where <id3v2_frame_size> == \
+    struct.pack(">I", len(bytes(<id3v2_encoding>)) + 
+                      len(bytes(<id3v2_text>)))
 
-# 4-byte big-endian frame size
-<id3v2_frame_size> ::= <id3v2_frame_size_raw>
+<id3v2_flags> ::= b"\x00\x00"
 
-# Construct frame size from payload length
-<id3v2_frame_size_raw> ::= <byte>{4} := pack_u32_be(len(bytes(<id3v2_frame_payload>)))
+<id3v2_encoding> ::= b"\x00"
 
-# Frame flags (none set)
-<id3v2_frame_flags> ::= b"\x00\x00"
+<id3v2_text> ::= <byte>* := \
+    b"Silent MP3".ljust(TEXT_DIMENSION, b"\x00")
 
-# Text frame payload:
-#   1 byte encoding
-#   text bytes
-<id3v2_frame_payload> ::= \
-    <id3v2_text_encoding> \
-    <id3v2_text_data>
 
-# Text encoding 0 = ISO-8859-1
-<id3v2_text_encoding> ::= b"\x00"
+# ------------------------------------------------------------
+# ID3v1 Section
+# ------------------------------------------------------------
 
-# 10 bytes of text data
-<id3v2_text_data> ::= <byte>{10}
+# <id3v1> ::= <byte>* := build_id3v1()
 
-# ============================================================
-# MPEG Audio Frames
-# ============================================================
-
-# One or more audio frames
-<audio_frames> ::= <audio_frame>+
-
-# Single audio frame constructed via helper
-<audio_frame> ::= <audio_frame_raw>
-
-# Construct MPEG frame with fixed header and random payload
-<audio_frame_raw> ::= <byte>* := build_frame(FRAME_PAYLOAD_SIZE)
-
-# ============================================================
-# ID3v1 Tag (128-byte Footer)
-# ============================================================
-
-# ID3v1 tag structure:
-#   "TAG"
-#   30-byte title
-#   30-byte artist
-#   30-byte album
-#   4-byte year
-#   30-byte comment
-#   1-byte genre
-<id3v1_tag> ::= \
-    "TAG" \
+<id3v1> ::= \
+    <id3v1_tag> \
     <id3v1_title> \
     <id3v1_artist> \
     <id3v1_album> \
@@ -183,24 +191,16 @@ def build_frame(payload_size: int) -> bytes:
     <id3v1_comment> \
     <id3v1_genre>
 
-# 30-byte title field
-<id3v1_title> ::= <byte>{30}
+<id3v1_tag> ::= b"TAG"
 
-# 30-byte artist field
-<id3v1_artist> ::= <byte>{30}
+<id3v1_title> ::= <byte>{30} := b"Silent MP3".ljust(30, b"\x00")
 
-# 30-byte album field
-<id3v1_album> ::= <byte>{30}
+<id3v1_artist> ::= <byte>{30} := b"ZZ Top".ljust(30, b"\x00")
 
-# 4 ASCII digits representing year
-<id3v1_year> ::= <digit><digit><digit><digit>
+<id3v1_album> ::= <byte>{30} := b"Fandango!".ljust(30, b"\x00")
 
-# Single ASCII digit
-<digit> ::= "0" | "1" | "2" | "3" | "4" | \
-            "5" | "6" | "7" | "8" | "9"
+<id3v1_year> ::= <byte>{4} := b"2026"
 
-# 30-byte comment field
-<id3v1_comment> ::= <byte>{30}
+<id3v1_comment> ::= <byte>{30} := b"".ljust(30, b"\x00")
 
-# 1-byte genre index
-<id3v1_genre> ::= <byte>
+<id3v1_genre> ::= b"\x00"

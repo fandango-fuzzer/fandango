@@ -11,33 +11,11 @@ kernelspec:
 ---
 
 (sec:png)=
-# Case Study: PNG x ChatGPT
+# Case Study: PNG
 
 The [PNG format](https://en.wikipedia.org/wiki/PNG) is widely used to encode images.
-To obtain a Fandango specification that creates PNG images, we asked ChatGPT for help.
 
-We created the file [png.fan](png.fan) by asking [ChatGPT](https://chatgpt.com) for assistance.
-The [prompt](prompt.txt) instructs ChatGPT 
-
-* to produce a Fandango PNG spec;
-* to avoid specific mistakes about Fandango; and
-* to prefer more efficient alternatives wherever possible.
-
-```{margin}
-The prompt is fairly generic. 
-Instead of `PNG`, you may use other image formats (or even other arbitrary file formats) as you like.
-```
-
-```{tip}
-Use the copy button in the upper right corner to copy the prompt, so you can paste it into your favorite editor, and then paste it into ChatGPT.
-```
-
-```{code-cell}
-:tags: ["remove-input"]
-!cat prompt.txt
-```
-
-The resulting PNG file [png.fan](png.fan) can be directly used in Fandango:
+The PNG spec [png.fan](png.fan) can be directly used in Fandango:
 
 ```shell
 $ fandango fuzz -f png.fan -n 1 --population-size=1 -o 32x32.png
@@ -52,8 +30,7 @@ produces a nice [32x32 pixel PNG file](32x32.png):
 :align: center
 ```
 
-The resulting PNG file [png.fan](png.fan) is reproduced verbatim below.
-As far as we can tell, structure and documentation are accurate.
+The PNG file [png.fan](png.fan) is reproduced verbatim below.
 
 ```{versionadded} 1.1
 `png.fan` requires Fandango 1.1 or later.
@@ -66,10 +43,4 @@ As far as we can tell, structure and documentation are accurate.
 
 ```{note}
 Note that `png.fan` supports only a limited set of PNG fields, so it cannot be used to [parse](sec:parsing) arbitrary PNG files.
-Feel free to use ChatGPT to add any extensions you'd like, or add them manually;
-```
-
-```{tip}
-Be aware that every invocation of ChatGPT produces somewhat different code,
-so you may need to provide further instructions to obtain your favorite `.fan` file.
 ```
