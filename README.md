@@ -4,6 +4,9 @@
 [![Tests](https://github.com/fandango-fuzzer/fandango/actions/workflows/python-tests.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/python-tests.yml) [![Code Quality Checks](https://github.com/fandango-fuzzer/fandango/actions/workflows/code-checks.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/code-checks.yml) [![CodeQL Analysis](https://github.com/fandango-fuzzer/fandango/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/github-code-scanning/codeql) [![Docs Deployment](https://github.com/fandango-fuzzer/fandango/actions/workflows/build-docs.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/build-docs.yml) [![Build & Publish](https://github.com/fandango-fuzzer/fandango/actions/workflows/build-and-publish.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/build-and-publish.yml) [![Coverage Status](https://coveralls.io/repos/github/fandango-fuzzer/fandango/badge.svg?branch=main)](https://coveralls.io/github/fandango-fuzzer/fandango?branch=main) [![PyPI Downloads](https://img.shields.io/pypi/dm/fandango-fuzzer)](https://pypi.org/project/fandango-fuzzer/) [![PyPI Downloads](https://static.pepy.tech/badge/fandango-fuzzer)](https://pepy.tech/projects/fandango-fuzzer) [![GitHub stars](https://img.shields.io/github/stars/fandango-fuzzer/fandango?style=social)](https://github.com/fandango-fuzzer/fandango/stargazers)
 
 Welcome to Fandango!
+
+Go to [./evaluation/protocol_testing_eval](./evaluation/protocol_testing_eval) to find the protocol testing evaluation.
+
 Fandango is a _generator_ of inputs and interactions for software testing.
 Given the specification of a program's input or interaction language, Fandango quickly generates myriads of valid sample inputs for testing.
 
