@@ -21,7 +21,7 @@ The PNG spec [mp3.fan](mp3.fan) can be directly used in Fandango:
 $ fandango fuzz -f mp3.fan -n 1 --population-size=1 -o silence.mp3
 ```
 
-produces a [second of silence](silence.mp3).
+produces a second of silence in [silence.mp3](silence.mp3).
 
 The file [mp3.fan](mp3.fan) is reproduced verbatim below.
 
