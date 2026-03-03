@@ -178,7 +178,11 @@ class RepetitionBoundsSuggestion(Suggestion):
                 nr_to_delete=self._bound_len - self._goal_len,
                 rep_iteration=self._iter_id,
             )
-            if self._goal_len == 0 and self._starting_rep_value is not None and self._ending_rep_value is not None:
+            if (
+                self._goal_len == 0
+                and self._starting_rep_value is not None
+                and self._ending_rep_value is not None
+            ):
                 repetition_parent = self._ending_rep_tree.parent
                 assert repetition_parent is not None
                 delete_replacement: DerivationTree = delete_replace_pair[1]
@@ -292,7 +296,10 @@ class RepetitionBoundsConstraint(Constraint):
         local_cpy = self.local_variables.copy()
 
         if len(searches) == 0:
-            return self.eval(expr, self.global_variables, local_cpy), tree_rightmost_relevant_node
+            return (
+                self.eval(expr, self.global_variables, local_cpy),
+                tree_rightmost_relevant_node,
+            )
 
         nodes = []
         if len(searches) != 1:
@@ -333,10 +340,14 @@ class RepetitionBoundsConstraint(Constraint):
         local_cpy[search_name] = target
         return self.eval(expr, self.global_variables, local_cpy), target
 
-    def min(self, tree_stop_before: Optional[DerivationTree]) -> tuple[Any, Optional[DerivationTree]]:
+    def min(
+        self, tree_stop_before: Optional[DerivationTree]
+    ) -> tuple[Any, Optional[DerivationTree]]:
         return self._compute_rep_bound(tree_stop_before, self.expr_data_min)
 
-    def max(self, tree_stop_before: Optional[DerivationTree]) -> tuple[Any, Optional[DerivationTree]]:
+    def max(
+        self, tree_stop_before: Optional[DerivationTree]
+    ) -> tuple[Any, Optional[DerivationTree]]:
         return self._compute_rep_bound(tree_stop_before, self.expr_data_max)
 
     def group_by_repetition_id(
@@ -401,10 +412,13 @@ class RepetitionBoundsConstraint(Constraint):
             last_iteration = iter_list[highest_rep][-1]
 
             # We get the last not applicable for containing a referenced encoding in the grammar.
-            max_bounds_search = first_iteration
+            max_bounds_search: Optional[DerivationTree] = first_iteration
+            assert max_bounds_search is not None
             while (
-                max_bounds_search.parent is not None and
-                index_by_reference(max_bounds_search.parent.children, max_bounds_search)
+                max_bounds_search.parent is not None
+                and index_by_reference(
+                    max_bounds_search.parent.children, max_bounds_search
+                )
                 == 0
             ):
                 max_bounds_search = max_bounds_search.parent
