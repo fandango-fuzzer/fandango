@@ -31,7 +31,9 @@ parts:
     - file: Binary
     - file: Bits
     - file: Conversion
+    - file: Png
     - file: Gif
+    - file: Mp3
     - file: Hatching
     # - file: Whitebox
   - caption: Checking Responses
