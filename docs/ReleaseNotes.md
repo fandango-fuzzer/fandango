@@ -15,6 +15,10 @@ kernelspec:
 
 This document lists major changes across releases.
 
+```{versionadded} 1.1.1 (February 2026)
+* Bugfixes
+```
+
 ```{versionadded} 1.1 (February 2026)
 * Much enhanced [protocol fuzzing](sec:protocols):
    * Protocol fuzzing is now out of beta.
