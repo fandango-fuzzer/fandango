@@ -6,6 +6,8 @@ import time
 from typing import IO, Any, Optional, cast
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
+from fandango.evolution.algorithms import GenerationAlgorithm
+from fandango.evolution.chromosomes import Suite, Individual
 from fandango.language.grammar import FuzzingMode, ParsingMode
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.parse.parse import parse
@@ -201,7 +203,11 @@ class Fandango(FandangoBase):
             start_symbol=start_symbol,
             includes=includes,
         )
-        self.fandango: Optional[FandangoStrategy] = None
+        self.fandango: Optional[
+            FandangoStrategy
+            | GenerationAlgorithm[Individual]
+            | GenerationAlgorithm[Suite]
+        ] = None
 
     @classmethod
     def _with_parsed(
@@ -262,9 +268,23 @@ class Fandango(FandangoBase):
                 )
                 constraints += cast(list[Constraint | SoftValue], extra_constraints)
 
-        self.fandango = FandangoStrategy(
-            self.grammar, constraints, start_symbol=start_symbol, **settings
-        )
+        algorithm = settings.pop("algorithm", "genetic")
+        if algorithm == "random-suite":
+            from fandango.evolution.algorithms.random import RandomSuiteAlgorithm
+
+            self.fandango = RandomSuiteAlgorithm(self.grammar, constraints, **settings)
+        elif algorithm == "whole-suite":
+            from fandango.evolution.algorithms.wholesuite import WholeSuiteAlgorithm
+
+            self.fandango = WholeSuiteAlgorithm(self.grammar, constraints, **settings)
+        elif algorithm == "dynamosa":
+            from fandango.evolution.algorithms.dynamosa import DynaMOSAAlgorithm
+
+            self.fandango = DynaMOSAAlgorithm(self.grammar, constraints, **settings)
+        else:
+            self.fandango = FandangoStrategy(
+                self.grammar, constraints, start_symbol=start_symbol, **settings
+            )
         LOGGER.info("---------- Done initializing base population ----------")
 
     def generate_solutions(
@@ -289,7 +309,13 @@ class Fandango(FandangoBase):
             f"---------- Generating {'' if max_generations is None else f' for {max_generations} generations'}----------"
         )
         start_time = time.time()
-        yield from self.fandango.generate(max_generations=max_generations, mode=mode)
+        if not isinstance(self.fandango, FandangoStrategy):
+            suite = self.fandango.generate(max_generations=max_generations)
+            yield from suite.to_derivation_trees()
+        else:
+            yield from self.fandango.generate(
+                max_generations=max_generations, mode=mode
+            )
         LOGGER.info(
             f"---------- Done generating {'' if max_generations is None else f' for {max_generations} generations'}----------"
         )

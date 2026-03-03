@@ -10,6 +10,7 @@ from fandango.constraints.failing_tree import Suggestion
 from fandango.constraints.fitness import FailingTree
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.algorithm import Fandango, LoggerLevel
+from fandango.evolution.chromosomes.individual import Individual
 from fandango.evolution.population import PopulationManager
 from fandango.language.parse.parse import parse
 from fandango.language.tree import DerivationTree
@@ -248,23 +249,24 @@ class GeneticTest(unittest.TestCase):
             tournament_size,
         )
 
-        # Perform crossover
+        # Perform crossover (wrap DerivationTree in Individual for operator compatibility)
         children = self.fandango.crossover_operator.crossover(
-            self.fandango.grammar, parent1, parent2
+            self.fandango.grammar, Individual(parent1), Individual(parent2)
         )
 
         assert children is not None
 
-        # Check that the children are of the correct type
+        # Check that the children are of the correct type (Individual containing DerivationTree)
         for child in children:
-            self.assertIsInstance(child, DerivationTree)
+            self.assertIsInstance(child, Individual)
+            self.assertIsInstance(child.tree, DerivationTree)
 
         # Check that the children are different
         self.assertNotEqual(children[0], children[1])
 
-        # Check that the population is valid
+        # Check that the population is valid (use the underlying tree for parsing)
         for individual in children:
-            self.assertTrue(self.fandango.grammar.parse(str(individual)))
+            self.assertTrue(self.fandango.grammar.parse(str(individual.tree)))
 
     def test_mutation(self):
         # Select the parents
@@ -275,18 +277,24 @@ class GeneticTest(unittest.TestCase):
             self.fandango.evaluation, tournament_size
         )
 
+        # Wrap DerivationTree in Individual for operator compatibility
         children = self.fandango.crossover_operator.crossover(
-            self.fandango.grammar, parent1, parent2
+            self.fandango.grammar, Individual(parent1), Individual(parent2)
         )
 
         assert children is not None
+
+        # Wrapper to adapt evaluate_individual for Individual type
+        def evaluate_individual_wrapper(ind: Individual):
+            """Wrapper that unwraps Individual to DerivationTree for evaluation."""
+            return self.fandango.evaluator.evaluate_individual(ind.tree)
 
         # Perform mutation
         gen1 = GeneratorWithReturn(
             self.fandango.mutation_method.mutate(
                 children[0],
                 self.fandango.grammar,
-                self.fandango.evaluator.evaluate_individual,
+                evaluate_individual_wrapper,
             )
         )
         _solutions1 = list(gen1)
@@ -296,22 +304,23 @@ class GeneticTest(unittest.TestCase):
             self.fandango.mutation_method.mutate(
                 children[1],
                 self.fandango.grammar,
-                self.fandango.evaluator.evaluate_individual,
+                evaluate_individual_wrapper,
             )
         )
         _solutions2 = list(gen2)
         mutant2 = gen2.return_value
 
-        # Check that the mutated children are of the correct type
+        # Check that the mutated children are of the correct type (Individual containing DerivationTree)
         for child in [mutant1, mutant2]:
-            self.assertIsInstance(child, DerivationTree)
+            self.assertIsInstance(child, Individual)
+            self.assertIsInstance(child.tree, DerivationTree)
 
-        # Check that the mutated children are different
-        self.assertNotEqual(mutant1, mutant2)
+        # Check that the mutated children are different (compare the underlying trees)
+        self.assertNotEqual(mutant1.tree, mutant2.tree)
 
-        # Check that the population is valid
+        # Check that the population is valid (use the underlying tree for parsing)
         for individual in [mutant1, mutant2]:
-            self.assertTrue(self.fandango.grammar.parse(str(individual)))
+            self.assertTrue(self.fandango.grammar.parse(str(individual.tree)))
 
     def test_generate(self):
         # Run the evolution process

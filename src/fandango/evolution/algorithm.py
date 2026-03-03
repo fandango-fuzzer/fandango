@@ -9,10 +9,12 @@ from collections.abc import Callable, Generator
 from typing import Iterable, Optional
 
 from fandango.constraints.constraint import Constraint
+from fandango.constraints.failing_tree import FailingTree, Suggestion
 from fandango.constraints.soft import SoftValue
 from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.adaptation import AdaptiveTuner
+from fandango.evolution.chromosomes.individual import Individual
 from fandango.evolution.crossover import CrossoverOperator, SimpleSubtreeCrossover
 from fandango.evolution.evaluation import Evaluator, IoEvaluator
 from fandango.evolution.mutation import MutationOperator, SimpleMutation
@@ -22,6 +24,7 @@ from fandango.io import FandangoIO
 from fandango.io.navigation.coverage_goal import CoverageGoal
 from fandango.io.navigation.packetselector import PacketSelector
 from fandango.io.packetparser import parse_next_remote_packet
+from fandango.language import DerivationTree
 from fandango.language.symbols import NonTerminal
 from fandango.language.grammar import FuzzingMode
 from fandango.language.grammar.grammar import Grammar
@@ -55,10 +58,10 @@ class Fandango:
         initial_population: Optional[list[DerivationTree | str]] = None,
         expected_fitness: float = 1.0,
         elitism_rate: float = 0.1,
-        crossover_method: CrossoverOperator = SimpleSubtreeCrossover(),
+        crossover_method: CrossoverOperator[Individual] = SimpleSubtreeCrossover(),
         crossover_rate: float = 0.8,
         tournament_size: float = 0.1,
-        mutation_method: MutationOperator = SimpleMutation(),
+        mutation_method: MutationOperator[Individual] = SimpleMutation(),
         mutation_rate: float = 0.2,
         destruction_rate: float = 0.0,
         logger_level: Optional[LoggerLevel] = None,
@@ -260,16 +263,18 @@ class Fandango:
                 )
 
             with self.profiler.timer("crossover", increment=2):
+                # Wrap DerivationTree in Individual for operator compatibility
                 crossovers = self.crossover_operator.crossover(
-                    self.grammar, parent1, parent2
+                    self.grammar, Individual(parent1), Individual(parent2)
                 )
                 if crossovers is None:
                     return None
 
+                # Unwrap Individual back to DerivationTree
                 to_add = [
-                    tree
-                    for tree in crossovers
-                    if tree.size() <= self.adaptive_tuner.current_max_nodes
+                    ind.tree
+                    for ind in crossovers
+                    if ind.tree.size() <= self.adaptive_tuner.current_max_nodes
                 ]
 
             for i, child in enumerate(to_add):
@@ -302,16 +307,28 @@ class Fandango:
         """
         mutation_pool = self.evaluator.compute_mutation_pool(new_population)
         mutated_population = []
+
+        # Wrapper to adapt evaluate_individual for Individual type
+        def evaluate_individual_wrapper(
+            ind: Individual,
+        ) -> Generator[
+            DerivationTree, None, tuple[float, list[FailingTree], Suggestion]
+        ]:
+            """Wrapper that unwraps Individual to DerivationTree for evaluation."""
+            return self.evaluator.evaluate_individual(ind.tree)
+
         for individual in mutation_pool:
             if random.random() < self.adaptive_tuner.mutation_rate:
                 try:
                     with self.profiler.timer("mutation", increment=1):
+                        # Wrap DerivationTree in Individual for operator compatibility
                         mutated_individual = yield from self.mutation_method.mutate(
-                            individual,
+                            Individual(individual),
                             self.grammar,
-                            self.evaluator.evaluate_individual,
+                            evaluate_individual_wrapper,
                         )
-                    mutated_population.append(mutated_individual)
+                    # Unwrap Individual back to DerivationTree
+                    mutated_population.append(mutated_individual.tree)
                     self.mutations_made += 1
                 except Exception as e:
                     LOGGER.error(f"Error during mutation: {e}")

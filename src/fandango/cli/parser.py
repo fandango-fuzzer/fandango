@@ -270,6 +270,18 @@ def _get_algorithm_parser() -> argparse.ArgumentParser:
         default="auto",
         help="Whether to show the progress bar. 'auto' (default) shows the progress bar only if stderr is a terminal.",
     )
+    algorithm_group.add_argument(
+        "--algorithm",
+        choices=["genetic", "random-suite", "whole-suite", "dynamosa"],
+        default=None,
+        help=(
+            "Search algorithm to use. "
+            "'genetic' (default) uses the evolutionary algorithm with selection, crossover, and mutation. "
+            "'random-suite' uses random suite generation optimized for grammar coverage. "
+            "'whole-suite' uses the Whole Suite algorithm for grammar coverage. "
+            "'dynamosa' uses the Dynamic Many-Objective Sorting Algorithm for k-path coverage."
+        ),
+    )
 
     return algorithm_parser
 

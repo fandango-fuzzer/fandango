@@ -2,55 +2,65 @@
 import random
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Generator
+from beartype.typing import Generic, TypeVar
 
 from fandango.constraints.failing_tree import FailingTree, Suggestion
+from fandango.evolution.chromosomes.base import Chromosome
+from fandango.evolution.chromosomes.individual import Individual
 from fandango.language import DerivationTree, Grammar
 from fandango.language.symbols import NonTerminal
 
+T = TypeVar("T", bound=Chromosome)
 
-class MutationOperator(ABC):
+
+class MutationOperator(ABC, Generic[T]):
     @abstractmethod
     def mutate(
         self,
-        individual: DerivationTree,
+        individual: T,
         grammar: Grammar,
         evaluate_func: Callable[
-            [DerivationTree],
+            [T],
             Generator[
                 DerivationTree, None, tuple[float, list[FailingTree], Suggestion]
             ],
         ],
-    ) -> Generator[DerivationTree, None, DerivationTree]:
+    ) -> Generator[DerivationTree, None, T]:
         """
         Abstract method to perform mutation on an individual.
 
-        :param individual: The individual (DerivationTree) to mutate.
+        Generic over Chromosome type T for supporting both Individual and Suite chromosomes.
+
+        :param individual: The individual (chromosome of type T) to mutate.
         :param grammar: The Grammar used to generate new subtrees.
         :param evaluate_func: A function that, given an individual, returns a tuple (fitness, failing_trees).
-        :return: A new (mutated) DerivationTree.
+        :return: A new (mutated) chromosome of type T.
         """
         pass
 
 
-class SimpleMutation(MutationOperator):
+class SimpleMutation(MutationOperator[Individual]):
     def mutate(
         self,
-        individual: DerivationTree,
+        individual: Individual,
         grammar: Grammar,
         evaluate_func: Callable[
-            [DerivationTree],
+            [Individual],
             Generator[
                 DerivationTree, None, tuple[float, list[FailingTree], Suggestion]
             ],
         ],
         max_nodes: int = 50,
-    ) -> Generator[DerivationTree, None, DerivationTree]:
+    ) -> Generator[DerivationTree, None, Individual]:
         """
         Default mutation operator: evaluates the individual, selects a failing subtree
         (if any), and replaces it with a newly fuzzed subtree generated from the grammar.
         """
         # Get fitness and failing trees from the evaluation function
         _, failing_trees, _suggestion = yield from evaluate_func(individual)
+
+        # Unwrap the DerivationTree from Individual
+        tree = individual.tree
 
         # Collect the failing subtrees
         failing_subtrees = [ft.tree for ft in failing_trees]
@@ -86,7 +96,9 @@ class SimpleMutation(MutationOperator):
         new_subtree = grammar.fuzz(
             node_to_mutate.symbol,
             prefix_node=prefix_node,
-            max_nodes=node_to_mutate.size() + (max_nodes - individual.size()),
+            max_nodes=node_to_mutate.size() + (max_nodes - tree.size()),
         )
-        mutated = individual.replace(grammar, node_to_mutate, new_subtree)
-        return mutated
+        mutated_tree = tree.replace(grammar, node_to_mutate, new_subtree)
+
+        # Wrap the result back in Individual
+        return Individual(mutated_tree)
