@@ -36,8 +36,8 @@ class RepetitionBoundsSuggestion(Suggestion):
     def __init__(
         self,
         ending_rep_tree: DerivationTree,
-        starting_rep_value: DerivationTree,
-        ending_rep_value: DerivationTree,
+        starting_rep_value: Optional[DerivationTree],
+        ending_rep_value: Optional[DerivationTree],
         bound_len: int,
         goal_len: int,
         iter_id: int,
@@ -178,7 +178,7 @@ class RepetitionBoundsSuggestion(Suggestion):
                 nr_to_delete=self._bound_len - self._goal_len,
                 rep_iteration=self._iter_id,
             )
-            if self._goal_len == 0:
+            if self._goal_len == 0 and self._starting_rep_value is not None and self._ending_rep_value is not None:
                 repetition_parent = self._ending_rep_tree.parent
                 assert repetition_parent is not None
                 delete_replacement: DerivationTree = delete_replace_pair[1]
@@ -285,22 +285,23 @@ class RepetitionBoundsConstraint(Constraint):
 
     def _compute_rep_bound(
         self,
-        tree_rightmost_relevant_node: "DerivationTree",
+        tree_rightmost_relevant_node: Optional["DerivationTree"],
         expr_data: tuple[str, list[NonTerminalSearch], dict[str, NonTerminalSearch]],
-    ) -> tuple[Any, "DerivationTree"]:
+    ) -> tuple[Any, Optional["DerivationTree"]]:
         expr, _, searches = expr_data
         local_cpy = self.local_variables.copy()
 
         if len(searches) == 0:
-            return (
-                eval(expr, self.global_variables, local_cpy),
-                tree_rightmost_relevant_node,
-            )
+            return self.eval(expr, self.global_variables, local_cpy), tree_rightmost_relevant_node
 
         nodes = []
         if len(searches) != 1:
             raise FandangoValueError(
                 "Computed repetition requires exactly one or zero searches"
+            )
+        if tree_rightmost_relevant_node is None:
+            raise FandangoValueError(
+                "Computed repetition with search requires a DerivationTree to reference"
             )
 
         search_name, search = next(iter(searches.items()))
@@ -330,12 +331,12 @@ class RepetitionBoundsConstraint(Constraint):
 
         target = nodes[-1]
         local_cpy[search_name] = target
-        return eval(expr, self.global_variables, local_cpy), target
+        return self.eval(expr, self.global_variables, local_cpy), target
 
-    def min(self, tree_stop_before: DerivationTree) -> tuple[Any, DerivationTree]:
+    def min(self, tree_stop_before: Optional[DerivationTree]) -> tuple[Any, Optional[DerivationTree]]:
         return self._compute_rep_bound(tree_stop_before, self.expr_data_min)
 
-    def max(self, tree_stop_before: DerivationTree) -> tuple[Any, DerivationTree]:
+    def max(self, tree_stop_before: Optional[DerivationTree]) -> tuple[Any, Optional[DerivationTree]]:
         return self._compute_rep_bound(tree_stop_before, self.expr_data_max)
 
     def group_by_repetition_id(
@@ -401,21 +402,22 @@ class RepetitionBoundsConstraint(Constraint):
 
             # We get the last not applicable for containing a referenced encoding in the grammar.
             max_bounds_search = first_iteration
-            assert max_bounds_search.parent is not None
             while (
+                max_bounds_search.parent is not None and
                 index_by_reference(max_bounds_search.parent.children, max_bounds_search)
                 == 0
             ):
                 max_bounds_search = max_bounds_search.parent
-                assert max_bounds_search.parent is not None
 
-            parent = max_bounds_search.parent
-            assert parent is not None
-            index = index_by_reference(parent.children, max_bounds_search)
-            assert (
-                index is not None and index > 0
-            ), "Invalid child index for bounds search"
-            max_bounds_search = parent.children[index - 1]
+            if max_bounds_search.parent is not None:
+                parent = max_bounds_search.parent
+                index = index_by_reference(parent.children, max_bounds_search)
+                assert (
+                    index is not None and index > 0
+                ), "Invalid child index for bounds search"
+                max_bounds_search = parent.children[index - 1]
+            else:
+                max_bounds_search = None
 
             bound_min, min_ref_tree = self.min(max_bounds_search)
             bound_max, max_ref_tree = self.max(max_bounds_search)
