@@ -3,6 +3,8 @@ updates:
   - package-ecosystem: uv
     directory: /
     versioning-strategy: auto
+    cooldown:
+      default-days: 7
     schedule:
       interval: weekly
     groups:
