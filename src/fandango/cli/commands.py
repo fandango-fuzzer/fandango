@@ -3,6 +3,7 @@ from collections.abc import Callable
 import glob
 import os
 from pathlib import Path
+from platform import python_version
 import shutil
 from ansi_styles import ansiStyles as styles
 import sys
@@ -26,11 +27,6 @@ from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
 from fandango.converters.FandangoConverter import FandangoConverter
 from fandango.converters.antlr.ANTLRFandangoConverter import ANTLRFandangoConverter
-from fandango.converters.bt.BTFandangoConverter import (
-    BitfieldOrder,
-    BTFandangoConverter,
-    Endianness,
-)
 from fandango.converters.dtd.DTDFandangoConverter import DTDFandangoConverter
 from fandango.converters.fan.FandangoFandangoConverter import FandangoFandangoConverter
 from fandango.converters.state.FandangoStateConverter import FandangoStateConverter
@@ -405,6 +401,17 @@ def convert_command(args: argparse.Namespace) -> None:
                 converter = DTDFandangoConverter(input_file)
                 spec = converter.to_fan()
             case "bt" | "010":
+                if python_version() == "3.11":
+                    raise FandangoError(
+                        "BTFandangoConverter is not supported in Python 3.11 because py010parser does not support it"
+                    )
+
+                from fandango.converters.bt.BTFandangoConverter import (
+                    BitfieldOrder,
+                    BTFandangoConverter,
+                    Endianness,
+                )
+
                 if args.endianness == "little":
                     endianness = Endianness.LittleEndian
                 else:
