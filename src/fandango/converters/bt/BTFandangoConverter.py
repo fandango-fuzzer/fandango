@@ -12,7 +12,7 @@ from typing import Optional
 
 # `py010parser` is using very old regular expression syntax which can raise `SyntaxWarning`
 with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", "", SyntaxWarning)
+    warnings.simplefilter("ignore", SyntaxWarning)
     from py010parser import c_ast, parse_file
 
 from fandango.converters.FandangoConverter import FandangoConverter
