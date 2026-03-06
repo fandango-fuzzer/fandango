@@ -1,17 +1,14 @@
+import sys
 import re
 import uuid
-
 from copy import deepcopy
 from typing import IO, Optional
 
 from fandango.constraints import predicates
-from fandango.io import CURRENT_ENV_KEY
-from fandango.language.parse.io import init_io
-from fandango.language.parse.slice_parties import slice_parties
-
-from fandango.errors import FandangoValueError
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
+from fandango.errors import FandangoValueError
+from fandango.io import CURRENT_ENV_KEY
 from fandango.language.grammar import FuzzingMode, closest_match
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.node_visitors.symbol_finder import SymbolFinder
@@ -19,7 +16,9 @@ from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
+from fandango.language.parse.io import init_io
 from fandango.language.parse.parse_spec import parse_content
+from fandango.language.parse.slice_parties import slice_parties
 from fandango.language.search import (
     AnnotatedSearch,
     DescendantAttributeSearch,
@@ -285,7 +284,7 @@ def check_grammar_definitions(
             f"Undefined symbol {first_undefined_symbol!s} in grammar"
         )
         if undefined_symbols:
-            if getattr(Exception, "add_note", None):
+            if sys.version_info >= (3, 11):
                 # Python 3.11+ has add_note() method
                 error.add_note(
                     f"Other undefined symbols: {', '.join(undefined_symbols)}"

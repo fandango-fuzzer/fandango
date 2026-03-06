@@ -3,7 +3,7 @@ import os
 import sys
 import time
 import traceback
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from ansi_styles import ansiStyles as styles
 
@@ -24,7 +24,7 @@ logging.basicConfig(
 
 
 def print_exception(e: Exception, exception_note: Optional[str] = None) -> None:
-    if exception_note is not None and getattr(Exception, "add_note", None):
+    if exception_note is not None and sys.version_info >= (3, 11):
         # Python 3.11+ has add_note() method
         e.add_note(exception_note)
         exception_note = None
