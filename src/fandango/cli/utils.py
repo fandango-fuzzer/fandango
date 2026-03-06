@@ -2,13 +2,13 @@ import argparse
 import difflib
 import logging
 import os
-from typing import IO, Any, Optional
+import sys
 import zipfile
-
+from typing import IO, Any, Optional
 
 from fandango.api import Fandango
-from fandango.constraints.soft import SoftValue
 from fandango.constraints.constraint import Constraint
+from fandango.constraints.soft import SoftValue
 from fandango.errors import FandangoError, FandangoParseError
 from fandango.evolution import GeneratorWithReturn
 from fandango.language.grammar.grammar import Grammar
@@ -30,7 +30,7 @@ def report_syntax_error(
     mismatch = individual[position]
     if binary:
         assert isinstance(mismatch, int)
-        return f"{filename!r}, position {position:#06x} ({position}): mismatched input {mismatch.to_bytes()!r}"
+        return f"{filename!r}, position {position:#06x} ({position}): mismatched input {mismatch.to_bytes(length=1, byteorder=sys.byteorder)!r}"
 
     line = 1
     column = 1

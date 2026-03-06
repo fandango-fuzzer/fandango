@@ -411,7 +411,12 @@ class ConverterTest(unittest.TestCase):
     def test_standards(self):
         # Earlier Fandango versions overloaded int(); so check if it still works
         self.assertEqual(int(45), 45, int(45))
-        self.assertEqual(int.from_bytes(b"\x01"), 1, int.from_bytes(b"\x01"))
+        for endian in ("little", "big"):
+            self.assertEqual(
+                int.from_bytes(b"\x01", byteorder=endian),
+                1,
+                int.from_bytes(b"\x01", byteorder=endian),
+            )
 
     def test_string_converters(self):
         tree = DerivationTree(Terminal("5"))

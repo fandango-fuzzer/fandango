@@ -1,6 +1,12 @@
 from copy import copy
 import math
-from typing import Any, Optional, Unpack, cast
+from typing import Any, Optional, cast
+import sys
+
+if sys.version_info < (3, 11):
+    from typing_extensions import Unpack
+else:
+    from typing import Unpack
 from fandango.constraints.base import GeneticBaseInitArgs
 from fandango.constraints.failing_tree import (
     ApplyAllSuggestions,
