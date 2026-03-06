@@ -2,7 +2,6 @@ import argparse
 import difflib
 import logging
 import os
-import sys
 import zipfile
 from typing import IO, Any, Optional
 
@@ -30,7 +29,8 @@ def report_syntax_error(
     mismatch = individual[position]
     if binary:
         assert isinstance(mismatch, int)
-        return f"{filename!r}, position {position:#06x} ({position}): mismatched input {mismatch.to_bytes(length=1, byteorder=sys.byteorder)!r}"
+        input_bytes = mismatch.to_bytes(length=1, byteorder="big")
+        return f"{filename!r}, position {position:#06x} ({position}): mismatched input {input_bytes!r}"
 
     line = 1
     column = 1
