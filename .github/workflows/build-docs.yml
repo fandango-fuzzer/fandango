@@ -21,7 +21,7 @@ jobs:
       - name: Install Fandango
         uses: ./.github/workflows/setup-fandango
         with:
-          python-version: 3.13
+          python-version: "3.13"
           needs-sudo: true
       
       # Step 3: Build the documentation
