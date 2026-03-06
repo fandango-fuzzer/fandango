@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Counter
+from collections import Counter
 
 import pytest
 from fandango.language.grammar.grammar import Grammar
