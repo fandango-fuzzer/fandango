@@ -1,6 +1,6 @@
 #!/usr/bin/env pytest
+import sys
 
-from platform import python_version
 import unittest
 import pytest
 
@@ -46,7 +46,7 @@ class test_convert(unittest.TestCase):
         self.assertEqual(err, "", err)
 
     @pytest.mark.skipif(
-        python_version() == "3.11",
+        (3, 11) <= sys.version_info < (3, 12),
         reason="BTFandangoConverter is not supported in Python 3.11 because py010parser does not support it",
     )
     def test_convert_bt(self):
@@ -63,7 +63,7 @@ class test_convert(unittest.TestCase):
         self.assertEqual(err, "", err)
 
     @pytest.mark.skipif(
-        python_version() == "3.11",
+        (3, 11) <= sys.version_info < (3, 12),
         reason="BTFandangoConverter is not supported in Python 3.11 because py010parser does not support it",
     )
     def test_convert_bt_again(self):

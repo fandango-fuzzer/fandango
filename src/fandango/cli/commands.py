@@ -3,7 +3,6 @@ from collections.abc import Callable
 import glob
 import os
 from pathlib import Path
-from platform import python_version
 import shutil
 from ansi_styles import ansiStyles as styles
 import sys
@@ -401,7 +400,7 @@ def convert_command(args: argparse.Namespace) -> None:
                 converter = DTDFandangoConverter(input_file)
                 spec = converter.to_fan()
             case "bt" | "010":
-                if python_version() == "3.11":
+                if (3, 11) <= sys.version_info < (3, 12):
                     raise FandangoError(
                         "BTFandangoConverter is not supported in Python 3.11 because py010parser does not support it"
                     )
