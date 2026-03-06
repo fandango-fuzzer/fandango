@@ -2,6 +2,7 @@ import argparse
 import difflib
 import logging
 import os
+import sys
 import zipfile
 from typing import IO, Any, Optional
 
@@ -267,7 +268,7 @@ def validate(
         original != parsed.value()
     ):  # force comparison between values, rely on type coercion for different types
         exc = FandangoError(f"{filename!r}: parsed tree does not match original")
-        if getattr(Exception, "add_note", None):
+        if sys.version_info >= (3, 11):
             # Python 3.11+ has add_note() method
             if isinstance(original, DerivationTree) and isinstance(
                 parsed, DerivationTree
