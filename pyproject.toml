@@ -45,6 +45,7 @@ dependencies = [
     "regex>=2024.11.6",
     "tdigest>=0.5.2.2",
     "thefuzz>=0.22",
+    "typing-extensions>=4.15.0 ; python_full_version < '3.11'",
     "xdg-base-dirs>=6.0.2",
 ]
 

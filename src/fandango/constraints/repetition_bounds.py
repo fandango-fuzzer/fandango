@@ -1,5 +1,11 @@
 from copy import copy
-from typing import Optional, Any, Unpack
+from typing import Any, Optional
+import sys
+
+if sys.version_info < (3, 11):
+    from typing_extensions import Unpack
+else:
+    from typing import Unpack
 from itertools import zip_longest
 import random
 from fandango.constraints.base import GeneticBaseInitArgs
