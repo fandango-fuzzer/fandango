@@ -1,4 +1,5 @@
 # mypy: disable-error-code="no-untyped-call, no-untyped-def"
+import sys
 
 import ast
 from collections.abc import Sequence
@@ -2151,6 +2152,7 @@ class PythonProcessor(FandangoParserVisitor):
         else:
             finalbody = None
         if ctx.except_star_block():
+            assert sys.version_info >= (3, 11), "except_star blocks are available only in Python 3.11 or newer."
             return ast.TryStar(
                 body=body,
                 handlers=[
