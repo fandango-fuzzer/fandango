@@ -1,8 +1,6 @@
 from copy import copy
 import math
-from typing import Any, Optional, cast
-
-from typing import Unpack
+from typing import Any, Optional, Unpack, cast
 from fandango.constraints.base import GeneticBaseInitArgs
 from fandango.constraints.failing_tree import (
     ApplyAllSuggestions,

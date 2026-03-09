@@ -1,7 +1,5 @@
 from copy import copy
-from typing import Any, Optional
-
-from typing import Unpack
+from typing import Any, Optional, Unpack
 from fandango.constraints.base import GeneticBaseInitArgs
 from fandango.constraints.constraint_visitor import ConstraintVisitor
 from fandango.constraints.constraint import Constraint
