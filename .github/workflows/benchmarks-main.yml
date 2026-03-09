@@ -5,6 +5,10 @@ on:
     branches: [main, release]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   benchmark_base_branch:
     name: Run Benchmarks
