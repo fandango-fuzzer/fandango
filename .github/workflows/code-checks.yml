@@ -4,6 +4,10 @@ on:
   pull_request:
   workflow_dispatch: # Enables manual execution from the Actions tab
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   black-check:
     runs-on: ubuntu-latest
