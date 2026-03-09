@@ -381,7 +381,7 @@ class TreeValue:
             )
 
         num = trailing_bits_to_int(self._trailing_bits)
-        bytes_ = num.to_bytes(len(self._trailing_bits) // 8, byteorder="big")
+        bytes_ = num.to_bytes(len(self._trailing_bits) // 8)
         self._trailing_bits = []
         if isinstance(self._value, str):
             self._value = (

@@ -2,9 +2,8 @@ import argparse
 import difflib
 import logging
 import os
-import sys
-import zipfile
 from typing import IO, Any, Optional
+import zipfile
 
 from fandango.api import Fandango
 from fandango.constraints.constraint import Constraint
@@ -30,8 +29,7 @@ def report_syntax_error(
     mismatch = individual[position]
     if binary:
         assert isinstance(mismatch, int)
-        input_bytes = mismatch.to_bytes(length=1, byteorder="big")
-        return f"{filename!r}, position {position:#06x} ({position}): mismatched input {input_bytes!r}"
+        return f"{filename!r}, position {position:#06x} ({position}): mismatched input {mismatch.to_bytes()!r}"
 
     line = 1
     column = 1
