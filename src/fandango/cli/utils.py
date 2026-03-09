@@ -268,21 +268,17 @@ def validate(
         original != parsed.value()
     ):  # force comparison between values, rely on type coercion for different types
         exc = FandangoError(f"{filename!r}: parsed tree does not match original")
-        if sys.version_info >= (3, 11):
-            # Python 3.11+ has add_note() method
-            if isinstance(original, DerivationTree) and isinstance(
-                parsed, DerivationTree
-            ):
-                original_grammar = original.to_grammar()
-                parsed_grammar = parsed.to_grammar()
-                diff = difflib.context_diff(
-                    original_grammar.split("\n"),
-                    parsed_grammar.split("\n"),
-                    fromfile="original",
-                    tofile="parsed",
-                )
-                out = "\n".join(diff)
-                exc.add_note(out)
+        if isinstance(original, DerivationTree) and isinstance(parsed, DerivationTree):
+            original_grammar = original.to_grammar()
+            parsed_grammar = parsed.to_grammar()
+            diff = difflib.context_diff(
+                original_grammar.split("\n"),
+                parsed_grammar.split("\n"),
+                fromfile="original",
+                tofile="parsed",
+            )
+            out = "\n".join(diff)
+            exc.add_note(out)
         raise exc
 
 

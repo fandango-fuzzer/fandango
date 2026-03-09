@@ -2152,24 +2152,15 @@ class PythonProcessor(FandangoParserVisitor):
         else:
             finalbody = None
         if ctx.except_star_block():
-            # mypy does not recognize the following gate
-            # assert sys.version_info >= (3, 11), "except_star blocks are available only in Python 3.11 or newer."
-            if sys.version_info >= (3, 11):
-                return ast.TryStar(
-                    body=body,
-                    handlers=[
-                        self.visitExcept_star_block(handler)
-                        for handler in ctx.except_star_block()
-                    ],
-                    orelse=orelse,
-                    finalbody=finalbody,
-                )
-            else:
-                # The branch should not be reachable in Python 3.10 otherwise there is a bug in
-                # the implementation of `except_star_block`.
-                assert (
-                    False
-                ), "except_star blocks are available only in Python 3.11 or newer."
+            return ast.TryStar(
+                body=body,
+                handlers=[
+                    self.visitExcept_star_block(handler)
+                    for handler in ctx.except_star_block()
+                ],
+                orelse=orelse,
+                finalbody=finalbody,
+            )
         return ast.Try(
             body=body,
             handlers=[
