@@ -1,9 +1,7 @@
 from copy import copy
 from fandango.constraints.base import GeneticBaseInitArgs
 from fandango.constraints.constraint_visitor import ConstraintVisitor
-from typing import Any, Optional
-
-from typing import Unpack
+from typing import Any, Optional, Unpack
 from fandango import DerivationTree
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.failing_tree import NopSuggestion

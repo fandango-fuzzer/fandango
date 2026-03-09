@@ -1,7 +1,5 @@
 from copy import copy
-from typing import Any, Optional
-
-from typing import Unpack
+from typing import Any, Optional, Unpack
 from itertools import zip_longest
 import random
 from fandango.constraints.base import GeneticBaseInitArgs
