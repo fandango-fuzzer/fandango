@@ -50,11 +50,11 @@ class NodeVisitor(abc.ABC, Generic[AggregateType, ResultType]):
     def visitOption(self, node: Option) -> ResultType:
         return self.visit(node.node)
 
-    def visitNonTerminalNode(self, _node: NonTerminalNode) -> ResultType:
+    def visitNonTerminalNode(self, node: NonTerminalNode) -> ResultType:
         return cast(ResultType, self.default_result())
 
-    def visitTerminalNode(self, _node: TerminalNode) -> ResultType:
+    def visitTerminalNode(self, node: TerminalNode) -> ResultType:
         return cast(ResultType, self.default_result())
 
-    def visitCharSet(self, _node: CharSet) -> ResultType:
+    def visitCharSet(self, node: CharSet) -> ResultType:
         return cast(ResultType, self.default_result())

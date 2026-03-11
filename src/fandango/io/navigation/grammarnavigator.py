@@ -39,16 +39,16 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         self,
         start: GrammarGraphNode,
         goal: GrammarGraphNode,
-        reverse_path: bool = False,
+        reversePath: bool = False,
     ) -> Union[Iterable[GrammarGraphNode], None]:
         """
         Overloaded method. Don't call this directly, use astar_tree or astar_search_end instead.
         """
         self.comparisons = 0
-        return super().astar(start, goal, reverse_path)
+        return super().astar(start, goal, reversePath)
 
-    def neighbors(self, n: GrammarGraphNode) -> list[GrammarGraphNode]:
-        return n.reaches
+    def neighbors(self, node: GrammarGraphNode) -> list[GrammarGraphNode]:
+        return node.reaches
 
     def set_message_cost(self, cost: int) -> None:
         self.message_cost = cost
