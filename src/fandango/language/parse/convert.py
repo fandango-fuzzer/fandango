@@ -1,5 +1,4 @@
 # mypy: disable-error-code="no-untyped-call, no-untyped-def"
-import sys
 
 import ast
 from collections.abc import Sequence
