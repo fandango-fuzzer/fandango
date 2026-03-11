@@ -5,6 +5,10 @@ on:
     branches: [ release ]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test-with-coverage:
     name: Run Tests
@@ -22,7 +26,7 @@ jobs:
       - name: Install Fandango
         uses: ./.github/workflows/setup-fandango
         with:
-          python-version: 3.13
+          python-version: "3.13"
           needs-sudo: true
 
       - name: Install system dependencies for coverage (main + Ubuntu only)

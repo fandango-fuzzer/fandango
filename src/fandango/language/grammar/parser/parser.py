@@ -57,9 +57,7 @@ class Parser:
                 starter_bit = (word.count_terminals() - 1) % 8
             if word.should_be_serialized_to_bytes():
                 bit_string = word.to_bits()
-                word = int(bit_string, 2).to_bytes(
-                    (len(bit_string) + 7) // 8, byteorder="big"
-                )
+                word = int(bit_string, 2).to_bytes((len(bit_string) + 7) // 8)
             else:
                 word = word.to_string()
         if isinstance(word, int):

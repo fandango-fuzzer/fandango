@@ -1,6 +1,8 @@
 #!/usr/bin/env pytest
+import sys
 
 import unittest
+import pytest
 
 from .utils import DOCS_ROOT, PROJECT_ROOT, run_command
 
@@ -43,6 +45,10 @@ class test_convert(unittest.TestCase):
         self.assertEqual(0, code, f"Command failed with code {code}: {err}")
         self.assertEqual(err, "", err)
 
+    @pytest.mark.skipif(
+        sys.version_info < (3, 12),
+        reason="BTFandangoConverter is not supported in Python 3.11 because py010parser does not support it",
+    )
     def test_convert_bt(self):
         gif = PROJECT_ROOT / "src" / "fandango" / "converters" / "bt" / "gif.bt"
         command = [
@@ -56,6 +62,10 @@ class test_convert(unittest.TestCase):
         self.assertEqual(0, code, code)
         self.assertEqual(err, "", err)
 
+    @pytest.mark.skipif(
+        sys.version_info < (3, 12),
+        reason="BTFandangoConverter is not supported in Python 3.11 because py010parser does not support it",
+    )
     def test_convert_bt_again(self):
         gif = PROJECT_ROOT / "src" / "fandango" / "converters" / "bt" / "gif.bt"
         command = [

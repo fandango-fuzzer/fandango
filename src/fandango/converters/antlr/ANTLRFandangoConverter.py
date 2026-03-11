@@ -66,13 +66,13 @@ class ANTLRFandangoConverterVisitor(ANTLRv4ParserVisitor):
         self.notes = []
         return s
 
-    def visitChildren(self, ctx: Any, sep: str = "", altEmpty: str = "") -> str:
+    def visitChildren(self, node: Any, sep: str = "", altEmpty: str = "") -> str:
         """Visit all children of a context `ctx`. Separate them with `sep`. If they evaluate to an empty string, use `altEmpty` instead."""
-        if ctx is None or ctx.children is None:
+        if node is None or node.children is None:
             return ""
 
         children_s = []
-        for child in ctx.children or []:
+        for child in node.children or []:
             s = self.visit(child)
             if s == "":
                 s = altEmpty

@@ -1,5 +1,6 @@
 import random
-from typing import Counter, Optional, Union
+from typing import Optional, Union
+from collections import Counter
 from collections.abc import Generator, Sequence
 
 from fandango.constraints.constraint import Constraint
