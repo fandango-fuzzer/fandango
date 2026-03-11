@@ -1,4 +1,3 @@
-import sys
 import re
 import uuid
 from copy import deepcopy
