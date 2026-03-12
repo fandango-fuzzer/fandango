@@ -108,8 +108,12 @@ class NonTerminalNode(Node):
             return self.symbol.format_as_spec()
 
     def __eq__(self, other: object) -> bool:
-        return (isinstance(other, NonTerminalNode) and self.symbol == other.symbol
-                and self.sender == other.sender and self.recipient == other.recipient)
+        return (
+            isinstance(other, NonTerminalNode)
+            and self.symbol == other.symbol
+            and self.sender == other.sender
+            and self.recipient == other.recipient
+        )
 
     def __hash__(self) -> int:
         return hash((self.symbol, self.sender, self.recipient))
