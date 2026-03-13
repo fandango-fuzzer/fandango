@@ -67,7 +67,9 @@ def test_generate_with_single_soft_constraint(benchmark: BenchmarkFixture):
         fan = Fandango._with_parsed(grammar, constraints)
         # make this a non-limiting factor
         max_generations = 10000
-        gen = fan.generate_solutions(max_generations=max_generations)
+        gen = fan.generate_solutions(
+            max_generations=max_generations, max_repetition_rate=0.0, max_nodes_rate=0.0
+        )
         truncated_gen = itertools.islice(gen, 50)
         solutions = []
         for solution in truncated_gen:
