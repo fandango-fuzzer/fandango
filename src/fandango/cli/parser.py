@@ -273,7 +273,7 @@ def _get_algorithm_parser() -> argparse.ArgumentParser:
     algorithm_group.add_argument(
         "--algorithm",
         choices=["genetic", "random-suite", "whole-suite", "dynamosa"],
-        default=None,
+        default="genetic",
         help=(
             "Search algorithm to use. "
             "'genetic' (default) uses the evolutionary algorithm with selection, crossover, and mutation. "
