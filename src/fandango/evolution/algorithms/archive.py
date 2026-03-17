@@ -2,12 +2,30 @@
 
 import random
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 from beartype.typing import Iterable, List, Optional
 
+from fandango.constraints.constraint import Constraint
+from fandango.constraints.soft import SoftValue
 from fandango.evolution.chromosomes import Chromosome
+from fandango.evolution.chromosomes.individual import Individual
 from fandango.language.grammar.grammar import Grammar, KPath
 from fandango.language.symbols import NonTerminal
+
+
+@dataclass(frozen=True)
+class _ConstraintGoal:
+    """A goal representing one hard constraint that must be satisfied."""
+
+    index: int  # position in hard_constraints list
+
+
+@dataclass(frozen=True)
+class _SoftConstraintGoal:
+    """A goal representing one soft constraint to be optimised."""
+
+    index: int  # position in soft_constraints list
 
 
 class Archive(ABC):
@@ -24,12 +42,12 @@ class Archive(ABC):
 
     @property
     @abstractmethod
-    def covered_goals(self) -> set[KPath]:
+    def covered_goals(self) -> set[KPath | _ConstraintGoal | _SoftConstraintGoal]:
         """Set of k-paths that have been covered."""
 
     @property
     @abstractmethod
-    def uncovered_goals(self) -> set[KPath]:
+    def uncovered_goals(self) -> set[KPath | _ConstraintGoal | _SoftConstraintGoal]:
         """Set of k-paths not yet covered."""
 
 
@@ -49,13 +67,20 @@ class CoverageArchive(Archive):
         super().__init__()
         self._grammar = grammar
         self._k = k
-        self._goals: set[KPath] = (
-            grammar.generate_all_k_paths(k=k, non_terminal=start_symbol)
-            if start_symbol in grammar.rules
-            else set()
+        self._goals: set[KPath | _ConstraintGoal | _SoftConstraintGoal] = {
+            g
+            for g in (
+                grammar.generate_all_k_paths(k=k, non_terminal=start_symbol)
+                if start_symbol in grammar.rules
+                else set()
+            )
+        }
+        self._covered: dict[
+            KPath | _ConstraintGoal | _SoftConstraintGoal, Chromosome
+        ] = {}
+        self._uncovered: set[KPath | _ConstraintGoal | _SoftConstraintGoal] = (
+            self._goals
         )
-        self._covered: dict[KPath, Chromosome] = {}
-        self._uncovered: set[KPath] = self._goals
 
     def update(self, individuals: Iterable[Chromosome]) -> bool:
         """
@@ -90,12 +115,12 @@ class CoverageArchive(Archive):
         return list(dict.fromkeys(self._covered.values()))
 
     @property
-    def covered_goals(self) -> set[KPath]:
+    def covered_goals(self) -> set[KPath | _ConstraintGoal | _SoftConstraintGoal]:
         """Goals that have been covered by at least one individual."""
         return set(self._covered.keys())
 
     @property
-    def uncovered_goals(self) -> set[KPath]:
+    def uncovered_goals(self) -> set[KPath | _ConstraintGoal | _SoftConstraintGoal]:
         """Goals not yet covered by any individual."""
         return self._goals - self.covered_goals
 
@@ -114,23 +139,89 @@ class MIOArchive(Archive):
         n: int = 10,
         k: int = 2,
         start_symbol: NonTerminal = NonTerminal("<start>"),
+        hard_constraints: List[Constraint] = [],
+        soft_constraints: List[SoftValue] = [],
     ) -> None:
         super().__init__()
         self._grammar = grammar
         self._k = k
         self._n = n
-        self._goals: set[KPath] = (
-            grammar.generate_all_k_paths(k=k, non_terminal=start_symbol)
-            if start_symbol in grammar.rules
-            else set()
+        self._hard_constraints: List[Constraint] = list(hard_constraints)
+        self._soft_constraints: List[SoftValue] = list(soft_constraints)
+        self._goals: set[KPath | _ConstraintGoal | _SoftConstraintGoal] = {
+            g
+            for g in (
+                grammar.generate_all_k_paths(k=k, non_terminal=start_symbol)
+                if start_symbol in grammar.rules
+                else set()
+            )
+        }
+        for i in range(len(hard_constraints)):
+            self._goals.add(_ConstraintGoal(i))
+        for i in range(len(soft_constraints)):
+            self._goals.add(_SoftConstraintGoal(i))
+        self._covered: dict[
+            KPath | _ConstraintGoal | _SoftConstraintGoal, Chromosome
+        ] = {}
+        self._uncovered_populations: dict[
+            KPath | _ConstraintGoal | _SoftConstraintGoal, list[Chromosome]
+        ] = {}
+
+    def _satisfies_mandatory(self, individual: Individual) -> bool:
+        """Return True if individual satisfies every hard constraint."""
+        return all(
+            c.fitness(individual.tree).fitness() >= 1.0 for c in self._hard_constraints
         )
-        self._covered: dict[KPath, Chromosome] = {}
-        self._uncovered_populations: dict[KPath, list[Chromosome]] = {}
+
+    def _soft_covered_by(self, individual: Individual, index: int) -> bool:
+        """Return True if individual covers soft_constraint[index] (score >= 0.5)."""
+        soft = self._soft_constraints[index]
+        raw = soft.fitness(individual.tree).fitness()
+        soft.tdigest.update(raw)
+        normalized = soft.tdigest.score(raw)
+        score = normalized if soft.optimization_goal == "max" else 1 - normalized
+        return score >= 0.5
 
     def update(self, individuals: Iterable[Chromosome]) -> bool:
         """Update archive with new individuals. Returns True if any change was made."""
         changed = False
         for individual in individuals:
+            # --- Hard constraint goals (mandatory) ---
+            if isinstance(individual, Individual):
+                for i, _ in enumerate(self._hard_constraints):
+                    h_goal = _ConstraintGoal(i)
+                    if h_goal in self._goals:
+                        covered = (
+                            self._hard_constraints[i].fitness(individual.tree).fitness()
+                            >= 1.0
+                        )
+                        if covered:
+                            if h_goal not in self._covered:
+                                self._covered[h_goal] = individual
+                                self._uncovered_populations.pop(h_goal, None)
+                                changed = True
+                            elif individual.size() < self._covered[h_goal].size():
+                                self._covered[h_goal] = individual
+                                changed = True
+
+            # --- K-path goals (gated by hard constraints) ---
+            if self._hard_constraints and isinstance(individual, Individual):
+                if not self._satisfies_mandatory(individual):
+                    # Still process soft constraints before skipping k-paths
+                    for i, _ in enumerate(self._soft_constraints):
+                        s_goal = _SoftConstraintGoal(i)
+                        if s_goal in self._goals and self._soft_covered_by(
+                            individual, i
+                        ):
+                            if s_goal not in self._covered:
+                                self._covered[s_goal] = individual
+                                self._uncovered_populations.pop(s_goal, None)
+                                changed = True
+                            elif individual.size() < self._covered[s_goal].size():
+                                self._covered[s_goal] = individual
+                                changed = True
+                    continue
+
             trees = individual.to_derivation_trees()
             paths = {
                 path
@@ -147,6 +238,20 @@ class MIOArchive(Archive):
                     self._covered[path] = individual
                     self._uncovered_populations.pop(path, None)
                     changed = True
+
+            # --- Soft constraint goals (optional) ---
+            if isinstance(individual, Individual):
+                for i, _ in enumerate(self._soft_constraints):
+                    s_goal = _SoftConstraintGoal(i)
+                    if s_goal in self._goals and self._soft_covered_by(individual, i):
+                        if s_goal not in self._covered:
+                            self._covered[s_goal] = individual
+                            self._uncovered_populations.pop(s_goal, None)
+                            changed = True
+                        elif individual.size() < self._covered[s_goal].size():
+                            self._covered[s_goal] = individual
+                            changed = True
+
         return changed
 
     def get_solution(self) -> Optional[Chromosome]:
@@ -178,11 +283,11 @@ class MIOArchive(Archive):
         return list(dict.fromkeys(self._covered.values()))
 
     @property
-    def covered_goals(self) -> set[KPath]:
+    def covered_goals(self) -> set[KPath | _ConstraintGoal | _SoftConstraintGoal]:
         """Goals that have been covered by at least one individual."""
         return set(self._covered.keys())
 
     @property
-    def uncovered_goals(self) -> set[KPath]:
+    def uncovered_goals(self) -> set[KPath | _ConstraintGoal | _SoftConstraintGoal]:
         """Goals not yet covered by any individual."""
         return self._goals - self.covered_goals

@@ -2,7 +2,13 @@
 
 import pytest
 
-from fandango.evolution.algorithms.archive import MIOArchive
+from fandango.constraints.fitness import ValueFitness
+from fandango.constraints.soft import SoftValue, TDigest
+from fandango.evolution.algorithms.archive import (
+    MIOArchive,
+    _ConstraintGoal,
+    _SoftConstraintGoal,
+)
 from fandango.evolution.algorithms.mio import MIOAlgorithm
 from fandango.evolution.algorithms.random import _generate_individual
 from fandango.evolution.chromosomes import Chromosome
@@ -10,7 +16,23 @@ from fandango.evolution.chromosomes.individual import Individual
 from fandango.evolution.chromosomes.suite import Suite
 from fandango.language.parse.parse import parse
 from fandango.language.symbols import NonTerminal
+from tests.test_random_algorithm import _make_constraint
 from tests.utils import RESOURCES_ROOT
+
+
+def _make_soft_value(always_high: bool) -> SoftValue:
+    """Create a stub SoftValue that always returns a fixed fitness (1.0 or 0.0)."""
+
+    class _StubSoftValue(SoftValue):
+        def __init__(self) -> None:
+            self.optimization_goal = "max"
+            self.tdigest = TDigest("max")
+            self._always_high = always_high
+
+        def fitness(self, tree, scope=None, local_variables=None) -> ValueFitness:
+            return ValueFitness(values=[1.0 if self._always_high else 0.0])
+
+    return _StubSoftValue()
 
 
 @pytest.fixture
@@ -155,3 +177,67 @@ class TestMIOAlgorithm:
         algo.generate(max_generations=10)
         # After search, pr should have moved towards focused_pr
         assert algo._parameters.pr <= initial_pr
+
+
+class TestMIOAlgorithmWithConstraints:
+    """Integration tests for MIOAlgorithm with hard and soft constraints."""
+
+    def test_hard_constraint_goal_in_archive_goals(self, simple_grammar):
+        """MIOArchive must include _ConstraintGoal(0) when a hard constraint is passed."""
+        failing = _make_constraint(always_pass=False)
+        algo = MIOAlgorithm(simple_grammar, [failing], k=1)
+        assert _ConstraintGoal(0) in algo._mio_archive._goals
+
+    def test_soft_constraint_goal_in_archive_goals(self, simple_grammar):
+        """MIOArchive must include _SoftConstraintGoal(0) when a soft constraint is passed."""
+        soft = _make_soft_value(always_high=True)
+        algo = MIOAlgorithm(simple_grammar, [soft], k=1)
+        assert _SoftConstraintGoal(0) in algo._mio_archive._goals
+
+    def test_failing_constraint_does_not_gate_kpath_in_generate(self, simple_grammar):
+        """With a failing hard constraint, generate() still returns a non-empty Suite."""
+        failing = _make_constraint(always_pass=False)
+        algo = MIOAlgorithm(simple_grammar, [failing], k=1)
+        result = algo.generate(max_generations=10)
+        assert isinstance(result, Suite)
+        assert len(result) > 0
+
+    def test_passing_hard_constraint_returns_valid_suite(self, simple_grammar):
+        """With an always-passing hard constraint, generate() returns a Suite."""
+        passing = _make_constraint(always_pass=True)
+        algo = MIOAlgorithm(simple_grammar, [passing], k=1)
+        result = algo.generate(max_generations=10)
+        assert isinstance(result, Suite)
+        assert len(result) > 0
+
+    def test_kpath_not_covered_in_archive_when_constraint_fails(self, simple_grammar):
+        """After generate(), k-path goals must not be covered if constraint always fails."""
+        failing = _make_constraint(always_pass=False)
+        algo = MIOAlgorithm(simple_grammar, [failing], k=1)
+        algo.generate(max_generations=20)
+        kpath_covered = {
+            g for g in algo._mio_archive.covered_goals if isinstance(g, tuple)
+        }
+        assert len(kpath_covered) == 0
+
+    def test_soft_constraint_goal_covered_in_archive(self, simple_grammar):
+        """_SoftConstraintGoal(0) should be covered after generate() with high-fitness soft constraint."""
+        soft = _make_soft_value(always_high=True)
+        algo = MIOAlgorithm(simple_grammar, [soft], k=1)
+        algo.generate(max_generations=10)
+        assert _SoftConstraintGoal(0) in algo._mio_archive.covered_goals
+
+    def test_no_constraints_archive_has_only_kpath_goals(self, simple_grammar):
+        """Without constraints, archive goals are purely k-paths (baseline unchanged)."""
+        algo = MIOAlgorithm(simple_grammar, [], k=1)
+        for g in algo._mio_archive._goals:
+            assert isinstance(g, tuple)
+
+    def test_both_constraint_types_archive_partition_invariant(self, simple_grammar):
+        """covered | uncovered == _goals holds with both constraint types after generate()."""
+        passing = _make_constraint(always_pass=True)
+        soft = _make_soft_value(always_high=True)
+        algo = MIOAlgorithm(simple_grammar, [passing, soft], k=1)
+        algo.generate(max_generations=10)
+        archive = algo._mio_archive
+        assert archive.covered_goals | archive.uncovered_goals == archive._goals

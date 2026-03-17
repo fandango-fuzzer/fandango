@@ -84,7 +84,13 @@ class MIOAlgorithm(GenerationAlgorithm[Individual]):
         self._current_solution: Optional[Individual] = None
         self._current_mutations: int = 0
         self._focused: bool = False
-        self._mio_archive = MIOArchive(grammar, n=initial_n, k=k)
+        self._mio_archive = MIOArchive(
+            grammar,
+            n=initial_n,
+            k=k,
+            hard_constraints=self.evaluator._hard_constraints,
+            soft_constraints=self.evaluator._soft_constraints,
+        )
         self.archive = self._mio_archive
 
     def _update_parameters(self, generation: int, max_generations: int) -> None:
