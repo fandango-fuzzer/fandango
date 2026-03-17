@@ -3,6 +3,8 @@
 import pytest
 
 from fandango.evolution.algorithms.dynamosa import (
+    _ConstraintGoal,
+    _SoftConstraintGoal,
     DynaMOSAAlgorithm,
     _KPathGoalGraph,
     _DynaMOSAGoalManager,
@@ -12,8 +14,10 @@ from fandango.evolution.algorithms.random import _generate_individual
 from fandango.evolution.chromosomes.individual import Individual
 from fandango.evolution.chromosomes.suite import Suite
 from fandango.evolution.fitness.suite import KPathCoverageFitnessFunction
+from fandango.language.grammar.grammar import KPath
 from fandango.language.parse.parse import parse
 from fandango.language.symbols import NonTerminal
+from tests.test_random_algorithm import _make_constraint
 from tests.utils import RESOURCES_ROOT
 
 
@@ -143,7 +147,7 @@ class TestDynaMOSAGoalManager:
         # For any 1-path that has been covered, its children should now be active
         # (or already covered, but not still locked)
         for goal in manager.covered_goals:
-            if len(goal) == 1:
+            if isinstance(goal, tuple) and len(goal) == 1:
                 for child in graph.get_children(goal):
                     if child not in manager.covered_goals:
                         assert (
@@ -194,7 +198,9 @@ class TestComputeParetoFronts:
     def test_all_individuals_assigned(self, simple_grammar, start_symbol):
         """All individuals should appear in exactly one front."""
         graph = _KPathGoalGraph(simple_grammar, max_k=2, start_symbol=start_symbol)
-        active = graph.root_goals
+        active: set[KPath | _ConstraintGoal | _SoftConstraintGoal] = set(
+            graph.root_goals
+        )
         pop = [_generate_individual(simple_grammar) for _ in range(6)]
         fronts = _compute_pareto_fronts(pop, active, simple_grammar, max_k=2)
 
@@ -204,7 +210,9 @@ class TestComputeParetoFronts:
     def test_first_front_non_empty(self, simple_grammar, start_symbol):
         """The first front should always be non-empty for a non-empty population."""
         graph = _KPathGoalGraph(simple_grammar, max_k=2, start_symbol=start_symbol)
-        active = graph.root_goals
+        active: set[KPath | _ConstraintGoal | _SoftConstraintGoal] = set(
+            graph.root_goals
+        )
         pop = [_generate_individual(simple_grammar) for _ in range(4)]
         fronts = _compute_pareto_fronts(pop, active, simple_grammar, max_k=2)
         assert len(fronts) >= 1
@@ -279,3 +287,84 @@ class TestDynaMOSAAlgorithm:
         algo = DynaMOSAAlgorithm(simple_grammar, empty_constraints, max_k=2)
         result = algo.generate(max_generations=0)
         assert isinstance(result, Suite)
+
+
+class TestDynaMOSAWithConstraints:
+    """Tests for _DynaMOSAGoalManager and DynaMOSAAlgorithm with hard constraints."""
+
+    def test_constraint_goal_appears_in_uncovered_before_satisfied(
+        self, simple_grammar, start_symbol
+    ):
+        """With an always-failing constraint, ConstraintGoal(0) should be in uncovered_goals."""
+        failing = _make_constraint(always_pass=False)
+        graph = _KPathGoalGraph(simple_grammar, max_k=1, start_symbol=start_symbol)
+        manager = _DynaMOSAGoalManager(
+            simple_grammar, graph, max_k=1, hard_constraints=[failing]
+        )
+        assert _ConstraintGoal(0) in manager.uncovered_goals
+
+    def test_constraint_satisfied_individual_removes_from_uncovered(
+        self, simple_grammar, start_symbol
+    ):
+        """When an individual satisfies the constraint, ConstraintGoal leaves uncovered_goals."""
+        passing = _make_constraint(always_pass=True)
+        graph = _KPathGoalGraph(simple_grammar, max_k=1, start_symbol=start_symbol)
+        manager = _DynaMOSAGoalManager(
+            simple_grammar, graph, max_k=1, hard_constraints=[passing]
+        )
+        population = [_generate_individual(simple_grammar) for _ in range(5)]
+        manager.update(population)
+        assert _ConstraintGoal(0) not in manager.uncovered_goals
+
+    def test_kpath_not_covered_without_constraint_satisfaction(
+        self, simple_grammar, start_symbol
+    ):
+        """With a failing constraint, k-path goals should NOT be marked as covered."""
+        failing = _make_constraint(always_pass=False)
+        graph = _KPathGoalGraph(simple_grammar, max_k=1, start_symbol=start_symbol)
+        manager = _DynaMOSAGoalManager(
+            simple_grammar, graph, max_k=1, hard_constraints=[failing]
+        )
+        population = [_generate_individual(simple_grammar) for _ in range(20)]
+        manager.update(population)
+        kpath_covered = {g for g in manager.covered_goals if isinstance(g, tuple)}
+        assert len(kpath_covered) == 0
+
+    def test_no_constraints_unchanged_behavior(self, simple_grammar, start_symbol):
+        """With no constraints, behavior is identical to original (no ConstraintGoals)."""
+        graph = _KPathGoalGraph(simple_grammar, max_k=1, start_symbol=start_symbol)
+        manager = _DynaMOSAGoalManager(
+            simple_grammar, graph, max_k=1, hard_constraints=[]
+        )
+        assert manager._mandatory_goals == frozenset()
+        population = [_generate_individual(simple_grammar) for _ in range(20)]
+        manager.update(population)
+        for g in manager.uncovered_goals:
+            assert isinstance(g, tuple)
+        for g in manager.covered_goals:
+            assert isinstance(g, tuple)
+
+    def test_pareto_fronts_with_constraint_goals(self, simple_grammar, start_symbol):
+        """All individuals are assigned to fronts when constraint goals are active."""
+        passing = _make_constraint(always_pass=True)
+        failing = _make_constraint(always_pass=False)
+        graph = _KPathGoalGraph(simple_grammar, max_k=1, start_symbol=start_symbol)
+        active: set = set(graph.root_goals) | {_ConstraintGoal(0)}
+
+        pop = [_generate_individual(simple_grammar) for _ in range(4)]
+        fronts_pass = _compute_pareto_fronts(
+            pop, active, simple_grammar, max_k=1, hard_constraints=[passing]
+        )
+        fronts_fail = _compute_pareto_fronts(
+            pop, active, simple_grammar, max_k=1, hard_constraints=[failing]
+        )
+        assert sum(len(f) for f in fronts_pass) == len(pop)
+        assert sum(len(f) for f in fronts_fail) == len(pop)
+
+    def test_algorithm_with_passing_constraint_returns_suite(self, simple_grammar):
+        """DynaMOSA with an always-passing constraint should complete and return a Suite."""
+        passing = _make_constraint(always_pass=True)
+        algo = DynaMOSAAlgorithm(simple_grammar, [passing], max_k=1, population_size=5)
+        result = algo.generate(max_generations=5)
+        assert isinstance(result, Suite)
+        assert len(result) > 0

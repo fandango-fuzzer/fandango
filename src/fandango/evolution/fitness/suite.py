@@ -1,6 +1,8 @@
 """Suite-level fitness functions for test suite evaluation."""
 
-from beartype.typing import Dict, Any
+from beartype.typing import Dict, Any, List
+from fandango.constraints.constraint import Constraint
+from fandango.constraints.soft import SoftValue
 from fandango.evolution.chromosomes.base import Chromosome
 from fandango.evolution.chromosomes.suite import Suite
 from fandango.evolution.fitness.base import SuiteFitnessFunction
@@ -409,9 +411,119 @@ class GraphCoverageFitnessFunction(SuiteFitnessFunction):
         self._cache.clear()
 
 
+class SoftConstraintsFitnessFunction(SuiteFitnessFunction):
+    """
+    Measures the average soft-constraint satisfaction across all individuals in a suite.
+
+    For each individual, evaluates each SoftValue, normalizes via TDigest, and
+    accounts for optimization direction. Returns the mean score across all individuals
+    and all soft constraints. Returns 1.0 if there are no soft constraints.
+
+    No caching — TDigest is adaptive/stateful; scores change as the distribution evolves.
+    """
+
+    def __init__(self, constraints: List[SoftValue]) -> None:
+        self._constraints = list(constraints)
+
+    def fitness(self, chromosome: Chromosome) -> float:
+        if not isinstance(chromosome, Suite):
+            raise TypeError(
+                f"SoftConstraintsFitnessFunction requires a Suite, got {type(chromosome).__name__}"
+            )
+
+        if not self._constraints:
+            return 1.0
+
+        if len(chromosome) == 0:
+            return 0.0
+
+        individual_scores = []
+        for individual in chromosome:
+            constraint_scores = []
+            for soft in self._constraints:
+                result = soft.fitness(individual.tree)
+                raw = result.fitness()
+                soft.tdigest.update(raw)
+                normalized = soft.tdigest.score(raw)
+                score = (
+                    normalized if soft.optimization_goal == "max" else 1 - normalized
+                )
+                constraint_scores.append(score)
+            individual_scores.append(sum(constraint_scores) / len(constraint_scores))
+
+        return sum(individual_scores) / len(individual_scores)
+
+    def is_covered(self, suite: Suite) -> bool:
+        return self.fitness(suite) >= 1.0
+
+    def is_maximising(self) -> bool:
+        return True
+
+    @property
+    def cache(self) -> Dict[Any, Any]:
+        return {}
+
+    def clear_cache(self) -> None:
+        pass
+
+
 def PathCoverageFitnessFunction(
     grammar: Grammar,
     start_symbol: NonTerminal = NonTerminal("<start>"),
 ) -> KPathCoverageFitnessFunction:
     """Backward-compatible alias for KPathCoverageFitnessFunction(k=2)."""
     return KPathCoverageFitnessFunction(grammar, k=2, start_symbol=start_symbol)
+
+
+class ConstraintsFitnessFunction(SuiteFitnessFunction):
+    """
+    Measures the fraction of suite individuals satisfying all hard constraints.
+
+    Formula: fitness = |satisfying individuals| / |suite size|
+
+    Returns 1.0 when there are no constraints (vacuously satisfied).
+    The fitness value ranges from 0.0 to 1.0. This is a maximizing fitness function.
+    """
+
+    def __init__(self, constraints: List[Constraint]) -> None:
+        self._constraints = list(constraints)
+        self._cache: Dict[Any, float] = {}
+
+    def fitness(self, chromosome: Chromosome) -> float:
+        if not isinstance(chromosome, Suite):
+            raise TypeError(
+                f"ConstraintsFitnessFunction requires a Suite, got {type(chromosome).__name__}"
+            )
+
+        if not self._constraints:
+            return 1.0
+
+        suite_hash = hash(chromosome)
+        if suite_hash in self._cache:
+            return self._cache[suite_hash]
+
+        if len(chromosome) == 0:
+            self._cache[suite_hash] = 0.0
+            return 0.0
+
+        satisfied = sum(
+            1
+            for ind in chromosome
+            if all(c.fitness(ind.tree).fitness() >= 1.0 for c in self._constraints)
+        )
+        value = satisfied / len(chromosome)
+        self._cache[suite_hash] = value
+        return value
+
+    def is_covered(self, suite: Suite) -> bool:
+        return self.fitness(suite) >= 1.0
+
+    def is_maximising(self) -> bool:
+        return True
+
+    @property
+    def cache(self) -> Dict[Any, Any]:
+        return self._cache
+
+    def clear_cache(self) -> None:
+        self._cache.clear()
