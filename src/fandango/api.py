@@ -281,6 +281,10 @@ class Fandango(FandangoBase):
             from fandango.evolution.algorithms.dynamosa import DynaMOSAAlgorithm
 
             self.fandango = DynaMOSAAlgorithm(self.grammar, constraints, **settings)
+        elif algorithm == "mio":
+            from fandango.evolution.algorithms.mio import MIOAlgorithm
+
+            self.fandango = MIOAlgorithm(self.grammar, constraints, **settings)
         else:
             self.fandango = FandangoStrategy(
                 self.grammar, constraints, start_symbol=start_symbol, **settings

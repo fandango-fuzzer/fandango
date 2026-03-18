@@ -1,12 +1,12 @@
 """Dynamic Many-Objective Sorting Algorithm (DynaMOSA)."""
 
 import random
-from dataclasses import dataclass
 
 from beartype.typing import List, Optional, Any
 
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
+from fandango.evolution.algorithms.archive import _ConstraintGoal, _SoftConstraintGoal
 from fandango.evolution.algorithms.base import GenerationAlgorithm
 from fandango.evolution.algorithms.random import _generate_individual
 from fandango.evolution.chromosomes import Suite
@@ -15,20 +15,6 @@ from fandango.evolution.crossover import SimpleSubtreeCrossover
 from fandango.evolution.selection import TournamentSelection
 from fandango.language.grammar.grammar import Grammar, KPath
 from fandango.language.symbols import NonTerminal
-
-
-@dataclass(frozen=True)
-class _ConstraintGoal:
-    """A Pareto objective representing one hard constraint that must be satisfied."""
-
-    index: int  # position in hard_constraints list
-
-
-@dataclass(frozen=True)
-class _SoftConstraintGoal:
-    """A Pareto objective representing one soft constraint to be optimised."""
-
-    index: int  # position in soft_constraints list
 
 
 class _KPathGoalGraph:

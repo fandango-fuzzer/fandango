@@ -2,11 +2,36 @@
 
 import pytest
 
-from fandango.evolution.algorithms.archive import Archive, CoverageArchive
+from fandango.constraints.fitness import ValueFitness
+from fandango.constraints.soft import SoftValue, TDigest
+from fandango.evolution.algorithms.archive import (
+    Archive,
+    CoverageArchive,
+    MIOArchive,
+    _ConstraintGoal,
+    _SoftConstraintGoal,
+)
+from fandango.evolution.algorithms.random import _generate_individual
 from fandango.evolution.chromosomes.individual import Individual
 from fandango.language.parse.parse import parse
 from fandango.language.symbols import NonTerminal
+from tests.test_random_algorithm import _make_constraint
 from tests.utils import RESOURCES_ROOT
+
+
+def _make_soft_value(always_high: bool) -> SoftValue:
+    """Create a stub SoftValue that always returns a fixed fitness (1.0 or 0.0)."""
+
+    class _StubSoftValue(SoftValue):
+        def __init__(self) -> None:
+            self.optimization_goal = "max"
+            self.tdigest = TDigest("max")
+            self._always_high = always_high
+
+        def fitness(self, tree, scope=None, local_variables=None) -> ValueFitness:
+            return ValueFitness(values=[1.0 if self._always_high else 0.0])
+
+    return _StubSoftValue()
 
 
 @pytest.fixture
@@ -16,6 +41,11 @@ def simple_grammar():
     with open(grammar_file, "r") as f:
         grammar, _ = parse([f])
     return grammar
+
+
+@pytest.fixture
+def start_symbol():
+    return NonTerminal("<start>")
 
 
 @pytest.fixture
@@ -165,3 +195,143 @@ class TestCoverageArchiveInvariants:
         # If we've hit full coverage, uncovered should be empty
         if archive.covered_goals == all_goals_k2:
             assert archive.uncovered_goals == frozenset()
+
+
+class TestMIOArchiveWithConstraints:
+    """Tests for MIOArchive constraint goal handling."""
+
+    def test_hard_constraint_goal_added_to_goals(self, simple_grammar, start_symbol):
+        """_ConstraintGoal(0) should appear in _goals when a hard constraint is given."""
+        failing = _make_constraint(always_pass=False)
+        archive = MIOArchive(
+            simple_grammar,
+            n=10,
+            k=2,
+            start_symbol=start_symbol,
+            hard_constraints=[failing],
+        )
+        assert _ConstraintGoal(0) in archive._goals
+
+    def test_soft_constraint_goal_added_to_goals(self, simple_grammar, start_symbol):
+        """_SoftConstraintGoal(0) should appear in _goals when a soft constraint is given."""
+        soft = _make_soft_value(always_high=True)
+        archive = MIOArchive(
+            simple_grammar,
+            n=10,
+            k=2,
+            start_symbol=start_symbol,
+            soft_constraints=[soft],
+        )
+        assert _SoftConstraintGoal(0) in archive._goals
+
+    def test_hard_constraint_goal_initially_uncovered(
+        self, simple_grammar, start_symbol
+    ):
+        """Hard constraint goal must start in uncovered_goals."""
+        failing = _make_constraint(always_pass=False)
+        archive = MIOArchive(
+            simple_grammar,
+            n=10,
+            k=2,
+            start_symbol=start_symbol,
+            hard_constraints=[failing],
+        )
+        assert _ConstraintGoal(0) in archive.uncovered_goals
+
+    def test_passing_hard_constraint_becomes_covered(
+        self, simple_grammar, start_symbol
+    ):
+        """_ConstraintGoal(0) moves to covered_goals when satisfied by an individual."""
+        passing = _make_constraint(always_pass=True)
+        archive = MIOArchive(
+            simple_grammar,
+            n=10,
+            k=2,
+            start_symbol=start_symbol,
+            hard_constraints=[passing],
+        )
+        population = [_generate_individual(simple_grammar) for _ in range(5)]
+        archive.update(population)
+        assert _ConstraintGoal(0) in archive.covered_goals
+
+    def test_failing_hard_constraint_does_not_gate_kpath_coverage(
+        self, simple_grammar, start_symbol
+    ):
+        """K-path goals ARE covered even when the hard constraint always fails.
+
+        K-path coverage is now independent of hard-constraint satisfaction.
+        Filtering happens at output time via valid_solutions, not during archiving.
+        """
+        failing = _make_constraint(always_pass=False)
+        archive = MIOArchive(
+            simple_grammar,
+            n=10,
+            k=2,
+            start_symbol=start_symbol,
+            hard_constraints=[failing],
+        )
+        population = [_generate_individual(simple_grammar) for _ in range(20)]
+        archive.update(population)
+        kpath_covered = {g for g in archive.covered_goals if isinstance(g, tuple)}
+        assert len(kpath_covered) > 0
+
+    def test_passing_hard_constraint_allows_kpath_coverage(
+        self, simple_grammar, start_symbol
+    ):
+        """K-path goals ARE covered when the hard constraint always passes."""
+        passing = _make_constraint(always_pass=True)
+        archive = MIOArchive(
+            simple_grammar,
+            n=10,
+            k=2,
+            start_symbol=start_symbol,
+            hard_constraints=[passing],
+        )
+        population = [_generate_individual(simple_grammar) for _ in range(10)]
+        archive.update(population)
+        kpath_covered = {g for g in archive.covered_goals if isinstance(g, tuple)}
+        assert len(kpath_covered) > 0
+
+    def test_soft_constraint_goal_covered_with_high_fitness(
+        self, simple_grammar, start_symbol
+    ):
+        """_SoftConstraintGoal(0) is covered when fitness is always high."""
+        soft = _make_soft_value(always_high=True)
+        archive = MIOArchive(
+            simple_grammar,
+            n=10,
+            k=2,
+            start_symbol=start_symbol,
+            soft_constraints=[soft],
+        )
+        population = [_generate_individual(simple_grammar) for _ in range(5)]
+        archive.update(population)
+        assert _SoftConstraintGoal(0) in archive.covered_goals
+
+    def test_no_constraints_only_kpath_goals_covered(
+        self, simple_grammar, start_symbol
+    ):
+        """Without constraints, all covered goals must be k-paths (baseline unchanged)."""
+        archive = MIOArchive(simple_grammar, n=10, k=2, start_symbol=start_symbol)
+        population = [_generate_individual(simple_grammar) for _ in range(10)]
+        archive.update(population)
+        for g in archive.covered_goals:
+            assert isinstance(g, tuple)
+
+    def test_covered_and_uncovered_partition_goals_with_both_constraints(
+        self, simple_grammar, start_symbol
+    ):
+        """covered | uncovered == _goals holds when both constraint types are present."""
+        passing = _make_constraint(always_pass=True)
+        soft = _make_soft_value(always_high=True)
+        archive = MIOArchive(
+            simple_grammar,
+            n=10,
+            k=2,
+            start_symbol=start_symbol,
+            hard_constraints=[passing],
+            soft_constraints=[soft],
+        )
+        population = [_generate_individual(simple_grammar) for _ in range(10)]
+        archive.update(population)
+        assert archive.covered_goals | archive.uncovered_goals == archive._goals
