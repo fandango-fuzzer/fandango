@@ -4,8 +4,14 @@ import random
 
 from beartype.typing import List, Optional, Any, Sequence
 
+from collections.abc import Generator
+
+from fandango.constraints.failing_tree import FailingTree, Suggestion
+from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.algorithms.base import GenerationAlgorithm
 from fandango.evolution.algorithms.random import _generate_suite, _generate_individual
+from fandango.evolution.mutation import MutationOperator, SimpleMutation
+from fandango.language import DerivationTree
 from fandango.evolution.chromosomes.individual import Individual
 from fandango.evolution.chromosomes.suite import Suite
 from fandango.evolution.crossover import SuiteCrossover
@@ -47,6 +53,7 @@ class WholeSuiteAlgorithm(GenerationAlgorithm[Suite]):
         self._suite_size = suite_size
         self._mutation_probability = mutation_probability
         self._crossover_fn = SuiteCrossover()
+        self._mutation_fn: MutationOperator[Individual] = SimpleMutation()
         self._optional_ffs: List[SuiteFitnessFunction] = [
             GraphCoverageFitnessFunction(grammar),
             SoftConstraintsFitnessFunction(self.evaluator._soft_constraints),
@@ -103,8 +110,19 @@ class WholeSuiteAlgorithm(GenerationAlgorithm[Suite]):
         new_individuals: List[Individual] = []
         for ind in suite:
             if random.random() < self._mutation_probability:
-                # TODO(lk): Mutate failing_trees once constraints are added
-                new_individuals.append(_generate_individual(self.grammar))
+
+                def _eval_wrapper(
+                    individual: Individual,
+                ) -> Generator[
+                    DerivationTree, None, tuple[float, list[FailingTree], Suggestion]
+                ]:
+                    return self.evaluator.evaluate_individual(individual.tree)
+
+                gen = GeneratorWithReturn(
+                    self._mutation_fn.mutate(ind, self.grammar, _eval_wrapper)
+                )
+                gen.collect()
+                new_individuals.append(gen.return_value)
             else:
                 new_individuals.append(ind.clone())
         if not new_individuals:
