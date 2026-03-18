@@ -11,6 +11,7 @@ from fandango.constraints.soft import SoftValue
 from fandango.constraints.constraint import Constraint
 from fandango.errors import FandangoError, FandangoParseError
 from fandango.evolution import GeneratorWithReturn
+from fandango.evolution.algorithms import DEFAULT_ALGORITHM
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.parse.parse import parse
 from fandango.language.tree import DerivationTree
@@ -94,6 +95,11 @@ def make_fandango_settings(
     _copy_setting(args, settings, "max_repetitions")
     _copy_setting(args, settings, "max_nodes")
     _copy_setting(args, settings, "max_node_rate")
+    if hasattr(args, "algorithm") and getattr(args, "algorithm") not in (
+        None,
+        DEFAULT_ALGORITHM,
+    ):
+        settings["algorithm"] = args.algorithm
 
     if hasattr(args, "start_symbol") and args.start_symbol is not None:
         if args.start_symbol.startswith("<"):

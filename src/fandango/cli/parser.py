@@ -5,6 +5,7 @@ import textwrap
 from typing import Optional
 
 import fandango
+from fandango.evolution.algorithms import DEFAULT_ALGORITHM
 
 
 def terminal_link(url: str, text: Optional[str] = None) -> str:
@@ -269,6 +270,18 @@ def _get_algorithm_parser() -> argparse.ArgumentParser:
         choices=["on", "off", "auto"],
         default="auto",
         help="Whether to show the progress bar. 'auto' (default) shows the progress bar only if stderr is a terminal.",
+    )
+    algorithm_group.add_argument(
+        "--algorithm",
+        choices=["genetic", "random-suite", "whole-suite", "dynamosa"],
+        default=DEFAULT_ALGORITHM,
+        help=(
+            "Search algorithm to use. "
+            "'genetic' (default) uses the evolutionary algorithm with selection, crossover, and mutation. "
+            "'random-suite' uses random suite generation optimized for grammar coverage. "
+            "'whole-suite' uses the Whole Suite algorithm for grammar coverage. "
+            "'dynamosa' uses the Dynamic Many-Objective Sorting Algorithm for k-path coverage."
+        ),
     )
 
     return algorithm_parser
