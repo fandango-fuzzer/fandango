@@ -2,37 +2,25 @@
 
 import math
 import random
+from collections.abc import Generator
 from dataclasses import dataclass
-from typing import cast
 
 from beartype.typing import List, Optional, Any
 
 from fandango.constraints.constraint import Constraint
+from fandango.constraints.failing_tree import FailingTree, Suggestion
 from fandango.constraints.soft import SoftValue
+from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.algorithms.archive import MIOArchive
 from fandango.evolution.algorithms.base import GenerationAlgorithm
 from fandango.evolution.algorithms.random import _generate_individual
 from fandango.evolution.chromosomes import Suite
 from fandango.evolution.chromosomes.individual import Individual
+from fandango.evolution.mutation import MutationOperator, SimpleMutation
+from fandango.language import DerivationTree
 from fandango.language.grammar.grammar import Grammar
 
 _DEFAULT_MAX_GENERATIONS = 1000
-
-
-def _mutate_individual(individual: Individual, grammar: Grammar) -> Individual:
-    """Produce a mutant by replacing a random non-terminal subtree with a fresh fuzz."""
-    tree = individual.clone().tree
-    non_terminals = list(tree.get_non_terminal_symbols())
-    if not non_terminals:
-        return _generate_individual(grammar)
-    symbol = random.choice(non_terminals)
-    nodes = tree.find_all_nodes(symbol)
-    if not nodes:
-        return _generate_individual(grammar)
-    node = random.choice(nodes)
-    new_subtree = grammar.fuzz(str(node.symbol))
-    new_tree = tree.replace(grammar, node, new_subtree)
-    return Individual(new_tree)
 
 
 @dataclass
@@ -92,6 +80,7 @@ class MIOAlgorithm(GenerationAlgorithm[Individual]):
             soft_constraints=self.evaluator._soft_constraints,
         )
         self.archive = self._mio_archive
+        self._mutation_fn: MutationOperator[Individual] = SimpleMutation()
 
     def _update_parameters(self, generation: int, max_generations: int) -> None:
         """Linearly interpolate parameters from exploration to exploitation phase."""
@@ -121,11 +110,25 @@ class MIOAlgorithm(GenerationAlgorithm[Individual]):
 
     def _evolve(self) -> None:
         """Run one step of the MIO loop: generate or mutate, then update archive."""
+
+        def _eval_wrapper(
+            individual: Individual,
+        ) -> Generator[
+            DerivationTree, None, tuple[float, list[FailingTree], Suggestion]
+        ]:
+            return self.evaluator.evaluate_individual(individual.tree)
+
         if (
             self._current_solution is not None
             and self._current_mutations < self._parameters.m
         ):
-            offspring = _mutate_individual(self._current_solution, self.grammar)
+            gen = GeneratorWithReturn(
+                self._mutation_fn.mutate(
+                    self._current_solution, self.grammar, _eval_wrapper
+                )
+            )
+            gen.collect()
+            offspring = gen.return_value
             self._current_mutations += 1
         elif random.random() < self._parameters.pr:
             offspring = _generate_individual(self.grammar)
@@ -138,7 +141,11 @@ class MIOAlgorithm(GenerationAlgorithm[Individual]):
                 if isinstance(maybe, Individual)
                 else _generate_individual(self.grammar)
             )
-            offspring = _mutate_individual(base, self.grammar)
+            gen = GeneratorWithReturn(
+                self._mutation_fn.mutate(base, self.grammar, _eval_wrapper)
+            )
+            gen.collect()
+            offspring = gen.return_value
             self._current_mutations = 1
             self._current_solution = None
 
