@@ -10,6 +10,8 @@ from fandango.evolution.fitness.suite import (
     KPathCoverageFitnessFunction,
     GraphCoverageFitnessFunction,
     PathCoverageFitnessFunction,
+    ConstraintsFitnessFunction,
+    SoftConstraintsFitnessFunction,
 )
 
 __all__ = [
@@ -20,4 +22,6 @@ __all__ = [
     "KPathCoverageFitnessFunction",
     "GraphCoverageFitnessFunction",
     "PathCoverageFitnessFunction",
+    "ConstraintsFitnessFunction",
+    "SoftConstraintsFitnessFunction",
 ]

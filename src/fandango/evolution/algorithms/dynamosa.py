@@ -1,6 +1,7 @@
 """Dynamic Many-Objective Sorting Algorithm (DynaMOSA)."""
 
 import random
+from dataclasses import dataclass
 
 from beartype.typing import List, Optional, Any
 
@@ -14,6 +15,20 @@ from fandango.evolution.crossover import SimpleSubtreeCrossover
 from fandango.evolution.selection import TournamentSelection
 from fandango.language.grammar.grammar import Grammar, KPath
 from fandango.language.symbols import NonTerminal
+
+
+@dataclass(frozen=True)
+class _ConstraintGoal:
+    """A Pareto objective representing one hard constraint that must be satisfied."""
+
+    index: int  # position in hard_constraints list
+
+
+@dataclass(frozen=True)
+class _SoftConstraintGoal:
+    """A Pareto objective representing one soft constraint to be optimised."""
+
+    index: int  # position in soft_constraints list
 
 
 class _KPathGoalGraph:
@@ -85,14 +100,54 @@ class _DynaMOSAGoalManager:
         grammar: Grammar,
         goal_graph: _KPathGoalGraph,
         max_k: int,
+        hard_constraints: List[Constraint] = [],
+        soft_constraints: List[SoftValue] = [],
     ) -> None:
         self._grammar = grammar
         self._graph = goal_graph
         self._max_k = max_k
-        # Maps each covered goal to the best (shortest) individual covering it
-        self._covered: dict[KPath, Individual] = {}
-        # Currently active (uncovered) objectives
-        self._active: set[KPath] = set(goal_graph.root_goals)
+        self._hard_constraints: List[Constraint] = list(hard_constraints)
+        self._soft_constraints: List[SoftValue] = list(soft_constraints)
+
+        # Maps each covered optional goal (k-path or soft constraint) to the best individual
+        self._optional_covered: dict[KPath | _SoftConstraintGoal, Individual] = {}
+
+        # Mandatory goal tracking: index → best individual satisfying it
+        self._mandatory_covered: dict[int, Individual] = {}
+
+        # Mandatory goals (always active from the start)
+        constraint_goals: set[_ConstraintGoal] = {
+            _ConstraintGoal(i) for i in range(len(self._hard_constraints))
+        }
+        self._mandatory_goals: frozenset[_ConstraintGoal] = frozenset(constraint_goals)
+
+        soft_goals: set[_SoftConstraintGoal] = {
+            _SoftConstraintGoal(i) for i in range(len(self._soft_constraints))
+        }
+
+        # Currently active (uncovered) objectives: root k-path goals + all mandatory goals + all soft goals
+        self._active: set[KPath | _ConstraintGoal | _SoftConstraintGoal] = (
+            set(goal_graph.root_goals) | constraint_goals | soft_goals
+        )
+
+    def _satisfies_mandatory(self, individual: Individual) -> bool:
+        """Return True if the individual satisfies every hard constraint."""
+        return all(
+            c.fitness(individual.tree).fitness() >= 1.0 for c in self._hard_constraints
+        )
+
+    def _mandatory_covered_by(self, individual: Individual, index: int) -> bool:
+        """Return True if the individual satisfies hard_constraint[index]."""
+        return self._hard_constraints[index].fitness(individual.tree).fitness() >= 1.0
+
+    def _soft_covered_by(self, individual: Individual, index: int) -> bool:
+        """Return True if the individual covers soft_constraint[index] (score >= 0.5)."""
+        soft = self._soft_constraints[index]
+        raw = soft.fitness(individual.tree).fitness()
+        soft.tdigest.update(raw)
+        normalized = soft.tdigest.score(raw)
+        score = normalized if soft.optimization_goal == "max" else 1 - normalized
+        return score >= 0.5
 
     def _get_paths_for_individual(self, individual: Individual) -> set[KPath]:
         """Extract all k-paths (k=1..max_k) from an individual's derivation tree."""
@@ -104,46 +159,87 @@ class _DynaMOSAGoalManager:
 
     def update(self, population: List[Individual]) -> None:
         """Update coverage and active goals from a new population."""
-        newly_covered: set[KPath] = set()
+        newly_covered_kpaths: set[KPath] = set()
 
         for individual in population:
+            # --- Mandatory (constraint) goals ---
+            for i, _ in enumerate(self._hard_constraints):
+                if self._mandatory_covered_by(individual, i):
+                    if i not in self._mandatory_covered:
+                        self._mandatory_covered[i] = individual
+                    elif individual.size() < self._mandatory_covered[i].size():
+                        self._mandatory_covered[i] = individual
+
+            # --- Optional (k-path) goals ---
+            # Only count a k-path as covered if the individual also satisfies all constraints
+            if self._hard_constraints and not self._satisfies_mandatory(individual):
+                continue
+
             ind_paths = self._get_paths_for_individual(individual)
             for goal in self._graph.all_goals:
                 if goal in ind_paths:
-                    if goal not in self._covered:
-                        self._covered[goal] = individual
-                        newly_covered.add(goal)
-                    elif individual.size() < self._covered[goal].size():
-                        # Keep the shortest individual for this goal
-                        self._covered[goal] = individual
+                    if goal not in self._optional_covered:
+                        self._optional_covered[goal] = individual
+                        newly_covered_kpaths.add(goal)
+                    elif individual.size() < self._optional_covered[goal].size():
+                        self._optional_covered[goal] = individual
 
-        # Unlock children of newly covered goals
-        for goal in newly_covered:
+        # Unlock children of newly covered k-path goals
+        for goal in newly_covered_kpaths:
             for child in self._graph.get_children(goal):
-                if child not in self._covered:
+                if child not in self._optional_covered:
                     self._active.add(child)
 
-        # Remove any now-covered goals from the active set
-        self._active -= set(self._covered.keys())
+        # --- Soft (optional) constraint goals ---
+        for individual in population:
+            for i, _ in enumerate(self._soft_constraints):
+                if self._soft_covered_by(individual, i):
+                    soft_goal = _SoftConstraintGoal(i)
+                    if soft_goal not in self._optional_covered:
+                        self._optional_covered[soft_goal] = individual
+                    elif individual.size() < self._optional_covered[soft_goal].size():
+                        self._optional_covered[soft_goal] = individual
+
+        # Remove all covered optional goals (k-paths + soft) from active set
+        self._active -= set(self._optional_covered.keys())
+
+        # Remove covered mandatory goals from active set
+        for i in self._mandatory_covered:
+            self._active.discard(_ConstraintGoal(i))
 
     @property
-    def active_goals(self) -> set[KPath]:
+    def active_goals(self) -> set[KPath | _ConstraintGoal | _SoftConstraintGoal]:
         return set(self._active)
 
     @property
-    def covered_goals(self) -> set[KPath]:
-        return set(self._covered.keys())
+    def covered_goals(self) -> set[KPath | _ConstraintGoal | _SoftConstraintGoal]:
+        return set(self._optional_covered.keys()) | {
+            _ConstraintGoal(i) for i in self._mandatory_covered
+        }
 
     @property
-    def uncovered_goals(self) -> set[KPath]:
-        return set(self._graph.all_goals) - self.covered_goals
+    def uncovered_goals(self) -> set[KPath | _ConstraintGoal | _SoftConstraintGoal]:
+        kpath_uncovered: set[KPath | _ConstraintGoal | _SoftConstraintGoal] = {
+            g for g in self._graph.all_goals if g not in self._optional_covered
+        }
+        constraint_uncovered: set[KPath | _ConstraintGoal | _SoftConstraintGoal] = {
+            _ConstraintGoal(i)
+            for i in range(len(self._hard_constraints))
+            if i not in self._mandatory_covered
+        }
+        soft_uncovered: set[KPath | _ConstraintGoal | _SoftConstraintGoal] = {
+            _SoftConstraintGoal(i)
+            for i in range(len(self._soft_constraints))
+            if _SoftConstraintGoal(i) not in self._optional_covered
+        }
+        return kpath_uncovered | constraint_uncovered | soft_uncovered
 
     @property
     def solutions(self) -> List[Individual]:
         """Deduplicated best individual per covered goal."""
         seen: set[int] = set()
         result: List[Individual] = []
-        for ind in self._covered.values():
+        for ind in self._optional_covered.values():
             ind_id = id(ind)
             if ind_id not in seen:
                 seen.add(ind_id)
@@ -153,11 +249,13 @@ class _DynaMOSAGoalManager:
 
 def _compute_pareto_fronts(
     population: List[Individual],
-    active_goals: set[KPath],
+    active_goals: set[KPath | _ConstraintGoal | _SoftConstraintGoal],
     grammar: Grammar,
     max_k: int,
+    hard_constraints: List[Constraint] = [],
+    soft_constraints: List[SoftValue] = [],
 ) -> List[List[Individual]]:
-    """NSGA-II style Pareto front computation over active k-path goals.
+    """NSGA-II style Pareto front computation over active k-path and constraint goals.
 
     Each individual's objective vector: 1 if it covers goal g, 0 otherwise.
     A dominates B if A covers a strict superset of B's covered active goals.
@@ -171,13 +269,42 @@ def _compute_pareto_fronts(
 
     n = len(population)
 
-    # Build coverage sets (intersection with active goals) per individual
-    coverage: list[set[KPath]] = []
+    # Separate active goals by type
+    active_kpath_goals = {g for g in active_goals if isinstance(g, tuple)}
+    active_constraint_goals = {
+        g for g in active_goals if isinstance(g, _ConstraintGoal)
+    }
+    active_soft_goals = {g for g in active_goals if isinstance(g, _SoftConstraintGoal)}
+
+    # Build coverage sets per individual
+    coverage: list[set[KPath | _ConstraintGoal | _SoftConstraintGoal]] = []
     for ind in population:
+        # K-path coverage
         ind_paths: set[KPath] = set()
         for k in range(1, max_k + 1):
             ind_paths.update(grammar._extract_k_paths_from_tree(ind.tree, k))
-        coverage.append(ind_paths.intersection(active_goals))
+        kpath_cov: set[KPath | _ConstraintGoal | _SoftConstraintGoal] = {
+            p for p in ind_paths if p in active_kpath_goals
+        }
+
+        # Hard constraint coverage
+        constraint_cov: set[KPath | _ConstraintGoal | _SoftConstraintGoal] = {
+            g
+            for g in active_constraint_goals
+            if hard_constraints[g.index].fitness(ind.tree).fitness() >= 1.0
+        }
+
+        # Soft constraint coverage (TDigest already updated via goal_manager.update)
+        soft_cov: set[KPath | _ConstraintGoal | _SoftConstraintGoal] = set()
+        for g in active_soft_goals:
+            soft = soft_constraints[g.index]
+            raw = soft.fitness(ind.tree).fitness()
+            normalized = soft.tdigest.score(raw)
+            score = normalized if soft.optimization_goal == "max" else 1 - normalized
+            if score >= 0.5:
+                soft_cov.add(g)
+
+        coverage.append(kpath_cov | constraint_cov | soft_cov)
 
     # A dominates B iff A covers a strict superset of B's active goals
     dominated_count: list[int] = [0] * n
@@ -208,6 +335,44 @@ def _compute_pareto_fronts(
     return [[population[i] for i in front] for front in fronts]
 
 
+def _count_active_goals_covered(
+    ind: Individual,
+    active_goals: set[KPath | _ConstraintGoal | _SoftConstraintGoal],
+    grammar: Grammar,
+    max_k: int,
+    hard_constraints: List[Constraint],
+    soft_constraints: List[SoftValue] = [],
+) -> int:
+    """Count how many active goals an individual covers (for crowding distance)."""
+    active_kpath_goals = {g for g in active_goals if isinstance(g, tuple)}
+    active_constraint_goals = {
+        g for g in active_goals if isinstance(g, _ConstraintGoal)
+    }
+    active_soft_goals = {g for g in active_goals if isinstance(g, _SoftConstraintGoal)}
+
+    ind_paths: set[KPath] = set()
+    for k in range(1, max_k + 1):
+        ind_paths.update(grammar._extract_k_paths_from_tree(ind.tree, k))
+    kpath_count = len(ind_paths.intersection(active_kpath_goals))
+
+    constraint_count = sum(
+        1
+        for g in active_constraint_goals
+        if hard_constraints[g.index].fitness(ind.tree).fitness() >= 1.0
+    )
+
+    soft_count = 0
+    for g in active_soft_goals:
+        soft = soft_constraints[g.index]
+        raw = soft.fitness(ind.tree).fitness()
+        normalized = soft.tdigest.score(raw)
+        score = normalized if soft.optimization_goal == "max" else 1 - normalized
+        if score >= 0.5:
+            soft_count += 1
+
+    return kpath_count + constraint_count + soft_count
+
+
 class DynaMOSAAlgorithm(GenerationAlgorithm[Individual]):
     """
     Dynamic Many-Objective Sorting Algorithm (DynaMOSA).
@@ -218,6 +383,9 @@ class DynaMOSAAlgorithm(GenerationAlgorithm[Individual]):
     Goals are k-paths in the grammar, organized in a prefix-dependency hierarchy:
     a k-path becomes active only after its (k-1)-prefix has been covered. This
     focuses search pressure on reachable, uncovered targets.
+
+    Hard constraints are treated as always-active Pareto objectives. A k-path goal
+    is only considered covered when a constraint-satisfying individual covers it.
 
     https://ieeexplore.ieee.org/document/7840029
     """
@@ -242,11 +410,18 @@ class DynaMOSAAlgorithm(GenerationAlgorithm[Individual]):
 
     def _breed_next_generation(
         self,
-        active_goals: set[KPath],
+        active_goals: set[KPath | _ConstraintGoal | _SoftConstraintGoal],
     ) -> List[Individual]:
         """Produce offspring via tournament selection (rank + crowding) + crossover."""
+        hard_constraints = self.evaluator._hard_constraints
+        soft_constraints = self.evaluator._soft_constraints
         fronts = _compute_pareto_fronts(
-            self._population, active_goals, self.grammar, self._max_k
+            self._population,
+            active_goals,
+            self.grammar,
+            self._max_k,
+            hard_constraints,
+            soft_constraints,
         )
 
         # Assign rank and crowding distance to each individual
@@ -256,12 +431,14 @@ class DynaMOSAAlgorithm(GenerationAlgorithm[Individual]):
             for ind in front:
                 key = id(ind)
                 rank[key] = front_rank
-                ind_paths: set[KPath] = set()
-                for k in range(1, self._max_k + 1):
-                    ind_paths.update(
-                        self.grammar._extract_k_paths_from_tree(ind.tree, k)
-                    )
-                crowding[key] = len(ind_paths.intersection(active_goals))
+                crowding[key] = _count_active_goals_covered(
+                    ind,
+                    active_goals,
+                    self.grammar,
+                    self._max_k,
+                    hard_constraints,
+                    soft_constraints,
+                )
 
         selection_fn: TournamentSelection[Individual] = TournamentSelection(
             tournament_size=2,
@@ -288,13 +465,20 @@ class DynaMOSAAlgorithm(GenerationAlgorithm[Individual]):
 
     def _evolve(self, goal_manager: _DynaMOSAGoalManager) -> None:
         """Run one generation of DynaMOSA evolution."""
+        hard_constraints = self.evaluator._hard_constraints
+        soft_constraints = self.evaluator._soft_constraints
         active_goals = goal_manager.active_goals
         offspring = self._breed_next_generation(active_goals)
         combined = self._population + offspring
 
         # NSGA-II truncation: fill new population greedily from Pareto fronts
         fronts = _compute_pareto_fronts(
-            combined, active_goals, self.grammar, self._max_k
+            combined,
+            active_goals,
+            self.grammar,
+            self._max_k,
+            hard_constraints,
+            soft_constraints,
         )
         new_population: List[Individual] = []
         for front in fronts:
@@ -302,17 +486,16 @@ class DynaMOSAAlgorithm(GenerationAlgorithm[Individual]):
                 new_population.extend(front)
             else:
                 # Sort by crowding distance (descending) to pick the best within front
-                crowding_scores: dict[int, int] = {}
-                for ind in front:
-                    ind_paths: set[KPath] = set()
-                    for k in range(1, self._max_k + 1):
-                        ind_paths.update(
-                            self.grammar._extract_k_paths_from_tree(ind.tree, k)
-                        )
-                    crowding_scores[id(ind)] = len(ind_paths.intersection(active_goals))
                 front_sorted = sorted(
                     front,
-                    key=lambda x: crowding_scores[id(x)],
+                    key=lambda x: _count_active_goals_covered(
+                        x,
+                        active_goals,
+                        self.grammar,
+                        self._max_k,
+                        hard_constraints,
+                        soft_constraints,
+                    ),
                     reverse=True,
                 )
                 remaining = self.population_size - len(new_population)
@@ -330,7 +513,13 @@ class DynaMOSAAlgorithm(GenerationAlgorithm[Individual]):
         """Generates solutions using DynaMOSA for k-path coverage."""
         start_symbol = NonTerminal("<start>")
         graph = _KPathGoalGraph(self.grammar, self._max_k, start_symbol)
-        goal_manager = _DynaMOSAGoalManager(self.grammar, graph, self._max_k)
+        goal_manager = _DynaMOSAGoalManager(
+            self.grammar,
+            graph,
+            self._max_k,
+            hard_constraints=self.evaluator._hard_constraints,
+            soft_constraints=self.evaluator._soft_constraints,
+        )
 
         self._population = self._get_random_population()
         goal_manager.update(self._population)
