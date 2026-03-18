@@ -2,9 +2,9 @@
 
 from abc import ABC, abstractmethod
 
-from fandango.evolution.algorithms import CoverageArchive, Archive
 from beartype.typing import Optional, Generic, TypeVar, Any, Sequence, List
 
+from fandango.evolution.algorithms.archive import CoverageArchive, Archive
 from fandango.evolution.chromosomes import Suite
 from fandango.evolution.chromosomes.base import Chromosome
 from fandango.evolution.evaluation import Evaluator

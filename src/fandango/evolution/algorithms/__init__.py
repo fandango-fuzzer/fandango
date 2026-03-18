@@ -11,8 +11,6 @@ from fandango.evolution.algorithms.random import (
 )
 
 __all__ = [
-    "Archive",
-    "CoverageArchive",
     "GenerationAlgorithm",
     "MIOAlgorithm",
     "DynaMOSAAlgorithm",
