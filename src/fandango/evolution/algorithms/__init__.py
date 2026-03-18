@@ -1,6 +1,7 @@
 """Evolutionary algorithm implementations."""
 
-from fandango.evolution.algorithms.archive import Archive, CoverageArchive
+DEFAULT_ALGORITHM = "genetic"
+
 from fandango.evolution.algorithms.base import GenerationAlgorithm
 from fandango.evolution.algorithms.mio import MIOAlgorithm
 from fandango.evolution.algorithms.dynamosa import DynaMOSAAlgorithm
@@ -11,6 +12,7 @@ from fandango.evolution.algorithms.random import (
 )
 
 __all__ = [
+    DEFAULT_ALGORITHM,
     "GenerationAlgorithm",
     "MIOAlgorithm",
     "DynaMOSAAlgorithm",

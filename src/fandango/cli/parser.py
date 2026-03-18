@@ -5,6 +5,7 @@ import textwrap
 from typing import Optional
 
 import fandango
+from fandango.evolution.algorithms import DEFAULT_ALGORITHM
 
 
 def terminal_link(url: str, text: Optional[str] = None) -> str:
@@ -273,7 +274,7 @@ def _get_algorithm_parser() -> argparse.ArgumentParser:
     algorithm_group.add_argument(
         "--algorithm",
         choices=["genetic", "random-suite", "whole-suite", "dynamosa"],
-        default="genetic",
+        default=DEFAULT_ALGORITHM,
         help=(
             "Search algorithm to use. "
             "'genetic' (default) uses the evolutionary algorithm with selection, crossover, and mutation. "

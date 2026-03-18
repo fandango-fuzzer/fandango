@@ -6,7 +6,7 @@ import time
 from typing import IO, Any, Optional, cast
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
-from fandango.evolution.algorithms import GenerationAlgorithm
+from fandango.evolution.algorithms import GenerationAlgorithm, DEFAULT_ALGORITHM
 from fandango.evolution.chromosomes import Suite, Individual
 from fandango.language.grammar import FuzzingMode, ParsingMode
 from fandango.language.grammar.grammar import Grammar
@@ -268,7 +268,7 @@ class Fandango(FandangoBase):
                 )
                 constraints += cast(list[Constraint | SoftValue], extra_constraints)
 
-        algorithm = settings.pop("algorithm", "genetic")
+        algorithm = settings.pop("algorithm", DEFAULT_ALGORITHM)
         if algorithm == "random-suite":
             from fandango.evolution.algorithms.random import RandomSuiteAlgorithm
 
