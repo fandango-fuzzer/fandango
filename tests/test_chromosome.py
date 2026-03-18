@@ -193,16 +193,13 @@ class TestSuite:
 
 class TestSuiteCrossover:
     def test_crossover_produces_two_non_empty_suites(self, simple_grammar):
-        inds1 = [
-            Individual(simple_grammar.fuzz("<start>", max_nodes=5)) for _ in range(3)
-        ]
-        inds2 = [
-            Individual(simple_grammar.fuzz("<start>", max_nodes=5)) for _ in range(3)
-        ]
-        parent1, parent2 = Suite(inds1), Suite(inds2)
-        result = SuiteCrossover().crossover(simple_grammar, parent1, parent2)
-        assert result is not None
-        child1, child2 = result
-        assert isinstance(child1, Suite) and isinstance(child2, Suite)
-        assert len(child1) > 0 and len(child2) > 0
-        assert len(child1) + len(child2) == len(parent1) + len(parent2)
+        parent1 = Suite([Individual(simple_grammar.fuzz("<start>", max_nodes=5))])
+        parent2 = Suite([Individual(simple_grammar.fuzz("<start>", max_nodes=5))])
+        op = SuiteCrossover()
+        for _ in range(200):
+            result = op.crossover(simple_grammar, parent1, parent2)
+            assert result is not None
+            child1, child2 = result
+            assert isinstance(child1, Suite) and isinstance(child2, Suite)
+            assert len(child1) > 0 and len(child2) > 0
+            assert len(child1) + len(child2) == len(parent1) + len(parent2)
