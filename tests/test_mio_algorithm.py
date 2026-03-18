@@ -210,15 +210,19 @@ class TestMIOAlgorithmWithConstraints:
         assert isinstance(result, Suite)
         assert len(result) > 0
 
-    def test_kpath_not_covered_in_archive_when_constraint_fails(self, simple_grammar):
-        """After generate(), k-path goals must not be covered if constraint always fails."""
+    def test_kpath_covered_in_archive_even_when_constraint_fails(self, simple_grammar):
+        """After generate(), k-path goals ARE covered even if constraint always fails.
+
+        K-path coverage is independent of hard-constraint satisfaction.
+        Filtering happens at output time via valid_solutions, not during archiving.
+        """
         failing = _make_constraint(always_pass=False)
         algo = MIOAlgorithm(simple_grammar, [failing], k=1)
         algo.generate(max_generations=20)
         kpath_covered = {
             g for g in algo._mio_archive.covered_goals if isinstance(g, tuple)
         }
-        assert len(kpath_covered) == 0
+        assert len(kpath_covered) > 0
 
     def test_soft_constraint_goal_covered_in_archive(self, simple_grammar):
         """_SoftConstraintGoal(0) should be covered after generate() with high-fitness soft constraint."""

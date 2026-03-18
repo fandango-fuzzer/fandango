@@ -159,11 +159,11 @@ class MIOAlgorithm(GenerationAlgorithm[Individual]):
             max_generations if max_generations is not None else _DEFAULT_MAX_GENERATIONS
         )
         generation = 0
-        while generation < effective_max and self._mio_archive.uncovered_goals:
+        while generation < effective_max and not self._mio_archive.search_complete:
             self._evolve()
             self._update_parameters(generation, effective_max)
             generation += 1
-        solutions = self._mio_archive.solutions
+        solutions = self._mio_archive.valid_solutions
         if not solutions:
             solutions = [_generate_individual(self.grammar)]
         return Suite(

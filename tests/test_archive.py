@@ -254,10 +254,14 @@ class TestMIOArchiveWithConstraints:
         archive.update(population)
         assert _ConstraintGoal(0) in archive.covered_goals
 
-    def test_failing_hard_constraint_gates_kpath_coverage(
+    def test_failing_hard_constraint_does_not_gate_kpath_coverage(
         self, simple_grammar, start_symbol
     ):
-        """K-path goals must NOT be covered when the hard constraint always fails."""
+        """K-path goals ARE covered even when the hard constraint always fails.
+
+        K-path coverage is now independent of hard-constraint satisfaction.
+        Filtering happens at output time via valid_solutions, not during archiving.
+        """
         failing = _make_constraint(always_pass=False)
         archive = MIOArchive(
             simple_grammar,
@@ -269,7 +273,7 @@ class TestMIOArchiveWithConstraints:
         population = [_generate_individual(simple_grammar) for _ in range(20)]
         archive.update(population)
         kpath_covered = {g for g in archive.covered_goals if isinstance(g, tuple)}
-        assert len(kpath_covered) == 0
+        assert len(kpath_covered) > 0
 
     def test_passing_hard_constraint_allows_kpath_coverage(
         self, simple_grammar, start_symbol

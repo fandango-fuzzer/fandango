@@ -129,8 +129,9 @@ class MIOArchive(Archive):
     """
     Archive for the MIO algorithm.
 
-    Maintains a best individual (highest combined score) per covered goal, and a bounded
-    pool of candidate individuals per uncovered goal for focused mutation.
+    Maintains a best individual (highest combined score) per covered goal.
+    Each goal is treated independently of each other, i.e. a individual might satisfy a k-path goal while not satisfying (all) hard constraints.
+    This adaption was made to achieve diversity during search.
     """
 
     def __init__(
@@ -258,16 +259,13 @@ class MIOArchive(Archive):
             if isinstance(individual, Individual):
                 for i, hard in enumerate(self._hard_constraints):
                     h_goal = _ConstraintGoal(i)
-                    if h_goal in self._goals:
-                        if hard.fitness(individual.tree).fitness() >= 1.0:
-                            changed |= self._try_cover(h_goal, individual)
+                    if (
+                        h_goal in self._goals
+                        and hard.fitness(individual.tree).fitness() >= 1.0
+                    ):
+                        changed |= self._try_cover(h_goal, individual)
 
-            # --- K-path goals (gated by hard constraints) ---
-            if self._hard_constraints and isinstance(individual, Individual):
-                if not self._satisfies_mandatory(individual):
-                    changed |= self._process_soft_goals(individual)
-                    continue
-
+            # --- K-path goals ---
             trees = individual.to_derivation_trees()
             paths = {
                 path
@@ -305,6 +303,39 @@ class MIOArchive(Archive):
     @property
     def num_covered_targets(self) -> int:
         return len(self._covered)
+
+    @property
+    def all_hard_goals_covered(self) -> bool:
+        """True iff every hard-constraint goal has been covered by at least one individual."""
+        return all(
+            _ConstraintGoal(i) in self._covered
+            for i in range(len(self._hard_constraints))
+        )
+
+    @property
+    def search_complete(self) -> bool:
+        """True when the termination criterion is met.
+
+        With hard constraints: done when every hard-constraint goal is covered.
+        Without hard constraints: done when all goals (k-paths, soft) are covered.
+        """
+        if self._hard_constraints:
+            return self.all_hard_goals_covered
+        return not self.uncovered_goals
+
+    @property
+    def valid_solutions(self) -> List[Chromosome]:
+        """Solutions filtered to only those satisfying all hard constraints.
+
+        When no hard constraints are present, returns all solutions.
+        """
+        if not self._hard_constraints:
+            return self.solutions
+        return [
+            ind
+            for ind in self.solutions
+            if isinstance(ind, Individual) and self._satisfies_mandatory(ind)
+        ]
 
     @property
     def solutions(self) -> List[Chromosome]:
