@@ -38,7 +38,7 @@ class Archive(ABC):
     @property
     @abstractmethod
     def solutions(self) -> List[Chromosome]:
-        """Deduplicated list of best (shortest) Individuals, one per covered goal."""
+        """Deduplicated list of best Individuals (highest combined score), one per covered goal."""
 
     @property
     @abstractmethod
@@ -129,7 +129,7 @@ class MIOArchive(Archive):
     """
     Archive for the MIO algorithm.
 
-    Maintains a best (shortest) individual per covered goal, and a bounded
+    Maintains a best individual (highest combined score) per covered goal, and a bounded
     pool of candidate individuals per uncovered goal for focused mutation.
     """
 
@@ -182,44 +182,90 @@ class MIOArchive(Archive):
         score = normalized if soft.optimization_goal == "max" else 1 - normalized
         return score >= 0.5
 
+    def _combined_score(self, individual: Chromosome) -> float:
+        """
+        Compute a combined quality score in [0.0, 1.0] for tiebreaking.
+
+        Equal weight is given to:
+          1. K-path coverage fraction: fraction of grammar k-path goals covered
+             by this individual.
+          2. Average normalised soft score: mean percentile score across all
+             soft constraints (0.0 for non-Individual chromosomes or no soft
+             constraints).
+        """
+        # --- K-path coverage fraction ---
+        kpath_goals: set[KPath] = {g for g in self._goals if isinstance(g, tuple)}
+        if kpath_goals:
+            trees = individual.to_derivation_trees()
+            ind_paths: set[KPath] = {
+                path
+                for tree in trees
+                for path in self._grammar._extract_k_paths_from_tree(tree, k=self._k)
+            }
+            kpath_fraction = len(ind_paths & kpath_goals) / len(kpath_goals)
+        else:
+            kpath_fraction = 0.0
+
+        # --- Average normalised soft score ---
+        if self._soft_constraints and isinstance(individual, Individual):
+            scores = []
+            for soft in self._soft_constraints:
+                raw = soft.fitness(individual.tree).fitness()
+                soft.tdigest.update(raw)
+                normalized = soft.tdigest.score(raw)
+                score = (
+                    normalized if soft.optimization_goal == "max" else 1 - normalized
+                )
+                scores.append(score)
+            avg_soft_score = sum(scores) / len(scores)
+        else:
+            avg_soft_score = 0.0
+
+        return (kpath_fraction + avg_soft_score) / 2.0
+
+    def _try_cover(
+        self,
+        goal: KPath | _ConstraintGoal | _SoftConstraintGoal,
+        individual: Chromosome,
+    ) -> bool:
+        """
+        Cover goal with individual if not yet covered, or replace the incumbent
+        if individual has a higher combined score. Returns True if changed.
+        """
+        if goal not in self._covered:
+            self._covered[goal] = individual
+            self._uncovered_populations.pop(goal, None)
+            return True
+        if self._combined_score(individual) > self._combined_score(self._covered[goal]):
+            self._covered[goal] = individual
+            return True
+        return False
+
+    def _process_soft_goals(self, individual: Individual) -> bool:
+        """Evaluate all soft-constraint goals for individual. Returns True if any changed."""
+        changed = False
+        for i, _ in enumerate(self._soft_constraints):
+            s_goal = _SoftConstraintGoal(i)
+            if s_goal in self._goals and self._soft_covered_by(individual, i):
+                changed |= self._try_cover(s_goal, individual)
+        return changed
+
     def update(self, individuals: Iterable[Chromosome]) -> bool:
         """Update archive with new individuals. Returns True if any change was made."""
         changed = False
         for individual in individuals:
-            # --- Hard constraint goals (mandatory) ---
+            # --- Hard constraint goals ---
             if isinstance(individual, Individual):
-                for i, _ in enumerate(self._hard_constraints):
+                for i, hard in enumerate(self._hard_constraints):
                     h_goal = _ConstraintGoal(i)
                     if h_goal in self._goals:
-                        covered = (
-                            self._hard_constraints[i].fitness(individual.tree).fitness()
-                            >= 1.0
-                        )
-                        if covered:
-                            if h_goal not in self._covered:
-                                self._covered[h_goal] = individual
-                                self._uncovered_populations.pop(h_goal, None)
-                                changed = True
-                            elif individual.size() < self._covered[h_goal].size():
-                                self._covered[h_goal] = individual
-                                changed = True
+                        if hard.fitness(individual.tree).fitness() >= 1.0:
+                            changed |= self._try_cover(h_goal, individual)
 
             # --- K-path goals (gated by hard constraints) ---
             if self._hard_constraints and isinstance(individual, Individual):
                 if not self._satisfies_mandatory(individual):
-                    # Still process soft constraints before skipping k-paths
-                    for i, _ in enumerate(self._soft_constraints):
-                        s_goal = _SoftConstraintGoal(i)
-                        if s_goal in self._goals and self._soft_covered_by(
-                            individual, i
-                        ):
-                            if s_goal not in self._covered:
-                                self._covered[s_goal] = individual
-                                self._uncovered_populations.pop(s_goal, None)
-                                changed = True
-                            elif individual.size() < self._covered[s_goal].size():
-                                self._covered[s_goal] = individual
-                                changed = True
+                    changed |= self._process_soft_goals(individual)
                     continue
 
             trees = individual.to_derivation_trees()
@@ -229,28 +275,11 @@ class MIOArchive(Archive):
                 for path in self._grammar._extract_k_paths_from_tree(tree, k=self._k)
             }
             for path in paths & self._goals:
-                if path in self._covered:
-                    if individual.size() < self._covered[path].size():
-                        self._covered[path] = individual
-                        changed = True
-                else:
-                    # Newly covered -- update best and clear uncovered pool
-                    self._covered[path] = individual
-                    self._uncovered_populations.pop(path, None)
-                    changed = True
+                changed |= self._try_cover(path, individual)
 
-            # --- Soft constraint goals (optional) ---
+            # --- Soft constraint goals ---
             if isinstance(individual, Individual):
-                for i, _ in enumerate(self._soft_constraints):
-                    s_goal = _SoftConstraintGoal(i)
-                    if s_goal in self._goals and self._soft_covered_by(individual, i):
-                        if s_goal not in self._covered:
-                            self._covered[s_goal] = individual
-                            self._uncovered_populations.pop(s_goal, None)
-                            changed = True
-                        elif individual.size() < self._covered[s_goal].size():
-                            self._covered[s_goal] = individual
-                            changed = True
+                changed |= self._process_soft_goals(individual)
 
         return changed
 
@@ -279,7 +308,7 @@ class MIOArchive(Archive):
 
     @property
     def solutions(self) -> List[Chromosome]:
-        """Deduplicated individuals covering at least one goal, shortest wins."""
+        """Deduplicated individuals covering at least one goal, highest combined score wins."""
         return list(dict.fromkeys(self._covered.values()))
 
     @property

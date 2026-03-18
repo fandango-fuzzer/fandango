@@ -41,6 +41,7 @@ class MIOAlgorithm(GenerationAlgorithm[Individual]):
     Parameters transition from exploration (high pr, large n, small m)
     to exploitation (low pr, small n, large m) over the search budget.
 
+    https://www.sciencedirect.com/science/article/pii/S0950584917304822
     https://arxiv.org/pdf/1901.01541
     """
 
