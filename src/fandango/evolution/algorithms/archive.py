@@ -62,6 +62,9 @@ class CoverageArchive(Archive):
 
         Returns True iff at least one change was made (new goal covered or
         a shorter individual replaced the current best for a goal).
+        As each goal is a k-path, taking the shortest individual is okay.
+
+        TODO(lk): Also consider hard and soft constraints
         """
         changed = False
         for individual in individuals:

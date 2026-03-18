@@ -69,6 +69,7 @@ class WholeSuiteAlgorithm(GenerationAlgorithm[Suite]):
         new_individuals: List[Individual] = []
         for ind in suite:
             if random.random() < self._mutation_probability:
+                # TODO(lk): Mutate failing_trees once constraints are added
                 new_individuals.append(_generate_individual(self.grammar))
             else:
                 new_individuals.append(ind.clone())
