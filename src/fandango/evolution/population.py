@@ -23,6 +23,9 @@ class PopulationManager:
                     return False
                 if node.min != node.max:
                     return False
+        for symbol in grammar.rules:
+            if grammar.is_use_generator(DerivationTree(symbol)):
+                return False
         return True
 
     def __init__(
@@ -49,7 +52,7 @@ class PopulationManager:
             )
         elif self._generation_strategy == "kpath":
             LOGGER.info(
-                "Falling back to random generation because the grammar contains repetition constructs that are not yet supported by the k-path constructor."
+                "Falling back to random generation because the grammar uses constructs that are not yet supported by the k-path constructor."
             )
 
     def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
@@ -122,6 +125,7 @@ class PopulationManager:
             found_solution, (_fitness, failing_trees, suggestion) = GeneratorWithReturn(
                 eval_individual(individual)
             ).collect()
+            yield from found_solution
             candidate, _fixes_made = self.fix_individual(
                 individual,
                 suggestion,
@@ -134,7 +138,6 @@ class PopulationManager:
                 if PopulationManager.add_unique_individual(
                     current_population, candidate, unique_hashes
                 ):
-                    yield from found_solution
                     yield from new_found_solution
                 else:
                     attempts += 1
