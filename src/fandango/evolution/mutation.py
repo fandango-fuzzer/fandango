@@ -20,6 +20,7 @@ class MutationOperator(ABC):
                 DerivationTree, None, tuple[float, list[FailingTree], Suggestion]
             ],
         ],
+        max_nodes: int = 50,
     ) -> Generator[DerivationTree, None, DerivationTree]:
         """
         Abstract method to perform mutation on an individual.

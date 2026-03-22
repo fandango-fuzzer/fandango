@@ -12,7 +12,6 @@ from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
 from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.evolution import GeneratorWithReturn
-from fandango.evolution.adaptation import AdaptiveTuner
 from fandango.evolution.crossover import CrossoverOperator, SimpleSubtreeCrossover
 from fandango.evolution.evaluation import Evaluator, IoEvaluator
 from fandango.evolution.mutation import MutationOperator, SimpleMutation
@@ -67,13 +66,12 @@ class Fandango:
         random_seed: Optional[int] = None,
         start_symbol: str = "<start>",
         diversity_k: int = 5,
-        diversity_weight: float = 1.0,
-        max_repetition_rate: float = 0.5,
-        max_repetitions: Optional[int] = None,
+        diversity_tiebreak: bool = True,
         max_nodes: int = 200,
-        max_nodes_rate: float = 0.5,
         profiling: bool = False,
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
+        generation_strategy: str = "kpath",
+        kpath_k: Optional[int] = None,
     ):
         if tournament_size > 1:
             raise FandangoValueError(
@@ -94,11 +92,41 @@ class Fandango:
         self.tournament_size = tournament_size
         self.warnings_are_errors = warnings_are_errors
         self.best_effort = best_effort
-        self.current_max_nodes = max_nodes
+        has_soft_min = any(
+            isinstance(constraint, SoftValue)
+            and constraint.optimization_goal == "min"
+            for constraint in constraints
+        )
+        has_soft_max = any(
+            isinstance(constraint, SoftValue)
+            and constraint.optimization_goal == "max"
+            for constraint in constraints
+        )
+        if has_soft_max and max_nodes < 300:
+            LOGGER.info(
+                "Increasing max_nodes to 300 for soft-constraint maximization."
+            )
+            max_nodes = 300
+        if has_soft_min and grammar.get_max_repetition() < 200:
+            LOGGER.info(
+                "Increasing max repetition cap to 200 for soft-constraint minimization."
+            )
+            grammar.set_max_repetition(200)
+        self._allow_mutation_growth = has_soft_max
+        self.max_nodes = max_nodes
         self.diversity_k = diversity_k
         self.remote_response_timeout = 15.0
         self.past_io_derivations: list[DerivationTree] = []
         self.coverage_goal = coverage_goal
+        if generation_strategy == "kpath" and has_soft_min:
+            LOGGER.info(
+                "Falling back to random generation because minimizing soft constraints is not yet compatible with k-path initialization."
+            )
+            generation_strategy = "random"
+        self.generation_strategy = generation_strategy
+        self.kpath_k = diversity_k if kpath_k is None else kpath_k
+        self.mutation_rate = mutation_rate
+        self.crossover_rate = crossover_rate
 
         # Instantiate managers
         if self.grammar.fuzzing_mode == FuzzingMode.IO:
@@ -106,13 +134,15 @@ class Fandango:
                 grammar,
                 start_symbol,
                 warnings_are_errors,
+                generation_strategy=generation_strategy,
+                kpath_k=self.kpath_k,
             )
             self.evaluator: Evaluator = IoEvaluator(
                 grammar,
                 constraints,
                 expected_fitness,
                 diversity_k,
-                diversity_weight,
+                diversity_tiebreak,
                 warnings_are_errors,
             )
         else:
@@ -120,25 +150,17 @@ class Fandango:
                 grammar,
                 start_symbol,
                 warnings_are_errors,
+                generation_strategy=generation_strategy,
+                kpath_k=self.kpath_k,
             )
             self.evaluator = Evaluator(
                 grammar,
                 constraints,
                 expected_fitness,
                 diversity_k,
-                diversity_weight,
+                diversity_tiebreak,
                 warnings_are_errors,
             )
-        self.adaptive_tuner = AdaptiveTuner(
-            mutation_rate,
-            crossover_rate,
-            grammar.get_max_repetition(),
-            max_nodes,
-            max_repetitions,
-            max_repetition_rate,
-            max_nodes,
-            max_nodes_rate,
-        )
         self.profiler = Profiler(enabled=profiling)
 
         self.crossover_operator = crossover_method
@@ -205,7 +227,7 @@ class Fandango:
             yield from self.population_manager.refill_population(
                 current_population=self.population,
                 eval_individual=self.evaluator.evaluate_individual,
-                max_nodes=self.adaptive_tuner.current_max_nodes,
+                max_nodes=self.max_nodes,
                 target_population_size=self.population_size,
             )
 
@@ -269,7 +291,7 @@ class Fandango:
                 to_add = [
                     tree
                     for tree in crossovers
-                    if tree.size() <= self.adaptive_tuner.current_max_nodes
+                    if tree.size() <= self.max_nodes
                 ]
 
             for i, child in enumerate(to_add):
@@ -303,16 +325,25 @@ class Fandango:
         mutation_pool = self.evaluator.compute_mutation_pool(new_population)
         mutated_population = []
         for individual in mutation_pool:
-            if random.random() < self.adaptive_tuner.mutation_rate:
+            if random.random() < self.mutation_rate:
                 try:
                     with self.profiler.timer("mutation", increment=1):
-                        mutated_individual = yield from self.mutation_method.mutate(
-                            individual,
-                            self.grammar,
-                            self.evaluator.evaluate_individual,
-                        )
-                    mutated_population.append(mutated_individual)
-                    self.mutations_made += 1
+                        if self._allow_mutation_growth:
+                            mutated_individual = yield from self.mutation_method.mutate(
+                                individual,
+                                self.grammar,
+                                self.evaluator.evaluate_individual,
+                                max_nodes=self.max_nodes,
+                            )
+                        else:
+                            mutated_individual = yield from self.mutation_method.mutate(
+                                individual,
+                                self.grammar,
+                                self.evaluator.evaluate_individual,
+                            )
+                    if mutated_individual.size() <= self.max_nodes:
+                        mutated_population.append(mutated_individual)
+                        self.mutations_made += 1
                 except Exception as e:
                     LOGGER.error(f"Error during mutation: {e}")
                     print_exception(e, "Error during mutation")
@@ -385,13 +416,19 @@ class Fandango:
         :param max_generations: The maximum number of generations to generate. If None, the generation will run indefinitely.
         :return: A generator of DerivationTree objects, all of which are valid solutions to the grammar (or satisfy the minimum fitness threshold).
         """
+        if not self.evaluator.has_constraints():
+            generated = 0
+            while max_generations is None or generated < max_generations:
+                yield self.population_manager._generate_population_entry(self.max_nodes)
+                generated += 1
+            return
+
         while self._initial_solutions:
             yield self._initial_solutions.pop(0)
 
         if len(self.population) < self.population_size:
             yield from self.generate_initial_population()
 
-        prev_best_fitness = 0.0
         generation = 0
 
         while True:
@@ -410,7 +447,7 @@ class Fandango:
             for _ in range(self.population_size):
                 if len(new_population) >= self.population_size:
                     break
-                if random.random() < self.adaptive_tuner.crossover_rate:
+                if random.random() < self.crossover_rate:
                     yield from self._perform_crossover(new_population, unique_hashes)
 
             # Truncate if necessary
@@ -429,7 +466,7 @@ class Fandango:
             yield from self.population_manager.refill_population(
                 new_population,
                 self.evaluator.evaluate_individual,
-                self.adaptive_tuner.current_max_nodes,
+                self.max_nodes,
                 self.population_size,
             )
 
@@ -440,9 +477,12 @@ class Fandango:
                     _failing_trees,
                     suggestion,
                 ) = yield from self.evaluator.evaluate_individual(ind)
-                ind, num_fixes = self.population_manager.fix_individual(ind, suggestion)
-                self.population.append(ind)
-                self.fixes_made += num_fixes
+                ind, num_fixes = self.population_manager.fix_individual(
+                    ind, suggestion, max_nodes=self.max_nodes
+                )
+                if ind.size() <= self.max_nodes:
+                    self.population.append(ind)
+                    self.fixes_made += num_fixes
 
             # For soft constraints, the normalized fitness may change over time as we observe more inputs.
             # Hence, we periodically flush the fitness cache to re-evaluate the population if the grammar contains soft constraints.
@@ -453,31 +493,11 @@ class Fandango:
                     self.population
                 )
                 # Keep only the fittest individuals
-                self.evaluation = sorted(
-                    self.evaluation, key=lambda x: x[1], reverse=True
-                )[: self.population_size]
+                self.evaluation = self.evaluator.sort_evaluation(self.evaluation)[
+                    : self.population_size
+                ]
 
-            current_best_fitness = max(e[1] for e in self.evaluation)
-            current_max_repetitions = self.grammar.get_max_repetition()
-            self.adaptive_tuner.update_parameters(
-                generation,
-                prev_best_fitness,
-                current_best_fitness,
-                self.population,
-                self.evaluator,
-                current_max_repetitions,
-            )
-
-            if self.adaptive_tuner.current_max_repetition > current_max_repetitions:
-                self.grammar.set_max_repetition(
-                    self.adaptive_tuner.current_max_repetition
-                )
-
-            prev_best_fitness = current_best_fitness
-
-            self.adaptive_tuner.log_generation_statistics(
-                generation, self.evaluation, self.population, self.evaluator
-            )
+            self._log_generation_statistics(generation)
             visualize_evaluation(generation, max_generations, self.evaluation)
         clear_visualization()
         self._log_statistics()
@@ -564,10 +584,6 @@ class Fandango:
                     self.population.clear()
                     self.population_manager.allow_fallback_packets = False
                     self._initial_solutions.clear()
-                    self.adaptive_tuner.reset_parameters()
-                    self.grammar.set_max_repetition(
-                        self.adaptive_tuner.current_max_repetition
-                    )
                     preferred_symbols: list[str] = []
                     for pkg in self.population_manager.fuzzable_packets:
                         preferred_symbols.append(str(pkg.node.symbol))
@@ -579,7 +595,7 @@ class Fandango:
                                 self.population_manager.refill_population(
                                     current_population=self.population,
                                     eval_individual=self.evaluator.evaluate_individual,
-                                    max_nodes=self.adaptive_tuner.current_max_nodes,
+                                    max_nodes=self.max_nodes,
                                     target_population_size=self.population_size,
                                 )
                             )
@@ -695,7 +711,10 @@ class Fandango:
                         )
                 history_tree.set_all_read_only(True)
             except FandangoFailedError as e:
-                print_exception(e)
+                if "Timed out while waiting for message from remote party" in str(e):
+                    LOGGER.warning(str(e))
+                else:
+                    print_exception(e)
                 self.past_io_derivations.append(history_tree)
                 self._initial_solutions.clear()
                 yield history_tree
@@ -718,6 +737,18 @@ class Fandango:
         LOGGER.debug(f"Crossovers made: {self.crossovers_made}")
         LOGGER.debug(f"Mutations made: {self.mutations_made}")
         self.profiler.log_results()
+
+    def _log_generation_statistics(self, generation: int) -> None:
+        fitnesses = [fitness for _ind, fitness, _failing_trees, _suggestion in self.evaluation]
+        best_fitness = max(fitnesses)
+        avg_fitness = sum(fitnesses) / len(fitnesses)
+        diversities = self.evaluator.compute_diversity_bonus(self.population)
+        avg_diversity = sum(diversities) / len(diversities) if diversities else 0
+        LOGGER.info(
+            f"Generation {generation} stats -- Best fitness: {best_fitness:.2f}, "
+            f"Avg fitness: {avg_fitness:.2f}, Avg diversity: {avg_diversity:.2f}, "
+            f"Population size: {len(self.population)}"
+        )
 
     def _evolve_single(
         self,

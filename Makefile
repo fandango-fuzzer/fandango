@@ -4,13 +4,26 @@
 MAKEFLAGS=--warn-undefined-variables
 
 # Programs
+ifneq ($(wildcard .venv/bin/python),)
+PYTHON = .venv/bin/python
+PYTEST = .venv/bin/pytest
+BLACK = .venv/bin/black
+else
 PYTHON = python
 PYTEST = pytest
 BLACK = black
+endif
 PIP = $(PYTHON) -m pip
 SED = sed
 PAGELABELS = $(PYTHON) -m pagelabels
 ANTLR = antlr
+PYTEST_ENV = PYTHONHASHSEED=0
+PYTEST_ARGS =
+
+ifdef CODEX_SANDBOX
+PYTEST_ENV = PYTHONHASHSEED=0 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+PYTEST_ARGS = -o addopts=''
+endif
 
 # Sources
 SRC = src/fandango
@@ -222,7 +235,7 @@ TEST_MARKER = $(TESTS)/test-marker.txt
 .PHONY: test tests
 # As above, but run tests in parallel
 tests $(TEST_MARKER): $(PYTHON_SOURCES) $(TEST_SOURCES)
-	$(PYTEST)
+	$(PYTEST_ENV) $(PYTEST) $(PYTEST_ARGS)
 
 COVERAGE = coverage.xml
 COVERAGERC = .coveragerc
@@ -232,7 +245,7 @@ COVERAGE_REPORT = htmlcov/index.html
 # Run tests and generate coverage report
 .PHONY: coverage
 coverage $(COVERAGE_REPORT): $(PYTHON_SOURCES) $(TEST_SOURCES)
-	$(PYTEST) --html=$(REPORT) --self-contained-html --cov-report xml:$(COVERAGE) --cov-report term --cov-config=$(COVERAGERC) --cov=fandango
+	$(PYTEST_ENV) $(PYTEST) $(PYTEST_ARGS) --html=$(REPORT) --self-contained-html --cov-report xml:$(COVERAGE) --cov-report term --cov-config=$(COVERAGERC) --cov=fandango
 	@echo 'Coverage report generated in $(COVERAGE_REPORT)'
 
 run-tests: $(TEST_MARKER)

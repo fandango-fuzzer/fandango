@@ -219,27 +219,9 @@ def _get_algorithm_parser() -> argparse.ArgumentParser:
         default=None,
     )
     algorithm_group.add_argument(
-        "--max-repetition-rate",
-        type=float,
-        help="Rate at which the number of maximal repetitions should be increased.",
-        default=None,
-    )
-    algorithm_group.add_argument(
-        "--max-repetitions",
-        type=int,
-        help="Maximal value the number of repetitions can be increased to.",
-        default=None,
-    )
-    algorithm_group.add_argument(
-        "--max-node-rate",
-        type=float,
-        help="Rate at which the maximal number of nodes in a tree is increased.",
-        default=None,
-    )
-    algorithm_group.add_argument(
         "--max-nodes",
         type=int,
-        help="Maximal value, the number of nodes in a tree can be increased to.",
+        help="Maximum number of nodes allowed in a tree.",
         default=None,
     )
     algorithm_group.add_argument(

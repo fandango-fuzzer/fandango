@@ -6,24 +6,55 @@ from fandango.constraints.failing_tree import FailingTree, Suggestion
 from fandango.errors import FandangoValueError
 from fandango.evolution import GeneratorWithReturn
 from fandango.io.navigation.packetforecaster import ForecastingPacket
+from fandango.language.grammar.kpath_generator import KPathSession
 from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar.nodes.repetition import Repetition
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
 
 
 class PopulationManager:
+    @staticmethod
+    def _supports_kpath_generation(grammar: Grammar) -> bool:
+        for node in grammar.nodes():
+            if isinstance(node, Repetition):
+                if node.bounds_constraint is not None:
+                    return False
+                if node.min != node.max:
+                    return False
+        return True
+
     def __init__(
         self,
         grammar: Grammar,
         start_symbol: str,
         warnings_are_errors: bool = False,
+        generation_strategy: str = "kpath",
+        kpath_k: int = 5,
     ):
         self._grammar = grammar
         self._start_symbol = start_symbol
         self._warnings_are_errors = warnings_are_errors
+        self._generation_strategy = generation_strategy
+        self._kpath_session: Optional[KPathSession] = None
+        if (
+            self._generation_strategy == "kpath"
+            and self._supports_kpath_generation(grammar)
+        ):
+            self._kpath_session = KPathSession(
+                grammar,
+                start_symbol,
+                k=max(1, kpath_k),
+            )
+        elif self._generation_strategy == "kpath":
+            LOGGER.info(
+                "Falling back to random generation because the grammar contains repetition constructs that are not yet supported by the k-path constructor."
+            )
 
     def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
+        if self._kpath_session is not None:
+            return self._kpath_session.next_tree(max_nodes)
         return self._grammar.fuzz(self._start_symbol, max_nodes)
 
     @staticmethod
@@ -94,6 +125,7 @@ class PopulationManager:
             candidate, _fixes_made = self.fix_individual(
                 individual,
                 suggestion,
+                max_nodes=max_nodes,
             )
             new_found_solution, (_new_fitness, _new_failing_trees, suggestion) = (
                 GeneratorWithReturn(eval_individual(candidate)).collect()
@@ -116,15 +148,19 @@ class PopulationManager:
         self,
         individual: DerivationTree,
         suggestion: Optional[Suggestion] = None,
+        max_nodes: Optional[int] = None,
     ) -> tuple[DerivationTree, int]:
         fixes_made = 0
         if suggestion:
+            original = individual
             suggested_replacements = suggestion.get_replacements(
                 individual, self._grammar
             )
             individual = individual.replace_multiple(
                 self._grammar, suggested_replacements
             )
+            if max_nodes is not None and individual.size() > max_nodes:
+                return original, 0
             fixes_made += len(suggested_replacements)
 
         return individual, fixes_made
@@ -136,8 +172,16 @@ class IoPopulationManager(PopulationManager):
         grammar: Grammar,
         start_symbol: str,
         warnings_are_errors: bool = False,
+        generation_strategy: str = "kpath",
+        kpath_k: int = 5,
     ):
-        super().__init__(grammar, start_symbol, warnings_are_errors)
+        super().__init__(
+            grammar,
+            start_symbol,
+            warnings_are_errors,
+            generation_strategy=generation_strategy,
+            kpath_k=kpath_k,
+        )
         self._prev_packet_idx = 0
         self.fuzzable_packets: list[ForecastingPacket] = []
         self.fallback_packets: list[ForecastingPacket] = []
