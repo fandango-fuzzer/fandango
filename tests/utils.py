@@ -10,8 +10,12 @@ RESOURCES_ROOT = TEST_ROOT / "resources"
 PROJECT_ROOT = TEST_ROOT.parent
 DOCS_ROOT = PROJECT_ROOT / "docs"
 EVALUATION_ROOT = PROJECT_ROOT / "evaluation"
-VENV_BIN = PROJECT_ROOT / ".venv" / ("Scripts" if sys.platform.startswith("win") else "bin")
-FANDANGO_CLI = VENV_BIN / ("fandango.exe" if sys.platform.startswith("win") else "fandango")
+VENV_BIN = (
+    PROJECT_ROOT / ".venv" / ("Scripts" if sys.platform.startswith("win") else "bin")
+)
+FANDANGO_CLI = VENV_BIN / (
+    "fandango.exe" if sys.platform.startswith("win") else "fandango"
+)
 
 IS_BEARTYPE_ACTIVE = os.environ.get("FANDANGO_RUN_BEARTYPE", False)
 

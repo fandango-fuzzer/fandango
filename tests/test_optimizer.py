@@ -205,7 +205,9 @@ class GeneticTest(unittest.TestCase):
         )
         _solutions = list(generator)
         evaluation = generator.return_value
-        self.assertTrue(all(fitness <= 1.0 for _ind, fitness, _trees, _sug in evaluation))
+        self.assertTrue(
+            all(fitness <= 1.0 for _ind, fitness, _trees, _sug in evaluation)
+        )
 
     def test_select_elites(self):
         # Select the elites
@@ -229,7 +231,9 @@ class GeneticTest(unittest.TestCase):
         assert valid is not None
         assert invalid is not None
 
-        evaluation = [
+        evaluation: list[
+            tuple[DerivationTree, float, list[FailingTree], Suggestion]
+        ] = [
             (valid, 1.0, [], NopSuggestion()),
             (invalid, 0.9, [], NopSuggestion()),
         ]

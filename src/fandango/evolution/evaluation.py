@@ -305,7 +305,9 @@ class Evaluator:
     ) -> list[DerivationTree]:
         return [
             x[0]
-            for x in self.sort_evaluation(evaluation)[: int(elitism_rate * population_size)]
+            for x in self.sort_evaluation(evaluation)[
+                : int(elitism_rate * population_size)
+            ]
         ]
 
     def tournament_selection(

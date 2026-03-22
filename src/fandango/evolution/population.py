@@ -41,9 +41,8 @@ class PopulationManager:
         self._warnings_are_errors = warnings_are_errors
         self._generation_strategy = generation_strategy
         self._kpath_session: Optional[KPathSession] = None
-        if (
-            self._generation_strategy == "kpath"
-            and self._supports_kpath_generation(grammar)
+        if self._generation_strategy == "kpath" and self._supports_kpath_generation(
+            grammar
         ):
             self._kpath_session = KPathSession(
                 grammar,

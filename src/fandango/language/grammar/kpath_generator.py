@@ -57,15 +57,15 @@ class KPathSession:
         if isinstance(node, NonTerminalNode):
             return [node.symbol]
         if isinstance(node, Alternative):
-            symbols: list[Symbol] = []
+            alternative_symbols: list[Symbol] = []
             for child in node.alternatives:
-                symbols.extend(self._immediate_symbols(child))
-            return symbols
+                alternative_symbols.extend(self._immediate_symbols(child))
+            return alternative_symbols
         if isinstance(node, Concatenation):
-            symbols: list[Symbol] = []
+            concatenated_symbols: list[Symbol] = []
             for child in node.nodes:
-                symbols.extend(self._immediate_symbols(child))
-            return symbols
+                concatenated_symbols.extend(self._immediate_symbols(child))
+            return concatenated_symbols
         if isinstance(node, Repetition):
             if node.max <= 0:
                 return []
@@ -76,7 +76,11 @@ class KPathSession:
         return symbol in self._immediate_symbols(node)
 
     def _minimal_charset_terminal(self, node: CharSet) -> TerminalNode:
-        return next(iter(node.descendents(self.grammar, False)))
+        return next(
+            desc
+            for desc in node.descendents(self.grammar, False)
+            if isinstance(desc, TerminalNode)
+        )
 
     def _expand_minimal(
         self, parent: DerivationTree, node: Node, max_nodes: int
@@ -172,7 +176,10 @@ class KPathSession:
         if isinstance(node, CharSet):
             chosen = self._minimal_charset_terminal(node)
             for candidate in node.descendents(self.grammar, False):
-                if candidate.to_symbol() == target_symbol:
+                if (
+                    isinstance(candidate, TerminalNode)
+                    and candidate.to_symbol() == target_symbol
+                ):
                     chosen = candidate
                     break
             parent.add_child(DerivationTree(chosen.symbol))
@@ -279,7 +286,7 @@ class KPathSession:
                 predecessor[child_symbol] = current
                 if child_symbol == symbol:
                     path = [symbol]
-                    prev = current
+                    prev: Symbol | None = current
                     while prev is not None:
                         path.append(prev)
                         prev = predecessor[prev]

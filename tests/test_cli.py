@@ -170,14 +170,16 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(0, code, code)
 
     def test_infinite_mode(self):
-        command = resolve_command([
-            "fandango",
-            "fuzz",
-            "-f",
-            str(RESOURCES_ROOT / "digit.fan"),
-            "--infinite",
-            "--no-cache",
-        ])
+        command = resolve_command(
+            [
+                "fandango",
+                "fuzz",
+                "-f",
+                str(RESOURCES_ROOT / "digit.fan"),
+                "--infinite",
+                "--no-cache",
+            ]
+        )
         proc = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,

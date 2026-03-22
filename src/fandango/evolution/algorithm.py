@@ -93,19 +93,15 @@ class Fandango:
         self.warnings_are_errors = warnings_are_errors
         self.best_effort = best_effort
         has_soft_min = any(
-            isinstance(constraint, SoftValue)
-            and constraint.optimization_goal == "min"
+            isinstance(constraint, SoftValue) and constraint.optimization_goal == "min"
             for constraint in constraints
         )
         has_soft_max = any(
-            isinstance(constraint, SoftValue)
-            and constraint.optimization_goal == "max"
+            isinstance(constraint, SoftValue) and constraint.optimization_goal == "max"
             for constraint in constraints
         )
         if has_soft_max and max_nodes < 300:
-            LOGGER.info(
-                "Increasing max_nodes to 300 for soft-constraint maximization."
-            )
+            LOGGER.info("Increasing max_nodes to 300 for soft-constraint maximization.")
             max_nodes = 300
         if has_soft_min and grammar.get_max_repetition() < 200:
             LOGGER.info(
@@ -288,11 +284,7 @@ class Fandango:
                 if crossovers is None:
                     return None
 
-                to_add = [
-                    tree
-                    for tree in crossovers
-                    if tree.size() <= self.max_nodes
-                ]
+                to_add = [tree for tree in crossovers if tree.size() <= self.max_nodes]
 
             for i, child in enumerate(to_add):
                 if i == 0:
@@ -739,7 +731,9 @@ class Fandango:
         self.profiler.log_results()
 
     def _log_generation_statistics(self, generation: int) -> None:
-        fitnesses = [fitness for _ind, fitness, _failing_trees, _suggestion in self.evaluation]
+        fitnesses = [
+            fitness for _ind, fitness, _failing_trees, _suggestion in self.evaluation
+        ]
         best_fitness = max(fitnesses)
         avg_fitness = sum(fitnesses) / len(fitnesses)
         diversities = self.evaluator.compute_diversity_bonus(self.population)

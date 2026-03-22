@@ -58,7 +58,7 @@ def evaluate_tar(
 
     if valid:
         set_mean_length = sum(len(str(x)) for x in valid) / len(valid)
-        set_medium_length = sorted(len(str(x)) for x in valid)[len(valid) // 2]
+        set_medium_length = float(sorted(len(str(x)) for x in valid)[len(valid) // 2])
     else:
         set_mean_length = 0.0
         set_medium_length = 0.0

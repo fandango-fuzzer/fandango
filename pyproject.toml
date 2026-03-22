@@ -106,6 +106,7 @@ check_untyped_defs = true
 enable_error_code = ['ignore-without-code']
 # See https://mypy.readthedocs.io/en/stable/config_file.html#confval-exclude
 exclude = [
+    'build/.*',
     'evaluation/protocol_testing_eval/profuzzbench/*',
     'src/fandango/language/parser/FandangoLexer\.py$',
     'src/fandango/language/parser/FandangoParser\.py$',

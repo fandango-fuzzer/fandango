@@ -58,7 +58,8 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         self._global_variables = global_variables or {}
         self._parser = Parser(self.rules)
         self._k_path_cache: dict[
-            tuple[NonTerminal, bool, CoverageGoal], list[set[tuple[Symbol, ...]]]
+            tuple[NonTerminal, bool, CoverageGoal, frozenset[str]],
+            list[set[tuple[Symbol, ...]]],
         ] = dict()
         self._tree_k_path_cache: dict[int, set[tuple[Symbol, ...]]] = dict()
 
@@ -824,8 +825,8 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             )
         )
         if hash_key in self._tree_k_path_cache:
-            k_paths = self._tree_k_path_cache[hash_key]
-            return k_paths
+            cached_k_paths = self._tree_k_path_cache[hash_key]
+            return cached_k_paths
 
         start_nodes: list[tuple[Optional[NonTerminal], DerivationTree]] = []
 
