@@ -2,7 +2,7 @@ import os
 import subprocess
 import tempfile
 import json
-from typing import Any, Optional, Union, cast
+from typing import Optional, Union
 from cachetools import LRUCache
 
 from fandango.execution.trace_types import (
@@ -152,12 +152,12 @@ class DynamicAnalysis:
         self.root_dir = root_dir
         self.put = put
         self.put_args = put_args if put_args is not None else []
-        self.cache = LRUCache(maxsize=1000)  # type: ignore[no-untyped-call] # LRUCache is not typed
+        self.cache: LRUCache[str, Trace] = LRUCache(maxsize=1000)
 
     # TODO: Implement this similarly to the Fandango "run with cmd" feature.
     def trace_input(self, inp: str) -> Trace:
         if inp in self.cache:
-            return cast(Trace, self.cache[inp])
+            return self.cache[inp]
         env = os.environ.copy()
         with tempfile.NamedTemporaryFile(
             mode="w", prefix="fandango-", suffix=".txt"
@@ -172,7 +172,7 @@ class DynamicAnalysis:
                 env["EXECUTION_TRACE_JSON"] = execution_trace_json
                 LOGGER.info(f"Running input: (len: {len(inp)})")
                 LOGGER.info(inp)
-                result = subprocess.run(
+                subprocess.run(
                     [self.put] + self.put_args + [inp_fd.name],
                     cwd=self.root_dir,
                     env=env,

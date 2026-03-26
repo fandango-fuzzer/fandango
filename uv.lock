@@ -747,6 +747,7 @@ book = [
     { name = "speedy-antlr-tool" },
     { name = "sphinxcontrib-mermaid" },
     { name = "tccbox" },
+    { name = "types-cachetools" },
     { name = "types-setuptools" },
 ]
 development = [
@@ -770,6 +771,7 @@ development = [
     { name = "scikit-build-core" },
     { name = "speedy-antlr-tool" },
     { name = "tccbox" },
+    { name = "types-cachetools" },
     { name = "types-setuptools" },
 ]
 full = [
@@ -799,6 +801,7 @@ full = [
     { name = "speedy-antlr-tool" },
     { name = "sphinxcontrib-mermaid" },
     { name = "tccbox" },
+    { name = "types-cachetools" },
     { name = "types-setuptools" },
 ]
 test = [
@@ -866,6 +869,7 @@ requires-dist = [
     { name = "tccbox", marker = "extra == 'test'", specifier = ">=2025.6.6" },
     { name = "tdigest", specifier = ">=0.5.2.2" },
     { name = "thefuzz", specifier = ">=0.22" },
+    { name = "types-cachetools", marker = "extra == 'development'", specifier = ">=5.5.2" },
     { name = "types-setuptools", marker = "extra == 'development'", specifier = ">=73.0.1" },
     { name = "xdg-base-dirs", specifier = ">=6.0.2" },
 ]
@@ -3199,6 +3203,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/1b/22/40f55b26baeab80c2d7b3f1db0682f8954e4617fee7d90ce634022ef05c6/traitlets-5.15.0.tar.gz", hash = "sha256:4fead733f81cf1c4c938e06f8ca4633896833c9d89eff878159457f4d4392971", size = 163197, upload-time = "2026-05-06T08:05:58.016Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/da/98/a9937a969d018a23badfea0b381f66783649d48e0ea6c41923265c3cbeb3/traitlets-5.15.0-py3-none-any.whl", hash = "sha256:fb36a18867a6803deab09f3c5e0fa81bb7b26a5c9e82501c9933f759166eff40", size = 85877, upload-time = "2026-05-06T08:05:55.853Z" },
+]
+
+[[package]]
+name = "types-cachetools"
+version = "7.0.0.20260503"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ec/57/5d3b8b3e66b002911ec1274e87f904eeee1d843c8713d95476c25c29cf31/types_cachetools-7.0.0.20260503.tar.gz", hash = "sha256:dfa4dcdf453f397dfc6d69fc0a57423ac1f248393f70aa56b5d05fac2df7a96c", size = 10033, upload-time = "2026-05-03T05:19:54.128Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3d/a8/84562723d9a3572e0851d82bdea6bed5a7dc033c6bd648f492c76b8c4ac8/types_cachetools-7.0.0.20260503-py3-none-any.whl", hash = "sha256:011b4fe0e85ef05c4a2471a4fda40254a78746b501cc1727359233872bb3a4e9", size = 9493, upload-time = "2026-05-03T05:19:53.124Z" },
 ]
 
 [[package]]
