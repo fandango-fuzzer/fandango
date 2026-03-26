@@ -57,6 +57,10 @@ class Evaluator:
                 raise ValueError(f"Invalid constraint type: {type(constraint)}")
 
     @property
+    def stop_criterion_met(self) -> bool:
+        return self._stop_criterion_met
+
+    @property
     def expected_fitness(self) -> float:
         return self._expected_fitness
 

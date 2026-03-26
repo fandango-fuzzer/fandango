@@ -412,7 +412,7 @@ class Fandango:
             if max_generations is not None and generation >= max_generations:
                 break
 
-            if self._is_time_limit_reached() or self.evaluator._stop_criterion_met:
+            if self._is_time_limit_reached() or self.evaluator.stop_criterion_met:
                 break
 
             generation += 1
