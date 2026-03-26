@@ -74,7 +74,7 @@ class Fandango:
         profiling: bool = False,
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
         stop_criterion: Optional[Callable[[DerivationTree], bool]] = None,
-        stop_after_seconds: int = -1,
+        stop_after_seconds: Optional[int] = None,
     ):
         if tournament_size > 1:
             raise FandangoValueError(
@@ -336,7 +336,7 @@ class Fandango:
         return new_population[: int(self.population_size * (1 - self.destruction_rate))]
 
     def _is_time_limit_reached(self) -> bool:
-        if self.stop_after_seconds != -1:
+        if self.stop_after_seconds is not None:
             elapsed_time = time.time() - self.experiment_start_time
             if elapsed_time >= self.stop_after_seconds:
                 LOGGER.info(
@@ -407,6 +407,11 @@ class Fandango:
 
         prev_best_fitness = 0.0
         generation = 0
+        if self.stop_after_seconds is not None:
+            self.experiment_start_time = time.time()
+            LOGGER.info(
+                f"Resetting experiment starting time to {self.experiment_start_time}"
+            )
 
         while True:
             if max_generations is not None and generation >= max_generations:
