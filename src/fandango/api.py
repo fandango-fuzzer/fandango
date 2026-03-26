@@ -410,7 +410,7 @@ class Fandango(FandangoBase):
                 desired_solutions,
                 max_generations,
                 infinite,
-                settings["use_fcc"] if "use_fcc" in settings else False,
+                settings.get("use_fcc", False)
             )
         )
 
