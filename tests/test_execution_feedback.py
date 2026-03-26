@@ -13,23 +13,30 @@ from fandango.execution.dynamic_analysis import DynamicAnalysis
 FCC_PATH = Path(__file__).parent.parent / "fcc" / "llvm" / "build" / "compiler" / "fcc"
 
 
-def get_llvm_path():
-    if which("llvm-config"):
-        return os.environ["PATH"]
-    else:
-        for version in ["20", "19", "18"]:
-            for prefix in ["/opt/homebrew/opt/llvm@", "/usr/local/opt/llvm@"]:
-                path = prefix + version + "/bin:" + os.environ["PATH"]
-                if which("llvm-config", path=path):
-                    return path
-    raise ValueError("llvm-config not found")
+def get_llvm_and_fcc_path():
+    path = os.environ["PATH"]
+    if not which("llvm-config", path=path):
+        for version, prefix in [
+            (version, prefix)
+            for version in ["20", "19", "18"]
+            for prefix in ["/opt/homebrew/opt/llvm@", "/usr/local/opt/llvm@"]
+        ]:
+            current_try = prefix + version + "/bin:" + path
+            if which("llvm-config", path=current_try):
+                path = current_try
+                break
+    assert which("llvm-config", path=path), "llvm-config not found"
+    if not which("fcc", path=path):
+        path += ":" + str(FCC_PATH.parent)
+    assert which("fcc", path=path), "fcc not found"
+    return path
 
 
 @pytest.mark.skipif(sys.platform.startswith("win"), reason="Skipping on Windows")
 class TestExecutionFeedback(unittest.TestCase):
     def run_command(self, command, directory=None):
         env = os.environ.copy()
-        env["PATH"] = get_llvm_path()
+        env["PATH"] = get_llvm_and_fcc_path()
         proc = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
