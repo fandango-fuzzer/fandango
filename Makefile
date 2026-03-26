@@ -45,7 +45,7 @@ TEST_TOOLS = llvm@20 # clang is installed by default on Mac
 SYSTEM_DEV_INSTALL = brew install
 else ifeq ($(UNAME), Linux)
 # Linux
-SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz uv
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz
 TEST_TOOLS = clang llvm
 SYSTEM_DEV_INSTALL = apt-get install
 ANTLR = antlr4
