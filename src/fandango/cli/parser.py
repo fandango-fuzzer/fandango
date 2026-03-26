@@ -469,7 +469,7 @@ def _populate_fuzz_parser(parser: argparse.ArgumentParser) -> None:
         type=int,
         dest="stop_after_seconds",
         default=None,
-        help="Stop after a given number of seconds. Example: `--stop-after-seconds 60`",
+        help="Stop after a given number of seconds, evaluated at each generation beginning. Example: `--stop-after-seconds 60`",
     )
 
     command_group = parser.add_argument_group("command invocation settings")
