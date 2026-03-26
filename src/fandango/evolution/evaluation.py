@@ -30,7 +30,7 @@ class Evaluator:
         diversity_k: int,
         diversity_weight: float,
         warnings_are_errors: bool = False,
-        stop_criterion: Optional[Callable[..., bool]] = None,
+        stop_criterion: Optional[Callable[[DerivationTree], bool]] = None,
     ):
         self._grammar = grammar
         self._soft_constraints: list[SoftValue] = []
@@ -258,9 +258,7 @@ class Evaluator:
         self._fitness_cache[key] = (fitness, failing_trees, suggestion)
         return fitness, failing_trees, suggestion
 
-    def evaluate_population(
-        self, population: list[DerivationTree]
-    ) -> Generator[
+    def evaluate_population(self, population: list[DerivationTree]) -> Generator[
         DerivationTree,
         None,
         list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
@@ -442,9 +440,7 @@ class IoEvaluator(Evaluator):
         self._fitness_cache[key] = (fitness, failing_trees, suggestion)
         return fitness, failing_trees, suggestion
 
-    def evaluate_population(
-        self, population: list[DerivationTree]
-    ) -> Generator[
+    def evaluate_population(self, population: list[DerivationTree]) -> Generator[
         DerivationTree,
         None,
         list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
