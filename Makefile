@@ -70,6 +70,7 @@ test-tools:
 ifneq ($(TEST_TOOLS),)
 	$(SYSTEM_DEV_INSTALL) $(TEST_TOOLS)
 endif
+	$(MAKE) fcc
 
 ## Parser
 
@@ -249,7 +250,11 @@ evaluation $(EVALUATION_MARKER): $(PYTHON_SOURCES) $(EVALUATION_SOURCES)
 LLVM_MIN_VERSION := 18
 LLVM_MAX_VERSION := 20
 
+.PHONY: fcc
 fcc:
+ifneq (,$(findstring NT,$(UNAME)))
+	@echo "Skipping fcc install on Windows"
+else
 	@PATH="/opt/homebrew/opt/llvm@20/bin:/opt/homebrew/opt/llvm@19/bin:/opt/homebrew/opt/llvm@18/bin:/usr/local/opt/llvm@20/bin:/usr/local/opt/llvm@19/bin:/usr/local/opt/llvm@18/bin:$$PATH"; \
 	LLVM_CONFIG="$$(command -v llvm-config || true)"; \
 	LLVM_VERSION="$$($$LLVM_CONFIG --version 2>/dev/null)"; \
@@ -268,6 +273,7 @@ fcc:
 	rm -fr fcc; \
 	git clone https://github.com/fandango-fuzzer/fcc.git; \
 	LLVM_CONFIG_PATH="$$LLVM_CONFIG" make -C fcc install-local
+endif
 
 ## All
 .PHONY: run-all
