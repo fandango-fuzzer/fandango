@@ -41,7 +41,7 @@ endif
 ifeq ($(UNAME), Darwin)
 # Mac
 SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli uv
-TEST_TOOLS = # clang is installed by default on Mac
+TEST_TOOLS = llvm@20 # clang is installed by default on Mac
 SYSTEM_DEV_INSTALL = brew install
 else ifeq ($(UNAME), Linux)
 # Linux
@@ -247,23 +247,27 @@ evaluation $(EVALUATION_MARKER): $(PYTHON_SOURCES) $(EVALUATION_SOURCES)
 	$(PYTHON) -m evaluation.run_evaluation 1
 
 LLVM_MIN_VERSION := 18
-LLVM_VERSION := $(shell llvm-config --version 2>/dev/null)
-LLVM_MAJOR := $(firstword $(subst ., ,$(LLVM_VERSION)))
+LLVM_MAX_VERSION := 20
 
 fcc:
-	@echo "Required LLVM version: at least $(LLVM_MIN_VERSION)"
-	@echo "Detected LLVM version: $(LLVM_VERSION)"
-	@if [ -z "$(LLVM_VERSION)" ]; then \
-		echo "Error: llvm-config not found"; \
+	@PATH="/opt/homebrew/opt/llvm@20/bin:/opt/homebrew/opt/llvm@19/bin:/opt/homebrew/opt/llvm@18/bin:/usr/local/opt/llvm@20/bin:/usr/local/opt/llvm@19/bin:/usr/local/opt/llvm@18/bin:$$PATH"; \
+	LLVM_CONFIG="$$(command -v llvm-config || true)"; \
+	LLVM_VERSION="$$($$LLVM_CONFIG --version 2>/dev/null)"; \
+	LLVM_MAJOR="$${LLVM_VERSION%%.*}"; \
+	echo "Required LLVM version: $(LLVM_MIN_VERSION)-$(LLVM_MAX_VERSION)"; \
+	echo "Using llvm-config: $$LLVM_CONFIG"; \
+	echo "Detected LLVM version: $$LLVM_VERSION"; \
+	if [ -z "$$LLVM_VERSION" ]; then \
+		echo "Error: llvm-config not found (or not executable)"; \
 		exit 1; \
-	fi
-	@if [ $(LLVM_MAJOR) -lt $(LLVM_MIN_VERSION) ]; then \
-		echo "Error: LLVM version too old! Required at least $(LLVM_MIN_VERSION), found $(LLVM_VERSION)"; \
+	fi; \
+	if [ "$$LLVM_MAJOR" -lt "$(LLVM_MIN_VERSION)" ] || [ "$$LLVM_MAJOR" -gt "$(LLVM_MAX_VERSION)" ]; then \
+		echo "Error: unsupported LLVM version $$LLVM_VERSION (need $(LLVM_MIN_VERSION)-$(LLVM_MAX_VERSION))"; \
 		exit 1; \
-	fi
-	rm -fr fcc
-	git clone https://github.com/fandango-fuzzer/fcc.git
-	make -C fcc install
+	fi; \
+	rm -fr fcc; \
+	git clone https://github.com/fandango-fuzzer/fcc.git; \
+	LLVM_CONFIG_PATH="$$LLVM_CONFIG" make -C fcc install-local
 
 ## All
 .PHONY: run-all

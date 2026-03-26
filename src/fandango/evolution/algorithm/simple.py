@@ -125,6 +125,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
                 diversity_weight,
                 warnings_are_errors,
                 stop_criterion,
+                use_fcc,
                 put,
                 put_args,
             )

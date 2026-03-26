@@ -1,5 +1,6 @@
 #!/usr/bin/env pytest
 
+from shutil import which
 import unittest
 import subprocess
 import os
@@ -9,12 +10,32 @@ import pytest
 from pathlib import Path
 from fandango.execution.dynamic_analysis import DynamicAnalysis
 
+FCC_PATH = Path(__file__).parent.parent / "fcc" / "llvm" / "build" / "compiler" / "fcc"
+
+
+def get_llvm_path():
+    if which("llvm-config"):
+        return os.environ["PATH"]
+    else:
+        for version in ["20", "19", "18"]:
+            for prefix in ["/opt/homebrew/opt/llvm@", "/usr/local/opt/llvm@"]:
+                path = prefix + version + "/bin:" + os.environ["PATH"]
+                if which("llvm-config", path=path):
+                    return path
+    raise ValueError("llvm-config not found")
+
 
 @pytest.mark.skipif(sys.platform.startswith("win"), reason="Skipping on Windows")
 class TestExecutionFeedback(unittest.TestCase):
     def run_command(self, command, directory=None):
+        env = os.environ.copy()
+        env["PATH"] = get_llvm_path()
         proc = subprocess.Popen(
-            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=directory
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=directory,
+            env=env,
         )
         out, err = proc.communicate()
         return out.decode(), err.decode(), proc.returncode
@@ -31,14 +52,17 @@ class TestReachability1(TestExecutionFeedback):
     def test_fcc_installed(self):
         # Check that fcc is installed
         try:
-            subprocess.check_output(["fcc", "--version"])
+            subprocess.check_output([FCC_PATH, "--version"])
         except FileNotFoundError as e:
             self.fail(f"Command not found: {e}")
+
+    def test_llvm_config_available(self):
+        self.run_command(["llvm-config", "--version"])
 
     def test_compilation(self):
         # Assert that `f` was compiled with fcc
         self.run_command(["make", "clean"], self.put_dir)
-        self.run_command(["make"], self.put_dir)
+        self.run_command(["make", "CC=" + str(FCC_PATH)], self.put_dir)
         self.assertTrue(os.path.exists(os.path.join(self.put_dir, "build/f")))
         # Assert that fan can extract static analysis information
         self.run_command(["fan", os.path.join(self.put_dir, "build/f")])
