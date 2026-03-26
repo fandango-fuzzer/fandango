@@ -460,9 +460,9 @@ def _populate_fuzz_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--stop-criterion",
         type=str,
+        default=None,
         dest="stop_criterion",
-        default="lambda t: False",
-        help='stop criterion to be used. This is a lambda function which is run on every new solution. Example: `lambda t: t.to_string().startswith("abc")`',
+        help='stop criterion to be used. This is a lambda function which is run on every new solution. Example: `lambda t: t.to_string().startswith("abc")`. Is `eval()`ed, so be careful!',
     )
     parser.add_argument(
         "--stop-after-seconds",
