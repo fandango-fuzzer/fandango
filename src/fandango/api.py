@@ -410,7 +410,7 @@ class Fandango(FandangoBase):
                 desired_solutions,
                 max_generations,
                 infinite,
-                settings.get("use_fcc", False)
+                settings.get("use_fcc", False),
             )
         )
 
