@@ -1,6 +1,6 @@
 from collections.abc import Callable, Collection
 import math
-from typing import Any, MutableMapping, Optional, cast
+from typing import Any, Optional
 from cachetools import LRUCache
 
 from tdigest.tdigest import TDigest as BaseTDigest
@@ -79,7 +79,7 @@ class Value(GeneticBase):
             global_variables=global_variables,
         )
         self.expression = expression
-        self.cache = cast(MutableMapping[int, ValueFitness], LRUCache(maxsize=1000))  # type: ignore[no-untyped-call] # LRUCache is not typed
+        self.cache = LRUCache[int, ValueFitness](maxsize=1000)
 
     def fitness(
         self,

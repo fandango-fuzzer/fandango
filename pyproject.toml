@@ -76,6 +76,7 @@ development = [
     "scikit-build-core>=0.11.6",
     "speedy-antlr-tool>=1.4.3",
     "types-setuptools>=73.0.1",  # enable mypy to check setup.py
+    "types-cachetools>=5.5.2",   # enable mypy to check cachetools
 ]
 
 book = [

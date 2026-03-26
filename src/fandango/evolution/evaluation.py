@@ -32,6 +32,7 @@ class Evaluator:
         diversity_weight: float,
         warnings_are_errors: bool = False,
         stop_criterion: Optional[Callable[[DerivationTree], bool]] = None,
+        use_fcc: bool = False,
         put: Optional[str] = None,
         put_args: Optional[list[str]] = None,
     ):
@@ -48,7 +49,7 @@ class Evaluator:
         self._checks_made = 0
         self._stop_criterion = stop_criterion
         self._stop_criterion_met = False
-        self.fcc = FCC(put, put_args) if put is not None else None
+        self.fcc = FCC(put, put_args) if use_fcc else None
 
         for constraint in constraints:
             if "DynamicAnalysis" in constraint.format_as_spec():
@@ -271,9 +272,7 @@ class Evaluator:
         self._fitness_cache[key] = (fitness, failing_trees, suggestion)
         return fitness, failing_trees, suggestion
 
-    def evaluate_population(
-        self, population: list[DerivationTree]
-    ) -> Generator[
+    def evaluate_population(self, population: list[DerivationTree]) -> Generator[
         DerivationTree,
         None,
         list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
@@ -455,9 +454,7 @@ class IoEvaluator(Evaluator):
         self._fitness_cache[key] = (fitness, failing_trees, suggestion)
         return fitness, failing_trees, suggestion
 
-    def evaluate_population(
-        self, population: list[DerivationTree]
-    ) -> Generator[
+    def evaluate_population(self, population: list[DerivationTree]) -> Generator[
         DerivationTree,
         None,
         list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
