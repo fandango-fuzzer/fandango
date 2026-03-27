@@ -251,6 +251,10 @@ evaluation $(EVALUATION_MARKER): $(PYTHON_SOURCES) $(EVALUATION_SOURCES)
 
 LLVM_MIN_VERSION := 18
 LLVM_MAX_VERSION := 20
+# This is an ugly ugly hack to access the correct llvm version.
+# If you need to adjust this, you probably also need to touch tests/test_execution_feedback.py.
+# If you read this and know how to: please make this nicer!
+# The trouble is that macOS has an incompatible default llvm version installed.
 LLVM_CONFIG_SEARCH_PATH := /opt/homebrew/opt/llvm@20/bin:/opt/homebrew/opt/llvm@19/bin:/opt/homebrew/opt/llvm@18/bin:/usr/local/opt/llvm@20/bin:/usr/local/opt/llvm@19/bin:/usr/local/opt/llvm@18/bin
 LLVM_CONFIG := $(shell PATH="$(LLVM_CONFIG_SEARCH_PATH):$$PATH" command -v llvm-config 2>/dev/null || true)
 LLVM_BIN_DIR := $(dir $(LLVM_CONFIG))
