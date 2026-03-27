@@ -47,7 +47,7 @@ else ifeq ($(UNAME), Linux)
 # Linux
 SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz
 TEST_TOOLS = clang llvm
-SYSTEM_DEV_INSTALL = apt-get install
+SYSTEM_DEV_INSTALL = apt-get install -y
 ANTLR = antlr4
 else ifneq (,$(findstring NT,$(UNAME)))
 # Windows (all variants): Windows_NT, MINGW64_NT-10.0-20348, MSYS_NT-10.0-20348
@@ -140,7 +140,9 @@ osascript -e 'tell application "Safari" to set URL of document of window 1 to UR
 VIEW_PDF = open $(PDF_TARGET)
 
 # Command to check docs for failed assertions
-CHECK_DOCS = grep -l AssertionError docs/_build/html/*.html; [ $$? -ne 0 ]
+CHECK_DOCS = \
+	grep -R -n -C 20 "AssertionError" docs/_build/html/reports/*.err.log; \
+	[ $$? -eq 1 ]
 
 # Command to patch HTML output
 PATCH_HTML = cd $(DOCS); sh ./patch-html.sh
@@ -271,7 +273,9 @@ else
 		exit 1; \
 	fi; \
 	rm -fr fcc; \
-	git clone https://github.com/fandango-fuzzer/fcc.git; \
+	if [ ! -d fcc ]; then \
+		git clone https://github.com/fandango-fuzzer/fcc.git; \
+	fi; \
 	LLVM_CONFIG_PATH="$$LLVM_CONFIG" make -C fcc install-local
 endif
 
