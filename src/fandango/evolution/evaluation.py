@@ -14,7 +14,6 @@ from fandango.constraints.failing_tree import (
     Suggestion,
 )
 from fandango.evolution import GeneratorWithReturn
-from fandango.execution.fcc import FCC
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.language import NonTerminal
 from fandango.language.tree import DerivationTree
@@ -49,7 +48,12 @@ class Evaluator:
         self._checks_made = 0
         self._stop_criterion = stop_criterion
         self._stop_criterion_met = False
-        self.fcc = FCC(put, put_args) if use_fcc else None
+        self.fcc = None
+        if use_fcc:
+            # dynamic import to only emit the experimental warning when it is actually needed
+            from fandango.experimental.execution.fcc import FCC
+
+            self.fcc = FCC(put, put_args)
 
         for constraint in constraints:
             if "DynamicAnalysis" in constraint.format_as_spec():
