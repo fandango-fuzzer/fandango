@@ -3,7 +3,7 @@ import sys
 from typing import Union
 from pathlib import Path
 
-from fandango.execution.trace_types import (
+from fandango.experimental.execution.trace_types import (
     CGType,
     CfgsType,
     ModuleBBToFType,
