@@ -5,7 +5,6 @@ Why this exists:
 - We want this behavior to be centralized, not duplicated in every submodule.
 
 How it works:
-- Warn once when ``fandango.experimental`` is imported.
 - Install a meta path finder that intercepts imports for
   ``fandango.experimental.*``.
 - Wrap each submodule loader and warn right before the wrapped loader executes.
@@ -16,8 +15,13 @@ import importlib.abc
 import importlib.machinery
 import sys
 import warnings
+from collections.abc import Iterable, Sequence
 from types import ModuleType
-from typing import Sequence
+
+
+class ExperimentalWarning(UserWarning):
+    pass
+
 
 # Tracks which module names have already emitted a warning in this process.
 _WARNED_MODULES: set[str] = set()
@@ -34,12 +38,10 @@ def warn_experimental_import(module_name: str) -> None:
             f"`{module_name}` is experimental and may change without notice. "
             "Avoid relying on its public API in production code."
         ),
-        category=UserWarning,
+        category=ExperimentalWarning,
         stacklevel=3,
     )
 
-
-warn_experimental_import(__name__)
 
 _SUBMODULE_PREFIX = f"{__name__}."
 
@@ -67,7 +69,7 @@ class _ExperimentalSubmoduleWarningFinder(importlib.abc.MetaPathFinder):
     def find_spec(
         self,
         fullname: str,
-        path: Sequence[str] | None,
+        path: Iterable[str] | None,
         target: ModuleType | None = None,
     ) -> importlib.machinery.ModuleSpec | None:
         # Ignore non-experimental imports as early as possible.
@@ -75,6 +77,8 @@ class _ExperimentalSubmoduleWarningFinder(importlib.abc.MetaPathFinder):
             return None
 
         # Delegate actual module resolution to PathFinder.
+        # mypy and beartype disagree on the exact type we should use here
+        assert isinstance(path, Sequence)
         spec = importlib.machinery.PathFinder.find_spec(fullname, path)
         if spec is None or spec.loader is None:
             return spec
