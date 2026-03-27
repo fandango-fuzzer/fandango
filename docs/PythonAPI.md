@@ -20,7 +20,7 @@ Fandango provides a simple API for Python programs to
 * [_parse inputs_ using the spec with `parse()`](sec:parse-api).
 
 ```{warning}
-Modules under `fandango.experimental.*` are explicitly experimental. They may change without notice and should not be treated as stable public API for production usage. Importing these modules emits a runtime warning. Using the logic from these modules from the CLI will emit a warning to stdout.
+Submodules under `fandango.experimental.*` are explicitly experimental. They may change without notice and should not be treated as stable public API for production usage. Importing those submodules emits a runtime warning. Using experimental features from the CLI can surface the same warnings on stderr.
 ```
 
 ```{note}

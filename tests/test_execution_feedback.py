@@ -9,9 +9,11 @@ import sys
 import pytest
 from pathlib import Path
 
+from fandango.experimental import ExperimentalWarning
+
 from .utils import run_command as run_cli_command
 
-with pytest.warns(UserWarning):
+with pytest.warns(ExperimentalWarning):
     from fandango.experimental.execution.dynamic_analysis import DynamicAnalysis
 
 

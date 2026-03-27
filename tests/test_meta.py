@@ -23,7 +23,7 @@ def test_beartype_is_active():
 def test_experimental_submodule_warning_once_per_module():
     # Re-import experimental modules from a clean state to make warning counts deterministic.
     for module_name in sys.modules:
-        assert module_name != "fandango.experimental" and not module_name.startswith(
+        assert not module_name.startswith(
             "fandango.experimental."
         ), f"Module {module_name} should not be in sys.modules"
 

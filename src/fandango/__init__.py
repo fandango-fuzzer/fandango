@@ -20,9 +20,11 @@ from fandango.errors import (
 )
 import fandango.language.tree
 import fandango.language.parse
+from fandango.experimental import ExperimentalWarning
 
 __all__ = [
     "FandangoError",
+    "ExperimentalWarning",
     "FandangoParseError",
     "FandangoSyntaxError",
     "FandangoValueError",
