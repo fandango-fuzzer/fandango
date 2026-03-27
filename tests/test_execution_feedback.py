@@ -8,7 +8,12 @@ import shlex
 import sys
 import pytest
 from pathlib import Path
-from fandango.execution.dynamic_analysis import DynamicAnalysis
+
+from .utils import run_command as run_cli_command
+
+with pytest.warns(UserWarning):
+    from fandango.experimental.execution.dynamic_analysis import DynamicAnalysis
+
 
 FCC_PATH = Path(__file__).parent.parent / "fcc" / "llvm" / "build" / "compiler" / "fcc"
 
@@ -46,6 +51,30 @@ class TestExecutionFeedback(unittest.TestCase):
         )
         out, err = proc.communicate()
         return out.decode(), err.decode(), proc.returncode
+
+
+class TestExecutionExperimentalWarnings(unittest.TestCase):
+    def test_cli_emits_experimental_warning(self):
+        spec = (
+            Path("tests/resources/execution_feedback/execution_path_length_3")
+            / "specifications"
+            / "maximize_execution_path_length.fan"
+        )
+        cmd = [
+            "fandango",
+            "fuzz",
+            "--no-cache",
+            "--stop-after-seconds",
+            "1",
+            "-f",
+            str(spec),
+            "--fcc",
+            "/tmp/definitely-not-a-real-put",
+        ]
+
+        out, err, code = run_cli_command(cmd)
+        _ = out, code  # Return code is expected to be non-zero here.
+        assert "`fandango.experimental.execution` is experimental" in err
 
 
 @pytest.mark.skipif(sys.platform.startswith("win"), reason="Skipping on Windows")
