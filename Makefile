@@ -70,7 +70,7 @@ test-tools:
 ifneq ($(TEST_TOOLS),)
 	$(SYSTEM_DEV_INSTALL) $(TEST_TOOLS)
 endif
-	$(MAKE) fcc
+	$(MAKE) fcc-local
 
 ## Parser
 
@@ -251,18 +251,20 @@ evaluation $(EVALUATION_MARKER): $(PYTHON_SOURCES) $(EVALUATION_SOURCES)
 
 LLVM_MIN_VERSION := 18
 LLVM_MAX_VERSION := 20
+LLVM_CONFIG_SEARCH_PATH := /opt/homebrew/opt/llvm@20/bin:/opt/homebrew/opt/llvm@19/bin:/opt/homebrew/opt/llvm@18/bin:/usr/local/opt/llvm@20/bin:/usr/local/opt/llvm@19/bin:/usr/local/opt/llvm@18/bin
+LLVM_CONFIG := $(shell PATH="$(LLVM_CONFIG_SEARCH_PATH):$$PATH" command -v llvm-config 2>/dev/null || true)
+LLVM_BIN_DIR := $(dir $(LLVM_CONFIG))
 
 .PHONY: fcc
-fcc:
+# Build fcc, but don't install it globally to not pollute the system
+fcc-local:
 ifneq (,$(findstring NT,$(UNAME)))
 	@echo "Skipping fcc install on Windows"
 else
-	@PATH="/opt/homebrew/opt/llvm@20/bin:/opt/homebrew/opt/llvm@19/bin:/opt/homebrew/opt/llvm@18/bin:/usr/local/opt/llvm@20/bin:/usr/local/opt/llvm@19/bin:/usr/local/opt/llvm@18/bin:$$PATH"; \
-	LLVM_CONFIG="$$(command -v llvm-config || true)"; \
-	LLVM_VERSION="$$($$LLVM_CONFIG --version 2>/dev/null)"; \
+	@LLVM_VERSION="$$( "$(LLVM_CONFIG)" --version 2>/dev/null )"; \
 	LLVM_MAJOR="$${LLVM_VERSION%%.*}"; \
 	echo "Required LLVM version: $(LLVM_MIN_VERSION)-$(LLVM_MAX_VERSION)"; \
-	echo "Using llvm-config: $$LLVM_CONFIG"; \
+	echo "Using llvm-config: $(LLVM_CONFIG)"; \
 	echo "Detected LLVM version: $$LLVM_VERSION"; \
 	if [ -z "$$LLVM_VERSION" ]; then \
 		echo "Error: llvm-config not found (or not executable)"; \
@@ -272,13 +274,18 @@ else
 		echo "Error: unsupported LLVM version $$LLVM_VERSION (need $(LLVM_MIN_VERSION)-$(LLVM_MAX_VERSION))"; \
 		exit 1; \
 	fi; \
-	rm -fr fcc; \
 	if [ ! -d fcc ]; then \
 		git clone https://github.com/fandango-fuzzer/fcc.git; \
+	else \
+		cd fcc && git pull && cd ..; \
 	fi; \
-	LLVM_CONFIG_PATH="$$LLVM_CONFIG" make -C fcc install-local
+	PATH="$(LLVM_BIN_DIR):$$PATH" LLVM_CONFIG_PATH="$(LLVM_CONFIG)" make -C fcc install-local
 endif
 
+# Build and install fcc globally
+fcc: fcc-local
+	PATH="$(LLVM_BIN_DIR):$$PATH" LLVM_CONFIG_PATH="$(LLVM_CONFIG)" make -C fcc install
+	
 ## All
 .PHONY: run-all
 run-all: $(TEST_MARKER) $(EVALUATION_MARKER)
