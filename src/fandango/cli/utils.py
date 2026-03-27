@@ -99,7 +99,7 @@ def make_fandango_settings(
     _copy_setting(args, settings, "stop_after_seconds")
     _copy_setting(args, settings, "use_fcc")
 
-    if "use_fcc" in settings:
+    if settings.get("use_fcc", False):
         settings["put"] = args.test_command
         settings["put_args"] = args.test_args  # list[str]
 
