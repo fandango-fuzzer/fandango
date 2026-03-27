@@ -35,8 +35,12 @@ jobs:
       # Step 3: Build the documentation
       - name: Build the book
         shell: bash
-        run: |  
-          sudo make system-dev-tools
+        run: |
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            sudo make system-dev-tools
+          else
+            make system-dev-tools
+          fi
           make web
           echo "Exit code: $?"
 
