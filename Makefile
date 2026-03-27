@@ -40,7 +40,7 @@ endif
 
 ifeq ($(UNAME), Darwin)
 # Mac
-SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz uv
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz uv telnet
 TEST_TOOLS = llvm@20 # clang is installed by default on Mac
 SYSTEM_DEV_INSTALL = brew install
 else ifeq ($(UNAME), Linux)
