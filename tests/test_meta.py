@@ -21,27 +21,37 @@ def test_beartype_is_active():
 
 
 def test_experimental_submodule_warning_once_per_module():
-    # Re-import experimental modules from a clean state to make warning counts deterministic.
-    for module_name in sys.modules:
-        assert not module_name.startswith(
-            "fandango.experimental."
-        ), f"Module {module_name} should not be in sys.modules"
+    # Pop cached experimental imports so repeated import_module matches a fresh load;
+    # restore afterward so later tests on this worker see the same sys.modules as before.
+    saved = {}
+    for name in list(sys.modules):
+        if name == "fandango.experimental" or name.startswith("fandango.experimental."):
+            saved[name] = sys.modules.pop(name)
 
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
-        importlib.import_module("fandango.experimental.execution.trace_types")
-        importlib.import_module("fandango.experimental.execution.trace_types")
+    try:
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            importlib.import_module("fandango.experimental.execution.trace_types")
+            importlib.import_module("fandango.experimental.execution.trace_types")
 
-    experimental_warnings = [
-        str(w.message)
-        for w in caught
-        if "is experimental and may change without notice" in str(w.message)
-    ]
+        experimental_warnings = [
+            str(w.message)
+            for w in caught
+            if "is experimental and may change without notice" in str(w.message)
+        ]
 
-    assert (
-        sum(
-            "`fandango.experimental.execution.trace_types` is experimental" in message
-            for message in experimental_warnings
+        assert (
+            sum(
+                "`fandango.experimental.execution.trace_types` is experimental"
+                in message
+                for message in experimental_warnings
+            )
+            == 1
         )
-        == 1
-    )
+    finally:
+        for name in list(sys.modules):
+            if name == "fandango.experimental" or name.startswith(
+                "fandango.experimental."
+            ):
+                del sys.modules[name]
+        sys.modules.update(saved)
