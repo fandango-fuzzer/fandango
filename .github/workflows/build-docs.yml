@@ -16,6 +16,7 @@ permissions:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
@@ -29,7 +30,7 @@ jobs:
         uses: ./.github/workflows/setup-fandango
         with:
           python-version: "3.13"
-          needs-sudo: true
+          needs-sudo: ${{ matrix.os == 'ubuntu-latest' }}
       
       # Step 3: Build the documentation
       - name: Build the book
