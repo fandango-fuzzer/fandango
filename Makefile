@@ -141,9 +141,13 @@ VIEW_PDF = open $(PDF_TARGET)
 
 # Command to check docs for failed assertions
 CHECK_DOCS = \
-	[ -f docs/_build/html/reports/*.err.log ] && \
-	grep -R -n -C 20 -i "error" docs/_build/html/reports/*.err.log; \
-	[ $$? -eq 1 ]
+	if ls docs/_build/html/reports/*.err.log >/dev/null 2>&1; then \
+		grep -R -n -C 20 -i "error" docs/_build/html/reports/*.err.log; \
+		status=$$?; \
+	else \
+		status=1; \
+	fi; \
+	[ $$status -eq 1 ]
 
 # Command to patch HTML output
 PATCH_HTML = cd $(DOCS); sh ./patch-html.sh
