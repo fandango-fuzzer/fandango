@@ -1,8 +1,8 @@
 import os
 from typing import Optional
 
-from fandango.execution.static_analysis import StaticAnalysis
-from fandango.execution.dynamic_analysis import DynamicAnalysis
+from fandango.experimental.execution.static_analysis import StaticAnalysis
+from fandango.experimental.execution.dynamic_analysis import DynamicAnalysis
 
 
 class FCC:
