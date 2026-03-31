@@ -332,7 +332,7 @@ class RuleSearch(NonTerminalSearch):
         if scope and self.symbol in scope:
             return [Tree(scope[self.symbol])]
         else:
-            return list(map(Tree, tree.find_all_trees(self.symbol)))
+            return [Tree(t) for t in tree.find_subtrees(self.symbol)]
 
     def find_direct(
         self,
@@ -549,6 +549,7 @@ class SelectiveSearch(NonTerminalSearch):
     def _find(self, bases: list[Container]) -> list[Container]:
         result = []
         for symbol, is_direct, items in zip(*zip(*self.symbols), self.slices):
+            children: list[list[DerivationTree]]
             if is_direct:
                 children = [
                     t.find_direct_trees(symbol)
@@ -557,7 +558,9 @@ class SelectiveSearch(NonTerminalSearch):
                 ]
             else:
                 children = [
-                    t.find_all_trees(symbol) for base in bases for t in base.get_trees()
+                    list(t.find_subtrees(symbol))
+                    for base in bases
+                    for t in base.get_trees()
                 ]
             if items is not None:
                 for index, child in enumerate(children):
