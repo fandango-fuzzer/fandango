@@ -20,7 +20,7 @@ where limit_failed_logins(<start>, NonTerminal('<exchange_login_fail>'))
 where limit_errors(<start>)
 
 def less_than(tree, symbol_to_find, number):
-    count = len(tree.find_all_trees(symbol_to_find))
+    count = len(list(tree.find_subtrees(symbol_to_find)))
     return count < number
 
 def limit_failed_logins(tree, symbol_to_find):
