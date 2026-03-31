@@ -343,8 +343,11 @@ class DerivationTree:
                 yield current
             queue.extend([*current._children, *current._sources])
 
-    @warnings.deprecated("Use find_subtrees instead [deprecated after version 1.1.1]")
     def find_all_trees(self, symbol: NonTerminal | str) -> list["DerivationTree"]:
+        warnings.warn(
+            "Use find_subtrees instead [deprecated after version 1.1.1]",
+            category=DeprecationWarning,
+        )
         return list(self.find_subtrees(symbol))
 
     def find_direct_trees(self, symbol: NonTerminal) -> list["DerivationTree"]:
