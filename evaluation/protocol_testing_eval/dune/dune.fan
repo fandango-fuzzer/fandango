@@ -6,7 +6,7 @@
 <quote> ::= '{"id": "' <number> '", "quote": "' <quote_string> '"}'
 <quote_string> ::= r'(?:[^"\\]|\\["\\/bfnrt]|\\u[0-9a-fA-F]{4})*'
 
-where len(<response>.find_all_trees(NonTerminal('<quote>'))) == int(<request>.<request_number>)
+where len(list(<response>.find_subtrees('<quote>'))) == int(<request>.<request_number>)
 
 <number> ::= r'[0-9]+'
 <request_number> ::= '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
