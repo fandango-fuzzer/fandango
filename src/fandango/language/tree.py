@@ -1,6 +1,7 @@
 import copy
+from collections import deque
 from typing import Any, Optional, TYPE_CHECKING, TypeVar, cast
-from collections.abc import Callable, Iterable, Iterator
+from collections.abc import Callable, Generator, Iterable, Iterator
 import warnings
 
 from fandango.language.symbols import NonTerminal, Slice, Symbol, Terminal
@@ -322,18 +323,32 @@ class DerivationTree:
         child._parent = self
         self.invalidate_hash()
 
-    def find_all_trees(self, symbol: NonTerminal) -> list["DerivationTree"]:
-        trees = sum(
-            [
-                child.find_all_trees(symbol)
-                for child in [*self._children, *self._sources]
-                if child.symbol.is_non_terminal
-            ],
-            [],
+    def find_subtrees(
+        self, symbol: NonTerminal | str
+    ) -> Generator["DerivationTree", None, None]:
+        """
+        Recursive, breadth-first search to find all trees with the given non-terminal symbol under this tree, including sources of generators.
+
+        :param symbol: The non-terminal symbol to find.
+        :return: A generator of all trees with the given non-terminal symbol under this tree.
+        """
+        if isinstance(symbol, str):
+            symbol = NonTerminal(symbol)
+        else:
+            assert isinstance(symbol, NonTerminal)
+        queue = deque([self])
+        while queue:
+            current = queue.popleft()
+            if current.symbol.is_non_terminal and current.symbol == symbol:
+                yield current
+            queue.extend([*current._children, *current._sources])
+
+    def find_all_trees(self, symbol: NonTerminal | str) -> list["DerivationTree"]:
+        warnings.warn(
+            "Use find_subtrees instead [deprecated after version 1.1.1]",
+            category=DeprecationWarning,
         )
-        if self.symbol == symbol:
-            trees.append(self)
-        return trees
+        return list(self.find_subtrees(symbol))
 
     def find_direct_trees(self, symbol: NonTerminal) -> list["DerivationTree"]:
         return [
