@@ -57,7 +57,9 @@ class Evaluator:
 
         for constraint in constraints:
             if "DynamicAnalysis" in constraint.format_as_spec():
-                assert self.fcc is not None
+                assert (
+                    self.fcc is not None
+                ), "FCC is required for DynamicAnalysis constraint"
                 constraint.global_variables["DynamicAnalysis"] = (
                     self.fcc.dynamic_analysis.trace_input
                 )
