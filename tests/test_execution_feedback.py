@@ -76,7 +76,8 @@ class TestExecutionExperimentalWarnings(unittest.TestCase):
 
         out, err, code = run_cli_command(cmd)
         _ = out, code  # Return code is expected to be non-zero here.
-        assert "`fandango.experimental.execution` is experimental" in err
+        assert "is experimental and may change without notice" in err
+        assert "fandango.experimental.execution" in err
 
 
 @pytest.mark.skipif(sys.platform.startswith("win"), reason="Skipping on Windows")
