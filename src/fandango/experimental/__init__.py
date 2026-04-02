@@ -7,8 +7,10 @@ Why this exists:
 How it works:
 - Install a meta path finder that intercepts imports for
   ``fandango.experimental.*``.
-- Wrap each submodule loader and warn right before the wrapped loader executes.
-- De-dup warnings via an in-process set so each module warns only once.
+- The first time anything under ``fandango.experimental.<child>`` is loaded
+  (including deeper modules such as ``...experimental.execution.fcc``), emit
+  one warning for ``fandango.experimental.<child>``.
+- De-dup via an in-process set so each direct child namespace warns at most once.
 """
 
 import importlib.abc
@@ -18,21 +20,34 @@ import warnings
 from collections.abc import Iterable, Sequence
 from types import ModuleType
 
+_SUBMODULE_PREFIX = f"{__name__}."
+
 
 class ExperimentalWarning(UserWarning):
     pass
 
 
-# Tracks which module names have already emitted a warning in this process.
-_WARNED_MODULES: set[str] = set()
+# Canonical names ``fandango.experimental.<child>`` that have already warned.
+_WARNED_CHILD_NAMESPACES: set[str] = set()
+
+
+def _child_namespace_for(fullname: str) -> str | None:
+    """Return ``fandango.experimental.<child>`` for any module under that subtree."""
+    if not fullname.startswith(_SUBMODULE_PREFIX):
+        return None
+    rest = fullname.removeprefix(_SUBMODULE_PREFIX)
+    if not rest:
+        return None
+    child = rest.split(".", 1)[0]
+    return f"{__name__}.{child}"
 
 
 def warn_experimental_import(module_name: str) -> None:
-    """Emit a one-time warning for an experimental module import."""
-    if module_name in _WARNED_MODULES:
+    """Emit a one-time warning for the given experimental child namespace."""
+    if module_name in _WARNED_CHILD_NAMESPACES:
         return
 
-    _WARNED_MODULES.add(module_name)
+    _WARNED_CHILD_NAMESPACES.add(module_name)
     warnings.warn(
         (
             f"`{module_name}` is experimental and may change without notice. "
@@ -41,9 +56,6 @@ def warn_experimental_import(module_name: str) -> None:
         category=ExperimentalWarning,
         stacklevel=3,
     )
-
-
-_SUBMODULE_PREFIX = f"{__name__}."
 
 
 class _ExperimentalSubmoduleWarningLoader(importlib.abc.Loader):
@@ -59,7 +71,9 @@ class _ExperimentalSubmoduleWarningLoader(importlib.abc.Loader):
         return None
 
     def exec_module(self, module: ModuleType) -> None:
-        warn_experimental_import(self._fullname)
+        ns = _child_namespace_for(self._fullname)
+        if ns is not None:
+            warn_experimental_import(ns)
         self._wrapped_loader.exec_module(module)
 
 
