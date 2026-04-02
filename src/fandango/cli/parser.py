@@ -165,6 +165,15 @@ def _get_main_parser(in_command_line: bool) -> argparse.ArgumentParser:
             help="Parser implementation to use (default: 'auto': use C++ parser code if available, otherwise Python).",
         )
 
+        main_parser.add_argument(
+            "--enable-experimental-module",
+            dest="enable_experimental_modules",
+            type=str,
+            help="Enable warnings about experimental modules. Can be given multiple times. Example: --enable-experimental-module execution",
+            default=[],
+            action="append",
+        )
+
     return main_parser
 
 

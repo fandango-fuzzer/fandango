@@ -20,6 +20,8 @@ import warnings
 from collections.abc import Iterable, Sequence
 from types import ModuleType
 
+from fandango.logger import LOGGER
+
 _SUBMODULE_PREFIX = f"{__name__}."
 
 
@@ -29,6 +31,11 @@ class ExperimentalWarning(UserWarning):
 
 # Canonical names ``fandango.experimental.<child>`` that have already warned.
 _WARNED_CHILD_NAMESPACES: set[str] = set()
+
+
+def dont_warn_about_module(module_name: str) -> None:
+    LOGGER.info(f"Enabled (skipped warning of) experimental module {module_name}")
+    _WARNED_CHILD_NAMESPACES.add(_SUBMODULE_PREFIX + module_name)
 
 
 def _child_namespace_for(fullname: str) -> str | None:
