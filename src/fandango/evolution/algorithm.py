@@ -75,6 +75,9 @@ class Fandango:
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
         stop_criterion: Optional[Callable[[DerivationTree], bool]] = None,
         stop_after_seconds: Optional[int] = None,
+        use_fcc: bool = False,
+        put: Optional[str] = None,
+        put_args: Optional[list[str]] = None,
     ):
         if tournament_size > 1:
             raise FandangoValueError(
@@ -132,6 +135,9 @@ class Fandango:
                 diversity_weight,
                 warnings_are_errors,
                 stop_criterion,
+                use_fcc,
+                put,
+                put_args,
             )
         self.adaptive_tuner = AdaptiveTuner(
             mutation_rate,

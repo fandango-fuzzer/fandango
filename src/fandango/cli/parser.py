@@ -165,6 +165,15 @@ def _get_main_parser(in_command_line: bool) -> argparse.ArgumentParser:
             help="Parser implementation to use (default: 'auto': use C++ parser code if available, otherwise Python).",
         )
 
+        main_parser.add_argument(
+            "--enable-experimental-module",
+            dest="enable_experimental_modules",
+            type=str,
+            help="Enable warnings about experimental modules. Can be given multiple times. Example: --enable-experimental-module execution",
+            default=[],
+            action="append",
+        )
+
     return main_parser
 
 
@@ -479,6 +488,13 @@ def _populate_fuzz_parser(parser: argparse.ArgumentParser) -> None:
         choices=["stdin", "filename", "libfuzzer"],
         default="filename",
         help="When invoking COMMAND, choose whether Fandango input will be passed as standard input (`stdin`), as last argument on the command line (`filename`) (default), or to a libFuzzer style harness compiled to a shared .so/.dylib object (`libfuzzer`).",
+    )
+    command_group.add_argument(
+        "--fcc",
+        default=False,
+        dest="use_fcc",
+        action="store_true",
+        help="The command to be invoked is a fcc-compiled binary.",
     )
     command_group.add_argument(
         "test_command",

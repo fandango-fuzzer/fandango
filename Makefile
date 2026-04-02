@@ -40,14 +40,14 @@ endif
 
 ifeq ($(UNAME), Darwin)
 # Mac
-SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz uv
-TEST_TOOLS =  # clang is installed by default on Mac
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz uv telnet
+TEST_TOOLS = llvm@20 # clang is installed by default on Mac
 SYSTEM_DEV_INSTALL = brew install
 else ifeq ($(UNAME), Linux)
 # Linux
-SYSTEM_DEV_TOOLS = antlr4 pdftk-java graphviz
-TEST_TOOLS = clang
-SYSTEM_DEV_INSTALL = apt-get install
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz
+TEST_TOOLS = clang llvm
+SYSTEM_DEV_INSTALL = apt-get install -y
 ANTLR = antlr4
 else ifneq (,$(findstring NT,$(UNAME)))
 # Windows (all variants): Windows_NT, MINGW64_NT-10.0-20348, MSYS_NT-10.0-20348
@@ -70,6 +70,7 @@ test-tools:
 ifneq ($(TEST_TOOLS),)
 	$(SYSTEM_DEV_INSTALL) $(TEST_TOOLS)
 endif
+	$(MAKE) fcc-local
 
 ## Parser
 
@@ -139,7 +140,14 @@ osascript -e 'tell application "Safari" to set URL of document of window 1 to UR
 VIEW_PDF = open $(PDF_TARGET)
 
 # Command to check docs for failed assertions
-CHECK_DOCS = grep -l AssertionError docs/_build/html/*.html; [ $$? -ne 0 ]
+CHECK_DOCS = \
+	if ls docs/_build/html/reports/*.err.log >/dev/null 2>&1; then \
+		grep -R -n -C 20 -i "error" docs/_build/html/reports/*.err.log; \
+		status=$$?; \
+	else \
+		status=1; \
+	fi; \
+	[ $$status -eq 1 ]
 
 # Command to patch HTML output
 PATCH_HTML = cd $(DOCS); sh ./patch-html.sh
@@ -246,6 +254,47 @@ EVALUATION_SOURCES = $(wildcard $(EVALUATION)/*.py $(EVALUATION)/*/*.py $(EVALUA
 evaluation $(EVALUATION_MARKER): $(PYTHON_SOURCES) $(EVALUATION_SOURCES)
 	$(PYTHON) -m evaluation.run_evaluation 1
 
+LLVM_MIN_VERSION := 18
+LLVM_MAX_VERSION := 20
+# This is an ugly ugly hack to access the correct llvm version.
+# If you need to adjust this, you probably also need to touch tests/test_execution_feedback.py.
+# If you read this and know how to: please make this nicer!
+# The trouble is that macOS has an incompatible default llvm version installed.
+LLVM_CONFIG_SEARCH_PATH := /opt/homebrew/opt/llvm@20/bin:/opt/homebrew/opt/llvm@19/bin:/opt/homebrew/opt/llvm@18/bin:/usr/local/opt/llvm@20/bin:/usr/local/opt/llvm@19/bin:/usr/local/opt/llvm@18/bin
+LLVM_CONFIG := $(shell PATH="$(LLVM_CONFIG_SEARCH_PATH):$$PATH" command -v llvm-config 2>/dev/null || true)
+LLVM_BIN_DIR := $(dir $(LLVM_CONFIG))
+
+.PHONY: fcc
+# Build fcc, but don't install it globally to not pollute the system
+fcc-local:
+ifneq (,$(findstring NT,$(UNAME)))
+	@echo "Skipping fcc install on Windows"
+else
+	@LLVM_VERSION="$$( "$(LLVM_CONFIG)" --version 2>/dev/null )"; \
+	LLVM_MAJOR="$${LLVM_VERSION%%.*}"; \
+	echo "Required LLVM version: $(LLVM_MIN_VERSION)-$(LLVM_MAX_VERSION)"; \
+	echo "Using llvm-config: $(LLVM_CONFIG)"; \
+	echo "Detected LLVM version: $$LLVM_VERSION"; \
+	if [ -z "$$LLVM_VERSION" ]; then \
+		echo "Error: llvm-config not found (or not executable)"; \
+		exit 1; \
+	fi; \
+	if [ "$$LLVM_MAJOR" -lt "$(LLVM_MIN_VERSION)" ] || [ "$$LLVM_MAJOR" -gt "$(LLVM_MAX_VERSION)" ]; then \
+		echo "Error: unsupported LLVM version $$LLVM_VERSION (need $(LLVM_MIN_VERSION)-$(LLVM_MAX_VERSION))"; \
+		exit 1; \
+	fi; \
+	if [ ! -d fcc ]; then \
+		git clone https://github.com/fandango-fuzzer/fcc.git; \
+	else \
+		cd fcc && git pull && cd ..; \
+	fi; \
+	PATH="$(LLVM_BIN_DIR):$$PATH" LLVM_CONFIG_PATH="$(LLVM_CONFIG)" make -C fcc install-local
+endif
+
+# Build and install fcc globally
+fcc: fcc-local
+	PATH="$(LLVM_BIN_DIR):$$PATH" LLVM_CONFIG_PATH="$(LLVM_CONFIG)" make -C fcc install
+	
 ## All
 .PHONY: run-all
 run-all: $(TEST_MARKER) $(EVALUATION_MARKER)

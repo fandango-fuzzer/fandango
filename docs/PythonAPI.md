@@ -19,6 +19,10 @@ Fandango provides a simple API for Python programs to
 * [_produce outputs_ from the spec with `fuzz()`](sec:fuzz-api); and
 * [_parse inputs_ using the spec with `parse()`](sec:parse-api).
 
+```{warning}
+Submodules under `fandango.experimental.*` are explicitly experimental. They may change without notice and should not be treated as stable public API for production usage. Importing those submodules emits a runtime warning. Using experimental features from the CLI can surface the same warnings on stderr.
+```
+
 ```{note}
 This API will be extended over time.
 ```

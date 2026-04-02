@@ -326,12 +326,12 @@ The `-N` option limits the number of generations - the default is 500.
 :::
 
 ```shell
-$ fandango -v fuzz -f persons.fan -n 10 -c 'False' -N 50
+$ fandango -v fuzz -f persons.fan -n 10 -c 'False' -N 10
 ```
 
 ```{code-cell}
 :tags: ["remove-input", "scroll-output"]
-!fandango -v fuzz -f persons.fan -n 10 -c 'False' -N 50 --validate --progress-bar=off
+!fandango -v fuzz -f persons.fan -n 10 -c 'False' -N 10 --validate --progress-bar=off
 assert _exit_code == 0
 ```
 

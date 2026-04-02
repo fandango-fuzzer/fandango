@@ -8,6 +8,7 @@ from fandango.cli.commands import COMMANDS, run
 from fandango.cli.shell import shell_command
 from fandango.cli.parser import get_parser
 from fandango.cli.upgrade import check_for_fandango_update
+from fandango.experimental import dont_warn_about_module
 from fandango.logger import LOGGER
 
 
@@ -38,6 +39,9 @@ def main(
         LOGGER.setLevel(logging.INFO)  # Give more info
     elif args.verbose and args.verbose > 1:
         LOGGER.setLevel(logging.DEBUG)  # Even more info
+
+    for enable_experimental_module in args.enable_experimental_modules:
+        dont_warn_about_module(enable_experimental_module)
 
     # Check if updates are available
     check_for_fandango_update()

@@ -31,6 +31,9 @@ class Evaluator:
         diversity_weight: float,
         warnings_are_errors: bool = False,
         stop_criterion: Optional[Callable[[DerivationTree], bool]] = None,
+        use_fcc: bool = False,
+        put: Optional[str] = None,
+        put_args: Optional[list[str]] = None,
     ):
         self._grammar = grammar
         self._soft_constraints: list[SoftValue] = []
@@ -45,8 +48,21 @@ class Evaluator:
         self._checks_made = 0
         self._stop_criterion = stop_criterion
         self._stop_criterion_met = False
+        self.fcc = None
+        if use_fcc:
+            # dynamic import to only emit the experimental warning when it is actually needed
+            from fandango.experimental.execution.fcc import FCC
+
+            self.fcc = FCC(put, put_args)
 
         for constraint in constraints:
+            if "DynamicAnalysis" in constraint.format_as_spec():
+                assert (
+                    self.fcc is not None
+                ), "FCC is required for DynamicAnalysis constraint"
+                constraint.global_variables["DynamicAnalysis"] = (
+                    self.fcc.dynamic_analysis.trace_input
+                )
             if isinstance(constraint, SoftValue):
                 self._soft_constraints.append(constraint)
             elif isinstance(constraint, RepetitionBoundsConstraint):
