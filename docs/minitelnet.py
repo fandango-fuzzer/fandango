@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
 import socket
-import os
+import subprocess
 import time
 import re
+import sys
 
 
 def sanitize_hostname(s: str, alt_hostname: str = "smtp.example.com") -> str:
@@ -38,11 +39,11 @@ def telnet(commands: list[str], port=8025, host="localhost"):
 
 
 if __name__ == "__main__":
-    os.system("pkill -f aiosmtpd")
-    os.system("python -m aiosmtpd -n &")
+    smtp_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n"])
     time.sleep(0.5)  # Give the server a moment to start
 
     commands = ["HELO relay.example.org\r\n", "QUIT\r\n"]
     telnet(commands)
 
-    os.system("pkill -f aiosmtpd")
+    smtp_proc.terminate()
+    smtp_proc.wait()
