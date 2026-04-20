@@ -860,6 +860,8 @@ class DerivationTree:
                 new_tree.sources = []
             else:
                 new_tree.set_children(grammar.derive_generator_output(new_tree))
+                for child in new_tree.children:
+                    child.set_all_read_only(True)
         elif regen_params:
             new_tree.sources = grammar.derive_sources(new_tree)
 
