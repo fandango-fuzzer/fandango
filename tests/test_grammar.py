@@ -108,8 +108,6 @@ class ConstraintTest(unittest.TestCase):
         updated_tree = tree.replace(grammar, orig_c_inner, update_orig_inner)
         self.assertTrue(updated_tree.children[0].children[0].read_only)
 
-
-
     def test_repetitions(self):
         with open(RESOURCES_ROOT / "repetitions.fan", "r") as file:
             grammar, c = parse(file, use_stdlib=False, use_cache=False)
