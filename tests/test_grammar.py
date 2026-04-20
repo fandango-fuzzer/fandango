@@ -97,6 +97,19 @@ class ConstraintTest(unittest.TestCase):
                 self.count_g_params(source_nr), 0, self.count_g_params(source_nr)
             )
 
+    def test_converter_parameter_update(self):
+        with open(RESOURCES_ROOT / "nested_grammar_parameters.fan", "r") as file:
+            grammar, c = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
+        tree = self.get_solutions(grammar, c, desired_solutions=1)[0]
+        self.assertTrue(tree.children[0].children[0].read_only)
+        orig_c_inner = tree.find_all_nodes(NonTerminal("<converted_inner>"))[0]
+        update_orig_inner = grammar.parse("123", start=NonTerminal("<converted_inner>"))
+        updated_tree = tree.replace(grammar, orig_c_inner, update_orig_inner)
+        self.assertTrue(tree.children[0].children[0].read_only)
+
+
+
     def test_repetitions(self):
         with open(RESOURCES_ROOT / "repetitions.fan", "r") as file:
             grammar, c = parse(file, use_stdlib=False, use_cache=False)
