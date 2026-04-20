@@ -106,7 +106,7 @@ class ConstraintTest(unittest.TestCase):
         orig_c_inner = tree.find_all_nodes(NonTerminal("<converted_inner>"))[0]
         update_orig_inner = grammar.parse("123", start=NonTerminal("<converted_inner>"))
         updated_tree = tree.replace(grammar, orig_c_inner, update_orig_inner)
-        self.assertTrue(tree.children[0].children[0].read_only)
+        self.assertTrue(updated_tree.children[0].children[0].read_only)
 
 
 
