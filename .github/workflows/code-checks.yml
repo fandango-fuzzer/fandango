@@ -30,6 +30,39 @@ jobs:
       - name: Check formatting with black
         run: |
           uv run black --check .
+  
+  uv-check:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: ${{ inputs.python-version }}
+          activate-environment: true
+          cache-dependency-glob: |
+            pyproject.toml
+
+      - name: Check if `uv.lock` is up-to-date
+        run: |
+          uv lock --check
+      
+      - name: Check if `pylock.toml` is up-to-date
+        shell: bash
+        run: |
+          if ! uv export --all-extras --locked --output-file=pylock.toml | diff - pylock.toml > /dev/null; then
+              echo "Error: pylock.toml is out of sync with uv.lock. Please run 'uv export'."
+              exit 1
+          fi
 
   mypy-check:
     runs-on: ${{ matrix.os }}
