@@ -33,7 +33,6 @@ from fandango.logger import (
     print_exception,
     visualize_evaluation,
     log_guidance_hint,
-    log_message_coverage,
 )
 
 
@@ -74,6 +73,8 @@ class Fandango:
         max_nodes_rate: float = 0.5,
         profiling: bool = False,
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
+        stop_criterion: Optional[Callable[[DerivationTree], bool]] = None,
+        stop_after_seconds: Optional[int] = None,
     ):
         if tournament_size > 1:
             raise FandangoValueError(
@@ -99,6 +100,8 @@ class Fandango:
         self.remote_response_timeout = 15.0
         self.past_io_derivations: list[DerivationTree] = []
         self.coverage_goal = coverage_goal
+        self.experiment_start_time = time.time()
+        self.stop_after_seconds = stop_after_seconds
 
         # Instantiate managers
         if self.grammar.fuzzing_mode == FuzzingMode.IO:
@@ -128,6 +131,7 @@ class Fandango:
                 diversity_k,
                 diversity_weight,
                 warnings_are_errors,
+                stop_criterion,
             )
         self.adaptive_tuner = AdaptiveTuner(
             mutation_rate,
@@ -331,6 +335,16 @@ class Fandango:
         random.shuffle(new_population)
         return new_population[: int(self.population_size * (1 - self.destruction_rate))]
 
+    def _is_time_limit_reached(self) -> bool:
+        if self.stop_after_seconds is not None:
+            elapsed_time = time.time() - self.experiment_start_time
+            if elapsed_time >= self.stop_after_seconds:
+                LOGGER.info(
+                    f"Stopping experiment after reaching the time limit ({elapsed_time} seconds)."
+                )
+                return True
+        return False
+
     def evolve(
         self,
         max_generations: Optional[int] = None,
@@ -393,10 +407,19 @@ class Fandango:
 
         prev_best_fitness = 0.0
         generation = 0
+        if self.stop_after_seconds is not None:
+            self.experiment_start_time = time.time()
+            LOGGER.info(
+                f"Resetting experiment starting time to {self.experiment_start_time}"
+            )
 
         while True:
             if max_generations is not None and generation >= max_generations:
                 break
+
+            if self._is_time_limit_reached() or self.evaluator.stop_criterion_met:
+                break
+
             generation += 1
 
             avg_fitness = sum(e[1] for e in self.evaluation) / self.population_size
@@ -479,6 +502,7 @@ class Fandango:
                 generation, self.evaluation, self.population, self.evaluator
             )
             visualize_evaluation(generation, max_generations, self.evaluation)
+
         clear_visualization()
         self._log_statistics()
 
@@ -547,7 +571,6 @@ class Fandango:
                     len(self.packet_selector.next_fuzzer_parties()) != 0
                     and not io_instance.received_msg()
                 ):
-
                     assert isinstance(self.population_manager, IoPopulationManager)
                     self.population_manager.fuzzable_packets = (
                         self.packet_selector.next_packets
