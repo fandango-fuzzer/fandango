@@ -42,6 +42,8 @@ repos:
                 src/fandango/converters/antlr/ANTLRv4.*\.py
             )$
 - repo: https://github.com/astral-sh/uv-pre-commit
-  rev: 0.9.18 # Correspond to uv version
+  rev: 0.11.7 # Correspond to uv version
   hooks:
     - id: uv-lock
+    - id: uv-export
+      args: ["--output-file=pylock.toml", "--all-extras", "--locked"]
