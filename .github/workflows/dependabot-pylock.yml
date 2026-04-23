@@ -1,0 +1,48 @@
+name: Dependabot Pylock Update
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dependabot-pylock-update:
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Dependabot branch
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+          activate-environment: true
+          cache-dependency-glob: |
+            pyproject.toml
+            uv.lock
+
+      - name: Commit pylock.toml changes
+        shell: bash
+        run: |
+          uv export --all-extras --locked --output-file=pylock.toml
+
+          if git diff --quiet -- pylock.toml; then
+            exit 0
+          fi
+
+          git config user.name "dependabot[bot]"
+          git config user.email "support@github.com"
+          git add pylock.toml
+          git commit -m "Refresh pylock.toml"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
