@@ -5,7 +5,8 @@ import random
 import unittest
 
 from fandango.evolution.algorithm import Fandango
-from fandango.language.symbols import NonTerminal
+from fandango.language.grammar.kpath_generator import KPathSession
+from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.parse.parse import parse
 from fandango.language.tree import DerivationTree
 from .utils import RESOURCES_ROOT
@@ -29,16 +30,132 @@ class ConstraintTest(unittest.TestCase):
             assert grammar is not None
 
         k_paths = grammar.generate_all_k_paths(k=3)
-        print(len(k_paths))
+        self.assertTrue(k_paths)
+        self.assertEqual({len(path) for path in k_paths}, {3})
+        self.assertSetEqual(
+            k_paths,
+            {
+                (
+                    NonTerminal("<start>"),
+                    NonTerminal("<ab>"),
+                    Terminal("a"),
+                ),
+                (
+                    NonTerminal("<start>"),
+                    NonTerminal("<ab>"),
+                    NonTerminal("<ab>"),
+                ),
+                (
+                    NonTerminal("<start>"),
+                    NonTerminal("<ab>"),
+                    Terminal("b"),
+                ),
+                (
+                    NonTerminal("<start>"),
+                    NonTerminal("<ab>"),
+                    Terminal(""),
+                ),
+                (
+                    NonTerminal("<ab>"),
+                    NonTerminal("<ab>"),
+                    Terminal("a"),
+                ),
+                (
+                    NonTerminal("<ab>"),
+                    NonTerminal("<ab>"),
+                    NonTerminal("<ab>"),
+                ),
+                (
+                    NonTerminal("<ab>"),
+                    NonTerminal("<ab>"),
+                    Terminal("b"),
+                ),
+                (
+                    NonTerminal("<ab>"),
+                    NonTerminal("<ab>"),
+                    Terminal(""),
+                ),
+            },
+        )
 
     def test_derivation_k_paths(self):
         with open(RESOURCES_ROOT / "grammar.fan", "r") as file:
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
 
-        random.seed(0)
-        tree = grammar.fuzz()
-        print([t.symbol.format_as_spec() for t in tree.flatten()])
+        tree = grammar.parse("b")
+        assert tree is not None
+
+        k_paths = grammar._extract_k_paths_from_tree(tree, 3)
+        self.assertEqual({len(path) for path in k_paths}, {3})
+        self.assertSetEqual(
+            k_paths,
+            {
+                (
+                    NonTerminal("<start>"),
+                    NonTerminal("<ab>"),
+                    Terminal(""),
+                ),
+                (
+                    NonTerminal("<start>"),
+                    NonTerminal("<ab>"),
+                    NonTerminal("<ab>"),
+                ),
+                (
+                    NonTerminal("<start>"),
+                    NonTerminal("<ab>"),
+                    Terminal("b"),
+                ),
+                (
+                    NonTerminal("<ab>"),
+                    NonTerminal("<ab>"),
+                    Terminal(""),
+                ),
+            },
+        )
+
+    def test_compute_kpath_coverage_uses_exact_length_paths(self):
+        with open(RESOURCES_ROOT / "grammar.fan", "r") as file:
+            grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
+
+        tree = grammar.parse("b")
+        assert tree is not None
+
+        self.assertEqual(grammar.compute_kpath_coverage([tree], 1), 4 / 5)
+        self.assertEqual(grammar.compute_kpath_coverage([tree], 2), 4 / 5)
+        self.assertEqual(grammar.compute_kpath_coverage([tree], 3), 4 / 8)
+
+    def test_kpath_session_covers_all_kpaths(self):
+        with open(RESOURCES_ROOT / "grammar.fan", "r") as file:
+            grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
+
+        session = KPathSession(grammar, k=3)
+        all_paths = grammar.generate_all_k_paths(k=3)
+        covered_paths = set()
+
+        for _ in range(len(all_paths)):
+            tree = session.next_tree(50)
+            covered_paths.update(grammar._extract_k_paths_from_tree(tree, 3))
+
+        self.assertSetEqual(covered_paths, all_paths)
+
+    def test_complete_mode_uses_kpath_generation_for_initial_population(self):
+        with open(RESOURCES_ROOT / "grammar.fan", "r") as file:
+            grammar, constraints = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
+
+        fandango = Fandango(
+            grammar=grammar,
+            constraints=constraints,
+            population_size=len(grammar.generate_all_k_paths(k=3)),
+            diversity_k=3,
+            generation_strategy="kpath",
+        )
+
+        list(fandango.generate_initial_population())
+        self.assertEqual(grammar.compute_kpath_coverage(fandango.population, 3), 1.0)
 
     def test_parse(self):
         with open(RESOURCES_ROOT / "grammar.fan", "r") as file:

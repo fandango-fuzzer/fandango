@@ -5,8 +5,9 @@ from copy import deepcopy
 import itertools
 import random
 import unittest
+from unittest.mock import patch
 
-from fandango.constraints.failing_tree import Suggestion
+from fandango.constraints.failing_tree import NopSuggestion, Suggestion
 from fandango.constraints.fitness import FailingTree
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.algorithm import Fandango, LoggerLevel
@@ -76,7 +77,7 @@ class GeneticTest(unittest.TestCase):
         generator = manager.refill_population(
             current_population=population,
             eval_individual=self.fandango.evaluator.evaluate_individual,
-            max_nodes=self.fandango.adaptive_tuner.current_max_nodes,
+            max_nodes=self.fandango.max_nodes,
             target_population_size=expected_count,
         )
         solutions = list(generator)
@@ -105,7 +106,7 @@ class GeneticTest(unittest.TestCase):
         generator = manager.refill_population(
             current_population=population,
             eval_individual=self.fandango.evaluator.evaluate_individual,
-            max_nodes=self.fandango.adaptive_tuner.current_max_nodes,
+            max_nodes=self.fandango.max_nodes,
             target_population_size=initial_count,
         )
 
@@ -117,7 +118,7 @@ class GeneticTest(unittest.TestCase):
         generator = manager.refill_population(
             current_population=population,
             eval_individual=self.fandango.evaluator.evaluate_individual,
-            max_nodes=self.fandango.adaptive_tuner.current_max_nodes,
+            max_nodes=self.fandango.max_nodes,
             target_population_size=initial_count + additional_count,
         )
         solutions = list(generator)
@@ -198,6 +199,16 @@ class GeneticTest(unittest.TestCase):
         for individual in self.fandango.population:
             self.assertTrue(self.fandango.grammar.parse(str(individual)))
 
+    def test_diversity_does_not_raise_fitness_above_one(self):
+        generator = GeneratorWithReturn(
+            self.fandango.evaluator.evaluate_population(self.fandango.population)
+        )
+        _solutions = list(generator)
+        evaluation = generator.return_value
+        self.assertTrue(
+            all(fitness <= 1.0 for _ind, fitness, _trees, _sug in evaluation)
+        )
+
     def test_select_elites(self):
         # Select the elites
         elites = self.fandango.evaluator.select_elites(
@@ -213,6 +224,32 @@ class GeneticTest(unittest.TestCase):
         # Check that the population is valid
         for individual in elites:
             self.assertTrue(self.fandango.grammar.parse(str(individual)))
+
+    def test_select_elites_prioritizes_fitness_before_diversity(self):
+        valid = self.fandango.grammar.parse("2")
+        invalid = self.fandango.grammar.parse("3")
+        assert valid is not None
+        assert invalid is not None
+
+        evaluation: list[
+            tuple[DerivationTree, float, list[FailingTree], Suggestion]
+        ] = [
+            (valid, 1.0, [], NopSuggestion()),
+            (invalid, 0.9, [], NopSuggestion()),
+        ]
+
+        with patch.object(
+            self.fandango.evaluator,
+            "_population_diversity_bonus",
+            return_value=[0.0, 10.0],
+        ):
+            elites = self.fandango.evaluator.select_elites(
+                evaluation,
+                elitism_rate=0.5,
+                population_size=2,
+            )
+
+        self.assertEqual(elites, [valid])
 
     def test_selection(self):
         # Select the parents

@@ -89,10 +89,7 @@ def make_fandango_settings(
     _copy_setting(args, settings, "warnings_are_errors")
     _copy_setting(args, settings, "best_effort")
     _copy_setting(args, settings, "random_seed")
-    _copy_setting(args, settings, "max_repetition_rate")
-    _copy_setting(args, settings, "max_repetitions")
     _copy_setting(args, settings, "max_nodes")
-    _copy_setting(args, settings, "max_node_rate")
 
     if hasattr(args, "start_symbol") and args.start_symbol is not None:
         if args.start_symbol.startswith("<"):

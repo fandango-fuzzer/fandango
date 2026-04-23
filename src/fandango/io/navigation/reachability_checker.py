@@ -1,4 +1,4 @@
-from typing import Optional, Set
+from typing import Optional
 
 from fandango.io.navigation.visitor.continuing_nodevisitor import ContinuingNodeVisitor
 from fandango.language.grammar.grammar import KPath
@@ -18,7 +18,7 @@ class ReachabilityChecker(ContinuingNodeVisitor):
 
     def __init__(self, grammar: Grammar):
         super().__init__(grammar)
-        self.seen_symbols: set[Symbol] = set()
+        self.seen_states: set[tuple[Symbol, ...]] = set()
         self.path_reached = False
         self.k_path_to_reach: KPath = tuple()
 
@@ -32,7 +32,7 @@ class ReachabilityChecker(ContinuingNodeVisitor):
             return False
         self.path_reached = False
         self.k_path_to_reach = k_path_to_reach
-        self.seen_symbols.clear()
+        self.seen_states.clear()
         super().find(tree)
         return self.path_reached
 
@@ -40,20 +40,26 @@ class ReachabilityChecker(ContinuingNodeVisitor):
         self, node: NonTerminalNode, k_path_to_reach: KPath
     ) -> bool:
         current_nodes: list[Node] = [node]
-        chain_found = True
         for symbol in k_path_to_reach:
-            current_nodes = list(
-                filter(
-                    lambda n: symbol == n.to_symbol(),
-                    current_nodes,
-                )
-            )
-            if not current_nodes:
-                chain_found = False
-                break
-            current = current_nodes[0]
-            current_nodes = list(current.descendents(self.grammar, True))
-        return chain_found
+            matching_nodes = [
+                current_node
+                for current_node in current_nodes
+                if symbol == current_node.to_symbol()
+            ]
+            if not matching_nodes:
+                return False
+
+            next_nodes: list[Node] = []
+            seen_node_ids: set[int] = set()
+            for current_node in matching_nodes:
+                for descendant in current_node.descendents(self.grammar, True):
+                    descendant_id = id(descendant)
+                    if descendant_id in seen_node_ids:
+                        continue
+                    seen_node_ids.add(descendant_id)
+                    next_nodes.append(descendant)
+            current_nodes = next_nodes
+        return True
 
     def onNonTerminalNodeVisit(
         self, node: NonTerminalNode, is_exploring: bool
@@ -61,15 +67,17 @@ class ReachabilityChecker(ContinuingNodeVisitor):
         if not is_exploring:
             return True, True
         first = self.k_path_to_reach[0]
-        if node.symbol in self.seen_symbols:
+        current_path = tuple(map(lambda x: x[0], self.current_path_collapsed))[
+            -len(self.k_path_to_reach) :
+        ]
+        if current_path in self.seen_states:
             return True, False
-        self.seen_symbols.add(node.symbol)
+        self.seen_states.add(current_path)
         if first == node.symbol:
             if self.test_reachability_from_node(node, self.k_path_to_reach):
                 self.path_reached = True
             return False, False
 
-        current_path = tuple(map(lambda x: x[0], self.current_path_collapsed))
         match = self.find_longest_suffix(current_path, tuple(self.k_path_to_reach))
         if len(match) == 0:
             return True, True
@@ -80,8 +88,6 @@ class ReachabilityChecker(ContinuingNodeVisitor):
         return False, False
 
     def onTerminalNodeVisit(self, node: TerminalNode, is_exploring: bool) -> bool:
-        if is_exploring:
-            self.seen_symbols.add(node.symbol)
         return True
 
     def find_longest_suffix(

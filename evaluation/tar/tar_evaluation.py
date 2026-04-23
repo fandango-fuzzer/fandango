@@ -32,7 +32,17 @@ def evaluate_tar(
 
     time_in_an_hour = time.time() + seconds
 
-    fandango = Fandango(grammar, constraints, logger_level=LoggerLevel.ERROR)
+    # TAR validity is checked externally with bsdtar below, so we keep the
+    # generator in streaming mode instead of waiting for a fully solved
+    # population entry before yielding candidates.
+    fandango = Fandango(
+        grammar,
+        constraints,
+        logger_level=LoggerLevel.ERROR,
+        expected_fitness=0.0,
+        population_size=1,
+        generation_strategy="random",
+    )
     fan_gen = fandango.generate()
     for solution in fan_gen:
         solutions.append(solution)
@@ -46,9 +56,13 @@ def evaluate_tar(
         if is_syntactically_valid_tar(str(solution)):
             valid.append(solution)
 
-    set_mean_length = sum(len(str(x)) for x in valid) / len(valid)
-    set_medium_length = sorted(len(str(x)) for x in valid)[len(valid) // 2]
-    valid_percentage = len(valid) / len(solutions) * 100
+    if valid:
+        set_mean_length = sum(len(str(x)) for x in valid) / len(valid)
+        set_medium_length = float(sorted(len(str(x)) for x in valid)[len(valid) // 2])
+    else:
+        set_mean_length = 0.0
+        set_medium_length = 0.0
+    valid_percentage = len(valid) / len(solutions) * 100 if solutions else 0.0
     return (
         "TAR",
         len(solutions),

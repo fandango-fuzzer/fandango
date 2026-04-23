@@ -13,7 +13,7 @@ from fandango.evolution.algorithm import Fandango, LoggerLevel
 from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import AuthResult, LoginPassword
 
-from tests.utils import EVALUATION_ROOT
+from tests.utils import EVALUATION_ROOT, can_bind_local_tcp_socket
 
 
 class SMTPServer:
@@ -96,6 +96,10 @@ class Server(NetworkParty):
     @unittest.skipIf(
         sys.platform == "darwin" and os.getenv("CI") == "true",
         "Skipping IO SMTP inputs grammar coverage test on macos.",
+    )
+    @unittest.skipUnless(
+        can_bind_local_tcp_socket(),
+        "Skipping IO SMTP inputs grammar coverage test because localhost TCP bind is unavailable.",
     )
     def test_io_smtp_inputs(self):
         import socket

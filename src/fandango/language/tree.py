@@ -155,8 +155,11 @@ class DerivationTree:
             origin_repetitions = []
         self.origin_repetitions: list[tuple[str, int, int]] = origin_repetitions
         self.read_only = read_only
-        self._size: int  # no need to set it, it will be set in invalidate_hash, which is called in set_children
-        self.set_children(children or [])
+        initial_children = children or []
+        self._children = initial_children
+        for child in self._children:
+            child._parent = self
+        self._size = 1 + sum(child.size() for child in self._children)
 
     def __len__(self) -> int:
         return len(self._children)
@@ -763,6 +766,7 @@ class DerivationTree:
             dict[tuple[PathStep, ...], "DerivationTree"]
         ] = None,
         current_path: Optional[tuple[PathStep, ...]] = None,
+        relevant_paths: Optional[set[tuple[PathStep, ...]]] = None,
     ) -> "DerivationTree":
         """
         Replace the subtree rooted at the given node with the new subtree.
@@ -774,6 +778,15 @@ class DerivationTree:
 
         if current_path is None:
             current_path = self.get_choices_path()
+
+        if relevant_paths is None:
+            relevant_paths = set()
+            for path in path_to_replacement:
+                for prefix_end in range(len(path) + 1):
+                    relevant_paths.add(path[:prefix_end])
+
+        if current_path not in relevant_paths:
+            return self
 
         if (
             current_path in path_to_replacement
@@ -793,6 +806,7 @@ class DerivationTree:
                         replacements,
                         path_to_replacement,
                         current_path + (ChildStep(i),),
+                        relevant_paths,
                     )
                 )
             new_subtree.set_children(new_children)
@@ -809,6 +823,7 @@ class DerivationTree:
                 replacements,
                 path_to_replacement,
                 current_path + (SourceStep(i),),
+                relevant_paths,
             )
             sources.append(new_param)
             if new_param != param:
@@ -819,6 +834,7 @@ class DerivationTree:
                 replacements,
                 path_to_replacement,
                 current_path + (ChildStep(i),),
+                relevant_paths,
             )
             new_children.append(new_child)
             if new_child != child:

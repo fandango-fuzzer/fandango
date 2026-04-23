@@ -58,7 +58,8 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         self._global_variables = global_variables or {}
         self._parser = Parser(self.rules)
         self._k_path_cache: dict[
-            tuple[NonTerminal, bool, CoverageGoal], list[set[tuple[Symbol, ...]]]
+            tuple[NonTerminal, bool, CoverageGoal, frozenset[str]],
+            list[set[tuple[Symbol, ...]]],
         ] = dict()
         self._tree_k_path_cache: dict[int, set[tuple[Symbol, ...]]] = dict()
 
@@ -692,17 +693,25 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         input_parties: Optional[set[str]] = None,
     ) -> set[KPath]:
         """
-        Computes the *k*-paths for this grammar, constructively. See: doi.org/10.1109/ASE.2019.00027
+        Computes the exact *k*-paths for this grammar, constructively.
+        See: doi.org/10.1109/ASE.2019.00027
 
         :param k: The length of the paths.
         :param non_terminal: The non-terminal from which to start generating paths.
         :param overlap_to_root: Whether to include paths that contain the starting symbol but are overlapping with symbols towards the root direction.
         :param coverage_goal: The coverage goal to consider when generating paths.
-        :return: All paths of length up to *k* within this grammar.
+        :return: All paths of exact length *k* within this grammar.
         """
+        if k <= 0:
+            return set()
         if input_parties is None:
             input_parties = set()
-        cache_key = (non_terminal, overlap_to_root, coverage_goal)
+        cache_key = (
+            non_terminal,
+            overlap_to_root,
+            coverage_goal,
+            frozenset(input_parties),
+        )
         if cache_key in self._k_path_cache:
             cache_work = self._k_path_cache[cache_key]
             if len(cache_work) >= k:
@@ -751,7 +760,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         work: list[set[tuple[Node, ...]]] = [set((x,) for x in initial)]
 
         for _ in range(len(work), k):
-            next_work = set(work[-1])
+            next_work: set[tuple[Node, ...]] = set()
             for base in work[-1]:
                 for descendent in base[-1].descendents(self, filter_controlflow=True):
                     if isinstance(descendent, NonTerminalNode):
@@ -777,8 +786,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             )
             for k_path in all_k_paths:
                 if non_terminal in k_path:
-                    for idx in range(len(k_path) - 1, k):
-                        symbol_work[idx].add(k_path)
+                    symbol_work[k - 1].add(k_path)
 
         self._k_path_cache[cache_key] = symbol_work
 
@@ -793,8 +801,10 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         input_parties: Optional[set[str]] = None,
     ) -> set[tuple[Symbol, ...]]:
         """
-        Extracts all k-length paths (k-paths) from a derivation tree.
+        Extracts all exact k-length paths (k-paths) from a derivation tree.
         """
+        if k <= 0:
+            return set()
         if input_parties is None:
             input_parties = set()
 
@@ -804,10 +814,19 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                 if overlap_parent.parent is not None:
                     overlap_parent = overlap_parent.parent
 
-        hash_key = hash((tree, overlap_parent, k, overlap_to_root, coverage_goal))
+        hash_key = hash(
+            (
+                tree,
+                overlap_parent,
+                k,
+                overlap_to_root,
+                coverage_goal,
+                frozenset(input_parties),
+            )
+        )
         if hash_key in self._tree_k_path_cache:
-            k_paths = self._tree_k_path_cache[hash_key]
-            return k_paths
+            cached_k_paths = self._tree_k_path_cache[hash_key]
+            return cached_k_paths
 
         start_nodes: list[tuple[Optional[NonTerminal], DerivationTree]] = []
 
@@ -836,7 +855,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                 collect_start_nodes(child)
                 start_nodes.append((parent, child))
 
-        paths: list[set[tuple[Symbol, ...]]] = [set() for _ in range(k)]
+        k_paths: set[tuple[Symbol, ...]] = set()
 
         def traverse(
             parent_symbol: Optional[NonTerminal],
@@ -867,13 +886,14 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                 random.shuffle(parent_rule_terminals)
                 for rule_node in parent_rule_terminals:
                     if rule_node.symbol.check(symbol_value, False)[0]:
-                        paths[len(path)].add(path + (rule_node.symbol,))
+                        terminal_path = path + (rule_node.symbol,)
+                        if len(terminal_path) == k:
+                            k_paths.add(terminal_path)
                 return
             new_path = path + (tree_symbol,)
-            if len(new_path) <= k:
-                paths[len(new_path) - 1].add(new_path)
-                if len(new_path) == k:
-                    return
+            if len(new_path) == k:
+                k_paths.add(new_path)
+                return
             for child in tree_node.children:
                 if coverage_goal == CoverageGoal.STATE_INPUTS:
                     if child.sender is not None and child.sender not in input_parties:
@@ -882,10 +902,6 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
 
         for parent, node in start_nodes:
             traverse(parent, node, tuple())
-
-        k_paths = set()
-        for path_set in paths:
-            k_paths.update(path_set)
 
         if overlap_to_root:
             for path in self._extract_k_paths_from_tree(

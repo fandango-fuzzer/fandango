@@ -27,7 +27,7 @@ class Evaluator:
         constraints: list[Constraint | SoftValue],
         expected_fitness: float,
         diversity_k: int,
-        diversity_weight: float,
+        diversity_tiebreak: bool,
         warnings_are_errors: bool = False,
     ):
         self._grammar = grammar
@@ -36,11 +36,12 @@ class Evaluator:
         self._repetition_bounds_constraints: list[RepetitionBoundsConstraint] = []
         self._expected_fitness = expected_fitness
         self._diversity_k = diversity_k
-        self._diversity_weight = diversity_weight
+        self._diversity_tiebreak = diversity_tiebreak
         self._warnings_are_errors = warnings_are_errors
         self._fitness_cache: dict[int, tuple[float, list[FailingTree], Suggestion]] = {}
         self._solution_set: set[int] = set()
         self._checks_made = 0
+        self._deduplicate_solutions = True
 
         for constraint in constraints:
             if isinstance(constraint, SoftValue):
@@ -52,6 +53,12 @@ class Evaluator:
             else:
                 raise ValueError(f"Invalid constraint type: {type(constraint)}")
 
+        self._deduplicate_solutions = (
+            len(self._hard_constraints) > 0
+            or len(self._repetition_bounds_constraints) > 0
+            or len(self._soft_constraints) > 0
+        )
+
     @property
     def expected_fitness(self) -> float:
         return self._expected_fitness
@@ -61,6 +68,13 @@ class Evaluator:
         :return: The number of fitness checks made so far.
         """
         return self._checks_made
+
+    def has_constraints(self) -> bool:
+        return (
+            len(self._hard_constraints) > 0
+            or len(self._repetition_bounds_constraints) > 0
+            or len(self._soft_constraints) > 0
+        )
 
     def compute_mutation_pool(
         self, population: list[DerivationTree]
@@ -116,6 +130,23 @@ class Evaluator:
             for paths in ind_kpaths
         ]
         return bonus
+
+    def _population_diversity_bonus(
+        self,
+        population: list[DerivationTree],
+    ) -> list[float]:
+        if self._diversity_k <= 0 or not self._diversity_tiebreak:
+            return [0.0 for _ in population]
+        return self.compute_diversity_bonus(population, [])
+
+    def sort_evaluation(
+        self,
+        evaluation: list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
+    ) -> list[tuple[DerivationTree, float, list[FailingTree], Suggestion]]:
+        bonuses = self._population_diversity_bonus([item[0] for item in evaluation])
+        ranked = list(zip(evaluation, bonuses))
+        ranked.sort(key=lambda item: (item[0][1], item[1]), reverse=True)
+        return [item[0] for item in ranked]
 
     def evaluate_hard_constraints(
         self, individual: DerivationTree
@@ -245,9 +276,12 @@ class Evaluator:
                 soft_fitness / total_constraint_count * len(self._soft_constraints)
             )
 
-        if fitness >= self._expected_fitness and key not in self._solution_set:
-            self._solution_set.add(key)
-            yield individual
+        if fitness >= self._expected_fitness:
+            if self._deduplicate_solutions and key in self._solution_set:
+                pass
+            else:
+                self._solution_set.add(key)
+                yield individual
 
         self._fitness_cache[key] = (fitness, failing_trees, suggestion)
         return fitness, failing_trees, suggestion
@@ -261,15 +295,6 @@ class Evaluator:
         for ind in population:
             ind_eval = yield from self.evaluate_individual(ind)
             evaluation.append((ind, *ind_eval))
-
-        if self._diversity_k > 0 and self._diversity_weight > 0:
-            bonuses = self.compute_diversity_bonus(population, [])
-            evaluation = [
-                (ind, fitness + bonus, failing_trees, suggestion)
-                for (ind, fitness, failing_trees, suggestion), bonus in zip(
-                    evaluation, bonuses
-                )
-            ]
         return evaluation
 
     def select_elites(
@@ -280,7 +305,7 @@ class Evaluator:
     ) -> list[DerivationTree]:
         return [
             x[0]
-            for x in sorted(evaluation, key=lambda x: x[1], reverse=True)[
+            for x in self.sort_evaluation(evaluation)[
                 : int(elitism_rate * population_size)
             ]
         ]
@@ -291,7 +316,7 @@ class Evaluator:
         tournament_size: int,
     ) -> tuple[DerivationTree, DerivationTree]:
         tournament = random.sample(evaluation, k=min(tournament_size, len(evaluation)))
-        tournament.sort(key=lambda x: x[1], reverse=True)
+        tournament = self.sort_evaluation(tournament)
         parent1 = tournament[0][0]
         if len(tournament) == 2:
             parent2 = tournament[1][0] if tournament[1][0] != parent1 else parent1
@@ -309,7 +334,7 @@ class IoEvaluator(Evaluator):
         constraints: list[Union[Constraint, SoftValue]],
         expected_fitness: float,
         diversity_k: int,
-        diversity_weight: float,
+        diversity_tiebreak: bool,
         warnings_are_errors: bool = False,
     ):
         super().__init__(
@@ -317,7 +342,7 @@ class IoEvaluator(Evaluator):
             constraints,
             expected_fitness,
             diversity_k,
-            diversity_weight,
+            diversity_tiebreak,
             warnings_are_errors,
         )
         self._submitted_solutions: set[int] = set()
@@ -445,33 +470,35 @@ class IoEvaluator(Evaluator):
         for ind in population:
             ind_eval = yield from self.evaluate_individual(ind)
             evaluation.append((ind, *ind_eval))
-
-        if self._diversity_k > 0 and self._diversity_weight > 0:
-            fill_up_by_msg_nt: dict[PacketNonTerminal, list[DerivationTree]] = {}
-            for ind in [*self._past_trees, *population]:
-                msgs = ind.protocol_msgs()
-                for i, msg in enumerate(msgs):
-                    assert msg.sender is not None
-                    assert isinstance(msg.msg.symbol, NonTerminal)
-                    key = PacketNonTerminal(msg.sender, msg.recipient, msg.msg.symbol)
-                    if key not in fill_up_by_msg_nt:
-                        fill_up_by_msg_nt[key] = []
-                    fill_up_by_msg_nt[key].append(msg.msg)
-
-            for i, ind in enumerate(population):
-                if len(ind.protocol_msgs()) == 0:
-                    continue
-                last_msg = ind.protocol_msgs()[-1]
-                assert isinstance(last_msg.msg.symbol, NonTerminal)
-                key = PacketNonTerminal(
-                    last_msg.sender, last_msg.recipient, last_msg.msg.symbol
-                )
-                bonuses = self.compute_diversity_bonus([ind], fill_up_by_msg_nt[key])
-                evaluation[i] = (
-                    ind,
-                    evaluation[i][1] + bonuses[0],
-                    evaluation[i][2],
-                    evaluation[i][3],
-                )
-
         return evaluation
+
+    def _population_diversity_bonus(
+        self,
+        population: list[DerivationTree],
+    ) -> list[float]:
+        if self._diversity_k <= 0 or not self._diversity_tiebreak:
+            return [0.0 for _ in population]
+
+        fill_up_by_msg_nt: dict[PacketNonTerminal, list[DerivationTree]] = {}
+        for ind in [*self._past_trees, *population]:
+            msgs = ind.protocol_msgs()
+            for msg in msgs:
+                assert msg.sender is not None
+                assert isinstance(msg.msg.symbol, NonTerminal)
+                key = PacketNonTerminal(msg.sender, msg.recipient, msg.msg.symbol)
+                if key not in fill_up_by_msg_nt:
+                    fill_up_by_msg_nt[key] = []
+                fill_up_by_msg_nt[key].append(msg.msg)
+
+        bonuses: list[float] = []
+        for ind in population:
+            if len(ind.protocol_msgs()) == 0:
+                bonuses.append(0.0)
+                continue
+            last_msg = ind.protocol_msgs()[-1]
+            assert isinstance(last_msg.msg.symbol, NonTerminal)
+            key = PacketNonTerminal(
+                last_msg.sender, last_msg.recipient, last_msg.msg.symbol
+            )
+            bonuses.extend(self.compute_diversity_bonus([ind], fill_up_by_msg_nt[key]))
+        return bonuses
