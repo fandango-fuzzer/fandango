@@ -543,9 +543,16 @@ class Fandango:
                     history_tree = DerivationTree(NonTerminal(self.start_symbol), [])
                     continue
 
-                if (
-                    len(self.packet_selector.next_fuzzer_parties()) != 0
-                    and not io_instance.received_msg()
+                next_parties = self.packet_selector.next_fuzzer_parties()
+                next_synthetic_parties = list(
+                    filter(lambda x: x in io_instance.synthetic_parties, next_parties)
+                )
+                force_message_generation = False
+                if len(next_synthetic_parties) != 0:
+                    next_parties = next_synthetic_parties
+                    force_message_generation = True
+                if force_message_generation or (
+                    len(next_parties) != 0 and not io_instance.received_msg()
                 ):
 
                     assert isinstance(self.population_manager, IoPopulationManager)
@@ -630,7 +637,7 @@ class Fandango:
                         next_tree = evolve_result
                     else:
                         next_tree = solutions[0]
-                    if io_instance.received_msg():
+                    if not force_message_generation and io_instance.received_msg():
                         # Abort if we received a message during fuzzing
                         continue
                     new_packet = next_tree.protocol_msgs()[-1]
