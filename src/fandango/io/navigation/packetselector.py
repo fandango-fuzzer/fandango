@@ -182,11 +182,12 @@ class PacketSelector:
         assert self.forecasting_result is not None
         return len(self.forecasting_result.complete_trees) != 0
 
-    def next_fuzzer_parties(self) -> list[str]:
+    def next_fuzzer_parties(self, show_fuzzer_controlled = True, show_external_controlled = False) -> list[str]:
         assert self.forecasting_result is not None
         return list(
             filter(
-                lambda x: self.io_instance.parties[x].is_fuzzer_controlled(),
+                lambda x: (self.io_instance.parties[x].is_fuzzer_controlled() and show_fuzzer_controlled) or
+                          (not self.io_instance.parties[x].is_fuzzer_controlled() and show_external_controlled),
                 self.forecasting_result.get_msg_parties(),
             )
         )
@@ -303,7 +304,9 @@ class PacketSelector:
 
     def _select_next_packet(self) -> list[ForecastingPacket]:
         if len(self.next_fuzzer_parties()) == 0:
-            return []
+            current_external_parties = set(self.next_fuzzer_parties(False, True))
+            if not any(filter(lambda x: x in self.io_instance.synthetic_parties, current_external_parties)):
+                return []
 
         is_new_tree = len(self.parst_derivations) > self.prev_past_derivations_len
         if is_new_tree:
