@@ -871,6 +871,11 @@ class FandangoIO(object):
         with self.receive_lock:
             return list(self.receive)
 
+    def get_received_parties(self) -> set[str]:
+        """Returns a set of all parties that have received messages."""
+        with self.receive_lock:
+            return {sender for sender, _, _ in self.receive}
+
     def clear_received_msg(self, idx: int) -> None:
         """Clears a specific received message by its index."""
         with self.receive_lock:
