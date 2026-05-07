@@ -116,7 +116,14 @@ exclude = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "-n auto --timeout 300 --durations=10 --pythonhashseed=1 --benchmark-max-time=10 --benchmark-disable"
+# -n auto: use all cores
+# --timeout 300: timeout after 300 seconds
+# --durations=10: show the 10 slowest tests
+# --pythonhashseed=1: use a fixed hash seed
+# --benchmark-max-time=10: stop after 10 seconds for each benchmark
+# --benchmark-disable: disable benchmarks unless manually overwritten
+# --maxschedchunk=1: max number of chunks to schedule to balance load across cores and schedule long-running tests first (see conftest.py)
+addopts = "-n auto --timeout 300 --durations=10 --pythonhashseed=1 --benchmark-max-time=10 --benchmark-disable --maxschedchunk=1"
 filterwarnings = [
     "error",                                                  # warnings are errors
     "ignore::pytest_benchmark.logger.PytestBenchmarkWarning", # benchmarks don't run with xdist, that's fine, they are run manually in the CI
