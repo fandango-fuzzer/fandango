@@ -825,7 +825,7 @@ class TimerControl(FandangoParty):
         with self.lock:
             if name in self.timers:
                 del self.timers[name]
-        self.receive(f"expired: {name}\n", "TimeCompute")
+        self.receive(f"expired: {name}\n", "TimerEvent")
 
 class TimerEvent(FandangoParty):
     def __init__(self):
