@@ -5,14 +5,13 @@ import os
 from typing import IO, Any, Optional
 import zipfile
 
-
 from fandango.api import Fandango
-from fandango.constraints.soft import SoftValue
 from fandango.constraints.constraint import Constraint
+from fandango.constraints.soft import SoftValue
 from fandango.errors import FandangoError, FandangoParseError
 from fandango.evolution import GeneratorWithReturn
 from fandango.language.grammar.grammar import Grammar
-from fandango.language.parse import parse
+from fandango.language.parse.parse import parse
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER, set_visualization
 
@@ -181,21 +180,19 @@ set_program_command([{arg_list}])
     if "client" in args and args.client:
         # Act as client
         extra_defs += f"""
-class Client(ConnectParty):
+class Client(NetworkParty):
     def __init__(self):
         super().__init__(
             "{args.client}",
-            ownership=Ownership.FANDANGO_PARTY,
-            endpoint_type=EndpointType.CONNECT,
+            connection_mode=ConnectionMode.CONNECT,
         )
         self.start()
 
-class Server(ConnectParty):
+class Server(NetworkParty):
     def __init__(self):
         super().__init__(
             "{args.client}",
-            ownership=Ownership.EXTERNAL_PARTY,
-            endpoint_type=EndpointType.OPEN,
+            connection_mode=ConnectionMode.EXTERNAL,
         )
         self.start()
 """
@@ -203,21 +200,19 @@ class Server(ConnectParty):
     if "server" in args and args.server:
         # Act as server
         extra_defs += f"""
-class Client(ConnectParty):
+class Client(NetworkParty):
     def __init__(self):
         super().__init__(
             "{args.server}",
-            ownership=Ownership.EXTERNAL_PARTY,
-            endpoint_type=EndpointType.CONNECT,
+            connection_mode=ConnectionMode.EXTERNAL,
         )
         self.start()
 
-class Server(ConnectParty):
+class Server(NetworkParty):
     def __init__(self):
         super().__init__(
             "{args.server}",
-            ownership=Ownership.FANDANGO_PARTY,
-            endpoint_type=EndpointType.OPEN,
+            connection_mode=ConnectionMode.OPEN,
         )
         self.start()
 """
@@ -266,27 +261,22 @@ def validate(
     *,
     filename: str = "<file>",
 ) -> None:
+    assert isinstance(parsed, DerivationTree)
     if (
-        (isinstance(original, DerivationTree) and original.value() != parsed.value())
-        or (isinstance(original, bytes) and original != parsed.to_bytes())
-        or (isinstance(original, str) and original != parsed.to_string())
-    ):
+        original != parsed.value()
+    ):  # force comparison between values, rely on type coercion for different types
         exc = FandangoError(f"{filename!r}: parsed tree does not match original")
-        if getattr(Exception, "add_note", None):
-            # Python 3.11+ has add_note() method
-            if isinstance(original, DerivationTree) and isinstance(
-                parsed, DerivationTree
-            ):
-                original_grammar = original.to_grammar()
-                parsed_grammar = parsed.to_grammar()
-                diff = difflib.context_diff(
-                    original_grammar.split("\n"),
-                    parsed_grammar.split("\n"),
-                    fromfile="original",
-                    tofile="parsed",
-                )
-                out = "\n".join(line for line in diff)
-                exc.add_note(out)
+        if isinstance(original, DerivationTree) and isinstance(parsed, DerivationTree):
+            original_grammar = original.to_grammar()
+            parsed_grammar = parsed.to_grammar()
+            diff = difflib.context_diff(
+                original_grammar.split("\n"),
+                parsed_grammar.split("\n"),
+                fromfile="original",
+                tofile="parsed",
+            )
+            out = "\n".join(diff)
+            exc.add_note(out)
         raise exc
 
 
@@ -322,7 +312,6 @@ def parse_file(
 
     if last_tree is not None:
         # check if any tree matched the grammar and failed constraints
-        grammar.populate_sources(last_tree)
         failed_constraints = [
             c.format_as_spec() for c in constraints if not c.check(last_tree)
         ]

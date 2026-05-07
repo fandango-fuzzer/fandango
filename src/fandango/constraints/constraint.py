@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Collection
+import traceback
 from typing import TYPE_CHECKING, Any, Optional
 import warnings
 from fandango.constraints.base import GeneticBase
@@ -83,5 +84,8 @@ class Constraint(GeneticBase, ABC):
         raise NotImplementedError("Invert function not implemented")
 
     def __repr__(self) -> str:
-        warnings.warn("Don't rely on this, use method specific to your usecase")
+        warnings.warn(
+            "Don't rely on this, use method specific to your usecase", stacklevel=2
+        )
+        raise RuntimeError("Don't rely on this, use method specific to your usecase")
         return f"{self.__class__.__name__}({self.format_as_spec()})"

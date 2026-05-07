@@ -22,7 +22,6 @@ from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.grammar_settings import GrammarSetting
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.alternative import Alternative
-from fandango.language.grammar.nodes.char_set import CharSet
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
@@ -41,35 +40,6 @@ from fandango.language.search import (
 )
 from fandango.language.symbols import NonTerminal, Terminal
 from fandango.logger import LOGGER
-
-
-class FandangoSplitter(FandangoParserVisitor):
-    def __init__(self) -> None:
-        self.productions: list[FandangoParser.ProductionContext] = []
-        self.constraints: list[FandangoParser.ConstraintContext] = []
-        self.grammar_settings: list[FandangoParser.Grammar_setting_contentContext] = []
-        self.python_code: list[FandangoParser.PythonContext] = []
-
-    def visitFandango(self, ctx: FandangoParser.FandangoContext):
-        self.productions = []
-        self.constraints = []
-        self.grammar_settings = []
-        self.python_code = []
-        self.visitChildren(ctx)
-
-    def visitProduction(self, ctx: FandangoParser.ProductionContext):
-        self.productions.append(ctx)
-
-    def visitConstraint(self, ctx: FandangoParser.ConstraintContext):
-        self.constraints.append(ctx)
-
-    def visitGrammar_setting_content(
-        self, ctx: FandangoParser.Grammar_setting_contentContext
-    ):
-        self.grammar_settings.append(ctx)
-
-    def visitPython(self, ctx: FandangoParser.PythonContext):
-        self.python_code.append(ctx)
 
 
 class GrammarProcessor(FandangoParserVisitor):
@@ -311,12 +281,6 @@ class GrammarProcessor(FandangoParserVisitor):
             if number not in ["0", "1"]:
                 raise UnsupportedOperation(f"Unsupported bit spec: {number}")
             return TerminalNode(Terminal.from_number(number), self._grammar_settings)
-        elif ctx.char_set():
-            text = ctx.char_set().getText()
-            LOGGER.warning(
-                f"{text}: Charset specs are deprecated. Use regular expressions (r'...') instead."
-            )
-            return CharSet(text, self._grammar_settings)
         elif ctx.alternative():
             return self.visitAlternative(ctx.alternative())
         else:
@@ -2032,7 +1996,7 @@ class PythonProcessor(FandangoParserVisitor):
                 else:
                     bases.append(base)
         body = self.visitBlock(ctx.block())
-        return ast.ClassDef(
+        return ast.ClassDef(  # type: ignore [call-arg, unused-ignore] # depends on python version
             name=ctx.identifier().getText(),
             bases=bases,
             keywords=keywords,
@@ -2061,7 +2025,7 @@ class PythonProcessor(FandangoParserVisitor):
             class_ = ast.AsyncFunctionDef
         else:
             class_ = ast.FunctionDef
-        return class_(
+        return class_(  # type: ignore [call-overload, unused-ignore] # depends on python version
             name=ctx.identifier().getText(),
             args=params,
             body=body,

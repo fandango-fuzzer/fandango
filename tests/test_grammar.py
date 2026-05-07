@@ -6,7 +6,7 @@ import unittest
 
 from fandango.evolution.algorithm import Fandango
 from fandango.language.symbols import NonTerminal
-from fandango.language.parse import parse
+from fandango.language.parse.parse import parse
 from fandango.language.tree import DerivationTree
 from .utils import RESOURCES_ROOT
 
@@ -28,7 +28,7 @@ class ConstraintTest(unittest.TestCase):
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
 
-        k_paths = grammar._generate_all_k_paths(3)
+        k_paths = grammar.generate_all_k_paths(k=3)
         print(len(k_paths))
 
     def test_derivation_k_paths(self):
@@ -62,10 +62,10 @@ class ConstraintTest(unittest.TestCase):
 
         # grammar produces 1 output
         actual = self.get_solutions(grammar, constraints, desired_solutions=1)
-        self.assertEqual(len(actual), 1)
+        self.assertEqual(len(actual), 1, len(actual))
         res = actual[0]
         self.assertIsInstance(res, DerivationTree)
-        self.assertEqual(str(res.value()), "bar")
+        self.assertEqual(str(res.value()), "bar", str(res.value()))
 
     def test_nested_generators(self):
         with open(RESOURCES_ROOT / "nested_grammar_parameters.fan", "r") as file:
@@ -73,15 +73,40 @@ class ConstraintTest(unittest.TestCase):
             assert grammar is not None
 
         for solution in self.get_solutions(grammar, c, desired_solutions=10):
-            self.assertEqual(self.count_g_params(solution), 4)
+            self.assertEqual(
+                self.count_g_params(solution), 4, self.count_g_params(solution)
+            )
             converted_inner = solution.children[0].sources[0]
-            self.assertEqual(self.count_g_params(converted_inner), 3)
+            self.assertEqual(
+                self.count_g_params(converted_inner),
+                3,
+                self.count_g_params(converted_inner),
+            )
             dummy_inner_2 = converted_inner.children[0].sources[0]
-            self.assertEqual(self.count_g_params(dummy_inner_2), 2)
+            self.assertEqual(
+                self.count_g_params(dummy_inner_2),
+                2,
+                self.count_g_params(dummy_inner_2),
+            )
             dummy_inner = dummy_inner_2.children[0].sources[0]
-            self.assertEqual(self.count_g_params(dummy_inner), 1)
+            self.assertEqual(
+                self.count_g_params(dummy_inner), 1, self.count_g_params(dummy_inner)
+            )
             source_nr = dummy_inner.children[0].children[1].sources[0]
-            self.assertEqual(self.count_g_params(source_nr), 0)
+            self.assertEqual(
+                self.count_g_params(source_nr), 0, self.count_g_params(source_nr)
+            )
+
+    def test_converter_parameter_update(self):
+        with open(RESOURCES_ROOT / "nested_grammar_parameters.fan", "r") as file:
+            grammar, c = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
+        tree = self.get_solutions(grammar, c, desired_solutions=1)[0]
+        self.assertTrue(tree.children[0].children[0].read_only)
+        orig_c_inner = tree.find_all_nodes(NonTerminal("<converted_inner>"))[0]
+        update_orig_inner = grammar.parse("123", start=NonTerminal("<converted_inner>"))
+        updated_tree = tree.replace(grammar, orig_c_inner, update_orig_inner)
+        self.assertTrue(updated_tree.children[0].children[0].read_only)
 
     def test_repetitions(self):
         with open(RESOURCES_ROOT / "repetitions.fan", "r") as file:
@@ -103,6 +128,15 @@ class ConstraintTest(unittest.TestCase):
         for solution in solutions:
             self.assertGreaterEqual(len(str(solution)), 3)
             self.assertLessEqual(len(str(solution)), 10)
+
+    def test_repetition_global_var(self):
+        with open(RESOURCES_ROOT / "global_var_bounds.fan", "r") as file:
+            grammar, c = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
+
+        solutions = self.get_solutions(grammar, c, desired_solutions=1)
+        for solution in solutions:
+            self.assertEqual(str(solution), "baz" * 10)
 
     def test_repetition_min(self):
         with open(RESOURCES_ROOT / "min_reps.fan", "r") as file:
@@ -159,11 +193,12 @@ class ConstraintTest(unittest.TestCase):
         with open(RESOURCES_ROOT / "gen_number.fan", "r") as file:
             grammar, c = parse(file, use_cache=False, use_stdlib=True)
 
-        _, extra_constraints = parse("where len(str(<start>)) > 60")
+        # no start symbol, so we need to disable checks
+        _, extra_constraints = parse("where len(str(<start>)) > 60", check=False)
         solution = self.get_solutions(
             grammar, c + extra_constraints, desired_solutions=10
         )
         for sol in solution:
             s = str(sol).split(".")
-            self.assertEqual(s[0], "a" * 50)
+            self.assertEqual(s[0], "a" * 50, s[0])
             self.assertTrue(len(s[1]) >= 10)

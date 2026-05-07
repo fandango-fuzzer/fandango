@@ -37,7 +37,8 @@ class Parser:
         if `allow_incomplete` is True, the function will return trees even if the input ends prematurely.
         """
         self._iter_parser.new_parse(start, mode, hookin_parent, starter_bit)
-        yield from self._iter_parser.consume(word)
+        for tree, is_complete in self._iter_parser.consume(word):
+            yield tree
 
     def parse_forest(
         self,
@@ -56,9 +57,7 @@ class Parser:
                 starter_bit = (word.count_terminals() - 1) % 8
             if word.should_be_serialized_to_bytes():
                 bit_string = word.to_bits()
-                word = int(bit_string, 2).to_bytes(
-                    (len(bit_string) + 7) // 8, byteorder="big"
-                )
+                word = int(bit_string, 2).to_bytes((len(bit_string) + 7) // 8)
             else:
                 word = word.to_string()
         if isinstance(word, int):

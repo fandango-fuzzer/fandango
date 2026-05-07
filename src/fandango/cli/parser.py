@@ -115,19 +115,15 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
 def _get_main_parser(in_command_line: bool) -> argparse.ArgumentParser:
     if in_command_line:
         prog = "fandango"
-        epilog = textwrap.dedent(
-            """\
+        epilog = textwrap.dedent("""\
             Use `%(prog)s help` to get a list of commands.
-            Use `%(prog)s help COMMAND` to learn more about COMMAND."""
-        )
+            Use `%(prog)s help COMMAND` to learn more about COMMAND.""")
     else:
         prog = ""
-        epilog = textwrap.dedent(
-            """\
+        epilog = textwrap.dedent("""\
             Use `help` to get a list of commands.
             Use `help COMMAND` to learn more about COMMAND.
-            Use TAB to complete commands."""
-        )
+            Use TAB to complete commands.""")
     epilog += f"\nSee {homepage_as_link()} for more information."
 
     main_parser = argparse.ArgumentParser(
@@ -213,7 +209,7 @@ def _get_algorithm_parser() -> argparse.ArgumentParser:
     algorithm_group.add_argument(
         "--random-seed",
         type=int,
-        help="Random seed to use for the algorithm. You probably also want to specify 'PYTHONHASHSEED=<some-value>' to achieve full reproducability.",
+        help="Random seed to use for the algorithm. You probably also want to specify 'PYTHONHASHSEED=<some-value>' to achieve full reproducibility.",
         default=None,
     )
     algorithm_group.add_argument(
@@ -546,6 +542,14 @@ def _populate_convert_parser(parser: argparse.ArgumentParser) -> None:
         choices=["antlr", "g4", "dtd", "010", "bt", "fan", "auto"],
         default="auto",
         help="Format of the external spec file: 'antlr'/'g4' (ANTLR), 'dtd' (XML DTD), '010'/'bt' (010 Editor Binary Template), 'fan' (Fandango spec), or 'auto' (default: try to guess from file extension).",
+    )
+    parser.add_argument(
+        "--to",
+        dest="to_format",
+        # These choices must match those in grammar.to_state()
+        choices=["fan", "state", "mermaid", "dot"],
+        default="fan",
+        help="Format of the output file: 'fan' (Fandango spec; default), 'state' (state diagram), 'mermaid' (Mermaid state diagram), or 'dot' (DOT graph).",
     )
     parser.add_argument(
         "--endianness", choices=["little", "big"], help="Set endianness for .bt files."

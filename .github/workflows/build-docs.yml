@@ -1,10 +1,14 @@
-name: GitHub Pages
+name: Build and deploy Docs
 
 on:
   pull_request:
   workflow_dispatch: # Allows manual triggering from the Actions tab
   push:
-    branches: [ release ]
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -21,29 +25,18 @@ jobs:
       - name: Install Fandango
         uses: ./.github/workflows/setup-fandango
         with:
-          python-version: 3.13
+          python-version: "3.13"
           needs-sudo: true
-          target: book
-
-      # Step 3: Ensure Graphviz system package is installed
-      - name: Install Graphviz system package
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y graphviz
-
-      # Step 4: Locate Fandango and add to PATH
-      - name: Locate Fandango and add to PATH
-        run: |
-          which fandango
-          echo "/opt/hostedtoolcache/Python/3.13.1/x64/bin/fandango" >> $GITHUB_PATH
-          fandango --help
-
-      # Step 5: Build the documentation
+      
+      # Step 3: Build the documentation
       - name: Build the book
-        run: |
-          make html
+        shell: bash
+        run: |  
+          sudo make system-dev-tools
+          make web
+          echo "Exit code: $?"
 
-      # Step 6: Upload built book as artifact
+      # Step 4: Upload built book as artifact
       - name: Upload built book as artifact
         uses: actions/upload-artifact@v4
         with:
@@ -52,7 +45,7 @@ jobs:
 
   deploy:
     # Only deploy on pushes to the release branch
-    if: github.event_name == 'push' && github.ref == 'refs/heads/release'
+    if: github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     steps:

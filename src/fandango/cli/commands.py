@@ -21,21 +21,18 @@ from fandango.cli.utils import (
     parse_file,
     validate,
 )
+from fandango.cli.upgrade import check_for_fandango_update
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
 from fandango.converters.FandangoConverter import FandangoConverter
 from fandango.converters.antlr.ANTLRFandangoConverter import ANTLRFandangoConverter
-from fandango.converters.bt.BTFandangoConverter import (
-    BitfieldOrder,
-    BTFandangoConverter,
-    Endianness,
-)
 from fandango.converters.dtd.DTDFandangoConverter import DTDFandangoConverter
 from fandango.converters.fan.FandangoFandangoConverter import FandangoFandangoConverter
+from fandango.converters.state.FandangoStateConverter import FandangoStateConverter
 from fandango.errors import FandangoError, FandangoParseError
 from fandango.language.grammar import FuzzingMode
 from fandango.language.grammar.grammar import Grammar
-from fandango.language.parse import cache_dir, clear_cache
+from fandango.language.parse.cache import clear_cache, get_cache_dir
 from fandango.logger import LOGGER, print_exception
 
 
@@ -153,6 +150,7 @@ def fuzz_command(args: argparse.Namespace) -> None:
 
     if grammar is None:
         raise FandangoError("Use '-f FILE.fan' to open a Fandango spec")
+    grammar.fuzzing_mode = FuzzingMode.COMPLETE
 
     # Avoid messing with default constraints
     constraints = constraints.copy()
@@ -174,6 +172,19 @@ def fuzz_command(args: argparse.Namespace) -> None:
         logging_level=LOGGER.getEffectiveLevel(),
     )
     LOGGER.debug("Evolving population")
+
+    if getattr(args, "output", None) is not None:
+        p = Path(args.output)
+        if p.exists():
+            LOGGER.info(f"Removing existing output file {p}")
+            p.unlink()
+
+    if getattr(args, "directory", None) is not None:
+        out_dir = Path(args.directory)
+        if out_dir.exists() and (not out_dir.is_dir() or len(os.listdir(out_dir)) > 0):
+            raise FandangoError(
+                f"Output directory {out_dir} is not a directory or is not empty"
+            )
 
     def solutions_callback(sol: DerivationTree, i: int) -> None:
         return output_solution(sol, args, i, file_mode)
@@ -206,7 +217,9 @@ def fuzz_command(args: argparse.Namespace) -> None:
         output_population(population, args, file_mode=file_mode, output_on_stdout=False)
         generated_files = glob.glob(args.directory + "/*")
         generated_files.sort()
-        assert len(generated_files) == len(population)
+        assert len(generated_files) == len(
+            population
+        ), f"len(generated_files): {len(generated_files)}, len(population): {len(population)}"
 
         errors = 0
         for i in range(len(generated_files)):
@@ -241,6 +254,7 @@ def parse_command(args: argparse.Namespace) -> None:
 
     if grammar is None:
         raise FandangoError("Use '-f FILE.fan' to open a Fandango spec")
+    grammar.fuzzing_mode = FuzzingMode.COMPLETE
 
     # Avoid messing with default constraints
     constraints = constraints.copy()
@@ -363,6 +377,8 @@ def convert_command(args: argparse.Namespace) -> None:
                     f"{input_file!r}: unknown file extension; use --from=FORMAT to specify the format"
                 )
 
+        to_format = args.to_format
+
         temp_file = None
         if input_file == "-":
             # Read from stdin
@@ -384,6 +400,17 @@ def convert_command(args: argparse.Namespace) -> None:
                 converter = DTDFandangoConverter(input_file)
                 spec = converter.to_fan()
             case "bt" | "010":
+                if (3, 11) <= sys.version_info < (3, 12):
+                    raise FandangoError(
+                        "BTFandangoConverter is not supported in Python 3.11 because py010parser does not support it"
+                    )
+
+                from fandango.converters.bt.BTFandangoConverter import (
+                    BitfieldOrder,
+                    BTFandangoConverter,
+                    Endianness,
+                )
+
                 if args.endianness == "little":
                     endianness = Endianness.LittleEndian
                 else:
@@ -401,9 +428,29 @@ def convert_command(args: argparse.Namespace) -> None:
                 converter = FandangoFandangoConverter(input_file, parties=args.parties)
                 spec = converter.to_fan()
 
-        print(spec, file=output, end="")
         if temp_file:
-            # Remove temporary file
+            temp_file.close()
+            os.unlink(temp_file.name)
+            del temp_file
+
+        if to_format == "fan":
+            # Send format out as is
+            print(spec, file=output)
+        else:
+            # Since folks may want to recombine --from and --to,
+            # we need to parse the spec (again)
+            temp_file = tempfile.NamedTemporaryFile(
+                mode="w", delete=False, suffix=".tmp"
+            )
+            temp_file.write(spec)
+            temp_file.flush()
+
+            converter = FandangoStateConverter(temp_file.name, parties=args.parties)
+            converter.filename = input_file
+
+            out = converter.to_state(format=to_format)
+            print(out, file=output)
+
             temp_file.close()
             os.unlink(temp_file.name)
 
@@ -412,7 +459,7 @@ def convert_command(args: argparse.Namespace) -> None:
 
 
 def clear_command(args: argparse.Namespace) -> None:
-    CACHE_DIR = cache_dir()
+    CACHE_DIR = get_cache_dir()
     if args.dry_run:
         print(f"Would clear {CACHE_DIR}", file=sys.stderr)
     elif os.path.exists(CACHE_DIR):
@@ -427,16 +474,26 @@ def nop_command(args: argparse.Namespace) -> None:
 
 
 def copyright_command(args: argparse.Namespace) -> None:
-    print("Copyright (c) 2024-2025 CISPA Helmholtz Center for Information Security.")
+    print("Copyright (c) 2024-2026 CISPA Helmholtz Center for Information Security.")
     print("All rights reserved.")
 
 
-def version_command(args: argparse.Namespace) -> None:
+def version_command(
+    args: argparse.Namespace, *, skip_update_check: bool = False
+) -> None:
+    """
+    Show Fandango version and check for updates.
+    :param: skip_update_check - if True, do not force-check for updates
+    This is set when called from `shell_command()`, which reports the version.
+    """
+
     if sys.stdout.isatty():
         version_line = f"💃 {styles.color.ansi256(styles.rgbToAnsi256(128, 0, 0))}Fandango{styles.color.close} {fandango.version()}"
     else:
         version_line = f"Fandango {fandango.version()}"
     print(version_line)
+    if not skip_update_check:
+        check_for_fandango_update(check_now=True)
 
 
 COMMANDS: dict[str, Callable[[argparse.Namespace], None]] = {

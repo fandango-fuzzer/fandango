@@ -4,40 +4,74 @@ on:
   pull_request:
   workflow_dispatch: # Enables manual execution from the Actions tab
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   black-check:
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        python-version: [ 3.13 ]  # Python version to run
+        python-version: ["3.13"] # Python version to run
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Install Fandango
+        uses: ./.github/workflows/setup-fandango
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-
-      - name: Install black
-        run: |
-          pip install black
+          needs-sudo: true
+          skip-parser: 1
 
       - name: Check formatting with black
         run: |
-          black --check .
+          uv run black --check .
+  
+  uv-check:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: ${{ inputs.python-version }}
+          activate-environment: true
+          cache-dependency-glob: |
+            pyproject.toml
+
+      - name: Check if `uv.lock` is up-to-date
+        run: |
+          uv lock --check
+      
+      - name: Check if `pylock.toml` is up-to-date
+        shell: bash
+        run: |
+          if ! uv export --all-extras --locked --output-file=pylock.toml | diff - pylock.toml > /dev/null; then
+              echo "Error: pylock.toml is out of sync with uv.lock. Please run 'uv export'."
+              exit 1
+          fi
 
   mypy-check:
     runs-on: ${{ matrix.os }}
-    
+
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: [ 3.13 ]  # Python version to run
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
 
     steps:
       - name: Checkout code
@@ -48,11 +82,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           needs-sudo: ${{ matrix.os == 'ubuntu-latest' }}
-          target: "development,book"
           skip-parser: 1
 
       - name: Run mypy
         shell: bash
         run: |
-          mypy .
-          mypy --strict src
+          uv run mypy .
+          uv run mypy --strict src

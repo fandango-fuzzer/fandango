@@ -7,6 +7,7 @@ TEST_ROOT = Path(__file__).parent
 RESOURCES_ROOT = TEST_ROOT / "resources"
 PROJECT_ROOT = TEST_ROOT.parent
 DOCS_ROOT = PROJECT_ROOT / "docs"
+EVALUATION_ROOT = PROJECT_ROOT / "evaluation"
 
 IS_BEARTYPE_ACTIVE = os.environ.get("FANDANGO_RUN_BEARTYPE", False)
 
@@ -31,7 +32,7 @@ def run_command(command_list, input=None):
     if IS_BEARTYPE_ACTIVE:
         env["FANDANGO_RUN_BEARTYPE"] = "1"
 
-    env["PYTHONHASHSEED"] = "0"  # ensure reproducability
+    env["PYTHONHASHSEED"] = "0"  # ensure reproducibility
 
     proc = subprocess.Popen(
         command_list,

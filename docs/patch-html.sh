@@ -24,9 +24,11 @@ EOF
 
 rm -f _build/html/_static/copybutton.js.*
 
-for file in _build/html/[A-Z]*.html; do
+# All our files either start with uppercase or 'i' (for index.html)
+for file in _build/html/[A-Zi]*.html; do
 # Some sh variants also match lowercase files, so we filter them out
-echo $file | grep '/[A-Z]*.html' >/dev/null || continue
+# Note: the expression below is a regex, not a glob pattern
+echo $file | grep '/[A-Zi].*\.html' >/dev/null || continue
 # Patch the file to change the PDF download button
 patch -c -N $file <<EOF
 ***************

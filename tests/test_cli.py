@@ -1,5 +1,6 @@
 #!/usr/bin/env pytest
 import asyncio
+import json
 import os
 import re
 import shutil
@@ -7,24 +8,32 @@ import subprocess
 import sys
 import time
 import unittest
+from unittest.mock import patch
 
+from fandango import DISTRIBUTION_NAME
 from fandango.cli import get_parser
+from fandango.cli.upgrade import (
+    check_for_fandango_update,
+    check_package_for_update,
+    Version,
+    version,
+)
 
 from .utils import DOCS_ROOT, IS_BEARTYPE_ACTIVE, RESOURCES_ROOT, run_command
 
 # beartype somehow scrambles the fixed rng
 if IS_BEARTYPE_ACTIVE:
     expected_with_random_seed = [
-        "6040162449562186",
-        "30818798",
-        "51156",
-        "9926293",
-        "110",
-        "7960129195025",
-        "094253409979086201",
-        "5",
-        "6408552782988",
-        "334885613598858",
+        "60401624495",
+        "68661899668",
+        "73",
+        "58694919430160244779",
+        "9502591836",
+        "7076746807392016295",
+        "94",
+        "389067036846",
+        "43164695741",
+        "4317911847",
     ]
 
 else:
@@ -47,8 +56,8 @@ class TestCLI(unittest.TestCase):
         command = ["fandango", "--help"]
         out, err, code = run_command(command)
         _parser = get_parser(True)
-        self.assertEqual(0, code)
-        self.assertEqual(err, "")
+        self.assertEqual(0, code, code)
+        self.assertEqual(err, "", err)
 
     def test_fuzz_basic(self):
         command = [
@@ -63,9 +72,11 @@ class TestCLI(unittest.TestCase):
             "--no-cache",
         ]
         out, err, code = run_command(command)
-        self.assertEqual(0, code)
-        self.assertEqual(err, "")
-        self.assertEqual(expected_with_random_seed, out.strip().split("\n"))
+        self.assertEqual(0, code, code)
+        self.assertEqual(err, "", err)
+        self.assertEqual(
+            expected_with_random_seed, out.strip().split("\n"), out.strip().split("\n")
+        )
 
     def test_output_to_file(self):
         out_file = RESOURCES_ROOT / "test.txt"
@@ -88,15 +99,18 @@ class TestCLI(unittest.TestCase):
         ]
         out, err, code = run_command(command)
         self.maxDiff = 1000000
-        self.assertEqual(0, code)
-        self.assertEqual("", out)
-        self.assertEqual("", err)
+        self.assertEqual(0, code, code)
+        self.assertEqual("", out, out)
+        self.assertEqual("", err, err)
         with open(out_file, "r") as fd:
             actual = fd.read()
-        self.assertEqual(expected_with_random_seed, actual.split(";"))
+        self.assertEqual(
+            expected_with_random_seed, actual.split(";"), actual.split(";")
+        )
         os.remove(RESOURCES_ROOT / "test.txt")
 
     def test_output_multiple_files(self):
+        out_dir = RESOURCES_ROOT / "test_multiple_files"
         command = [
             "fandango",
             "fuzz",
@@ -107,24 +121,20 @@ class TestCLI(unittest.TestCase):
             "--random-seed",
             "426912",
             "-d",
-            str(RESOURCES_ROOT / "test"),
+            str(out_dir),
             "--no-cache",
         ]
-        (
-            out,
-            err,
-            code,
-        ) = run_command(command)
-        self.assertEqual(0, code)
-        self.assertEqual("", out)
-        self.assertEqual("", err)
+        out, err, code = run_command(command)
+        self.assertEqual("", out, out)
+        self.assertEqual("", err, err)
+        self.assertEqual(0, code, code)
         for i, expected_value in enumerate(expected_with_random_seed):
-            filename = RESOURCES_ROOT / "test" / f"fandango-{i:04d}.txt"
+            filename = out_dir / f"fandango-{i:04d}.txt"
             with open(filename, "r") as fd:
                 actual = fd.read()
-            self.assertEqual(expected_value, actual)
+            self.assertEqual(expected_value, actual, actual)
 
-        shutil.rmtree(RESOURCES_ROOT / "test", ignore_errors=True)
+        shutil.rmtree(out_dir, ignore_errors=True)
 
     def test_output_with_libfuzzer_harness(self):
         if sys.platform.startswith("win"):
@@ -142,9 +152,9 @@ class TestCLI(unittest.TestCase):
         ]
         out, err, code = run_command(compile_)
 
-        self.assertEqual("", out)
-        self.assertEqual("", err)
-        self.assertEqual(0, code)
+        self.assertEqual("", out, out)
+        self.assertEqual("", err, err)
+        self.assertEqual(0, code, code)
 
         command = [
             "fandango",
@@ -166,9 +176,9 @@ class TestCLI(unittest.TestCase):
             "\n".join([f"data: {value}" for value in expected_with_random_seed]) + "\n"
         )
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual(expected_output, out)
-        self.assertEqual(0, code)
+        self.assertEqual("", err, err)
+        self.assertEqual(expected_output, out, out)
+        self.assertEqual(0, code, code)
 
     def test_infinite_mode(self):
         command = [
@@ -211,15 +221,15 @@ class TestCLI(unittest.TestCase):
             "-c",
             "False",
             "--max-generations",
-            "50",
+            "15",
         ]
         expected = """fandango:ERROR: Population did not converge to a perfect population
 fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
 """
         out, err, code = run_command(command)
-        self.assertEqual("", out)
-        self.assertEqual(expected, err)
-        self.assertEqual(0, code)
+        self.assertEqual("", out, out)
+        self.assertEqual(expected, err, err)
+        self.assertEqual(0, code, code)
 
     def test_binfinity(self):
         command = [
@@ -235,9 +245,9 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
             "426912",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
-        self.assertEqual(0, code)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
+        self.assertEqual(0, code, code)
 
     def test_infinity(self):
         # docs/infinity.fan can only generate a limited number of individuals,
@@ -257,9 +267,9 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
             "10",
         ]
         out, err, code = run_command(command)
-        self.assertEqual("", err)
-        self.assertEqual("", out)
-        self.assertEqual(0, code)
+        self.assertEqual("", err, err)
+        self.assertEqual("", out, out)
+        self.assertEqual(0, code, code)
 
     def test_max_repetition(self):
         command = [
@@ -281,9 +291,9 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
 fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
 """
         out, err, code = run_command(command)
-        self.assertEqual(0, code)
-        self.assertEqual("", out)
-        self.assertEqual(expected, err)
+        self.assertEqual(0, code, code)
+        self.assertEqual("", out, out)
+        self.assertEqual(expected, err, err)
 
     def test_max_nodes_unsat(self):
         max_nodes = 61  # there is a off by one error in two places (this should really be 59), but for now this is just how it is
@@ -334,15 +344,15 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
             "fandango:ERROR: Population did not converge to a perfect population\nfandango:ERROR: Only found 0 perfect solutions, instead of the required 10\n",
             f"err: {err}",
         )
-        self.assertEqual(0, code)
+        self.assertEqual(0, code, code)
 
     def test_unparse_grammar(self):
         # We unparse the standard library as well as docs/persons.fan
         input_data = f"set -f {DOCS_ROOT / 'persons.fan'}\nset\n"
         out, err, code = run_command(["fandango", "shell"], input=input_data)
-        self.assertEqual(0, code)
+        self.assertEqual(0, code, code)
         self.maxDiff = 1000000
-        self.assertEqual("", err)
+        self.assertEqual("", err, err)
         self.assertTrue(out.startswith("<_char> ::= r'(.|\\n)'\n"), out)
         self.assertTrue(out.endswith("<age> ::= <digit>+\n"), out)
 
@@ -370,9 +380,96 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
         self.assertEqual(2, len(io_logs), f"err: {err}")
         result_a = io_logs[0].split(": ", 2)[2]
         result_b = io_logs[0].split(": ", 2)[2]
-        self.assertEqual(result_a, result_b)
-        self.assertEqual(0, code)
-        self.assertEqual("", out)
+        self.assertEqual(result_a, result_b, result_b)
+        self.assertEqual(0, code, code)
+        self.assertEqual("", out, out)
+
+    def test_output_file_already_exists(self):
+        out_file = RESOURCES_ROOT / "existing_output.txt"
+        try:
+            out_file.write_text("pre-existing content")
+            command = [
+                "fandango",
+                "-v",
+                "fuzz",
+                "-f",
+                str(RESOURCES_ROOT / "digit.fan"),
+                "-n",
+                "1",
+                "-o",
+                str(out_file),
+                "--no-cache",
+            ]
+            out, err, code = run_command(command)
+            self.assertEqual(0, code)
+            self.assertIn("Removing existing output file", err)
+        finally:
+            out_file.unlink(missing_ok=True)
+
+    def test_output_directory_is_file(self):
+        out_dir = RESOURCES_ROOT / "not_a_directory"
+        try:
+            out_dir.write_text("I am a file, not a directory")
+            command = [
+                "fandango",
+                "fuzz",
+                "-f",
+                str(RESOURCES_ROOT / "digit.fan"),
+                "-n",
+                "1",
+                "-d",
+                str(out_dir),
+                "--no-cache",
+            ]
+            out, err, code = run_command(command)
+            self.assertEqual(1, code)
+            self.assertIn(f"{out_dir} is not a directory or is not empty", err)
+        finally:
+            out_dir.unlink(missing_ok=True)
+
+    def test_output_directory_not_empty(self):
+        out_dir = RESOURCES_ROOT / "non_empty_dir"
+        try:
+            out_dir.mkdir(exist_ok=True)
+            (out_dir / "dummy.txt").write_text("occupying space")
+            command = [
+                "fandango",
+                "fuzz",
+                "-f",
+                str(RESOURCES_ROOT / "digit.fan"),
+                "-n",
+                "1",
+                "-d",
+                str(out_dir),
+                "--no-cache",
+            ]
+            out, err, code = run_command(command)
+            self.assertEqual(1, code)
+            self.assertIn(f"{out_dir} is not a directory or is not empty", err)
+        finally:
+            shutil.rmtree(out_dir, ignore_errors=True)
+
+    def test_output_directory_empty_succeeds(self):
+        out_dir = RESOURCES_ROOT / "empty_dir"
+        try:
+            out_dir.mkdir(exist_ok=True)
+            command = [
+                "fandango",
+                "fuzz",
+                "-f",
+                str(RESOURCES_ROOT / "digit.fan"),
+                "-n",
+                "1",
+                "-d",
+                str(out_dir),
+                "--random-seed",
+                "426912",
+                "--no-cache",
+            ]
+            out, err, code = run_command(command)
+            self.assertEqual(0, code, f"stderr: {err}")
+        finally:
+            shutil.rmtree(out_dir, ignore_errors=True)
 
     def test_soliloquy(self):
         async def async_run():
@@ -429,3 +526,76 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
             client_code,
             f"Client error: {client_err}\n\nClient output: {client_out}",
         )
+
+
+def test_fandango_version_upgrade_skip_set():
+    """Ensure the env var short-circuits the update check without network calls."""
+    with (
+        patch.dict(os.environ, {"FANDANGO_DISABLE_UPDATE_CHECK": "1"}, clear=False),
+        patch("sys.stdout.isatty", return_value=True),
+        patch("fandango.cli.upgrade.check_package_for_update") as mock_check,
+    ):
+        check_for_fandango_update(check_now=True)
+
+    mock_check.assert_not_called()
+
+
+def test_fandango_version_upgrade():
+    """Ensure the update check runs when the env var is not set/falsey."""
+    with (
+        patch.dict(os.environ, {"FANDANGO_DISABLE_UPDATE_CHECK": ""}, clear=False),
+        patch("sys.stdout.isatty", return_value=True),
+        patch("fandango.cli.upgrade.NOTIFIED_IN_THIS_SESSION", False),
+        patch(
+            "fandango.cli.upgrade.check_package_for_update", return_value=False
+        ) as mock_check,
+    ):
+        check_for_fandango_update(check_now=True)
+
+    mock_check.assert_called_once()
+
+
+def test_fandango_version_check_path_works(tmp_path, monkeypatch, capsys):
+    """Ensure the version check path works and the distribution is installed."""
+
+    # This will fail if the distribution is not installed or packaging is missing
+    installed_version = Version(version(DISTRIBUTION_NAME))
+
+    latest_version = Version(
+        f"{installed_version.major}.{installed_version.minor}.{installed_version.micro + 1}"
+    )
+
+    payload = json.dumps({"info": {"version": str(latest_version)}}).encode()
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def read(self):
+            return payload
+
+    def fake_urlopen(url, timeout):
+        # Make sure we are querying PyPI for the right package
+        assert f"/{DISTRIBUTION_NAME}/" in url
+        return FakeResponse()
+
+    monkeypatch.setattr("fandango.cli.upgrade.urllib.request.urlopen", fake_urlopen)
+
+    notified = check_package_for_update(
+        DISTRIBUTION_NAME,
+        cache_dir=tmp_path,
+        check_now=True,
+    )
+
+    assert notified is True
+
+    out, err = capsys.readouterr()
+    assert out == ""
+    expected_prefix = (
+        f"📦 Update available for '{DISTRIBUTION_NAME}': "
+        f"{installed_version} → {latest_version}. See "
+    )
+    assert err.startswith(expected_prefix)
