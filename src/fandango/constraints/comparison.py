@@ -26,6 +26,8 @@ from fandango.constraints.fitness import (
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.logger import LOGGER, print_exception
 
+_MAX_FAILED_COMPARISON_FITNESS = 1 - 1e-4
+
 
 class EqualComparisonSuggestion(Suggestion):
     def __init__(self, target: DerivationTree, source: Any):
@@ -302,11 +304,17 @@ class ComparisonConstraint(Constraint):
         if self._operator.compare(left, right):
             return 1.0, NopSuggestion()
 
-        dist_norm = _distance_norm(left, right)
-        fitness = (1.0 - dist_norm) if dist_norm is not None else 0.0
         if self._operator == Comparison.NOT_EQUAL:
             # NOT_EQUAL does not span a range to the fitness is immediately zero if they are equal (introduced by @henryhchchc, moved by @riesentoaster)
             fitness = 0.0
+        else:
+            dist_norm = _distance_norm(left, right)
+            fitness = (1.0 - dist_norm) if dist_norm is not None else 0.0
+
+            # fitness should never be 1.0 here, as the comparison failed above
+            # this is especially important for strict inequalities like 2 > 2,
+            # where the distance norm is 0 and would wrongly yield fitness 1.0
+            fitness = min(fitness, _MAX_FAILED_COMPARISON_FITNESS)
 
         suggestions = []
 
@@ -357,7 +365,7 @@ def _distance_norm(left: Any, right: Any) -> Optional[float]:
         except Exception:
             return None
 
-    if dist is float | int:
+    if isinstance(dist, (float, int)):
         dist = 2 * (_sigmoid(abs(dist)) - 0.5)
         return dist
     else:

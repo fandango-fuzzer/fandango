@@ -100,10 +100,11 @@ $ python -m aiosmtpd -d -n &
 ```{code-cell}
 :tags: ["remove-input"]
 import os
+import subprocess
+import sys
 import time
 
-os.system("pkill -f aiosmtpd")
-os.system("python -m aiosmtpd -n &")
+aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n"])
 time.sleep(2);  # Wait for server to be ready
 ```
 
@@ -337,10 +338,10 @@ $ fandango talk -f smtp-simple.fan -n 100 --server 8125
 :tags: ["remove-input"]
 
 import os
+import subprocess
 import time
 
-os.system("pkill -f smtp-simple.fan")
-os.system("fandango talk -f smtp-simple.fan -n 100 --server 8125 &")
+fan_smtp_proc = subprocess.Popen(["fandango", "talk", "-f", "smtp-simple.fan", "-n", "100", "--server", "8125"])
 time.sleep(5);  # Wait for server to be ready
 ```
 
@@ -563,6 +564,8 @@ That's it for now. GO and thoroughly test your programs!
 % Let's kill our server(s)
 ```{code-cell}
 :tags: ["remove-input"]
-os.system("pkill -f aiosmtpd")
-os.system("pkill -f smtp-simple.fan");
+aiosmtpd_proc.terminate()
+fan_smtp_proc.terminate()
+aiosmtpd_proc.wait()
+fan_smtp_proc.wait();
 ```
