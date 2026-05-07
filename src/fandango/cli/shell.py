@@ -40,8 +40,7 @@ if "readline" not in globals():
     except Exception:
         pass
 
-
-MATCHES = []
+MATCHES: list[str] = []
 
 
 def shell_command(args: argparse.Namespace) -> None:
