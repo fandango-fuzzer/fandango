@@ -324,14 +324,9 @@ Obviously, our SMTP specification is still very limited.
 Before we go and extend it, let us first highlight a particular Fandango feature.
 From the same specification, Fandango can act as a _client_ and as a _server_.
 When invoked with the `--server` option, Fandango will _create_ a server at the given port and accept client connections.
-So if we invoke
-
-```{margin}
-The option `-n 100` ensures the server will run for 100 interactions.
-```
 
 ```shell
-$ fandango talk -f smtp-simple.fan -n 100 --server 8125
+$ fandango talk -f smtp-simple.fan -n 1 --server 8125
 ```
 
 ```{code-cell}
@@ -341,7 +336,7 @@ import os
 import subprocess
 import time
 
-fan_smtp_proc = subprocess.Popen(["fandango", "talk", "-f", "smtp-simple.fan", "-n", "100", "--server", "8125"])
+fan_smtp_proc = subprocess.Popen(["fandango", "talk", "-f", "smtp-simple.fan", "-n", "1", "--server", "8125"])
 time.sleep(5);  # Wait for server to be ready
 ```
 
