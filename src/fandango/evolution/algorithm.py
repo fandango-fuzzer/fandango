@@ -515,11 +515,7 @@ class Fandango:
     def _generate_io(
         self, max_generations: Optional[int] = None
     ) -> Generator[DerivationTree, None, None]:
-        if len(self.population) < self.population_size:
-            list(
-                self.generate_initial_population()
-            )  # ensure the generator runs until the end
-
+        self.population = [DerivationTree(NonTerminal(self.start_symbol))]
         spec_env_global, _ = self.grammar.get_spec_env()
         io_instance: FandangoIO = spec_env_global["FandangoIO"].instance()
         history_tree: DerivationTree = random.choice(self.population)
@@ -576,7 +572,6 @@ class Fandango:
                 len(self.packet_selector.next_fuzzer_parties()) != 0
                 and not io_instance.received_msg()
             ):
-
                 assert isinstance(self.population_manager, IoPopulationManager)
                 self.population_manager.fuzzable_packets = (
                     self.packet_selector.next_packets
