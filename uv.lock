@@ -667,6 +667,35 @@ development = [
     { name = "tccbox" },
     { name = "types-setuptools" },
 ]
+full = [
+    { name = "aiosmtpd" },
+    { name = "black" },
+    { name = "docutils" },
+    { name = "faker" },
+    { name = "ghp-import" },
+    { name = "graphviz" },
+    { name = "jupyter-book" },
+    { name = "mypy" },
+    { name = "numpy" },
+    { name = "pagelabels" },
+    { name = "pandas" },
+    { name = "pre-commit" },
+    { name = "pygls" },
+    { name = "pytest" },
+    { name = "pytest-benchmark" },
+    { name = "pytest-cov" },
+    { name = "pytest-html" },
+    { name = "pytest-pythonhashseed" },
+    { name = "pytest-rerunfailures" },
+    { name = "pytest-timeout" },
+    { name = "pytest-xdist" },
+    { name = "python-dateutil" },
+    { name = "scikit-build-core" },
+    { name = "speedy-antlr-tool" },
+    { name = "sphinxcontrib-mermaid" },
+    { name = "tccbox" },
+    { name = "types-setuptools" },
+]
 test = [
     { name = "docutils" },
     { name = "faker" },
@@ -698,6 +727,7 @@ requires-dist = [
     { name = "docutils", marker = "extra == 'test'", specifier = ">=0.20.1" },
     { name = "exrex", specifier = ">=0.12.0" },
     { name = "faker", marker = "extra == 'test'", specifier = ">=30.4.0" },
+    { name = "fandango-fuzzer", extras = ["book", "development", "test"], marker = "extra == 'full'" },
     { name = "fandango-fuzzer", extras = ["development"], marker = "extra == 'book'" },
     { name = "fandango-fuzzer", extras = ["test"], marker = "extra == 'development'" },
     { name = "ghp-import", marker = "extra == 'book'", specifier = ">=2.1.0" },
@@ -733,7 +763,7 @@ requires-dist = [
     { name = "types-setuptools", marker = "extra == 'development'", specifier = ">=73.0.1" },
     { name = "xdg-base-dirs", specifier = ">=6.0.2" },
 ]
-provides-extras = ["test", "development", "book"]
+provides-extras = ["test", "development", "book", "full"]
 
 [[package]]
 name = "fastjsonschema"
