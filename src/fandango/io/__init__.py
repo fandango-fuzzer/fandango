@@ -15,6 +15,7 @@ from abc import ABC
 from typing import Optional
 
 from fandango.errors import FandangoError, FandangoValueError
+from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
 from typing import Hashable
@@ -747,6 +748,99 @@ class In(FandangoParty):
             self.proc.stdin.flush()
             if self.close_post_transmit:
                 self.proc.stdin.close()
+
+class TimerControl(FandangoParty):
+
+    def __init__(self):
+        super().__init__(
+            connection_mode=ConnectionMode.CONNECT
+        )
+        self.timers: dict[str, tuple[int, bool, threading.Thread]] = {}
+        self.lock = threading.Lock()
+
+    def start(self) -> None:
+        pass
+
+    def is_synthetic(self) -> bool:
+        return True
+
+    def stop(self) -> None:
+        self.stop_timers()
+
+    def start_timer(self, name: str, time_s: int) -> None:
+        def timer_sleep():
+            for _ in range(time_s * 10):
+                if (not name in self.timers) or (not self.timers[name][1]):
+                    return
+                time.sleep(0.1)
+            self._on_timer_expire(name)
+        timer_thread = threading.Thread(target=timer_sleep)
+        with self.lock:
+            self.timers[name] = (time.time_ns(), True, timer_thread)
+            timer_thread.start()
+
+    def stop_timers(self, name: Optional[str] = None) -> None:
+        with self.lock:
+            timers_to_stop = list(self.timers.keys())
+            if name is not None:
+                timers_to_stop = [name]
+            for timer_name in timers_to_stop:
+                if timer_name not in self.timers:
+                    continue
+                timeout, running, timer_thread = self.timers[timer_name]
+                self.timers[timer_name] = timeout, False, timer_thread
+            for timer_name in timers_to_stop:
+                if timer_name not in self.timers:
+                    continue
+                _, _, timer_thread = self.timers[timer_name]
+                timer_thread.join()
+                del self.timers[timer_name]
+
+    def send(
+        self, message: DerivationTree | str | bytes, recipient: Optional[str]
+    ) -> None:
+        timer_id_node = message.find_all_nodes(NonTerminal("<timer_id>"), exclude_read_only=False)
+        if len(timer_id_node) == 0:
+            raise ValueError("No timer_id found in timer message")
+        timer_id = str(timer_id_node[0])
+        if len(message.children) == 0:
+            raise ValueError("No timer_command found in timer message")
+        timer_cmd = str(message).split(' ')[0]
+
+        if timer_cmd == "start:":
+            timer_time_s_nodes = message.find_all_nodes(NonTerminal("<timer_timeout>"), exclude_read_only=False)
+            if len(timer_time_s_nodes) == 0:
+                raise ValueError("No timer_timeout found in timer message")
+            self.stop_timers(timer_id)
+            self.start_timer(timer_id, int(timer_time_s_nodes[0]))
+        elif timer_cmd == "cancel:":
+            self.stop_timers(timer_id)
+        else:
+            raise ValueError(f"Unknown timer command: {timer_cmd}")
+
+        pass
+
+
+    def _on_timer_expire(self, name):
+        with self.lock:
+            if name in self.timers:
+                del self.timers[name]
+        self.receive(f"expired: {name}\n", "TimeCompute")
+
+class TimerEvent(FandangoParty):
+    def __init__(self):
+        super().__init__(
+            connection_mode=ConnectionMode.EXTERNAL
+        )
+
+    def is_synthetic(self) -> bool:
+        return True
+
+    def start(self) -> None:
+        pass
+
+    def stop(self) -> None:
+        pass
 
 
 class FandangoIO(object):
