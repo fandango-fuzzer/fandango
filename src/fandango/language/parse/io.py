@@ -167,7 +167,9 @@ def assign_implicit_party(grammar: Grammar, implicit_party: str) -> None:
                 continue
             # Check if the rule definition of this node already contains party definitions
             if c_node.symbol in grammar.rules:
-                if grammar[c_node.symbol].msg_parties(grammar=grammar, include_recipients=False):
+                if grammar[c_node.symbol].msg_parties(
+                    grammar=grammar, include_recipients=False
+                ):
                     continue
 
             c_node.sender = implicit_party
