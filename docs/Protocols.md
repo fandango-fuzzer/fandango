@@ -105,7 +105,7 @@ import sys
 import time
 
 aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n"])
-time.sleep(2);  # Wait for server to be ready
+time.sleep(5);  # Wait for server to be ready
 ```
 
 % Check if everything works
