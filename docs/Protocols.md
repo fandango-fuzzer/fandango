@@ -105,7 +105,7 @@ import sys
 import time
 
 aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n"])
-time.sleep(5);  # Wait for server to be ready
+time.sleep(10);  # Wait for server to be ready
 ```
 
 % Check if everything works
@@ -337,7 +337,7 @@ import subprocess
 import time
 
 fan_smtp_proc = subprocess.Popen(["fandango", "talk", "-f", "smtp-simple.fan", "-n", "1", "--server", "8125"])
-time.sleep(5);  # Wait for server to be ready
+time.sleep(10);  # Wait for server to be ready
 ```
 
 we can then connect to our running Fandango "SMTP Server" and interact with it according to the `smtp-simple.fan` spec:
