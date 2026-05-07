@@ -1,4 +1,4 @@
-from fandango.evolution.algorithm import Fandango, LoggerLevel
+from fandango.evolution.algorithm import SimpleGeneticAlgorithm, LoggerLevel
 from fandango.language.grammar import FuzzingMode
 from fandango.language.parse.parse import parse
 
@@ -8,7 +8,7 @@ def main():
     with open("chatgpt.fan") as f:
         grammar, constraints = parse(f, use_stdlib=False)
     assert grammar is not None
-    fandango = Fandango(
+    fandango = SimpleGeneticAlgorithm(
         grammar=grammar,
         constraints=constraints,
         logger_level=LoggerLevel.INFO,

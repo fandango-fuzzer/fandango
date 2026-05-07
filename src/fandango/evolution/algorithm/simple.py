@@ -1,7 +1,5 @@
 # fandango/evolution/algorithm.py
-import enum
 import itertools
-import logging
 import random
 import time
 import warnings
@@ -13,6 +11,7 @@ from fandango.constraints.soft import SoftValue
 from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.adaptation import AdaptiveTuner
+from fandango.evolution.algorithm.base import GeneticAlgorithm, LoggerLevel
 from fandango.evolution.crossover import CrossoverOperator, SimpleSubtreeCrossover
 from fandango.evolution.evaluation import Evaluator, IoEvaluator
 from fandango.evolution.mutation import MutationOperator, SimpleMutation
@@ -36,16 +35,7 @@ from fandango.logger import (
 )
 
 
-class LoggerLevel(enum.Enum):
-    NOTSET = logging.NOTSET
-    DEBUG = logging.DEBUG
-    INFO = logging.INFO
-    WARNING = logging.WARNING
-    ERROR = logging.ERROR
-    CRITICAL = logging.CRITICAL
-
-
-class Fandango:
+class SimpleGeneticAlgorithm(GeneticAlgorithm):
     def __init__(
         self,
         grammar: Grammar,
@@ -570,7 +560,6 @@ class Fandango:
                 len(self.packet_selector.next_fuzzer_parties()) != 0
                 and not io_instance.received_msg()
             ):
-
                 assert isinstance(self.population_manager, IoPopulationManager)
                 self.population_manager.fuzzable_packets = (
                     self.packet_selector.next_packets
