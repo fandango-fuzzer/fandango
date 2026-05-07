@@ -28,7 +28,9 @@ class MessageNestingDetector(NodeVisitor[None, None]):
             return
 
         if node.sender is not None:
-            parties = self.grammar[node.symbol].msg_parties(include_recipients=False)
+            parties = self.grammar[node.symbol].msg_parties(
+                grammar=self.grammar, include_recipients=False
+            )
             if len(parties) != 0:
                 raise RuntimeError(
                     f"Found illegal packet-definitions within packet-definition of non_terminal {node.symbol.format_as_spec()}: "

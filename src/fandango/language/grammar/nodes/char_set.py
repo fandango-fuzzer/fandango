@@ -7,7 +7,7 @@ from fandango.language.symbols.terminal import Terminal
 from fandango.language.tree import DerivationTree
 
 if TYPE_CHECKING:
-    import fandango
+    import fandango.language.grammar.node_visitors
 
 
 class CharSet(Node):
@@ -35,7 +35,9 @@ class CharSet(Node):
         return visitor.visitCharSet(self)
 
     def descendents(
-        self, grammar: "fandango.language.grammar.grammar.Grammar"
+        self,
+        grammar: "fandango.language.grammar.grammar.Grammar",
+        filter_controlflow: bool = False,
     ) -> Iterator["Node"]:
         for char in self.chars:
             yield TerminalNode(Terminal(char), self._grammar_settings)

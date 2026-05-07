@@ -5,6 +5,10 @@ on:
     branches: [main, release]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   benchmark_base_branch:
     name: Run Benchmarks
@@ -19,9 +23,8 @@ jobs:
       - name: Install Fandango
         uses: ./.github/workflows/setup-fandango
         with:
-          python-version: 3.13
+          python-version: "3.13"
           needs-sudo: true
-          target: test
 
       - name: Set up Bencher
         uses: bencherdev/bencher@main
@@ -45,4 +48,3 @@ jobs:
           --file results.json \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
           "pytest -n 0 --timeout 1200 --benchmark-json results.json --benchmark-enable --benchmark-only"
-    

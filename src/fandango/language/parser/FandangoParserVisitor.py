@@ -161,6 +161,10 @@ class FandangoParserVisitor(ParseTreeVisitor):
     def visitPython_tag(self, ctx: FandangoParser.Python_tagContext):
         return self.visitChildren(ctx)
 
+    # Visit a parse tree produced by FandangoParser#include.
+    def visitInclude(self, ctx: FandangoParser.IncludeContext):
+        return self.visitChildren(ctx)
+
     # Visit a parse tree produced by FandangoParser#grammar_setting.
     def visitGrammar_setting(self, ctx: FandangoParser.Grammar_settingContext):
         return self.visitChildren(ctx)

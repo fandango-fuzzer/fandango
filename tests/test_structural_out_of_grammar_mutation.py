@@ -1,13 +1,13 @@
 import logging
 import re
-from typing import Counter
+from collections import Counter
 
 import pytest
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.grammar_settings import GrammarSetting
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.terminal import TerminalNode
-from fandango.language.parse import parse
+from fandango.language.parse.parse import parse
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.symbols.terminal import Terminal
 from fandango.language.tree import DerivationTree

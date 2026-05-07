@@ -37,35 +37,35 @@ class TestSearches(unittest.TestCase):
     def test_rule_find_a(self):
         search = RuleSearch(NonTerminal("<a>"))
         trees = [c.evaluate() for c in search.find(self.EXAMPLE)]
-        self.assertEqual(1, len(trees))
-        self.assertEqual(self._A, trees[0])
+        self.assertEqual(1, len(trees), len(trees))
+        self.assertEqual(self._A, trees[0], trees[0])
 
     def test_rule_find_b(self):
         search = RuleSearch(NonTerminal("<b>"))
         trees = [c.evaluate() for c in search.find(self.EXAMPLE)]
-        self.assertEqual(2, len(trees))
+        self.assertEqual(2, len(trees), len(trees))
         self.assertIn(self._B1, trees)
         self.assertIn(self._B2, trees)
 
     def test_rule_find_c(self):
         search = RuleSearch(NonTerminal("<c>"))
         trees = [c.evaluate() for c in search.find(self.EXAMPLE)]
-        self.assertEqual(2, len(trees))
+        self.assertEqual(2, len(trees), len(trees))
         self.assertIn(self._C1, trees)
         self.assertIn(self._C2, trees)
 
     def test_rule_find_d(self):
         search = RuleSearch(NonTerminal("<d>"))
         trees = [c.evaluate() for c in search.find(self.EXAMPLE)]
-        self.assertEqual(1, len(trees))
-        self.assertEqual(self._D, trees[0])
+        self.assertEqual(1, len(trees), len(trees))
+        self.assertEqual(self._D, trees[0], trees[0])
 
     def test_rule_find_bc(self):
         search = AttributeSearch(
             RuleSearch(NonTerminal("<b>")), RuleSearch(NonTerminal("<c>"))
         )
         trees = [c.evaluate() for c in search.find(self.EXAMPLE)]
-        self.assertEqual(2, len(trees))
+        self.assertEqual(2, len(trees), len(trees))
         self.assertIn(self._C1, trees)
         self.assertIn(self._C2, trees)
 
@@ -74,7 +74,7 @@ class TestSearches(unittest.TestCase):
             RuleSearch(NonTerminal("<d>")), RuleSearch(NonTerminal("<b>"))
         )
         trees = [c.evaluate() for c in search.find(self.EXAMPLE)]
-        self.assertEqual(1, len(trees))
+        self.assertEqual(1, len(trees), len(trees))
         self.assertIn(self._B2, trees)
 
     def test_rule_find_ab(self):
@@ -82,7 +82,7 @@ class TestSearches(unittest.TestCase):
             RuleSearch(NonTerminal("<a>")), RuleSearch(NonTerminal("<b>"))
         )
         trees = [c.evaluate() for c in search.find(self.EXAMPLE)]
-        self.assertEqual(1, len(trees))
+        self.assertEqual(1, len(trees), len(trees))
         self.assertIn(self._B1, trees)
 
     def test_rule_find_ad(self):
@@ -90,7 +90,7 @@ class TestSearches(unittest.TestCase):
             RuleSearch(NonTerminal("<a>")), RuleSearch(NonTerminal("<d>"))
         )
         trees = [c.evaluate() for c in search.find(self.EXAMPLE)]
-        self.assertEqual(1, len(trees))
+        self.assertEqual(1, len(trees), len(trees))
         self.assertIn(self._D, trees)
 
     def test_rule_find_abc(self):
@@ -101,7 +101,7 @@ class TestSearches(unittest.TestCase):
             RuleSearch(NonTerminal("<c>")),
         )
         trees = [c.evaluate() for c in search.find(self.EXAMPLE)]
-        self.assertEqual(1, len(trees))
+        self.assertEqual(1, len(trees), len(trees))
         self.assertIn(self._C1, trees)
 
     def test_rule_find_adb(self):
@@ -112,7 +112,7 @@ class TestSearches(unittest.TestCase):
             RuleSearch(NonTerminal("<b>")),
         )
         trees = [c.evaluate() for c in search.find(self.EXAMPLE)]
-        self.assertEqual(1, len(trees))
+        self.assertEqual(1, len(trees), len(trees))
         self.assertIn(self._B2, trees)
 
     def test_rule_find_adbc(self):
@@ -126,7 +126,7 @@ class TestSearches(unittest.TestCase):
             RuleSearch(NonTerminal("<c>")),
         )
         trees = [c.evaluate() for c in search.find(self.EXAMPLE)]
-        self.assertEqual(1, len(trees))
+        self.assertEqual(1, len(trees), len(trees))
         self.assertIn(self._C2, trees)
 
     def test_descendant_attribute_search(self):
@@ -134,7 +134,7 @@ class TestSearches(unittest.TestCase):
             RuleSearch(NonTerminal("<a>")), RuleSearch(NonTerminal("<b>"))
         )
         trees = [c.evaluate() for c in search.find(self.EXAMPLE)]
-        self.assertEqual(2, len(trees))
+        self.assertEqual(2, len(trees), len(trees))
         self.assertIn(self._B1, trees)
         self.assertIn(self._B2, trees)
 
@@ -146,13 +146,13 @@ class TestSearches(unittest.TestCase):
             RuleSearch(NonTerminal("<c>")),
         )
         trees = [c.evaluate() for c in search.find(self.EXAMPLE)]
-        self.assertEqual(1, len(trees))
+        self.assertEqual(1, len(trees), len(trees))
         self.assertIn(self._C2, trees)
 
     def test_item_search(self):
         search = ItemSearch(RuleSearch(NonTerminal("<c>")), [0])
         trees = [c.evaluate() for c in search.find(self.EXAMPLE)]
-        self.assertEqual(2, len(trees))
+        self.assertEqual(2, len(trees), len(trees))
         self.assertIn(self._0, trees)
         self.assertIn(self._1, trees)
 
@@ -162,7 +162,7 @@ class TestSearches(unittest.TestCase):
             RuleSearch(NonTerminal("<b>")),
         )
         trees = [c.evaluate() for c in search.find(self.EXAMPLE)]
-        self.assertEqual(1, len(trees))
+        self.assertEqual(1, len(trees), len(trees))
         self.assertIn(self._B1, trees)
 
     def test_selective_search(self):
@@ -170,7 +170,7 @@ class TestSearches(unittest.TestCase):
             RuleSearch(NonTerminal("<a>")), [(NonTerminal("<d>"), True)], [None]
         )
         trees = [c.evaluate() for c in search.find(self.EXAMPLE)]
-        self.assertEqual(1, len(trees))
+        self.assertEqual(1, len(trees), len(trees))
         self.assertIn(self._D, trees)
 
     def test_selective_search_complex(self):
@@ -183,7 +183,7 @@ class TestSearches(unittest.TestCase):
             ),
         )
         trees = [c.evaluate() for c in search.find(self.EXAMPLE)]
-        self.assertEqual(1, len(trees))
+        self.assertEqual(1, len(trees), len(trees))
         self.assertIn(self._C2, trees)
 
     def test_selective_search_more_complex(self):
@@ -194,15 +194,15 @@ class TestSearches(unittest.TestCase):
             RuleSearch(NonTerminal("<c>")),
         )
         trees = [c.evaluate() for c in search.find(self.EXAMPLE)]
-        self.assertEqual(2, len(trees))
+        self.assertEqual(2, len(trees), len(trees))
         self.assertIn(self._C1, trees)
         self.assertIn(self._C2, trees)
 
     def test_star_search(self):
         search = StarSearch(RuleSearch(NonTerminal("<c>")))
         trees = [c.evaluate() for c in search.find(self.EXAMPLE)]
-        self.assertEqual(1, len(trees))
+        self.assertEqual(1, len(trees), len(trees))
         self.assertIsInstance(trees[0], list)
-        self.assertEqual(2, len(trees[0]))
+        self.assertEqual(2, len(trees[0]), len(trees[0]))
         self.assertIn(self._C1, trees[0])
         self.assertIn(self._C2, trees[0])

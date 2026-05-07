@@ -26,6 +26,8 @@ from fandango.constraints.fitness import (
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.logger import LOGGER, print_exception
 
+_MAX_FAILED_COMPARISON_FITNESS = 1 - 1e-4
+
 
 class EqualComparisonSuggestion(Suggestion):
     def __init__(self, target: DerivationTree, source: Any):
@@ -35,8 +37,14 @@ class EqualComparisonSuggestion(Suggestion):
         :param target: The target to parse into.
         :param source: What to parse.
         """
+        assert isinstance(target.symbol, NonTerminal)
         self._target = target
         self._source = source
+
+    def rec_set_allow_repetition_full_delete(
+        self, allow_repetition_full_delete: bool
+    ) -> None:
+        pass
 
     def get_replacements(
         self, individual: DerivationTree, grammar: Grammar
@@ -53,16 +61,20 @@ class EqualComparisonSuggestion(Suggestion):
 
         # don't parse if same symbol
         if isinstance(self._source, DerivationTree) and symbol == self._source.symbol:
+            source_copy = self._source.deepcopy(
+                copy_children=True, copy_params=False, copy_parent=False
+            )
+            source_copy.set_all_read_only(False)
             return [
                 (
                     self._target,
-                    self._source.deepcopy(
-                        copy_children=True, copy_params=False, copy_parent=False
-                    ),
+                    source_copy,
                 )
             ]
 
         elif suggested_tree := grammar.parse(self._source, start=symbol):
+            suggested_tree.sender = self._target.sender
+            suggested_tree.recipient = self._target.recipient
             return [(self._target, suggested_tree)]
 
         return []
@@ -93,7 +105,7 @@ class ComparisonConstraint(Constraint):
         """
         assert (
             "searches" not in kwargs
-        ), "don't provide seaches combination, instead provide left_searches and right_searches"
+        ), "don't provide searches combination, instead provide left_searches and right_searches"
         searches: dict[str, NonTerminalSearch] = {}
         searches.update(
             {
@@ -187,7 +199,7 @@ class ComparisonConstraint(Constraint):
             if not hasattr(self, "types_checked") or not self._types_checked:
                 self._types_checked = self.check_type_compatibility(left, right)
 
-            (fitness_value, suggestion) = self._evaluate_comparison(
+            fitness_value, suggestion = self._evaluate_comparison(
                 left, right, single_left_tree, single_right_tree
             )
             if fitness_value < 1.0:
@@ -292,11 +304,17 @@ class ComparisonConstraint(Constraint):
         if self._operator.compare(left, right):
             return 1.0, NopSuggestion()
 
-        dist_norm = _distance_norm(left, right)
-        fitness = (1.0 - dist_norm) if dist_norm is not None else 0.0
         if self._operator == Comparison.NOT_EQUAL:
             # NOT_EQUAL does not span a range to the fitness is immediately zero if they are equal (introduced by @henryhchchc, moved by @riesentoaster)
             fitness = 0.0
+        else:
+            dist_norm = _distance_norm(left, right)
+            fitness = (1.0 - dist_norm) if dist_norm is not None else 0.0
+
+            # fitness should never be 1.0 here, as the comparison failed above
+            # this is especially important for strict inequalities like 2 > 2,
+            # where the distance norm is 0 and would wrongly yield fitness 1.0
+            fitness = min(fitness, _MAX_FAILED_COMPARISON_FITNESS)
 
         suggestions = []
 
@@ -308,11 +326,22 @@ class ComparisonConstraint(Constraint):
                 # this will always fix <len> to 0
                 # or <first_name> + "Doe" == "John Doe"
                 # this will try to parse "John Doe" into <first_name>, which is not what we want
-                if single_left_tree is not None and single_left_tree == left:
+                # we need to make sure we can actually parse the value into the tree type-wise, before comparing the actual values
+                if (
+                    single_left_tree is not None
+                    and isinstance(single_left_tree.symbol, NonTerminal)
+                    and single_left_tree.parseable_from(left)
+                    and single_left_tree == left
+                ):
                     suggestions.append(
                         EqualComparisonSuggestion(single_left_tree, right)
                     )
-                if single_right_tree is not None and single_right_tree == right:
+                if (
+                    single_right_tree is not None
+                    and isinstance(single_right_tree.symbol, NonTerminal)
+                    and single_right_tree.parseable_from(right)
+                    and single_right_tree == right
+                ):
                     suggestions.append(
                         EqualComparisonSuggestion(single_right_tree, left)
                     )
@@ -336,7 +365,7 @@ def _distance_norm(left: Any, right: Any) -> Optional[float]:
         except Exception:
             return None
 
-    if dist is float | int:
+    if isinstance(dist, (float, int)):
         dist = 2 * (_sigmoid(abs(dist)) - 0.5)
         return dist
     else:

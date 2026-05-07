@@ -3,9 +3,11 @@ import os
 import sys
 import time
 import traceback
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from ansi_styles import ansiStyles as styles
+
+from fandango.language.symbols.non_terminal import NonTerminal
 
 if TYPE_CHECKING:
     import fandango
@@ -22,8 +24,7 @@ logging.basicConfig(
 
 
 def print_exception(e: Exception, exception_note: Optional[str] = None) -> None:
-    if exception_note is not None and getattr(Exception, "add_note", None):
-        # Python 3.11+ has add_note() method
+    if exception_note is not None:
         e.add_note(exception_note)
         exception_note = None
 
@@ -184,4 +185,16 @@ def log_message_transfer(
     else:
         print_msg = str(msg.value())
 
-    LOGGER.info(f"{info}: {print_msg!r}")
+    LOGGER.info(f"{info}: {msg.symbol} {print_msg!r}")
+
+
+def log_guidance_hint(message: str) -> None:
+    LOGGER.info(f"{message}")
+
+
+def log_message_coverage(
+    coverage: list[tuple[NonTerminal, float]],
+) -> None:
+    LOGGER.info(f"Current message coverage:")
+    for symbol, coverage_val in coverage:
+        LOGGER.info(f"{symbol}: {coverage_val:.2f}")

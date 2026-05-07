@@ -1,0 +1,19 @@
+version: '3.7'
+
+services:
+  vsftpd:
+    image: delfer/alpine-ftp-server
+    restart: 'no'
+    environment:
+      USERS: "the_user|the_password"
+      #USERADD_OPTIONS: "-o --gid 33 --uid 33"
+      # optional : default to 50000 and 50100
+      MIN_PORT: 50000
+      MAX_PORT: 50100
+      # optional : default to undefined
+      #MASQUERADE_ADDRESS: 0.0.0.0
+    volumes:
+      - "./data/ftp_root:/ftp/the_user"
+    ports:
+      - "25521:21"
+      - "50000-50100:50000-50100"

@@ -3,7 +3,7 @@ import tempfile
 import time
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
-from fandango.language.parse import parse
+from fandango.language.parse.parse import parse
 
 
 def is_syntactically_valid_tar(tree: str):
@@ -12,7 +12,7 @@ def is_syntactically_valid_tar(tree: str):
         outfile.flush()
         cmd = ["bsdtar", "-tf", outfile.name]
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (stdout, stderr) = process.communicate(timeout=10)
+        stdout, stderr = process.communicate(timeout=10)
         exit_code = process.wait()
 
         if exit_code == 0:
