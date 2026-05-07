@@ -14,7 +14,7 @@ def sanitize_hostname(s: str, alt_hostname: str = "smtp.example.com") -> str:
     return insensitive_hostname.sub(alt_hostname, s)
 
 
-def telnet(commands: list[str], port=8025, host="localhost"):
+def telnet(commands: list[str], port=8025, host="127.0.0.1"):
     """Simulate a telnet session to port on host."""
 
     print(f"Trying {host}...")
@@ -39,7 +39,9 @@ def telnet(commands: list[str], port=8025, host="localhost"):
 
 
 if __name__ == "__main__":
-    smtp_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n"])
+    smtp_proc = subprocess.Popen(
+        [sys.executable, "-m", "aiosmtpd", "-n", "-l", "127.0.0.1:8025"]
+    )
     time.sleep(0.5)  # Give the server a moment to start
 
     commands = ["HELO relay.example.org\r\n", "QUIT\r\n"]
