@@ -9,7 +9,11 @@ from aiosmtpd.handlers import Debugging
 from fandango.io.navigation.coverage_goal import CoverageGoal
 from fandango.language.grammar import FuzzingMode
 from fandango.language.parse.parse import parse
-from fandango.evolution.algorithm import Fandango, LoggerLevel
+from fandango.evolution.algorithm import (
+    DefaultAlgorithm,
+    GeneticAlgorithm,
+    LoggerLevel,
+)
 from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import AuthResult, LoginPassword
 
@@ -60,7 +64,9 @@ class SMTPServer:
 
 class GrammarCoverageTest(unittest.TestCase):
     @staticmethod
-    def gen_fandango(coverage_goal: CoverageGoal, host: str, port: int) -> Fandango:
+    def gen_fandango(
+        coverage_goal: CoverageGoal, host: str, port: int
+    ) -> GeneticAlgorithm:
 
         client_def = f"""
 class Client(NetworkParty):
@@ -86,7 +92,7 @@ class Server(NetworkParty):
                 use_stdlib=False,
             )
         assert grammar is not None
-        return Fandango(
+        return DefaultAlgorithm(
             grammar=grammar,
             constraints=constraints,
             logger_level=LoggerLevel.INFO,
