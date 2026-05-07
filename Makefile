@@ -159,7 +159,7 @@ pdf: $(PDF_TARGET)
 
 # Re-create the book in HTML
 $(HTML_MARKER): $(DOCS_SOURCES) $(ALL_HTML_MARKER)
-	$(JB) build $(DOCS)
+	$(JB) build $(DOCS) -v
 	-$(PATCH_HTML)
 	@$(CHECK_DOCS)
 	echo 'Success' > $@
