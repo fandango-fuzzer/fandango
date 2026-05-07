@@ -233,7 +233,7 @@ $ fandango talk -f smtp-telnet.fan -n 1 telnet localhost 8025
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango -v talk -f smtp-telnet.fan -n 1 telnet localhost 8025
+!fandango -v talk -f smtp-simple.fan -n 1 --client 8025
 assert _exit_code == 0
 ```
 
