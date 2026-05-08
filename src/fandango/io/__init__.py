@@ -834,7 +834,7 @@ class TimerEvent(FandangoParty):
         )
 
     def is_synthetic(self) -> bool:
-        return True
+        return False
 
     def start(self) -> None:
         pass

@@ -305,7 +305,7 @@ class PacketSelector:
     def _select_next_packet(self) -> list[ForecastingPacket]:
         if len(self.next_fuzzer_parties()) == 0:
             current_external_parties = set(self.next_fuzzer_parties(False, True))
-            if not any(filter(lambda x: x in self.io_instance.synthetic_parties, current_external_parties)):
+            if "TimerEvent" not in current_external_parties:
                 return []
 
         is_new_tree = len(self.parst_derivations) > self.prev_past_derivations_len
@@ -412,7 +412,11 @@ class PacketSelector:
         if hookin_states is not None:
             hookin_states_tp = tuple(hookin_states)
 
-        for current_sender in self.next_fuzzer_parties():
+        available_senders = self.next_fuzzer_parties()
+        if "TimerEvent" in self.next_external_parties():
+            available_senders.append("TimerEvent")
+
+        for current_sender in available_senders:
             if sender is not None and current_sender != sender:
                 continue
             for packet in self.forecasting_result[current_sender].nt_to_packet.values():
