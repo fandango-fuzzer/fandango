@@ -551,10 +551,13 @@ class Fandango:
                 if len(next_synthetic_parties) != 0:
                     next_parties = next_synthetic_parties
                     force_message_generation = True
+                wait_for_timer = False
+                for pkg in self.packet_selector.next_packets:
+                    if pkg.node.sender == "TimerEvent":
+                        wait_for_timer = True
                 if force_message_generation or (
-                    len(next_parties) != 0 and not io_instance.received_msg()
+                        len(next_parties) != 0 and not io_instance.received_msg() and not wait_for_timer
                 ):
-
                     assert isinstance(self.population_manager, IoPopulationManager)
                     self.population_manager.fuzzable_packets = (
                         self.packet_selector.next_packets
@@ -660,7 +663,7 @@ class Fandango:
                 else:
                     wait_start = time.time()
                     while not io_instance.received_msg():
-                        if time.time() - wait_start > self.remote_response_timeout:
+                        if time.time() - wait_start > self.remote_response_timeout and not wait_for_timer:
                             external_parties = (
                                 self.packet_selector.next_external_parties()
                             )
