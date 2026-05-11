@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 
 import enum
+import io
 import logging
+import os
+import pty
 import re
 from uuid import UUID
 
@@ -962,13 +965,28 @@ class ProcessManager(object):
             return
 
         LOGGER.info(f"Starting subprocess with command {command}")
-        self.proc = subprocess.Popen(
-            command,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=self.text,
-        )
+
+        if sys.platform != "win32":
+            import pty
+            master_fd, slave_fd = pty.openpty()
+            self.proc = subprocess.Popen(
+                command,
+                stdin=subprocess.PIPE,
+                stdout=slave_fd,
+                stderr=subprocess.PIPE,
+                text=False,
+            )
+            os.close(slave_fd)  # only needed in the child; close in parent
+            raw_stdout = os.fdopen(master_fd, "rb")
+            self.proc.stdout = (io.TextIOWrapper(raw_stdout, newline="\n") if self.text else raw_stdout)
+        else:
+            self.proc = subprocess.Popen(
+                command,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=self.text,
+            )
 
 
 def set_program_command(command: str | list[str], text: bool = True) -> None:
