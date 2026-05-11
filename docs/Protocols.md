@@ -100,12 +100,22 @@ $ python -m aiosmtpd -d -n --listen 127.0.0.1 &
 ```{code-cell}
 :tags: ["remove-input"]
 import os
+import socket
 import subprocess
 import sys
 import time
 
+def _wait_for_port(port, host='127.0.0.1', timeout=30):
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            socket.create_connection((host, port), timeout=1).close()
+            return
+        except OSError:
+            time.sleep(0.5)
+
 aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n", "-l", "127.0.0.1:8025"])
-time.sleep(5);  # Wait for server to be ready
+_wait_for_port(8025)
 ```
 
 % Check if everything works
@@ -236,7 +246,7 @@ $ fandango talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8025
 aiosmtpd_proc.terminate()
 aiosmtpd_proc.wait()
 aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n", "-l", "127.0.0.1:8025"])
-time.sleep(5);
+_wait_for_port(8025)
 !fandango -v talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8025
 assert _exit_code == 0
 ```
@@ -253,7 +263,7 @@ $ fandango -v talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8025
 aiosmtpd_proc.terminate()
 aiosmtpd_proc.wait()
 aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n", "-l", "127.0.0.1:8025"])
-time.sleep(5);
+_wait_for_port(8025)
 !fandango -v talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8025
 assert _exit_code == 0
 ```
@@ -313,7 +323,7 @@ $ fandango talk -f smtp-simple.fan -n 1 --client 8025
 aiosmtpd_proc.terminate()
 aiosmtpd_proc.wait()
 aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n", "-l", "127.0.0.1:8025"])
-time.sleep(5);
+_wait_for_port(8025)
 !fandango talk -f smtp-simple.fan -n 1 --client 8025
 assert _exit_code == 0
 ```
