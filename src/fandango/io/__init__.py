@@ -969,6 +969,7 @@ class ProcessManager(object):
 
         if sys.platform != "win32":
             import pty
+
             master_fd, slave_fd = pty.openpty()
             tty.setraw(master_fd)
             self.proc = subprocess.Popen(
@@ -980,7 +981,9 @@ class ProcessManager(object):
             )
             os.close(slave_fd)  # only needed in the child; close in parent
             raw_stdout = os.fdopen(master_fd, "rb")
-            self.proc.stdout = (io.TextIOWrapper(raw_stdout, newline="\n") if self.text else raw_stdout)
+            self.proc.stdout = (
+                io.TextIOWrapper(raw_stdout, newline="\n") if self.text else raw_stdout
+            )
         else:
             self.proc = subprocess.Popen(
                 command,
