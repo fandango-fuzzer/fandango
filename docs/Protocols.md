@@ -233,6 +233,10 @@ $ fandango talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8025
 
 ```{code-cell}
 :tags: ["remove-input"]
+aiosmtpd_proc.terminate()
+aiosmtpd_proc.wait()
+aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n", "-l", "127.0.0.1:8025"])
+time.sleep(5);
 !fandango -v talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8025
 assert _exit_code == 0
 ```
@@ -246,6 +250,10 @@ $ fandango -v talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8025
 
 ```{code-cell}
 :tags: ["remove-input"]
+aiosmtpd_proc.terminate()
+aiosmtpd_proc.wait()
+aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n", "-l", "127.0.0.1:8025"])
+time.sleep(5);
 !fandango -v talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8025
 assert _exit_code == 0
 ```
@@ -302,6 +310,10 @@ $ fandango talk -f smtp-simple.fan -n 1 --client 8025
 
 ```{code-cell}
 :tags: ["remove-input"]
+aiosmtpd_proc.terminate()
+aiosmtpd_proc.wait()
+aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n", "-l", "127.0.0.1:8025"])
+time.sleep(5);
 !fandango talk -f smtp-simple.fan -n 1 --client 8025
 assert _exit_code == 0
 ```
