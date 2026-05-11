@@ -91,10 +91,10 @@ $ pip install aiosmtpd
 ```
 
 Once installed, we can run the server locally.
-Normally, it runs on port 8025:
+Normally, it runs on port 8075:
 
 ```shell
-$ python -m aiosmtpd -d -n --listen 127.0.0.1 &
+$ python -m aiosmtpd -d -n --listen 127.0.0.1:8075 &
 ```
 
 ```{code-cell}
@@ -114,8 +114,8 @@ def _wait_for_port(port, host='127.0.0.1', timeout=30):
         except OSError:
             time.sleep(0.5)
 
-aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n", "-l", "127.0.0.1:8025"])
-_wait_for_port(8025)
+aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n", "-l", "127.0.0.1:8075"])
+_wait_for_port(8075)
 ```
 
 % Check if everything works
@@ -132,13 +132,13 @@ telnet(commands)
 
 We can now connect to the server on the given port and send it commands.
 The `telnet` command is handy for this.
-We give it a hostname (`localhost` for our local machine) and a port (8025 for our local SMTP server.)
+We give it a hostname (`localhost` for our local machine) and a port (8075 for our local SMTP server.)
 
 Once connected, anything we type into the `telnet` input will automatically be relayed to the given port, and hence to the SMTP server.
 For instance, entering a `QUIT` command (followed by Return) into telnet will be forwarded to the SMTP server, which will terminate the connection:
 
 ```shell
-$ telnet 127.0.0.1 8025
+$ telnet 127.0.0.1 8075
 ```
 
 ```{code-cell}
@@ -158,7 +158,7 @@ This is the name of the local computer, in our example `smtp.example.com`.
 
 % Can't have code cells in admonitions :-(
 ```shell
-$ telnet 127.0.0.1 8025
+$ telnet 127.0.0.1 8075
 Trying localhost...
 Connected to localhost.
 Escape character is '^]'.
@@ -190,7 +190,7 @@ The idea would now be to use the `telnet` program for this very purpose.
 By invoking
 
 ```shell
-$ fandango talk -f smtp-telnet.fan telnet 127.0.0.1 8025
+$ fandango talk -f smtp-telnet.fan telnet 127.0.0.1 8075
 ```
 
 we could interact with the `telnet` program as described above.
@@ -238,16 +238,16 @@ Without `-n 1`, Fandango keeps on generating inputs until [grammar coverage](sec
 ```
 
 ```shell
-$ fandango talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8025
+$ fandango talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8075
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
 aiosmtpd_proc.terminate()
 aiosmtpd_proc.wait()
-aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n", "-l", "127.0.0.1:8025"])
-_wait_for_port(8025)
-!fandango -v talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8025
+aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n", "-l", "127.0.0.1:8075"])
+_wait_for_port(8075)
+!fandango -v talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8075
 assert _exit_code == 0
 ```
 
@@ -255,16 +255,16 @@ To track the data that is actually exchanged, use the verbose `-v` flag.
 The `In:` and `Out:` log messages show the data that is being exchanged.
 
 ```shell
-$ fandango -v talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8025
+$ fandango -v talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8075
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
 aiosmtpd_proc.terminate()
 aiosmtpd_proc.wait()
-aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n", "-l", "127.0.0.1:8025"])
-_wait_for_port(8025)
-!fandango -v talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8025
+aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n", "-l", "127.0.0.1:8075"])
+_wait_for_port(8075)
+!fandango -v talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8075
 assert _exit_code == 0
 ```
 
@@ -288,7 +288,7 @@ The `fandango talk` option `--client` allows Fandango to be used as a network cl
 The argument to `--client` is a network address to connect to.
 In the simplest form, it is just a port number on the local machine.
 Hence, to have Fandango act as an SMTP client for the local server, we would use
-the option `--client 8025`.
+the option `--client 8075`.
 
 Since Fandango directly talks to the SMTP server now, we can also simplify the grammar by removing the `<telnet_intro>` part.
 Also, there is no more `In` and `Out` parties, since we do not interact with the standard input and output of an invoked program.
@@ -312,19 +312,19 @@ The spec [`smtp-simple.fan`](smtp-simple.fan) reads as follows:
 
 Note how we added `<hostname>` as additional specification of the hostname that is typically part of the initial server message.
 
-With this, we have Fandango act as client and connect to the (hopefully still running) server on port 8025:
+With this, we have Fandango act as client and connect to the (hopefully still running) server on port 8075:
 
 ```shell
-$ fandango talk -f smtp-simple.fan -n 1 --client 8025
+$ fandango talk -f smtp-simple.fan -n 1 --client 8075
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
 aiosmtpd_proc.terminate()
 aiosmtpd_proc.wait()
-aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n", "-l", "127.0.0.1:8025"])
-_wait_for_port(8025)
-!fandango talk -f smtp-simple.fan -n 1 --client 8025
+aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n", "-l", "127.0.0.1:8075"])
+_wait_for_port(8075)
+!fandango talk -f smtp-simple.fan -n 1 --client 8075
 assert _exit_code == 0
 ```
 
