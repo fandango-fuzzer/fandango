@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest-large]
     runs-on: ${{ matrix.os }}
     steps:
       # Step 1: Checkout the source repository
