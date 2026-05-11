@@ -4,7 +4,7 @@ from collections.abc import Generator
 import itertools
 import unittest
 
-from fandango.evolution.algorithm import Fandango, LoggerLevel
+from fandango.evolution.algorithm import DefaultAlgorithm, LoggerLevel
 from fandango.language.parse.parse import parse
 from .utils import RESOURCES_ROOT, run_command
 
@@ -24,7 +24,7 @@ class TestSoft(unittest.TestCase):
             )
         assert grammar_int is not None
         assert constraints_int is not None
-        fandango = Fandango(
+        fandango = DefaultAlgorithm(
             grammar=grammar_int,
             constraints=constraints_int,
             random_seed=random_seed,

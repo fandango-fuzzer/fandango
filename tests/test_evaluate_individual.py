@@ -2,7 +2,7 @@ from itertools import islice
 import pytest
 from fandango import DerivationTree
 from fandango.evolution import GeneratorWithReturn
-from fandango.evolution.algorithm import Fandango
+from fandango.evolution.algorithm import DefaultAlgorithm
 from fandango.language.parse.parse import parse
 from fandango.language.symbols.non_terminal import NonTerminal
 from tests.utils import RESOURCES_ROOT
@@ -13,7 +13,7 @@ def test_with_passed_eq_constraints():
         grammar, constraints = parse([file, 'where <first_name> == "First"'])
 
     assert grammar is not None
-    fan = Fandango(grammar, constraints)
+    fan = DefaultAlgorithm(grammar, constraints)
     individual = grammar.parse("First Last,30")
     assert individual is not None
     gen = GeneratorWithReturn(fan.evaluator.evaluate_individual(individual=individual))
@@ -37,7 +37,7 @@ def test_with_failing_eq_constraints_right_into_left(constraint):
         grammar, constraints = parse([file, constraint])
 
     assert grammar is not None
-    fan = Fandango(grammar, constraints)
+    fan = DefaultAlgorithm(grammar, constraints)
     individual = grammar.parse("First Last,30")
     assert individual is not None
     gen = GeneratorWithReturn(fan.evaluator.evaluate_individual(individual=individual))
@@ -59,7 +59,7 @@ def test_with_soft_constraint():
         grammar, constraints = parse([file, "maximizing int(<age>)"])
 
     assert grammar is not None
-    fan = Fandango(grammar, constraints)
+    fan = DefaultAlgorithm(grammar, constraints)
     individual = grammar.parse("First Last,30")
     assert individual is not None
     gen = GeneratorWithReturn(fan.evaluator.evaluate_individual(individual=individual))
@@ -79,7 +79,7 @@ def test_with_successful_hard_and_soft_constraints():
         )
 
     assert grammar is not None
-    fan = Fandango(grammar, constraints)
+    fan = DefaultAlgorithm(grammar, constraints)
     individual = grammar.parse("First Last,30")
     assert individual is not None
     gen = GeneratorWithReturn(fan.evaluator.evaluate_individual(individual=individual))
@@ -99,7 +99,7 @@ def test_with_failing_hard_and_soft_constraints():
         )
 
     assert grammar is not None
-    fan = Fandango(grammar, constraints)
+    fan = DefaultAlgorithm(grammar, constraints)
     individual = grammar.parse("First Last,30")
     assert individual is not None
     gen = GeneratorWithReturn(fan.evaluator.evaluate_individual(individual=individual))
@@ -130,7 +130,7 @@ def test_provides_suggestion_with_fixed_value(constraint):
         grammar, constraints = parse([file, constraint])
 
     assert grammar is not None
-    fan = Fandango(grammar, constraints)
+    fan = DefaultAlgorithm(grammar, constraints)
     individual = grammar.parse("First Last,30")
     assert individual is not None
     gen = GeneratorWithReturn(fan.evaluator.evaluate_individual(individual=individual))
@@ -164,7 +164,7 @@ def test_provides_suggestion_with_nt(constraint):
         grammar, constraints = parse([file, constraint])
 
     assert grammar is not None
-    fan = Fandango(grammar, constraints)
+    fan = DefaultAlgorithm(grammar, constraints)
     individual = grammar.parse("First Last,30")
     assert individual is not None
     gen = GeneratorWithReturn(fan.evaluator.evaluate_individual(individual=individual))
@@ -199,7 +199,7 @@ def test_does_not_provide_suggestion_with_altered_nt_and_fixed_value(constraint)
         grammar, constraints = parse([file, constraint])
 
     assert grammar is not None
-    fan = Fandango(grammar, constraints)
+    fan = DefaultAlgorithm(grammar, constraints)
     individual = grammar.parse("First Last,30")
     assert individual is not None
     gen = GeneratorWithReturn(fan.evaluator.evaluate_individual(individual=individual))
@@ -237,7 +237,7 @@ def test_does_not_provide_suggestion_with_altered_nt_and_nt(constraint):
         grammar, constraints = parse([file, constraint])
 
     assert grammar is not None
-    fan = Fandango(grammar, constraints)
+    fan = DefaultAlgorithm(grammar, constraints)
     individual = grammar.parse("First Last,30")
     assert individual is not None
     gen = GeneratorWithReturn(fan.evaluator.evaluate_individual(individual=individual))
@@ -263,7 +263,7 @@ def test_with_non_matching_types_eq_constraint():
         grammar, constraints = parse(file)
 
     assert grammar is not None
-    fan = Fandango(grammar, constraints)
+    fan = DefaultAlgorithm(grammar, constraints)
     gen = fan.generate(
         max_generations=0
     )  # if we need any generational mutation, autofixing is broken
@@ -282,7 +282,7 @@ def test_does_not_provide_suggestion_with_slice_and_fixed_value():
         grammar, constraints = parse([file, "where <first_name>[0:4] == 'John'"])
 
     assert grammar is not None
-    fan = Fandango(grammar, constraints)
+    fan = DefaultAlgorithm(grammar, constraints)
     individual = grammar.parse("First Last,30")
     assert individual is not None
     gen = GeneratorWithReturn(fan.evaluator.evaluate_individual(individual=individual))
