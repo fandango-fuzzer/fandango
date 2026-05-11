@@ -14,7 +14,7 @@ def sanitize_hostname(s: str, alt_hostname: str = "smtp.example.com") -> str:
     return insensitive_hostname.sub(alt_hostname, s)
 
 
-def telnet(commands: list[str], port=8025, host="127.0.0.1"):
+def telnet(commands: list[str], port=8075, host="127.0.0.1"):
     """Simulate a telnet session to port on host."""
 
     print(f"Trying {host}...")
