@@ -4,7 +4,7 @@ import itertools
 import random
 import unittest
 
-from fandango.evolution.algorithm import Fandango
+from fandango.evolution.algorithm import DefaultAlgorithm
 from fandango.language.symbols import NonTerminal
 from fandango.language.parse.parse import parse
 from fandango.language.tree import DerivationTree
@@ -52,7 +52,7 @@ class ConstraintTest(unittest.TestCase):
 
     @staticmethod
     def get_solutions(grammar, constraints, desired_solutions=1):
-        fandango = Fandango(grammar=grammar, constraints=constraints)
+        fandango = DefaultAlgorithm(grammar=grammar, constraints=constraints)
         return list(itertools.islice(fandango.generate(), desired_solutions))
 
     def test_generators(self):

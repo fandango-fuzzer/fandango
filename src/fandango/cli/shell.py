@@ -40,6 +40,7 @@ if "readline" not in globals():
     except Exception:
         pass
 
+
 MATCHES: list[str] = []
 
 
