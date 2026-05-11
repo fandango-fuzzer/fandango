@@ -6,6 +6,7 @@ import logging
 import os
 import pty
 import re
+import tty
 from uuid import UUID
 
 import select
@@ -727,11 +728,11 @@ class In(FandangoParty):
     ) -> None:
         if self.proc.stdin is not None:
             if isinstance(message, DerivationTree):
-                self.proc.stdin.write(message.to_string())
+                self.proc.stdin.write(message.to_bytes())
             elif isinstance(message, str):
-                self.proc.stdin.write(message)
+                self.proc.stdin.write(message.encode())
             elif isinstance(message, bytes):
-                self.proc.stdin.write(message.decode("utf-8"))
+                self.proc.stdin.write(message)
             else:
                 raise FandangoValueError(
                     f"Party {self.party_name}: Invalid message type: {type(message)}. Must be DerivationTree, str, or bytes."
@@ -969,6 +970,7 @@ class ProcessManager(object):
         if sys.platform != "win32":
             import pty
             master_fd, slave_fd = pty.openpty()
+            tty.setraw(master_fd)
             self.proc = subprocess.Popen(
                 command,
                 stdin=subprocess.PIPE,
