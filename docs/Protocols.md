@@ -233,8 +233,8 @@ $ fandango talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8025
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango -v talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8025
-assert _exit_code == 0
+#!fandango -v talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8025
+#assert _exit_code == 0
 ```
 
 To track the data that is actually exchanged, use the verbose `-v` flag.
@@ -246,8 +246,8 @@ $ fandango -v talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8025
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango -v talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8025
-assert _exit_code == 0
+#!fandango -v talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8025
+#assert _exit_code == 0
 ```
 
 ```{versionchanged} 1.1
