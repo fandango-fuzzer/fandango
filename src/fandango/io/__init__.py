@@ -16,7 +16,7 @@ import sys
 import threading
 import time
 from abc import ABC
-from typing import Optional
+from typing import Optional, IO
 
 from fandango.errors import FandangoError, FandangoValueError
 from fandango.language.tree import DerivationTree
@@ -686,12 +686,13 @@ class Out(FandangoParty):
     def __init__(self) -> None:
         super().__init__(connection_mode=ConnectionMode.EXTERNAL)
         self.proc = ProcessManager.instance().get_process()
+        self.stdout = ProcessManager.instance().stdout
         threading.Thread(target=self._listen_loop, daemon=True).start()
 
     def _listen_loop(self) -> None:
         while True:
-            if self.proc.stdout is not None:
-                line = self.proc.stdout.read(1)
+            if self.stdout is not None:
+                line = self.stdout.read(1)
                 self.receive(line, self.party_name)
 
 
@@ -910,7 +911,8 @@ class ProcessManager(object):
         """
         self._command: Optional[str | list[str]] = None
         self.lock = threading.Lock()
-        self.proc: Optional[subprocess.Popen[str]] = None
+        self.proc: Optional[subprocess.Popen[bytes]] = None
+        self.stdout: IO[bytes] | IO[str] | None = None
         self.text = True
 
     @classmethod
@@ -931,7 +933,7 @@ class ProcessManager(object):
                 cls._instances[env_key] = cls()
             return cls._instances[env_key]
 
-    def get_process(self) -> subprocess.Popen[str]:
+    def get_process(self) -> subprocess.Popen[bytes]:
         """
         Returns the current process if it exists, otherwise starts a new one based on the command set.
         """
@@ -968,8 +970,6 @@ class ProcessManager(object):
         LOGGER.info(f"Starting subprocess with command {command}")
 
         if sys.platform != "win32":
-            import pty
-
             master_fd, slave_fd = pty.openpty()
             tty.setraw(master_fd)
             self.proc = subprocess.Popen(
@@ -979,19 +979,22 @@ class ProcessManager(object):
                 stderr=subprocess.PIPE,
                 text=False,
             )
-            os.close(slave_fd)  # only needed in the child; close in parent
+            os.close(slave_fd)
             raw_stdout = os.fdopen(master_fd, "rb")
-            self.proc.stdout = (
-                io.TextIOWrapper(raw_stdout, newline="\n") if self.text else raw_stdout
-            )
         else:
             self.proc = subprocess.Popen(
                 command,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                text=self.text,
+                text=False,  # always binary; we wrap manually below
             )
+            raw_stdout = self.proc.stdout
+
+        if self.text:
+            self.stdout = io.TextIOWrapper(raw_stdout, newline="\n")
+        else:
+            self.stdout = raw_stdout
 
 
 def set_program_command(command: str | list[str], text: bool = True) -> None:
