@@ -972,11 +972,13 @@ class ProcessManager(object):
         if sys.platform != "win32":
             master_fd, slave_fd = pty.openpty()
             tty.setraw(master_fd)
+
             self.proc = subprocess.Popen(
                 command,
                 stdin=subprocess.PIPE,
                 stdout=slave_fd,
                 stderr=subprocess.PIPE,
+                bufsize=0,
                 text=False,
             )
             os.close(slave_fd)
@@ -987,6 +989,7 @@ class ProcessManager(object):
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
+                bufsize=0,
                 text=False,  # always binary; we wrap manually below
             )
             raw_stdout = self.proc.stdout
