@@ -39,7 +39,9 @@ def telnet(commands: list[str], port=8025, host="127.0.0.1"):
 
 
 if __name__ == "__main__":
-    smtp_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n", "-l", "127.0.0.1:8025"])
+    smtp_proc = subprocess.Popen(
+        [sys.executable, "-m", "aiosmtpd", "-n", "-l", "127.0.0.1:8025"]
+    )
     time.sleep(0.5)  # Give the server a moment to start
 
     commands = ["HELO relay.example.org\r\n", "QUIT\r\n"]
