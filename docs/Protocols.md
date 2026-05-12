@@ -247,7 +247,7 @@ aiosmtpd_proc.terminate()
 aiosmtpd_proc.wait()
 aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n"])
 _wait_for_port(8025)
-!fandango -v talk -f smtp-telnet.fan -n 1 telnet localhost 8025
+!fandango talk -f smtp-telnet.fan -n 1 telnet localhost 8025
 assert _exit_code == 0
 ```
 
