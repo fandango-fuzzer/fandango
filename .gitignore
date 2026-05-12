@@ -202,6 +202,7 @@ docs/Markdown0.fan
 docs/Markdown.fan
 docs/Markdown.fan
 report.html
+fcc/
 
 # env config
 .env

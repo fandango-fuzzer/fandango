@@ -65,6 +65,9 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
         stop_criterion: Optional[Callable[[DerivationTree], bool]] = None,
         stop_after_seconds: Optional[int] = None,
+        use_fcc: bool = False,
+        put: Optional[str] = None,
+        put_args: Optional[list[str]] = None,
     ):
         if tournament_size > 1:
             raise FandangoValueError(
@@ -122,6 +125,9 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
                 diversity_weight,
                 warnings_are_errors,
                 stop_criterion,
+                use_fcc,
+                put,
+                put_args,
             )
         self.adaptive_tuner = AdaptiveTuner(
             mutation_rate,
@@ -499,11 +505,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
     def _generate_io(
         self, max_generations: Optional[int] = None
     ) -> Generator[DerivationTree, None, None]:
-        if len(self.population) < self.population_size:
-            list(
-                self.generate_initial_population()
-            )  # ensure the generator runs until the end
-
+        self.population = [DerivationTree(NonTerminal(self.start_symbol))]
         spec_env_global, _ = self.grammar.get_spec_env()
         io_instance: FandangoIO = spec_env_global["FandangoIO"].instance()
         history_tree: DerivationTree = random.choice(self.population)
