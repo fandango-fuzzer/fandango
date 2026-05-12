@@ -993,6 +993,7 @@ class ProcessManager(object):
                 text=False,  # always binary; we wrap manually below
             )
             raw_stdout = self.proc.stdout
+            assert raw_stdout is not None
 
         if self.text:
             self.stdout = io.TextIOWrapper(raw_stdout, newline="\n")
