@@ -94,7 +94,7 @@ Once installed, we can run the server locally.
 Normally, it runs on port 8075:
 
 ```shell
-$ python -m aiosmtpd -d -n --listen 127.0.0.1:8075 &
+$ python -m aiosmtpd -d -n &
 ```
 
 ```{code-cell}
@@ -105,7 +105,7 @@ import subprocess
 import sys
 import time
 
-def _wait_for_port(port, host='127.0.0.1', timeout=30):
+def _wait_for_port(port, host='localhost', timeout=30):
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
@@ -114,7 +114,7 @@ def _wait_for_port(port, host='127.0.0.1', timeout=30):
         except OSError:
             time.sleep(0.5)
 
-aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n", "-l", "127.0.0.1:8075"])
+aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n"])
 _wait_for_port(8075)
 ```
 
@@ -138,7 +138,7 @@ Once connected, anything we type into the `telnet` input will automatically be r
 For instance, entering a `QUIT` command (followed by Return) into telnet will be forwarded to the SMTP server, which will terminate the connection:
 
 ```shell
-$ telnet 127.0.0.1 8075
+$ telnet localhost 8025
 ```
 
 ```{code-cell}
@@ -158,7 +158,7 @@ This is the name of the local computer, in our example `smtp.example.com`.
 
 % Can't have code cells in admonitions :-(
 ```shell
-$ telnet 127.0.0.1 8075
+$ telnet localhost 8025
 Trying localhost...
 Connected to localhost.
 Escape character is '^]'.
@@ -190,7 +190,7 @@ The idea would now be to use the `telnet` program for this very purpose.
 By invoking
 
 ```shell
-$ fandango talk -f smtp-telnet.fan telnet 127.0.0.1 8075
+$ fandango talk -f smtp-telnet.fan telnet localhost 8025
 ```
 
 we could interact with the `telnet` program as described above.
@@ -238,16 +238,16 @@ Without `-n 1`, Fandango keeps on generating inputs until [grammar coverage](sec
 ```
 
 ```shell
-$ fandango talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8075
+$ fandango talk -f smtp-telnet.fan -n 1 telnet localhost 8025
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
 aiosmtpd_proc.terminate()
 aiosmtpd_proc.wait()
-aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n", "-l", "127.0.0.1:8075"])
+aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n"])
 _wait_for_port(8075)
-!fandango -v talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8075
+!fandango -v talk -f smtp-telnet.fan -n 1 telnet localhost 8025
 assert _exit_code == 0
 ```
 
@@ -255,16 +255,16 @@ To track the data that is actually exchanged, use the verbose `-v` flag.
 The `In:` and `Out:` log messages show the data that is being exchanged.
 
 ```shell
-$ fandango -v talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8075
+$ fandango -v talk -f smtp-telnet.fan -n 1 telnet localhost 8025
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
 aiosmtpd_proc.terminate()
 aiosmtpd_proc.wait()
-aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n", "-l", "127.0.0.1:8075"])
+aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n"])
 _wait_for_port(8075)
-!fandango -v talk -f smtp-telnet.fan -n 1 telnet 127.0.0.1 8075
+!fandango -v talk -f smtp-telnet.fan -n 1 telnet localhost 8025
 assert _exit_code == 0
 ```
 
@@ -322,7 +322,7 @@ $ fandango talk -f smtp-simple.fan -n 1 --client 8075
 :tags: ["remove-input"]
 aiosmtpd_proc.terminate()
 aiosmtpd_proc.wait()
-aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n", "-l", "127.0.0.1:8075"])
+aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n", "-l"])
 _wait_for_port(8075)
 !fandango talk -f smtp-simple.fan -n 1 --client 8075
 assert _exit_code == 0
