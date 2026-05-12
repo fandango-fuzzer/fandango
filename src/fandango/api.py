@@ -11,7 +11,7 @@ from fandango.language.grammar.grammar import Grammar
 from fandango.language.parse.parse import parse
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
-from fandango.evolution.algorithm import Fandango as FandangoStrategy
+from fandango.evolution.algorithm import DefaultAlgorithm
 from fandango.errors import FandangoFailedError, FandangoParseError
 
 DEFAULT_MAX_GENERATIONS = 500
@@ -201,7 +201,7 @@ class Fandango(FandangoBase):
             start_symbol=start_symbol,
             includes=includes,
         )
-        self.fandango: Optional[FandangoStrategy] = None
+        self.fandango: Optional[DefaultAlgorithm] = None
 
     @classmethod
     def _with_parsed(
@@ -262,7 +262,7 @@ class Fandango(FandangoBase):
                 )
                 constraints += cast(list[Constraint | SoftValue], extra_constraints)
 
-        self.fandango = FandangoStrategy(
+        self.fandango = DefaultAlgorithm(
             self.grammar, constraints, start_symbol=start_symbol, **settings
         )
         LOGGER.info("---------- Done initializing base population ----------")
@@ -301,6 +301,7 @@ class Fandango(FandangoBase):
         desired_solutions: Optional[int],
         max_generations: Optional[int],
         infinite: bool,
+        use_fcc: bool,
     ) -> tuple[Optional[int], Optional[int], bool]:
         """
         Sanitize the runtime end settings and emit warnings if necessary.
@@ -338,6 +339,8 @@ class Fandango(FandangoBase):
             if max_generations is not None:
                 LOGGER.warning("Infinite mode is activated, overriding max_generations")
             max_generations = None  # infinite overrides max_generations
+            if use_fcc:
+                desired_solutions = None
 
         return max_generations, desired_solutions, infinite
 
@@ -407,6 +410,7 @@ class Fandango(FandangoBase):
                 desired_solutions,
                 max_generations,
                 infinite,
+                settings.get("use_fcc", False),
             )
         )
 

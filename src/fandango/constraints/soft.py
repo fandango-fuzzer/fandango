@@ -1,6 +1,7 @@
 from collections.abc import Callable, Collection
 import math
 from typing import Any, Optional
+from cachetools import LRUCache
 
 from tdigest.tdigest import TDigest as BaseTDigest
 
@@ -78,7 +79,7 @@ class Value(GeneticBase):
             global_variables=global_variables,
         )
         self.expression = expression
-        self.cache: dict[int, ValueFitness] = dict()
+        self.cache = LRUCache[int, ValueFitness](maxsize=1000)
 
     def fitness(
         self,

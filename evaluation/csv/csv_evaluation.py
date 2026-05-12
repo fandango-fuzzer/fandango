@@ -2,7 +2,7 @@ import csv
 import time
 from io import StringIO
 
-from fandango.evolution.algorithm import Fandango, LoggerLevel
+from fandango.evolution.algorithm import SimpleGeneticAlgorithm, LoggerLevel
 from fandango.language.parse.parse import parse
 
 
@@ -36,7 +36,9 @@ def evaluate_csv(
 
     time_in_an_hour = time.time() + seconds
 
-    fandango = Fandango(grammar, constraints, logger_level=LoggerLevel.ERROR)
+    fandango = SimpleGeneticAlgorithm(
+        grammar, constraints, logger_level=LoggerLevel.ERROR
+    )
     fan_gen = fandango.generate()
     for solution in fan_gen:
         solutions.append(solution)

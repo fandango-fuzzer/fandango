@@ -1,7 +1,5 @@
 # fandango/evolution/algorithm.py
-import enum
 import itertools
-import logging
 import random
 import time
 import warnings
@@ -13,6 +11,7 @@ from fandango.constraints.soft import SoftValue
 from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.adaptation import AdaptiveTuner
+from fandango.evolution.algorithm.base import GeneticAlgorithm, LoggerLevel
 from fandango.evolution.crossover import CrossoverOperator, SimpleSubtreeCrossover
 from fandango.evolution.evaluation import Evaluator, IoEvaluator
 from fandango.evolution.mutation import MutationOperator, SimpleMutation
@@ -33,20 +32,10 @@ from fandango.logger import (
     print_exception,
     visualize_evaluation,
     log_guidance_hint,
-    log_message_coverage,
 )
 
 
-class LoggerLevel(enum.Enum):
-    NOTSET = logging.NOTSET
-    DEBUG = logging.DEBUG
-    INFO = logging.INFO
-    WARNING = logging.WARNING
-    ERROR = logging.ERROR
-    CRITICAL = logging.CRITICAL
-
-
-class Fandango:
+class SimpleGeneticAlgorithm(GeneticAlgorithm):
     def __init__(
         self,
         grammar: Grammar,
@@ -74,6 +63,11 @@ class Fandango:
         max_nodes_rate: float = 0.5,
         profiling: bool = False,
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
+        stop_criterion: Optional[Callable[[DerivationTree], bool]] = None,
+        stop_after_seconds: Optional[int] = None,
+        use_fcc: bool = False,
+        put: Optional[str] = None,
+        put_args: Optional[list[str]] = None,
     ):
         if tournament_size > 1:
             raise FandangoValueError(
@@ -99,6 +93,8 @@ class Fandango:
         self.remote_response_timeout = 15.0
         self.past_io_derivations: list[DerivationTree] = []
         self.coverage_goal = coverage_goal
+        self.experiment_start_time = time.time()
+        self.stop_after_seconds = stop_after_seconds
 
         # Instantiate managers
         if self.grammar.fuzzing_mode == FuzzingMode.IO:
@@ -128,6 +124,10 @@ class Fandango:
                 diversity_k,
                 diversity_weight,
                 warnings_are_errors,
+                stop_criterion,
+                use_fcc,
+                put,
+                put_args,
             )
         self.adaptive_tuner = AdaptiveTuner(
             mutation_rate,
@@ -331,6 +331,16 @@ class Fandango:
         random.shuffle(new_population)
         return new_population[: int(self.population_size * (1 - self.destruction_rate))]
 
+    def _is_time_limit_reached(self) -> bool:
+        if self.stop_after_seconds is not None:
+            elapsed_time = time.time() - self.experiment_start_time
+            if elapsed_time >= self.stop_after_seconds:
+                LOGGER.info(
+                    f"Stopping experiment after reaching the time limit ({elapsed_time} seconds)."
+                )
+                return True
+        return False
+
     def evolve(
         self,
         max_generations: Optional[int] = None,
@@ -393,10 +403,19 @@ class Fandango:
 
         prev_best_fitness = 0.0
         generation = 0
+        if self.stop_after_seconds is not None:
+            self.experiment_start_time = time.time()
+            LOGGER.info(
+                f"Resetting experiment starting time to {self.experiment_start_time}"
+            )
 
         while True:
             if max_generations is not None and generation >= max_generations:
                 break
+
+            if self._is_time_limit_reached() or self.evaluator.stop_criterion_met:
+                break
+
             generation += 1
 
             avg_fitness = sum(e[1] for e in self.evaluation) / self.population_size
@@ -479,17 +498,14 @@ class Fandango:
                 generation, self.evaluation, self.population, self.evaluator
             )
             visualize_evaluation(generation, max_generations, self.evaluation)
+
         clear_visualization()
         self._log_statistics()
 
     def _generate_io(
         self, max_generations: Optional[int] = None
     ) -> Generator[DerivationTree, None, None]:
-        if len(self.population) < self.population_size:
-            list(
-                self.generate_initial_population()
-            )  # ensure the generator runs until the end
-
+        self.population = [DerivationTree(NonTerminal(self.start_symbol))]
         spec_env_global, _ = self.grammar.get_spec_env()
         io_instance: FandangoIO = spec_env_global["FandangoIO"].instance()
         history_tree: DerivationTree = random.choice(self.population)
@@ -515,33 +531,32 @@ class Fandango:
             )
             self.evaluator.start_next_message([history_tree] + self.past_io_derivations)
 
-            try:
-                if (
-                    len(self.packet_selector.get_next_parties()) == 0
-                    and not self.packet_selector.is_complete()
-                ):
-                    raise FandangoFailedError("Could not forecast next packet")
+            if (
+                len(self.packet_selector.get_next_parties()) == 0
+                and not self.packet_selector.is_complete()
+            ):
+                raise FandangoFailedError("Could not forecast next packet")
 
-                if (
-                    len(self.packet_selector.get_next_parties()) == 0
-                    or self.packet_selector.is_guide_to_end()
-                    or self.coverage_goal == CoverageGoal.SINGLE_DERIVATION
-                ) and self.packet_selector.is_complete():
-                    history_tree = random.choice(
-                        list(self.packet_selector.forecasting_result.complete_trees)
-                    )
-                    self.past_io_derivations.append(history_tree)
-                    self._initial_solutions.clear()
-                    yield history_tree
-                    if self.coverage_goal == CoverageGoal.SINGLE_DERIVATION:
-                        return
-                    if self.packet_selector.coverage_percent() == 1.0:
-                        log_guidance_hint("Full coverage reached, stopping evolution.")
-                        return
-                    log_guidance_hint("Starting new protocol run.")
-                    io_instance.reset_parties()
-                    history_tree = DerivationTree(NonTerminal(self.start_symbol), [])
-                    continue
+            if (
+                len(self.packet_selector.get_next_parties()) == 0
+                or self.packet_selector.is_guide_to_end()
+                or self.coverage_goal == CoverageGoal.SINGLE_DERIVATION
+            ) and self.packet_selector.is_complete():
+                history_tree = random.choice(
+                    list(self.packet_selector.forecasting_result.complete_trees)
+                )
+                self.past_io_derivations.append(history_tree)
+                self._initial_solutions.clear()
+                yield history_tree
+                if self.coverage_goal == CoverageGoal.SINGLE_DERIVATION:
+                    return
+                if self.packet_selector.coverage_percent() == 1.0:
+                    log_guidance_hint("Full coverage reached, stopping evolution.")
+                    return
+                log_guidance_hint("Starting new protocol run.")
+                io_instance.reset_parties()
+                history_tree = DerivationTree(NonTerminal(self.start_symbol), [])
+                continue
 
                 next_parties = self.packet_selector.next_fuzzer_parties()
                 next_synthetic_parties = list(
@@ -583,23 +598,23 @@ class Fandango:
                         preferred_symbols.append(str(pkg.node.symbol))
                     LOGGER.debug(f"Trying to generate: {', '.join(preferred_symbols)}")
 
-                    try:
-                        solutions = [
-                            next(
-                                self.population_manager.refill_population(
-                                    current_population=self.population,
-                                    eval_individual=self.evaluator.evaluate_individual,
-                                    max_nodes=self.adaptive_tuner.current_max_nodes,
-                                    target_population_size=self.population_size,
-                                )
+                try:
+                    solutions = [
+                        next(
+                            self.population_manager.refill_population(
+                                current_population=self.population,
+                                eval_individual=self.evaluator.evaluate_individual,
+                                max_nodes=self.adaptive_tuner.current_max_nodes,
+                                target_population_size=self.population_size,
                             )
-                        ]
-                    except StopIteration:
-                        solutions = []
-                    if not solutions:
-                        solutions, self.evaluation = GeneratorWithReturn(
-                            self.evaluator.evaluate_population(self.population)
-                        ).collect()
+                        )
+                    ]
+                except StopIteration:
+                    solutions = []
+                if not solutions:
+                    solutions, self.evaluation = GeneratorWithReturn(
+                        self.evaluator.evaluate_population(self.population)
+                    ).collect()
 
                     if not solutions:
                         try:
@@ -686,33 +701,24 @@ class Fandango:
                         False,
                     )
 
-                    hookin_success = False
-                    for hookin_option in forecast.paths:
-                        history_tree = hookin_option.tree
-                        history_tree.append(hookin_option.path[1:-1], packet_tree)
-                        solutions, (fitness, failing_trees, suggestion) = (
-                            GeneratorWithReturn(
-                                self.evaluator.evaluate_individual(history_tree)
-                            ).collect()
-                        )
-                        assert fitness <= 1.0
-                        if fitness == 1.0:
-                            hookin_success = True
-                            break
-                    if not hookin_success:
-                        raise FandangoParseError(
-                            "Remote response does not match constraints"
-                        )
-                history_tree.set_all_read_only(True)
-            except FandangoFailedError as e:
-                print_exception(e)
-                self.past_io_derivations.append(history_tree)
-                self._initial_solutions.clear()
-                yield history_tree
-                log_guidance_hint("Starting new protocol run.")
-                LOGGER.debug(io_instance.get_full_fragments())
-                io_instance.reset_parties()
-                history_tree = DerivationTree(NonTerminal(self.start_symbol), [])
+                hookin_success = False
+                for hookin_option in forecast.paths:
+                    history_tree = hookin_option.tree
+                    history_tree.append(hookin_option.path[1:-1], packet_tree)
+                    solutions, (fitness, failing_trees, suggestion) = (
+                        GeneratorWithReturn(
+                            self.evaluator.evaluate_individual(history_tree)
+                        ).collect()
+                    )
+                    assert fitness <= 1.0
+                    if fitness == 1.0:
+                        hookin_success = True
+                        break
+                if not hookin_success:
+                    raise FandangoParseError(
+                        "Remote response does not match constraints"
+                    )
+            history_tree.set_all_read_only(True)
 
     @property
     def average_population_fitness(self) -> float:
