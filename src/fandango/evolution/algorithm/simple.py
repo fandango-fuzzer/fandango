@@ -505,11 +505,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
     def _generate_io(
         self, max_generations: Optional[int] = None
     ) -> Generator[DerivationTree, None, None]:
-        if len(self.population) < self.population_size:
-            list(
-                self.generate_initial_population()
-            )  # ensure the generator runs until the end
-
+        self.population = [DerivationTree(NonTerminal(self.start_symbol))]
         spec_env_global, _ = self.grammar.get_spec_env()
         io_instance: FandangoIO = spec_env_global["FandangoIO"].instance()
         history_tree: DerivationTree = random.choice(self.population)

@@ -26,7 +26,7 @@ sphinx:
 
 execute:
   execute_notebooks: cache
-  stderr_output: warn
+  stderr_output: error
   timeout: 300
 
 parse:
