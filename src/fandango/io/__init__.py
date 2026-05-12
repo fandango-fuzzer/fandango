@@ -4,9 +4,7 @@ import enum
 import io
 import logging
 import os
-import pty
 import re
-import tty
 from uuid import UUID
 
 import select
@@ -970,6 +968,9 @@ class ProcessManager(object):
         LOGGER.info(f"Starting subprocess with command {command}")
 
         if sys.platform != "win32":
+            import tty
+            import pty
+
             master_fd, slave_fd = pty.openpty()
             tty.setraw(master_fd)
 
