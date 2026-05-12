@@ -100,12 +100,22 @@ $ python -m aiosmtpd -d -n &
 ```{code-cell}
 :tags: ["remove-input"]
 import os
+import socket
 import subprocess
 import sys
 import time
 
+def _wait_for_port(port, host='localhost', timeout=30):
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            socket.create_connection((host, port), timeout=1).close()
+            return
+        except OSError:
+            time.sleep(0.5)
+
 aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n"])
-time.sleep(2);  # Wait for server to be ready
+_wait_for_port(8025)
 ```
 
 % Check if everything works
@@ -233,6 +243,10 @@ $ fandango talk -f smtp-telnet.fan -n 1 telnet localhost 8025
 
 ```{code-cell}
 :tags: ["remove-input"]
+aiosmtpd_proc.terminate()
+aiosmtpd_proc.wait()
+aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n"])
+_wait_for_port(8025)
 !fandango talk -f smtp-telnet.fan -n 1 telnet localhost 8025
 assert _exit_code == 0
 ```
@@ -246,6 +260,10 @@ $ fandango -v talk -f smtp-telnet.fan -n 1 telnet localhost 8025
 
 ```{code-cell}
 :tags: ["remove-input"]
+aiosmtpd_proc.terminate()
+aiosmtpd_proc.wait()
+aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n"])
+_wait_for_port(8025)
 !fandango -v talk -f smtp-telnet.fan -n 1 telnet localhost 8025
 assert _exit_code == 0
 ```
@@ -302,6 +320,10 @@ $ fandango talk -f smtp-simple.fan -n 1 --client 8025
 
 ```{code-cell}
 :tags: ["remove-input"]
+aiosmtpd_proc.terminate()
+aiosmtpd_proc.wait()
+aiosmtpd_proc = subprocess.Popen([sys.executable, "-m", "aiosmtpd", "-n", "-l"])
+_wait_for_port(8025)
 !fandango talk -f smtp-simple.fan -n 1 --client 8025
 assert _exit_code == 0
 ```
@@ -324,14 +346,9 @@ Obviously, our SMTP specification is still very limited.
 Before we go and extend it, let us first highlight a particular Fandango feature.
 From the same specification, Fandango can act as a _client_ and as a _server_.
 When invoked with the `--server` option, Fandango will _create_ a server at the given port and accept client connections.
-So if we invoke
-
-```{margin}
-The option `-n 100` ensures the server will run for 100 interactions.
-```
 
 ```shell
-$ fandango talk -f smtp-simple.fan -n 100 --server 8125
+$ fandango talk -f smtp-simple.fan -n 1 --server 8125
 ```
 
 ```{code-cell}
@@ -341,8 +358,8 @@ import os
 import subprocess
 import time
 
-fan_smtp_proc = subprocess.Popen(["fandango", "talk", "-f", "smtp-simple.fan", "-n", "100", "--server", "8125"])
-time.sleep(5);  # Wait for server to be ready
+fan_smtp_proc = subprocess.Popen(["fandango", "talk", "-f", "smtp-simple.fan", "-n", "1", "--server", "8125"])
+time.sleep(10);  # Wait for server to be ready
 ```
 
 we can then connect to our running Fandango "SMTP Server" and interact with it according to the `smtp-simple.fan` spec:
