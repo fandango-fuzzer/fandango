@@ -1,7 +1,8 @@
 import random
 from typing import Optional, Union
 from collections import Counter
-from collections.abc import Generator, Sequence
+from collections.abc import Generator, Sequence, Callable
+
 
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
@@ -29,6 +30,10 @@ class Evaluator:
         diversity_k: int,
         diversity_weight: float,
         warnings_are_errors: bool = False,
+        stop_criterion: Optional[Callable[[DerivationTree], bool]] = None,
+        use_fcc: bool = False,
+        put: Optional[str] = None,
+        put_args: Optional[list[str]] = None,
     ):
         self._grammar = grammar
         self._soft_constraints: list[SoftValue] = []
@@ -41,8 +46,23 @@ class Evaluator:
         self._fitness_cache: dict[int, tuple[float, list[FailingTree], Suggestion]] = {}
         self._solution_set: set[int] = set()
         self._checks_made = 0
+        self._stop_criterion = stop_criterion
+        self._stop_criterion_met = False
+        self.fcc = None
+        if use_fcc:
+            # dynamic import to only emit the experimental warning when it is actually needed
+            from fandango.experimental.execution.fcc import FCC
+
+            self.fcc = FCC(put, put_args)
 
         for constraint in constraints:
+            if "DynamicAnalysis" in constraint.format_as_spec():
+                assert (
+                    self.fcc is not None
+                ), "FCC is required for DynamicAnalysis constraint"
+                constraint.global_variables["DynamicAnalysis"] = (
+                    self.fcc.dynamic_analysis.trace_input
+                )
             if isinstance(constraint, SoftValue):
                 self._soft_constraints.append(constraint)
             elif isinstance(constraint, RepetitionBoundsConstraint):
@@ -51,6 +71,10 @@ class Evaluator:
                 self._hard_constraints.append(constraint)
             else:
                 raise ValueError(f"Invalid constraint type: {type(constraint)}")
+
+    @property
+    def stop_criterion_met(self) -> bool:
+        return self._stop_criterion_met
 
     @property
     def expected_fitness(self) -> float:
@@ -246,6 +270,8 @@ class Evaluator:
             )
 
         if fitness >= self._expected_fitness and key not in self._solution_set:
+            if self._stop_criterion:
+                self._stop_criterion_met |= self._stop_criterion(individual)
             self._solution_set.add(key)
             yield individual
 
