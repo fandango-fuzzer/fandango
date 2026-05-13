@@ -500,6 +500,7 @@ public:
     PlusContext *plus();
     OptionContext *option();
     RepeatContext *repeat();
+    PermutationContext *permutation();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
