@@ -22,6 +22,7 @@ class SA_FandangoTranslator : public FandangoParserBaseVisitor {
     PyObject *KleeneContext_cls = NULL;
     PyObject *PlusContext_cls = NULL;
     PyObject *OptionContext_cls = NULL;
+    PyObject *PermutationContext_cls = NULL;
     PyObject *RepeatContext_cls = NULL;
     PyObject *SymbolContext_cls = NULL;
     PyObject *Nonterminal_rightContext_cls = NULL;
@@ -282,6 +283,8 @@ class SA_FandangoTranslator : public FandangoParserBaseVisitor {
     antlrcpp::Any visitPlus(FandangoParser::PlusContext *ctx);
 
     antlrcpp::Any visitOption(FandangoParser::OptionContext *ctx);
+
+    antlrcpp::Any visitPermutation(FandangoParser::PermutationContext *ctx);
 
     antlrcpp::Any visitRepeat(FandangoParser::RepeatContext *ctx);
 

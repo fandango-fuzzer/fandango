@@ -39,6 +39,8 @@ public:
 
     virtual std::any visitOption(FandangoParser::OptionContext *context) = 0;
 
+    virtual std::any visitPermutation(FandangoParser::PermutationContext *context) = 0;
+
     virtual std::any visitRepeat(FandangoParser::RepeatContext *context) = 0;
 
     virtual std::any visitSymbol(FandangoParser::SymbolContext *context) = 0;

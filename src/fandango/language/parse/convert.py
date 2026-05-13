@@ -146,6 +146,37 @@ class GrammarProcessor(FandangoParserVisitor):
             f"{NodeType.CONCATENATION}:{nid}_{self.id_prefix}",
         )
 
+    def visitPermutation(self, ctx: FandangoParser.PermutationContext):
+        nodes = [self.visitSymbol(child) for child in ctx.symbol()]
+        return self._node_permutation_tree(nodes)
+
+    def _node_permutation_tree(self, nodes: list[Node]) -> Node:
+        if len(nodes) == 0:
+            raise FandangoValueError("Permutation requires at least one symbol")
+        if len(nodes) == 1:
+            return nodes[0]
+        branches: list[Node] = []
+        for i, first in enumerate(nodes):
+            remaining = nodes[:i] + nodes[i + 1 :]
+            tail = self._node_permutation_tree(remaining)
+            branches.append(self._concat_two_nodes(first, tail))
+        self.seenAlternatives += 1
+        nid = self.seenAlternatives
+        return Alternative(
+            branches,
+            self._grammar_settings,
+            f"{NodeType.ALTERNATIVE}:{nid}_{self.id_prefix}",
+        )
+
+    def _concat_two_nodes(self, left: Node, right: Node) -> Node:
+        self.seenConcatenations += 1
+        cid = self.seenConcatenations
+        return Concatenation(
+            [left, right],
+            self._grammar_settings,
+            f"{NodeType.CONCATENATION}:{cid}_{self.id_prefix}",
+        )
+
     def visitKleene(self, ctx: FandangoParser.KleeneContext):
         self.seenStars += 1
         nid = self.seenStars
