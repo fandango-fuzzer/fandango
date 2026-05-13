@@ -40,6 +40,7 @@ operator
 kleene: symbol STAR;
 plus  : symbol ADD;
 option: symbol QUESTION;
+permutation: NOT_OP symbol (symbol)* NOT_OP;
 repeat
     : symbol OPEN_BRACE (expression) CLOSE_BRACE
     | symbol OPEN_BRACE (expression)? COMMA (expression)? CLOSE_BRACE

@@ -51,6 +51,10 @@ class FandangoParserVisitor(ParseTreeVisitor):
     def visitOption(self, ctx: FandangoParser.OptionContext):
         return self.visitChildren(ctx)
 
+    # Visit a parse tree produced by FandangoParser#permutation.
+    def visitPermutation(self, ctx: FandangoParser.PermutationContext):
+        return self.visitChildren(ctx)
+
     # Visit a parse tree produced by FandangoParser#repeat.
     def visitRepeat(self, ctx: FandangoParser.RepeatContext):
         return self.visitChildren(ctx)
