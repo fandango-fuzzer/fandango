@@ -35,6 +35,7 @@ operator
     | plus
     | option
     | repeat
+    | permutation
     ;
 
 kleene: symbol STAR;
