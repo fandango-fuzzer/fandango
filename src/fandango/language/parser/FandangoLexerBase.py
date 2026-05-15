@@ -22,6 +22,7 @@ class FandangoLexerBase(Lexer):
         self.in_python = 0
         self.in_fstring = False
         self.in_filepath = 0
+        self.in_permutation = False
 
         # Set the global lexer instance to this one
         global lexer
@@ -34,6 +35,7 @@ class FandangoLexerBase(Lexer):
         self.in_python = 0
         self.in_fstring = False
         self.in_filepath = 0
+        self.in_permutation = False
         super().reset()  # type: ignore[no-untyped-call] # antlr4 doesn't provide types
 
     def emitToken(self, token: Token) -> None:
@@ -117,6 +119,12 @@ class FandangoLexerBase(Lexer):
 
     def is_not_fstring(self) -> bool:
         return not self.in_fstring
+
+    def permutation_start(self) -> None:
+        self.in_permutation = True
+
+    def permutation_end(self) -> None:
+        self.in_permutation = False
 
     def filepath_start(self) -> None:
         self.in_filepath += 1
@@ -207,6 +215,32 @@ def is_not_fstring() -> bool:
     global lexer
     assert lexer is not None
     return bool(lexer.is_not_fstring())
+
+
+def permutation_start() -> None:
+    global lexer
+    assert lexer is not None
+    lexer.permutation_start()
+
+
+def permutation_end() -> None:
+    global lexer
+    assert lexer is not None
+    lexer.permutation_end()
+
+
+def can_start_permutation() -> bool:
+    """Lexer predicate: opening ** for permutation (vs POWER ** in Python)."""
+    global lexer
+    assert lexer is not None
+    return not lexer.in_permutation and not lexer.in_fstring and lexer.in_python == 0
+
+
+def is_in_permutation() -> bool:
+    """Lexer predicate: closing ** after permutation_start."""
+    global lexer
+    assert lexer is not None
+    return bool(lexer.in_permutation)
 
 
 def filepath_start() -> None:

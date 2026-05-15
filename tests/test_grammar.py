@@ -112,7 +112,17 @@ class ConstraintTest(unittest.TestCase):
         with open(RESOURCES_ROOT / "permutation.fan", "r") as file:
             grammar, c = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
-        grammar.rules
+        start_rule = grammar.rules[NonTerminal('<start>')]
+        self.assertEqual(len(start_rule.children()), 3)
+        perm_rule = start_rule.children()[1]
+        work = set(perm_rule.descendents(grammar))
+        seen = set()
+        while len(work) > 0:
+            node = work.pop()
+            desc = set(node.descendents(grammar))
+            work = work.union(desc.difference(seen))
+            seen.add(node)
+        self.assertEqual(len(seen), 16)
 
     def test_repetitions(self):
         with open(RESOURCES_ROOT / "repetitions.fan", "r") as file:

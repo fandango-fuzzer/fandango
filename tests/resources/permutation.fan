@@ -1,3 +1,3 @@
 
-<start> ::= "a"~<test> ~ "e"
-<test> ::= "c"
+<start> ::= 'a' ** <test> "b" "c" ** 'd'
+<test> ::= "d"
