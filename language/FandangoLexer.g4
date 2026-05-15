@@ -120,6 +120,7 @@ MINUS              : '-';
 DIV                : '/';
 MOD                : '%';
 IDIV               : '//';
+PERMUTATION        : '~~';
 NOT_OP             : '~';
 OPEN_BRACE         : '{' { open_brace(); };
 CLOSE_BRACE        : '}' { close_brace(); };

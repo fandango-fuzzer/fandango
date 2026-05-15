@@ -29,18 +29,18 @@ public:
     BYTES_LITERAL = 68, DECIMAL_INTEGER = 69, OCT_INTEGER = 70, HEX_INTEGER = 71, 
     BIN_INTEGER = 72, FLOAT_NUMBER = 73, IMAG_NUMBER = 74, GRAMMAR_ASSIGN = 75, 
     QUESTION = 76, BACKSLASH = 77, ELLIPSIS = 78, DOTDOT = 79, DOT = 80, 
-    STAR = 81, OPEN_PAREN = 82, CLOSE_PAREN = 83, COMMA = 84, COLON = 85, 
-    SEMI_COLON = 86, PERMUTATION_END = 87, PERMUTATION_START = 88, POWER = 89, 
-    ASSIGN = 90, OPEN_BRACK = 91, CLOSE_BRACK = 92, OR_OP = 93, XOR = 94, 
-    AND_OP = 95, LEFT_SHIFT = 96, RIGHT_SHIFT = 97, ADD = 98, MINUS = 99, 
-    DIV = 100, MOD = 101, IDIV = 102, NOT_OP = 103, OPEN_BRACE = 104, CLOSE_BRACE = 105, 
-    LESS_THAN = 106, GREATER_THAN = 107, EQUALS = 108, GT_EQ = 109, LT_EQ = 110, 
-    NOT_EQ_1 = 111, NOT_EQ_2 = 112, AT = 113, ARROW = 114, ADD_ASSIGN = 115, 
-    SUB_ASSIGN = 116, MULT_ASSIGN = 117, AT_ASSIGN = 118, DIV_ASSIGN = 119, 
-    MOD_ASSIGN = 120, AND_ASSIGN = 121, OR_ASSIGN = 122, XOR_ASSIGN = 123, 
-    LEFT_SHIFT_ASSIGN = 124, RIGHT_SHIFT_ASSIGN = 125, POWER_ASSIGN = 126, 
-    IDIV_ASSIGN = 127, EXPR_ASSIGN = 128, EXCL = 129, NEWLINE = 130, SKIP_ = 131, 
-    SPACES = 132, UNDERSCORE = 133, UNKNOWN_CHAR = 134
+    POWER = 81, STAR = 82, OPEN_PAREN = 83, CLOSE_PAREN = 84, COMMA = 85, 
+    COLON = 86, SEMI_COLON = 87, ASSIGN = 88, OPEN_BRACK = 89, CLOSE_BRACK = 90, 
+    OR_OP = 91, XOR = 92, AND_OP = 93, LEFT_SHIFT = 94, RIGHT_SHIFT = 95, 
+    ADD = 96, MINUS = 97, DIV = 98, MOD = 99, IDIV = 100, PERMUTATION = 101, 
+    NOT_OP = 102, OPEN_BRACE = 103, CLOSE_BRACE = 104, LESS_THAN = 105, 
+    GREATER_THAN = 106, EQUALS = 107, GT_EQ = 108, LT_EQ = 109, NOT_EQ_1 = 110, 
+    NOT_EQ_2 = 111, AT = 112, ARROW = 113, ADD_ASSIGN = 114, SUB_ASSIGN = 115, 
+    MULT_ASSIGN = 116, AT_ASSIGN = 117, DIV_ASSIGN = 118, MOD_ASSIGN = 119, 
+    AND_ASSIGN = 120, OR_ASSIGN = 121, XOR_ASSIGN = 122, LEFT_SHIFT_ASSIGN = 123, 
+    RIGHT_SHIFT_ASSIGN = 124, POWER_ASSIGN = 125, IDIV_ASSIGN = 126, EXPR_ASSIGN = 127, 
+    EXCL = 128, NEWLINE = 129, SKIP_ = 130, SPACES = 131, UNDERSCORE = 132, 
+    UNKNOWN_CHAR = 133
   };
 
   explicit FandangoLexer(antlr4::CharStream *input);
@@ -99,8 +99,6 @@ private:
   void FSTRING_END_SINGLE_QUOTEAction(antlr4::RuleContext *context, size_t actionIndex);
   void OPEN_PARENAction(antlr4::RuleContext *context, size_t actionIndex);
   void CLOSE_PARENAction(antlr4::RuleContext *context, size_t actionIndex);
-  void PERMUTATION_ENDAction(antlr4::RuleContext *context, size_t actionIndex);
-  void PERMUTATION_STARTAction(antlr4::RuleContext *context, size_t actionIndex);
   void OPEN_BRACKAction(antlr4::RuleContext *context, size_t actionIndex);
   void CLOSE_BRACKAction(antlr4::RuleContext *context, size_t actionIndex);
   void OPEN_BRACEAction(antlr4::RuleContext *context, size_t actionIndex);
@@ -109,8 +107,6 @@ private:
 
   // Individual semantic predicate functions triggered by sempred() above.
   bool STRING_LITERALSempred(antlr4::RuleContext *_localctx, size_t predicateIndex);
-  bool PERMUTATION_ENDSempred(antlr4::RuleContext *_localctx, size_t predicateIndex);
-  bool PERMUTATION_STARTSempred(antlr4::RuleContext *_localctx, size_t predicateIndex);
 
 };
 
