@@ -147,7 +147,11 @@ class GrammarProcessor(FandangoParserVisitor):
         )
 
     def visitPermutation(self, ctx: FandangoParser.PermutationContext):
-        nodes = [self.visitSymbol(child) for child in ctx.symbol()]
+        nodes = [
+            self.visitSymbol(c)
+            for c in ctx.getChildren()
+            if isinstance(c, FandangoParser.SymbolContext)
+        ]
         return self._node_permutation_tree(nodes)
 
     def _node_permutation_tree(self, nodes: list[Node]) -> Node:
