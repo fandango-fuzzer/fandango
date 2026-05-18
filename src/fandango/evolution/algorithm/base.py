@@ -55,6 +55,7 @@ class GeneticAlgorithm(ABC):
         stop_criterion: Optional[Callable[[DerivationTree], bool]] = None,
         stop_after_seconds: Optional[int] = None,
     ):
+        self.grammar = grammar
         pass
 
     @abstractmethod
@@ -64,3 +65,8 @@ class GeneticAlgorithm(ABC):
         mode: FuzzingMode = FuzzingMode.COMPLETE,
     ) -> Generator[DerivationTree, None, None]:
         pass
+
+    @abstractmethod
+    def reset(self):
+        pass
+

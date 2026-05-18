@@ -100,10 +100,6 @@ def parse_next_remote_packet(
             )
             if time.time() - start_time > wait_for_completion_time:
                 if len(complete_parses) == 0:
-                    nt_list = map(
-                        lambda x: repr(x), forecast_non_terminals.get_non_terminals()
-                    )
-                    applicable_nt_str = str(" | ".join(nt_list))
                     current_parse_str = "Incompletely parsed NonTerminals:"
                     for incomplete_nt in available_non_terminals:
                         nt_parser = nt_parsers[incomplete_nt]
@@ -111,9 +107,6 @@ def parse_next_remote_packet(
                         current_parse_str += (
                             f"\n{str(incomplete_nt)}: {str(current_parse)}"
                         )
-                    received_msgs = (
-                        f"Received messages: {io_instance.get_full_fragments()}"
-                    )
 
                     raise FandangoFailedError(
                         f"Timeout while waiting for next message fragment from {msg_sender}. \n"
