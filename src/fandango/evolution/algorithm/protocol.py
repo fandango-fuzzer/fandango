@@ -23,7 +23,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
     def __init__(
         self,
         packet_algorithm: GeneticAlgorithm,
-        coverage_goal: CoverageGoal,
+        coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS,
         remote_response_timeout: float = 15.0,
     ):
         self._start_symbol = NonTerminal("<start>")
