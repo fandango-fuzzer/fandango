@@ -6,10 +6,12 @@ from fandango import FandangoParseError
 from fandango.errors import FandangoFailedError
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.algorithm import GeneticAlgorithm
+from fandango.evolution.population import IoPopulationManager
 from fandango.io import FandangoIO
 from fandango.io.coverage_filter import PacketCoverageFilter
 from fandango.io.navigation.coverage_goal import CoverageGoal
 from fandango.io.navigation.packetselector import PacketSelector
+from fandango.io.packetparser import parse_next_remote_packet
 from fandango.language.grammar import FuzzingMode
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
@@ -26,6 +28,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
     ):
         self._start_symbol = NonTerminal("<start>")
         self._packet_algorithm = packet_algorithm
+        self._population_manager = IoPopulationManager(self.grammar, str(self._start_symbol))
+        self._packet_algorithm.population_manager = self._population_manager
         self._protocol_tree: DerivationTree = DerivationTree(
             self._start_symbol
         )
@@ -34,14 +38,14 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._remote_response_timeout = remote_response_timeout
         self._io_instance: FandangoIO = FandangoIO.instance()
         self._packet_selector: PacketSelector = PacketSelector(
-            self.grammar,
+            self._packet_algorithm.grammar,
             self._io_instance,
             self._protocol_tree,
-            self._packet_strategy.diversity_k
+            self._packet_algorithm.diversity_k
         )
         self._packet_selector.set_coverage_goal(self._coverage_goal)
         self._packet_coverage_filter = PacketCoverageFilter(
-            self._packet_strategy.diversity_k,
+            self._packet_algorithm.diversity_k,
             self.grammar
         )
 
@@ -51,7 +55,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             (
                 len(self._packet_selector.get_next_parties()) == 0
                 or self._packet_selector.is_guide_to_end()
-                or self.coverage_goal == CoverageGoal.SINGLE_DERIVATION
+                or self._coverage_goal == CoverageGoal.SINGLE_DERIVATION
             )
             and self._packet_selector.is_complete()
         )
@@ -65,7 +69,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         return True
 
     def _handle_remote_response(self) -> DerivationTree:
-        if not self._wait_for_remote_message(self.remote_response_timeout):
+        if not self._wait_for_remote_message(self._remote_response_timeout):
             external_parties = self._packet_selector.next_external_parties()
             raise FandangoFailedError(
                 f"Timed out while waiting for message from remote party. Expected message from party: {', '.join(external_parties)}"
@@ -90,7 +94,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             history_tree = hookin_option.tree
             history_tree.append(hookin_option.path[1:-1], packet_tree)
             _solutions, (fitness, _failing_trees, _suggestion) = GeneratorWithReturn(
-                self._packet_strategy.evaluator.evaluate_individual(history_tree)
+                self._packet_algorithm.evaluator.evaluate_individual(history_tree)
             ).collect()
             assert fitness <= 1.0
             if fitness == 1.0:
@@ -112,10 +116,10 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     filter(
                         lambda x: self._packet_coverage_filter.filter(x),
                         self._population_manager.refill_population(
-                            current_population=self._packet_strategy.population,
-                            eval_individual=self._packet_strategy.evaluator.evaluate_individual,
-                            max_nodes=self._packet_strategy.adaptive_tuner.current_max_nodes,
-                            target_population_size=self._packet_strategy.population_size,
+                            current_population=self._packet_algorithm.population,
+                            eval_individual=self._packet_algorithm.evaluator.evaluate_individual,
+                            max_nodes=self._packet_algorithm.adaptive_tuner.current_max_nodes,
+                            target_population_size=self._packet_algorithm.population_size,
                         )
                     )
 
@@ -133,7 +137,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             return next(
                 filter(
                     lambda x: self._packet_coverage_filter.filter(x),
-                    self._packet_strategy.generate(
+                    self._packet_algorithm.generate(
                         max_generations=selected_packet_max_generations
                     )
                 )
@@ -149,7 +153,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             return next(
                 filter(
                     lambda x: self._packet_coverage_filter.filter(x),
-                    self._packet_strategy.generate(
+                    self._packet_algorithm.generate(
                         max_generations=overall_max_generations
                     )
                 )
@@ -203,8 +207,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 self._protocol_tree = DerivationTree(self._start_symbol, [])
                 continue
 
-            if self._should_fuzz_next_packet():
-                self._packet_strategy.reset()
+            if self._should_generate_next_packet():
+                self._packet_algorithm.reset()
                 self._configure_fuzzable_packets()
                 self._packet_coverage_filter.set_existing_derivations(
                     [self._protocol_tree] + self._past_interactions
@@ -230,3 +234,31 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             else:
                 protocol_tree = self._handle_remote_response()
             protocol_tree.set_all_read_only(True)
+
+    def _configure_fuzzable_packets(self) -> None:
+        self._population_manager.fuzzable_packets = self._packet_selector.next_packets
+        self._population_manager.fallback_packets = []
+        for sender in self._packet_selector.next_fuzzer_parties():
+            self._population_manager.fallback_packets.extend(
+                list(
+                    self._packet_selector.forecasting_result.parties_to_packets[
+                        sender
+                    ].nt_to_packet.values()
+                )
+            )
+        self._population_manager.allow_fallback_packets = False
+
+        preferred_symbols: list[str] = [
+            str(pkg.node.symbol) for pkg in self._population_manager.fuzzable_packets
+        ]
+        LOGGER.debug(f"Trying to generate: {', '.join(preferred_symbols)}")
+
+    def _should_generate_next_packet(self) -> bool:
+        return len(self._packet_selector.next_fuzzer_parties()) != 0 and not self._io_instance.received_msg()
+
+    def reset(self):
+        self._packet_algorithm.reset()
+        self._past_interactions.clear()
+        self._protocol_tree = DerivationTree(
+            self._start_symbol
+        )

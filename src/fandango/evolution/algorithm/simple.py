@@ -756,3 +756,9 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
         LOGGER.info(f"Time taken: {(time.time() - start_time):.2f} seconds")
 
         return solutions
+
+    def reset(self):
+        self.evaluator.flush_fitness_cache()
+        self.population.clear()
+        self._initial_solutions.clear()
+        self.adaptive_tuner.reset_parameters()
