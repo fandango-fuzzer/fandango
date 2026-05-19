@@ -1,11 +1,11 @@
 import random
 import time
-from typing import Generator, Optional
+from typing import Optional
+from collections.abc import Generator
 
-from fandango import FandangoParseError
-from fandango.errors import FandangoFailedError
+from fandango.errors import FandangoFailedError, FandangoParseError
 from fandango.evolution import GeneratorWithReturn
-from fandango.evolution.algorithm import GeneticAlgorithm
+from fandango.evolution.algorithm.base import GeneticAlgorithm
 from fandango.evolution.population import IoPopulationManager
 from fandango.io import FandangoIO
 from fandango.io.coverage_filter import PacketCoverageFilter

@@ -220,6 +220,7 @@ class Fandango(FandangoBase):
         obj._constraints = constraints
         obj.fandango = None
         obj._start_symbol = start_symbol if start_symbol is not None else "<start>"
+        obj._last_fuzzing_mode = FuzzingMode.COMPLETE
         return obj
 
     def _parse_extra_constraints(
@@ -295,7 +296,8 @@ class Fandango(FandangoBase):
         :param max_generations: Maximum number of generations to evolve through
         :return: A generator for solutions to the language
         """
-        if self.fandango is None:
+        if self.fandango is None or mode != self._last_fuzzing_mode:
+            self._last_fuzzing_mode = mode
             self.init_population()
             assert self.fandango is not None
 
