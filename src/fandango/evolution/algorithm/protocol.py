@@ -28,6 +28,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
     ):
         self._start_symbol = NonTerminal("<start>")
         self._packet_algorithm = packet_algorithm
+        self.grammar = packet_algorithm.grammar
         self._population_manager = IoPopulationManager(self.grammar, str(self._start_symbol))
         self._packet_algorithm.population_manager = self._population_manager
         self._protocol_tree: DerivationTree = DerivationTree(
@@ -38,7 +39,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._remote_response_timeout = remote_response_timeout
         self._io_instance: FandangoIO = FandangoIO.instance()
         self._packet_selector: PacketSelector = PacketSelector(
-            self._packet_algorithm.grammar,
+            self.grammar,
             self._io_instance,
             self._protocol_tree,
             self._packet_algorithm.diversity_k
@@ -230,10 +231,10 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     )
                 if next_history_tree is None:
                     continue
-                protocol_tree = next_history_tree
+                self._protocol_tree = next_history_tree
             else:
-                protocol_tree = self._handle_remote_response()
-            protocol_tree.set_all_read_only(True)
+                self._protocol_tree = self._handle_remote_response()
+            self._protocol_tree.set_all_read_only(True)
 
     def _configure_fuzzable_packets(self) -> None:
         self._population_manager.fuzzable_packets = self._packet_selector.next_packets
