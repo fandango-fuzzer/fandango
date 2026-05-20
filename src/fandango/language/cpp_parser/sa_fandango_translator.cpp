@@ -18,6 +18,7 @@ SA_FandangoTranslator::~SA_FandangoTranslator() {
     Py_XDECREF(AlternativeContext_cls);
     Py_XDECREF(ConcatenationContext_cls);
     Py_XDECREF(OperatorContext_cls);
+    Py_XDECREF(PermutationContext_cls);
     Py_XDECREF(KleeneContext_cls);
     Py_XDECREF(PlusContext_cls);
     Py_XDECREF(OptionContext_cls);
@@ -300,6 +301,12 @@ antlrcpp::Any SA_FandangoTranslator::visitConcatenation(FandangoParser::Concaten
 antlrcpp::Any SA_FandangoTranslator::visitOperator(FandangoParser::OperatorContext *ctx){
     if(!OperatorContext_cls) OperatorContext_cls = PyObject_GetAttrString(translator->parser_cls, "OperatorContext");
     PyObject *py_ctx = translator->convert_ctx(this, ctx, OperatorContext_cls);
+    return py_ctx;
+}
+
+antlrcpp::Any SA_FandangoTranslator::visitPermutation(FandangoParser::PermutationContext *ctx){
+    if(!PermutationContext_cls) PermutationContext_cls = PyObject_GetAttrString(translator->parser_cls, "PermutationContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, PermutationContext_cls);
     return py_ctx;
 }
 

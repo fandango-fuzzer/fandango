@@ -43,6 +43,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitPermutation(FandangoParser::PermutationContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitKleene(FandangoParser::KleeneContext *ctx) override {
     return visitChildren(ctx);
   }

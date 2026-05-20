@@ -84,6 +84,7 @@ class StateGrammarConverter(NodeVisitor[list[Node], Node]):
             self.visitChildren(node),
             self._grammar_settings,
             node.id,
+            is_permutation=node.is_permutation,
         )
 
     def visitRepetition(self, node: Repetition) -> Repetition:

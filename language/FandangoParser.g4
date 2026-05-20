@@ -35,7 +35,10 @@ operator
     | plus
     | option
     | repeat
+    | permutation
     ;
+
+permutation: POWER symbol (symbol)+ POWER;
 
 kleene: symbol STAR;
 plus  : symbol ADD;
