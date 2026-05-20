@@ -269,6 +269,36 @@ class GrammarProcessor(FandangoParserVisitor):
 
             return rep_node
 
+    def visitPermutation(self, ctx: FandangoParser.PermutationContext):
+        nodes = [self.visitSymbol(c) for c in ctx.symbol()]
+        return self._node_permutation_tree(nodes)
+
+    def _concat_two_nodes(self, first: Node, second: Node) -> Node:
+        self.seenConcatenations += 1
+        nid = self.seenConcatenations
+        return Concatenation(
+            [first, second],
+            self._grammar_settings,
+            f"{NodeType.CONCATENATION}:{nid}_{self.id_prefix}",
+        )
+
+    def _node_permutation_tree(self, nodes: list) -> Node:
+        if len(nodes) == 1:
+            return nodes[0]
+        branches: list[Node] = []
+        for i, first in enumerate(nodes):
+            remaining = nodes[:i] + nodes[i + 1:]
+            tail = self._node_permutation_tree(remaining)
+            branches.append(self._concat_two_nodes(first, tail))
+        self.seenAlternatives += 1
+        nid = self.seenAlternatives
+        return Alternative(
+            branches,
+            self._grammar_settings,
+            f"{NodeType.ALTERNATIVE}:{nid}_{self.id_prefix}",
+            is_permutation=True,
+        )
+
     def visitSymbol(self, ctx: FandangoParser.SymbolContext):
         if ctx.nonterminal_right():
             return self.visitNonterminal_right(ctx.nonterminal_right())
