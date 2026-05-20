@@ -8,6 +8,9 @@ from fandango.io.navigation.powerschedule import (
     PowerScheduleCoverage,
     PowerScheduleKPath,
 )
+from fandango.language.grammar.nodes.alternative import Alternative
+from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.grammar.nodes.node import Node
 from fandango.language.tree import DerivationTree
 from fandango.io.navigation.packetforecaster import (
     ForecastingPacket,
@@ -51,6 +54,9 @@ class PacketSelector:
         self._guide_path: list[PacketNonTerminal | NonTerminal | None] = []
         self._current_covered_k_paths: set[KPath] = set()
         self._all_past_covered_k_paths: set[KPath] = set()
+        self._permutation_groups: dict[NonTerminal, frozenset[NonTerminal]] = (
+            self._build_permutation_groups()
+        )
         self.compute(history_tree, self.parst_derivations)
 
     def _input_parties(self) -> set[str]:
@@ -59,6 +65,33 @@ class PacketSelector:
             if party.is_fuzzer_controlled():
                 parties.add(party.party_name)
         return parties
+
+    def _build_permutation_groups(self) -> dict[NonTerminal, frozenset[NonTerminal]]:
+        groups: dict[NonTerminal, frozenset[NonTerminal]] = {}
+        for rule in self.grammar.rules.values():
+            self._collect_permutation_groups(rule, groups)
+        return groups
+
+    def _collect_permutation_groups(
+        self, node: Node, groups: dict[NonTerminal, frozenset[NonTerminal]]
+    ) -> None:
+        if isinstance(node, Alternative) and node.is_permutation:
+            symbols: set[NonTerminal] = set()
+            self._collect_packet_symbols_from_node(node, symbols)
+            if len(symbols) > 1:
+                group = frozenset(symbols)
+                for sym in symbols:
+                    groups[sym] = group
+        for child in node.children():
+            self._collect_permutation_groups(child, groups)
+
+    @staticmethod
+    def _collect_packet_symbols_from_node(node: Node, result: set[NonTerminal]) -> None:
+        if isinstance(node, NonTerminalNode) and node.sender is not None:
+            result.add(node.symbol)
+        else:
+            for child in node.children():
+                PacketSelector._collect_packet_symbols_from_node(child, result)
 
     def _get_state_grammar_symbols(
         self, starting_symbol: NonTerminal
@@ -335,6 +368,23 @@ class PacketSelector:
             for msg in self._new_msgs(is_new_tree):
                 old_next_packet = self._get_next_packet()
                 if old_next_packet is None or old_next_packet.symbol != msg.symbol:
+                    # Check if msg is a permutation peer arriving out of order
+                    assert isinstance(msg.symbol, NonTerminal)
+                    if (
+                        old_next_packet is not None
+                        and old_next_packet.symbol in self._permutation_groups
+                        and msg.symbol
+                        in self._permutation_groups[old_next_packet.symbol]
+                    ):
+                        msg_pnt = PacketNonTerminal(
+                            msg.sender, msg.recipient, msg.symbol
+                        )
+                        if msg_pnt in self._guide_path:
+                            idx = self._guide_path.index(msg_pnt)
+                            self._guide_path = (
+                                self._guide_path[:idx] + self._guide_path[idx + 1 :]
+                            )
+                            continue
                     left_path = True
                     break
                 self._guide_path = self._guide_path[

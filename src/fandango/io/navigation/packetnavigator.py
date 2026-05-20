@@ -4,7 +4,7 @@ from collections.abc import Generator
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.grammarnavigator import GrammarNavigator
 from fandango.io.navigation.stategrammarconverter import StateGrammarConverter
-from fandango.io.navigation.packetiterativeparser import PacketIterativeParser
+from fandango.io.navigation.packetiterativeparser import NavigatorPacketIterativeParser
 from fandango.language import Grammar, DerivationTree
 from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols.non_terminal import NonTerminal
@@ -36,7 +36,7 @@ class PacketNavigator(GrammarNavigator):
         self._packet_symbols: set[NonTerminal] = set(
             map(lambda x: x.symbol, grammar.get_protocol_messages(start_symbol))
         )
-        self._parser = PacketIterativeParser(reduced_rules)
+        self._parser = NavigatorPacketIterativeParser(reduced_rules)
         self.set_message_cost(1)
 
     def get_controlflow_tree(
@@ -51,6 +51,7 @@ class PacketNavigator(GrammarNavigator):
             yield DerivationTree(NonTerminal("<start>")), False
             return
         self._parser.detailed_tree = tree
+        self._parser.reference_tree = tree
         self._parser.new_parse(NonTerminal("<start>"), ParsingMode.INCOMPLETE)
 
         for suggested_tree, is_complete in self._parser.consume(history_nts):
