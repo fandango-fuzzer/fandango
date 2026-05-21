@@ -1,5 +1,6 @@
 import random
 import time
+from collections.abc import Generator
 from typing import Optional
 
 from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
@@ -31,9 +32,9 @@ def parse_next_remote_packet(
     grammar: Grammar,
     forecast: ForecastingResult,
     io_instance: FandangoIO,
-) -> tuple[Optional[ForecastingPacket], Optional[DerivationTree]]:
+) -> Generator[tuple[ForecastingPacket, DerivationTree], None, None]:
     if len(io_instance.get_received_msgs()) == 0:
-        return None, None
+        return None
 
     # Wait till we receive a message from one of the parties in the forecast
     received_parties = list(map(lambda x: x[0], io_instance.get_received_msgs()))
@@ -173,18 +174,21 @@ def parse_next_remote_packet(
             )
 
     max_parse_idx = -1
-    best_parse_tree = None
-    best_non_terminal = None
+    yield_items = set()
     for non_terminal, (parse_idx, parse_tree) in complete_parses.items():
-        if max_parse_idx < parse_idx:
-            max_parse_idx = parse_idx
-            best_parse_tree = parse_tree
-            best_non_terminal = non_terminal
+        if parse_idx < max_parse_idx:
+            continue
+        if parse_idx > max_parse_idx:
+            yield_items.clear()
+        max_parse_idx = parse_idx
+        yield_items.add((non_terminal, parse_tree))
 
-    assert best_non_terminal is not None
+    assert len(yield_items) != 0
 
     io_instance.clear_by_party(msg_sender, max_parse_idx)
-    return forecast_non_terminals[best_non_terminal], best_parse_tree
+    for non_terminal, parse_tree in yield_items:
+        yield forecast_non_terminals[non_terminal], parse_tree
+    return None
 
 
 def generate_parsing_error_msg_information(
