@@ -1,4 +1,4 @@
-<start> ::= <Fuzzer:Extern:query> (<Extern:Fuzzer:nt_pass> | <Extern:Fuzzer:nt_fail>)
+<start> ::= <Fuzzer:Extern:query> (<Extern:Fuzzer:nt_pass> | <Extern:Fuzzer:nt_fail>)(<Extern:Fuzzer:nt_fail> | <Extern:Fuzzer:nt_pass>)
 <query> ::= 'hello'
 <nt_pass> ::= 'response'
 <nt_fail> ::= 'response'
@@ -12,6 +12,7 @@ class Fuzzer(FandangoParty):
     def send(self, message, recipient):
         # Immediately simulate Extern's reply so the protocol algorithm
         # receives it before waiting for a remote message.
+        self.receive("response", "Extern")
         self.receive("response", "Extern")
 
 
