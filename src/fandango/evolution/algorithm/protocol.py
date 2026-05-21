@@ -75,31 +75,45 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             raise FandangoFailedError(
                 f"Timed out while waiting for message from remote party. Expected message from party: {', '.join(external_parties)}"
             )
-        forecast, packet_tree = parse_next_remote_packet(
+
+        packet_sender = None
+        packet_recipient = None
+        packet_tree = None
+        for forecast, packet_tree in parse_next_remote_packet(
             self.grammar,
             self._packet_selector.forecasting_result,
             self._io_instance,
-        )
-        assert packet_tree is not None
-        assert forecast is not None
-        packet_sender = packet_tree.sender
-        assert packet_sender is not None
-        log_message_transfer(
-            packet_sender,
-            packet_tree.recipient,
-            packet_tree,
-            False,
-        )
+        ):
+            packet_sender = packet_tree.sender
+            packet_recipient = packet_tree.recipient
+            packet_tree = packet_tree
+            assert packet_sender is not None
 
-        for hookin_option in forecast.paths:
-            history_tree = hookin_option.tree
-            history_tree.append(hookin_option.path[1:-1], packet_tree)
-            _solutions, (fitness, _failing_trees, _suggestion) = GeneratorWithReturn(
-                self._packet_algorithm.evaluator.evaluate_individual(history_tree)
-            ).collect()
-            assert fitness <= 1.0
-            if fitness == 1.0:
-                return history_tree
+            for hookin_option in forecast.paths:
+                # Deepcopy so that a failed constraint attempt on one NT
+                # does not corrupt the shared base tree for the next candidate.
+                history_tree = hookin_option.tree.deepcopy(copy_parent=False)
+                history_tree.append(hookin_option.path[1:-1], packet_tree)
+                _solutions, (fitness, _failing_trees, _suggestion) = GeneratorWithReturn(
+                    self._packet_algorithm.evaluator.evaluate_individual(history_tree)
+                ).collect()
+                assert fitness <= 1.0
+                if fitness == 1.0:
+                    log_message_transfer(
+                        packet_sender,
+                        packet_recipient,
+                        packet_tree,
+                        False,
+                    )
+                    return history_tree
+        if packet_tree is not None:
+            assert packet_sender is not None
+            log_message_transfer(
+                packet_sender,
+                packet_recipient,
+                packet_tree,
+                False,
+            )
         raise FandangoParseError("Remote response does not match constraints")
 
 
