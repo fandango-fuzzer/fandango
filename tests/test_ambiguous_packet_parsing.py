@@ -86,10 +86,12 @@ class TestParseNextRemotePacketAmbiguity(unittest.TestCase):
         history_tree = grammar.parse("hello", mode=ParsingMode.INCOMPLETE)
         forecast = PacketForecaster(grammar).predict(history_tree)
 
-        io = FandangoIO()
+        io = FandangoIO.instance()
         io.add_receive("Extern", "Fuzzer", "response")
 
         results = list(parse_next_remote_packet(grammar, forecast, io))
+
+        self.assertEqual(len(results), 2, "Expected two parse candidates")
 
         for _, parse_tree in results:
             self.assertEqual(
@@ -117,7 +119,7 @@ class TestConstraintDisambiguation(unittest.TestCase):
         self.assertEqual(len(result_list), 1)
         result = result_list[0]
         messages = result.protocol_msgs()
-        self.assertEqual(len(messages), 2)
+        self.assertEqual(len(messages), 3)
 
         # First message: Fuzzer sends the query
         self.assertEqual(messages[0].sender, "Fuzzer")
@@ -126,10 +128,17 @@ class TestConstraintDisambiguation(unittest.TestCase):
         # Second message: Extern's response must be interpreted as <nt_pass>
         self.assertEqual(messages[1].sender, "Extern")
         self.assertEqual(str(messages[1].msg), "response")
+        self.assertEqual(messages[2].sender, "Extern")
+        self.assertEqual(str(messages[2].msg), "response")
         self.assertEqual(
             messages[1].msg.symbol,
             NonTerminal("<nt_pass>"),
             f"Expected <nt_pass> (passes constraint), got {messages[1].msg.symbol}",
+        )
+        self.assertEqual(
+            messages[2].msg.symbol,
+            NonTerminal("<nt_pass>"),
+            f"Expected <nt_pass> (passes constraint), got {messages[2].msg.symbol}",
         )
 
     def test_rejects_interpretation_that_fails_constraint(self):
