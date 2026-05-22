@@ -69,8 +69,8 @@ void fandangolexerLexerInitialize() {
       "FSTRING_END_TRIPLE_QUOTE", "FSTRING_END_TRIPLE_SINGLE_QUOTE", "FSTRING_END_QUOTE", 
       "FSTRING_END_SINGLE_QUOTE", "BYTES_LITERAL", "DECIMAL_INTEGER", "OCT_INTEGER", 
       "HEX_INTEGER", "BIN_INTEGER", "FLOAT_NUMBER", "IMAG_NUMBER", "GRAMMAR_ASSIGN", 
-      "QUESTION", "BACKSLASH", "ELLIPSIS", "DOTDOT", "DOT", "STAR", "OPEN_PAREN", 
-      "CLOSE_PAREN", "COMMA", "COLON", "SEMI_COLON", "POWER", "ASSIGN", 
+      "QUESTION", "BACKSLASH", "ELLIPSIS", "DOTDOT", "DOT", "POWER", "STAR", 
+      "OPEN_PAREN", "CLOSE_PAREN", "COMMA", "COLON", "SEMI_COLON", "ASSIGN", 
       "OPEN_BRACK", "CLOSE_BRACK", "OR_OP", "XOR", "AND_OP", "LEFT_SHIFT", 
       "RIGHT_SHIFT", "ADD", "MINUS", "DIV", "MOD", "IDIV", "NOT_OP", "OPEN_BRACE", 
       "CLOSE_BRACE", "LESS_THAN", "GREATER_THAN", "EQUALS", "GT_EQ", "LT_EQ", 
@@ -103,7 +103,7 @@ void fandangolexerLexerInitialize() {
       "'maximizing'", "'minimizing'", "'any'", "'all'", "'len'", "'setting'", 
       "'all_with_type'", "", "", "", "'\"\"\"'", "'''''", "'\"'", "'''", 
       "", "", "", "", "", "", "", "'::='", "'\\u003F'", "'\\'", "'...'", 
-      "'..'", "'.'", "'*'", "'('", "')'", "','", "':'", "';'", "'**'", "'='", 
+      "'..'", "'.'", "'**'", "'*'", "'('", "')'", "','", "':'", "';'", "'='", 
       "'['", "']'", "'|'", "'^'", "'&'", "'<<'", "'>>'", "'+'", "'-'", "'/'", 
       "'%'", "'//'", "'~'", "'{'", "'}'", "'<'", "'>'", "'=='", "'>='", 
       "'<='", "'<>'", "'!='", "'@'", "'->'", "'+='", "'-='", "'*='", "'@='", 
@@ -124,16 +124,16 @@ void fandangolexerLexerInitialize() {
       "FSTRING_END_TRIPLE_SINGLE_QUOTE", "FSTRING_END_QUOTE", "FSTRING_END_SINGLE_QUOTE", 
       "BYTES_LITERAL", "DECIMAL_INTEGER", "OCT_INTEGER", "HEX_INTEGER", 
       "BIN_INTEGER", "FLOAT_NUMBER", "IMAG_NUMBER", "GRAMMAR_ASSIGN", "QUESTION", 
-      "BACKSLASH", "ELLIPSIS", "DOTDOT", "DOT", "STAR", "OPEN_PAREN", "CLOSE_PAREN", 
-      "COMMA", "COLON", "SEMI_COLON", "POWER", "ASSIGN", "OPEN_BRACK", "CLOSE_BRACK", 
-      "OR_OP", "XOR", "AND_OP", "LEFT_SHIFT", "RIGHT_SHIFT", "ADD", "MINUS", 
-      "DIV", "MOD", "IDIV", "NOT_OP", "OPEN_BRACE", "CLOSE_BRACE", "LESS_THAN", 
-      "GREATER_THAN", "EQUALS", "GT_EQ", "LT_EQ", "NOT_EQ_1", "NOT_EQ_2", 
-      "AT", "ARROW", "ADD_ASSIGN", "SUB_ASSIGN", "MULT_ASSIGN", "AT_ASSIGN", 
-      "DIV_ASSIGN", "MOD_ASSIGN", "AND_ASSIGN", "OR_ASSIGN", "XOR_ASSIGN", 
-      "LEFT_SHIFT_ASSIGN", "RIGHT_SHIFT_ASSIGN", "POWER_ASSIGN", "IDIV_ASSIGN", 
-      "EXPR_ASSIGN", "EXCL", "NEWLINE", "SKIP_", "SPACES", "UNDERSCORE", 
-      "UNKNOWN_CHAR"
+      "BACKSLASH", "ELLIPSIS", "DOTDOT", "DOT", "POWER", "STAR", "OPEN_PAREN", 
+      "CLOSE_PAREN", "COMMA", "COLON", "SEMI_COLON", "ASSIGN", "OPEN_BRACK", 
+      "CLOSE_BRACK", "OR_OP", "XOR", "AND_OP", "LEFT_SHIFT", "RIGHT_SHIFT", 
+      "ADD", "MINUS", "DIV", "MOD", "IDIV", "NOT_OP", "OPEN_BRACE", "CLOSE_BRACE", 
+      "LESS_THAN", "GREATER_THAN", "EQUALS", "GT_EQ", "LT_EQ", "NOT_EQ_1", 
+      "NOT_EQ_2", "AT", "ARROW", "ADD_ASSIGN", "SUB_ASSIGN", "MULT_ASSIGN", 
+      "AT_ASSIGN", "DIV_ASSIGN", "MOD_ASSIGN", "AND_ASSIGN", "OR_ASSIGN", 
+      "XOR_ASSIGN", "LEFT_SHIFT_ASSIGN", "RIGHT_SHIFT_ASSIGN", "POWER_ASSIGN", 
+      "IDIV_ASSIGN", "EXPR_ASSIGN", "EXCL", "NEWLINE", "SKIP_", "SPACES", 
+      "UNDERSCORE", "UNKNOWN_CHAR"
     }
   );
   static const int32_t serializedATNSegment[] = {
@@ -202,8 +202,8 @@ void fandangolexerLexerInitialize() {
   	67,11,67,12,67,849,1,68,1,68,1,68,4,68,855,8,68,11,68,12,68,856,1,69,
   	1,69,1,69,4,69,862,8,69,11,69,12,69,863,1,70,1,70,3,70,868,8,70,1,71,
   	1,71,3,71,872,8,71,1,71,1,71,1,72,1,72,1,72,1,72,1,73,1,73,1,74,1,74,
-  	1,75,1,75,1,75,1,75,1,76,1,76,1,76,1,77,1,77,1,78,1,78,1,79,1,79,1,79,
-  	1,80,1,80,1,80,1,81,1,81,1,82,1,82,1,83,1,83,1,84,1,84,1,84,1,85,1,85,
+  	1,75,1,75,1,75,1,75,1,76,1,76,1,76,1,77,1,77,1,78,1,78,1,78,1,79,1,79,
+  	1,80,1,80,1,80,1,81,1,81,1,81,1,82,1,82,1,83,1,83,1,84,1,84,1,85,1,85,
   	1,86,1,86,1,86,1,87,1,87,1,87,1,88,1,88,1,89,1,89,1,90,1,90,1,91,1,91,
   	1,91,1,92,1,92,1,92,1,93,1,93,1,94,1,94,1,95,1,95,1,96,1,96,1,97,1,97,
   	1,97,1,98,1,98,1,99,1,99,1,99,1,100,1,100,1,100,1,101,1,101,1,102,1,102,
@@ -467,8 +467,8 @@ void fandangolexerLexerInitialize() {
   	0,0,0,133,842,1,0,0,0,135,844,1,0,0,0,137,851,1,0,0,0,139,858,1,0,0,0,
   	141,867,1,0,0,0,143,871,1,0,0,0,145,875,1,0,0,0,147,879,1,0,0,0,149,881,
   	1,0,0,0,151,883,1,0,0,0,153,887,1,0,0,0,155,890,1,0,0,0,157,892,1,0,0,
-  	0,159,894,1,0,0,0,161,897,1,0,0,0,163,900,1,0,0,0,165,902,1,0,0,0,167,
-  	904,1,0,0,0,169,906,1,0,0,0,171,909,1,0,0,0,173,911,1,0,0,0,175,914,1,
+  	0,159,895,1,0,0,0,161,897,1,0,0,0,163,900,1,0,0,0,165,903,1,0,0,0,167,
+  	905,1,0,0,0,169,907,1,0,0,0,171,909,1,0,0,0,173,911,1,0,0,0,175,914,1,
   	0,0,0,177,917,1,0,0,0,179,919,1,0,0,0,181,921,1,0,0,0,183,923,1,0,0,0,
   	185,926,1,0,0,0,187,929,1,0,0,0,189,931,1,0,0,0,191,933,1,0,0,0,193,935,
   	1,0,0,0,195,937,1,0,0,0,197,940,1,0,0,0,199,942,1,0,0,0,201,945,1,0,0,
@@ -634,21 +634,21 @@ void fandangolexerLexerInitialize() {
   	0,878,146,1,0,0,0,879,880,5,63,0,0,880,148,1,0,0,0,881,882,5,92,0,0,882,
   	150,1,0,0,0,883,884,5,46,0,0,884,885,5,46,0,0,885,886,5,46,0,0,886,152,
   	1,0,0,0,887,888,5,46,0,0,888,889,5,46,0,0,889,154,1,0,0,0,890,891,5,46,
-  	0,0,891,156,1,0,0,0,892,893,5,42,0,0,893,158,1,0,0,0,894,895,5,40,0,0,
-  	895,896,6,79,23,0,896,160,1,0,0,0,897,898,5,41,0,0,898,899,6,80,24,0,
-  	899,162,1,0,0,0,900,901,5,44,0,0,901,164,1,0,0,0,902,903,5,58,0,0,903,
-  	166,1,0,0,0,904,905,5,59,0,0,905,168,1,0,0,0,906,907,5,42,0,0,907,908,
-  	5,42,0,0,908,170,1,0,0,0,909,910,5,61,0,0,910,172,1,0,0,0,911,912,5,91,
-  	0,0,912,913,6,86,25,0,913,174,1,0,0,0,914,915,5,93,0,0,915,916,6,87,26,
-  	0,916,176,1,0,0,0,917,918,5,124,0,0,918,178,1,0,0,0,919,920,5,94,0,0,
-  	920,180,1,0,0,0,921,922,5,38,0,0,922,182,1,0,0,0,923,924,5,60,0,0,924,
-  	925,5,60,0,0,925,184,1,0,0,0,926,927,5,62,0,0,927,928,5,62,0,0,928,186,
-  	1,0,0,0,929,930,5,43,0,0,930,188,1,0,0,0,931,932,5,45,0,0,932,190,1,0,
-  	0,0,933,934,5,47,0,0,934,192,1,0,0,0,935,936,5,37,0,0,936,194,1,0,0,0,
-  	937,938,5,47,0,0,938,939,5,47,0,0,939,196,1,0,0,0,940,941,5,126,0,0,941,
-  	198,1,0,0,0,942,943,5,123,0,0,943,944,6,99,27,0,944,200,1,0,0,0,945,946,
-  	5,125,0,0,946,947,6,100,28,0,947,202,1,0,0,0,948,949,5,60,0,0,949,204,
-  	1,0,0,0,950,951,5,62,0,0,951,206,1,0,0,0,952,953,5,61,0,0,953,954,5,61,
+  	0,0,891,156,1,0,0,0,892,893,5,42,0,0,893,894,5,42,0,0,894,158,1,0,0,0,
+  	895,896,5,42,0,0,896,160,1,0,0,0,897,898,5,40,0,0,898,899,6,80,23,0,899,
+  	162,1,0,0,0,900,901,5,41,0,0,901,902,6,81,24,0,902,164,1,0,0,0,903,904,
+  	5,44,0,0,904,166,1,0,0,0,905,906,5,58,0,0,906,168,1,0,0,0,907,908,5,59,
+  	0,0,908,170,1,0,0,0,909,910,5,61,0,0,910,172,1,0,0,0,911,912,5,91,0,0,
+  	912,913,6,86,25,0,913,174,1,0,0,0,914,915,5,93,0,0,915,916,6,87,26,0,
+  	916,176,1,0,0,0,917,918,5,124,0,0,918,178,1,0,0,0,919,920,5,94,0,0,920,
+  	180,1,0,0,0,921,922,5,38,0,0,922,182,1,0,0,0,923,924,5,60,0,0,924,925,
+  	5,60,0,0,925,184,1,0,0,0,926,927,5,62,0,0,927,928,5,62,0,0,928,186,1,
+  	0,0,0,929,930,5,43,0,0,930,188,1,0,0,0,931,932,5,45,0,0,932,190,1,0,0,
+  	0,933,934,5,47,0,0,934,192,1,0,0,0,935,936,5,37,0,0,936,194,1,0,0,0,937,
+  	938,5,47,0,0,938,939,5,47,0,0,939,196,1,0,0,0,940,941,5,126,0,0,941,198,
+  	1,0,0,0,942,943,5,123,0,0,943,944,6,99,27,0,944,200,1,0,0,0,945,946,5,
+  	125,0,0,946,947,6,100,28,0,947,202,1,0,0,0,948,949,5,60,0,0,949,204,1,
+  	0,0,0,950,951,5,62,0,0,951,206,1,0,0,0,952,953,5,61,0,0,953,954,5,61,
   	0,0,954,208,1,0,0,0,955,956,5,62,0,0,956,957,5,61,0,0,957,210,1,0,0,0,
   	958,959,5,60,0,0,959,960,5,61,0,0,960,212,1,0,0,0,961,962,5,60,0,0,962,
   	963,5,62,0,0,963,214,1,0,0,0,964,965,5,33,0,0,965,966,5,61,0,0,966,216,
@@ -745,7 +745,7 @@ void fandangolexerLexerInitialize() {
   	1223,1228,1231,1235,1238,1247,1252,31,1,0,0,1,1,1,1,2,2,1,3,3,1,7,4,1,
   	8,5,1,15,6,1,16,7,1,18,8,1,20,9,1,21,10,1,22,11,1,24,12,1,25,13,1,28,
   	14,1,34,15,1,43,16,1,45,17,1,47,18,1,61,19,1,62,20,1,63,21,1,64,22,1,
-  	79,23,1,80,24,1,86,25,1,87,26,1,99,27,1,100,28,1,125,29,0,1,0
+  	80,23,1,81,24,1,86,25,1,87,26,1,99,27,1,100,28,1,125,29,0,1,0
   };
   staticData->serializedATN = antlr4::atn::SerializedATNView(serializedATNSegment, sizeof(serializedATNSegment) / sizeof(serializedATNSegment[0]));
 
@@ -825,8 +825,8 @@ void FandangoLexer::action(RuleContext *context, size_t ruleIndex, size_t action
     case 62: FSTRING_END_TRIPLE_SINGLE_QUOTEAction(antlrcpp::downCast<antlr4::RuleContext *>(context), actionIndex); break;
     case 63: FSTRING_END_QUOTEAction(antlrcpp::downCast<antlr4::RuleContext *>(context), actionIndex); break;
     case 64: FSTRING_END_SINGLE_QUOTEAction(antlrcpp::downCast<antlr4::RuleContext *>(context), actionIndex); break;
-    case 79: OPEN_PARENAction(antlrcpp::downCast<antlr4::RuleContext *>(context), actionIndex); break;
-    case 80: CLOSE_PARENAction(antlrcpp::downCast<antlr4::RuleContext *>(context), actionIndex); break;
+    case 80: OPEN_PARENAction(antlrcpp::downCast<antlr4::RuleContext *>(context), actionIndex); break;
+    case 81: CLOSE_PARENAction(antlrcpp::downCast<antlr4::RuleContext *>(context), actionIndex); break;
     case 86: OPEN_BRACKAction(antlrcpp::downCast<antlr4::RuleContext *>(context), actionIndex); break;
     case 87: CLOSE_BRACKAction(antlrcpp::downCast<antlr4::RuleContext *>(context), actionIndex); break;
     case 99: OPEN_BRACEAction(antlrcpp::downCast<antlr4::RuleContext *>(context), actionIndex); break;

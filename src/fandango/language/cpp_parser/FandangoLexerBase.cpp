@@ -13,6 +13,7 @@ FandangoLexerBase::FandangoLexerBase(antlr4::CharStream *input)
     opened = 0;
     inPython = 0;
     isFstring = false;
+    inPermutation = false;
     skipLexer = 0;
 
     lexer = this;
@@ -24,6 +25,7 @@ void FandangoLexerBase::reset() {
     opened = 0;
     inPython = 0;
     isFstring = false;
+    inPermutation = false;
     skipLexer = 0;
 
     Lexer::reset();
@@ -159,6 +161,22 @@ void FandangoLexerBase::_fstring_end() {
 
 bool FandangoLexerBase::_is_not_fstring() {
     return !isFstring;
+}
+
+void FandangoLexerBase::_permutation_start() {
+    inPermutation = true;
+}
+
+void FandangoLexerBase::_permutation_end() {
+    inPermutation = false;
+}
+
+bool FandangoLexerBase::_can_start_permutation() {
+    return !inPermutation && !isFstring && inPython == 0;
+}
+
+bool FandangoLexerBase::_is_in_permutation() {
+    return inPermutation;
 }
 
 void FandangoLexerBase::_on_newline() {
