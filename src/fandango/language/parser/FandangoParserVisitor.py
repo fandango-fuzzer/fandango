@@ -39,10 +39,6 @@ class FandangoParserVisitor(ParseTreeVisitor):
     def visitOperator(self, ctx: FandangoParser.OperatorContext):
         return self.visitChildren(ctx)
 
-    # Visit a parse tree produced by FandangoParser#permutation.
-    def visitPermutation(self, ctx: FandangoParser.PermutationContext):
-        return self.visitChildren(ctx)
-
     # Visit a parse tree produced by FandangoParser#kleene.
     def visitKleene(self, ctx: FandangoParser.KleeneContext):
         return self.visitChildren(ctx)
