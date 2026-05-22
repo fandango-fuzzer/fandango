@@ -31,15 +31,14 @@ public:
     POWER = 81, STAR = 82, OPEN_PAREN = 83, CLOSE_PAREN = 84, COMMA = 85, 
     COLON = 86, SEMI_COLON = 87, ASSIGN = 88, OPEN_BRACK = 89, CLOSE_BRACK = 90, 
     OR_OP = 91, XOR = 92, AND_OP = 93, LEFT_SHIFT = 94, RIGHT_SHIFT = 95, 
-    ADD = 96, MINUS = 97, DIV = 98, MOD = 99, IDIV = 100, PERMUTATION = 101, 
-    NOT_OP = 102, OPEN_BRACE = 103, CLOSE_BRACE = 104, LESS_THAN = 105, 
-    GREATER_THAN = 106, EQUALS = 107, GT_EQ = 108, LT_EQ = 109, NOT_EQ_1 = 110, 
-    NOT_EQ_2 = 111, AT = 112, ARROW = 113, ADD_ASSIGN = 114, SUB_ASSIGN = 115, 
-    MULT_ASSIGN = 116, AT_ASSIGN = 117, DIV_ASSIGN = 118, MOD_ASSIGN = 119, 
-    AND_ASSIGN = 120, OR_ASSIGN = 121, XOR_ASSIGN = 122, LEFT_SHIFT_ASSIGN = 123, 
-    RIGHT_SHIFT_ASSIGN = 124, POWER_ASSIGN = 125, IDIV_ASSIGN = 126, EXPR_ASSIGN = 127, 
-    EXCL = 128, NEWLINE = 129, SKIP_ = 130, SPACES = 131, UNDERSCORE = 132, 
-    UNKNOWN_CHAR = 133
+    ADD = 96, MINUS = 97, DIV = 98, MOD = 99, IDIV = 100, NOT_OP = 101, 
+    OPEN_BRACE = 102, CLOSE_BRACE = 103, LESS_THAN = 104, GREATER_THAN = 105, 
+    EQUALS = 106, GT_EQ = 107, LT_EQ = 108, NOT_EQ_1 = 109, NOT_EQ_2 = 110, 
+    AT = 111, ARROW = 112, ADD_ASSIGN = 113, SUB_ASSIGN = 114, MULT_ASSIGN = 115, 
+    AT_ASSIGN = 116, DIV_ASSIGN = 117, MOD_ASSIGN = 118, AND_ASSIGN = 119, 
+    OR_ASSIGN = 120, XOR_ASSIGN = 121, LEFT_SHIFT_ASSIGN = 122, RIGHT_SHIFT_ASSIGN = 123, 
+    POWER_ASSIGN = 124, IDIV_ASSIGN = 125, EXPR_ASSIGN = 126, EXCL = 127, 
+    NEWLINE = 128, SKIP_ = 129, SPACES = 130, UNDERSCORE = 131, UNKNOWN_CHAR = 132
   };
 
   enum {
@@ -556,10 +555,12 @@ public:
   public:
     PermutationContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    std::vector<antlr4::tree::TerminalNode *> PERMUTATION();
-    antlr4::tree::TerminalNode* PERMUTATION(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> OPEN_BRACK();
+    antlr4::tree::TerminalNode* OPEN_BRACK(size_t i);
     std::vector<SymbolContext *> symbol();
     SymbolContext* symbol(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> CLOSE_BRACK();
+    antlr4::tree::TerminalNode* CLOSE_BRACK(size_t i);
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
