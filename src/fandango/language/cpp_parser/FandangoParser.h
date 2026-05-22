@@ -28,8 +28,8 @@ public:
     BYTES_LITERAL = 68, DECIMAL_INTEGER = 69, OCT_INTEGER = 70, HEX_INTEGER = 71, 
     BIN_INTEGER = 72, FLOAT_NUMBER = 73, IMAG_NUMBER = 74, GRAMMAR_ASSIGN = 75, 
     QUESTION = 76, BACKSLASH = 77, ELLIPSIS = 78, DOTDOT = 79, DOT = 80, 
-    STAR = 81, OPEN_PAREN = 82, CLOSE_PAREN = 83, COMMA = 84, COLON = 85, 
-    SEMI_COLON = 86, POWER = 87, ASSIGN = 88, OPEN_BRACK = 89, CLOSE_BRACK = 90, 
+    POWER = 81, STAR = 82, OPEN_PAREN = 83, CLOSE_PAREN = 84, COMMA = 85, 
+    COLON = 86, SEMI_COLON = 87, ASSIGN = 88, OPEN_BRACK = 89, CLOSE_BRACK = 90, 
     OR_OP = 91, XOR = 92, AND_OP = 93, LEFT_SHIFT = 94, RIGHT_SHIFT = 95, 
     ADD = 96, MINUS = 97, DIV = 98, MOD = 99, IDIV = 100, NOT_OP = 101, 
     OPEN_BRACE = 102, CLOSE_BRACE = 103, LESS_THAN = 104, GREATER_THAN = 105, 
@@ -43,9 +43,9 @@ public:
 
   enum {
     RuleFandango = 0, RuleProgram = 1, RuleStatement = 2, RuleProduction = 3, 
-    RuleAlternative = 4, RuleConcatenation = 5, RuleOperator = 6, RulePermutation = 7, 
-    RuleKleene = 8, RulePlus = 9, RuleOption = 10, RuleRepeat = 11, RuleSymbol = 12, 
-    RuleNonterminal_right = 13, RuleNonterminal = 14, RuleGenerator_call = 15, 
+    RuleAlternative = 4, RuleConcatenation = 5, RuleOperator = 6, RuleKleene = 7, 
+    RulePlus = 8, RuleOption = 9, RulePermutation = 10, RuleRepeat = 11, 
+    RuleSymbol = 12, RuleNonterminal_right = 13, RuleNonterminal = 14, RuleGenerator_call = 15, 
     RuleChar_set = 16, RuleConstraint = 17, RuleImplies = 18, RuleQuantifier = 19, 
     RuleQuantifier_in_line = 20, RuleFormula_disjunction = 21, RuleFormula_conjunction = 22, 
     RuleFormula_atom = 23, RuleFormula_comparison = 24, RuleExpr = 25, RuleSelector_length = 26, 
@@ -144,10 +144,10 @@ public:
   class AlternativeContext;
   class ConcatenationContext;
   class OperatorContext;
-  class PermutationContext;
   class KleeneContext;
   class PlusContext;
   class OptionContext;
+  class PermutationContext;
   class RepeatContext;
   class SymbolContext;
   class Nonterminal_rightContext;
@@ -495,12 +495,12 @@ public:
   public:
     OperatorContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    SymbolContext *symbol();
     KleeneContext *kleene();
     PlusContext *plus();
     OptionContext *option();
     RepeatContext *repeat();
     PermutationContext *permutation();
+    SymbolContext *symbol();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -508,22 +508,6 @@ public:
   };
 
   OperatorContext* operator_();
-
-  class  PermutationContext : public antlr4::ParserRuleContext {
-  public:
-    PermutationContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    std::vector<antlr4::tree::TerminalNode *> POWER();
-    antlr4::tree::TerminalNode* POWER(size_t i);
-    std::vector<SymbolContext *> symbol();
-    SymbolContext* symbol(size_t i);
-
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
-  };
-
-  PermutationContext* permutation();
 
   class  KleeneContext : public antlr4::ParserRuleContext {
   public:
@@ -566,6 +550,24 @@ public:
   };
 
   OptionContext* option();
+
+  class  PermutationContext : public antlr4::ParserRuleContext {
+  public:
+    PermutationContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    std::vector<antlr4::tree::TerminalNode *> OPEN_BRACK();
+    antlr4::tree::TerminalNode* OPEN_BRACK(size_t i);
+    std::vector<SymbolContext *> symbol();
+    SymbolContext* symbol(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> CLOSE_BRACK();
+    antlr4::tree::TerminalNode* CLOSE_BRACK(size_t i);
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  PermutationContext* permutation();
 
   class  RepeatContext : public antlr4::ParserRuleContext {
   public:

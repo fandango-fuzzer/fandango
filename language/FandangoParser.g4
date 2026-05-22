@@ -30,19 +30,20 @@ alternative: concatenation ('|' concatenation)*;
 concatenation: operator (operator)*;
 
 operator
-    : symbol
-    | kleene
+    : kleene
     | plus
     | option
     | repeat
     | permutation
+    | symbol
     ;
-
-permutation: POWER symbol (symbol)+ POWER;
 
 kleene: symbol STAR;
 plus  : symbol ADD;
 option: symbol QUESTION;
+permutation
+    : OPEN_BRACK OPEN_BRACK symbol (symbol)* CLOSE_BRACK CLOSE_BRACK
+    ;
 repeat
     : symbol OPEN_BRACE (expression) CLOSE_BRACE
     | symbol OPEN_BRACE (expression)? COMMA (expression)? CLOSE_BRACE
