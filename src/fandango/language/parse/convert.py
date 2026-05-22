@@ -322,7 +322,7 @@ class GrammarProcessor(FandangoParserVisitor):
             return nodes[0]
         branches: list[Node] = []
         for i, first in enumerate(nodes):
-            remaining = nodes[:i] + nodes[i + 1:]
+            remaining = nodes[:i] + nodes[i + 1 :]
             tail = self._node_permutation_tree(remaining)
             branches.append(self._concat_two_nodes(first, tail))
         self.seenAlternatives += 1
