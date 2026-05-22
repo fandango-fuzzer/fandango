@@ -166,11 +166,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._population_manager.allow_fallback_packets = True
         try:
             return next(
-                filter(
-                    lambda x: self._packet_coverage_filter.filter(x),
-                    self._packet_algorithm.generate(
-                        max_generations=overall_max_generations
-                    )
+                self._packet_algorithm.generate(
+                    max_generations=overall_max_generations
                 )
             )
         except StopIteration:
