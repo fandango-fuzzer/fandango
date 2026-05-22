@@ -42,7 +42,7 @@ kleene: symbol STAR;
 plus  : symbol ADD;
 option: symbol QUESTION;
 permutation
-    : PERMUTATION symbol (symbol)* PERMUTATION
+    : OPEN_BRACK OPEN_BRACK symbol (symbol)* CLOSE_BRACK CLOSE_BRACK
     ;
 repeat
     : symbol OPEN_BRACE (expression) CLOSE_BRACE
