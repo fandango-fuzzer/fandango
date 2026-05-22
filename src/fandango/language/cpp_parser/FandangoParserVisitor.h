@@ -33,8 +33,6 @@ public:
 
     virtual std::any visitOperator(FandangoParser::OperatorContext *context) = 0;
 
-    virtual std::any visitPermutation(FandangoParser::PermutationContext *context) = 0;
-
     virtual std::any visitKleene(FandangoParser::KleeneContext *context) = 0;
 
     virtual std::any visitPlus(FandangoParser::PlusContext *context) = 0;
