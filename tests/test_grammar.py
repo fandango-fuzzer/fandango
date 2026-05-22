@@ -5,6 +5,7 @@ import random
 import unittest
 
 from fandango.evolution.algorithm import DefaultAlgorithm
+from fandango.language.grammar.nodes.node import Node
 from fandango.language.symbols import NonTerminal
 from fandango.language.parse.parse import parse
 from fandango.language.tree import DerivationTree
@@ -116,7 +117,7 @@ class ConstraintTest(unittest.TestCase):
         self.assertEqual(len(start_rule.children()), 3)
         perm_rule = start_rule.children()[1]
         work = set(perm_rule.descendents(grammar))
-        seen = set()
+        seen: set[Node] = set()
         while len(work) > 0:
             node = work.pop()
             desc = set(node.descendents(grammar))
