@@ -17,6 +17,7 @@ class PacketCoverageFilter:
         self._grammar = grammar
         self._submitted_solutions: set[int] = set()
         self.hold_back_solutions: set[DerivationTree] = set()
+        self._solution_set: set[int] = set()
         self._past_trees: list[DerivationTree] = []
 
     def get_past_msgs(
@@ -38,6 +39,7 @@ class PacketCoverageFilter:
     def set_existing_derivations(self, past_trees: list[DerivationTree]):
         self._past_trees = past_trees
         self.hold_back_solutions.clear()
+        self._solution_set.clear()
         for tree in past_trees:
             for msg in tree.protocol_msgs():
                 tree = msg.msg
@@ -101,9 +103,12 @@ class PacketCoverageFilter:
             overlap_to_root=overlap_to_root,
         )
         if old_coverage < new_coverage or new_coverage == 1.0:
+            if new_coverage < 1.0:
+                self._solution_set.add(msg_hash)
             return individual
         elif (
                 msg_hash not in self._submitted_solutions
+                and msg_hash not in self._solution_set
                 and msg_hash not in self.hold_back_solutions
         ):
             self.hold_back_solutions.add(individual)
