@@ -170,7 +170,7 @@ class IterativeParser(
         else:
             node_min = node.min
             node_max = node.max
-        for rep in range(node_min, node_max):
+        for _rep in range(node_min, node_max):
             alts = [[nt]]
             if prev is not None:
                 alts.append([nt, prev])

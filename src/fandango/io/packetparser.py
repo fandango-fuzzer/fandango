@@ -58,9 +58,7 @@ def parse_next_remote_packet(
     msg_sender = None
     # We might have received messages from different parties. Select a party that sent a message and is
     # in the current forecast.
-    for idx, (msg_sender, msg_recipient, _) in enumerate(
-        io_instance.get_received_msgs()
-    ):
+    for msg_sender, _msg_recipient, _ in io_instance.get_received_msgs():
         if msg_sender in forecast.get_msg_parties():
             break
 

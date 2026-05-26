@@ -597,6 +597,13 @@ sdist = { url = "https://files.pythonhosted.org/packages/9b/af/fbfe3c4b5a657d79e
 wheels = [{ url = "https://files.pythonhosted.org/packages/9f/56/13ab06b4f93ca7cac71078fbe37fcea175d3216f31f85c3168a6bbd0bb9a/flake8-7.3.0-py2.py3-none-any.whl", upload-time = 2025-06-20T19:31:34Z, size = 57922, hashes = { sha256 = "b9696257b9ce8beb888cdbe31cf885c90d31928fe202be0889a7cdafad32f01e" } }]
 
 [[packages]]
+name = "flake8-bugbear"
+version = "25.11.29"
+index = "https://pypi.org/simple"
+sdist = { url = "https://files.pythonhosted.org/packages/ec/20/2a996e2fca7810bd1b031901d65fc4292630895afcb946ebd00568bdc669/flake8_bugbear-25.11.29.tar.gz", upload-time = 2025-11-29T20:51:57Z, size = 84896, hashes = { sha256 = "b5d06710f3d26e595541ad303ad4d5cb52578bd4bccbb2c2c0b2c72e243dafc8" } }
+wheels = [{ url = "https://files.pythonhosted.org/packages/0d/42/c18f199780d99a6f6a64c4a36f4ad28a445d9e11968a6025b21d0c8b6802/flake8_bugbear-25.11.29-py3-none-any.whl", upload-time = 2025-11-29T20:51:56Z, size = 37861, hashes = { sha256 = "9bf15e2970e736d2340da4c0a70493db964061c9c38f708cfe1f7b2d87392298" } }]
+
+[[packages]]
 name = "ghp-import"
 version = "2.1.0"
 index = "https://pypi.org/simple"

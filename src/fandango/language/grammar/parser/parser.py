@@ -37,7 +37,7 @@ class Parser:
         if `allow_incomplete` is True, the function will return trees even if the input ends prematurely.
         """
         self._iter_parser.new_parse(start, mode, hookin_parent, starter_bit)
-        for tree, is_complete in self._iter_parser.consume(word):
+        for tree, _is_complete in self._iter_parser.consume(word):
             yield tree
 
     def parse_forest(

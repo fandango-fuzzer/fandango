@@ -317,7 +317,7 @@ class RepetitionBoundsConstraint(Constraint):
             container_tree: DerivationTree = container.evaluate()
             search_in_bounds = True
             zip_var = list(zip_longest(max_path, container_tree.get_choices_path()))
-            for i, (max_step, search_step) in enumerate(zip_var):
+            for max_step, search_step in zip_var:
                 if max_step is None:
                     break
                 if search_step is None:

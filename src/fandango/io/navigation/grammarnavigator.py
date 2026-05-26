@@ -20,10 +20,9 @@ class NavigatorTimedOutError(FandangoError):
 
 
 class GrammarNavigator(AStar[GrammarGraphNode]):
-
-    def __init__(
-        self, grammar: Grammar, start_symbol: NonTerminal = NonTerminal("<start>")
-    ):
+    def __init__(self, grammar: Grammar, start_symbol: Optional[NonTerminal] = None):
+        if start_symbol is None:
+            start_symbol = NonTerminal("<start>")
         graph_converter = GrammarGraphConverter(grammar.rules, start_symbol)
         self.grammar = grammar
         self.graph = graph_converter.process()

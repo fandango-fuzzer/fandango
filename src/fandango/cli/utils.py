@@ -1,4 +1,5 @@
 import argparse
+from collections.abc import Iterable
 import difflib
 import logging
 import os
@@ -76,11 +77,11 @@ def _copy_setting(
 
 
 def make_fandango_settings(
-    args: argparse.Namespace, initial_settings: dict[str, Any] = {}
+    args: argparse.Namespace, initial_settings: Optional[dict[str, Any]] = None
 ) -> dict[str, Any]:
     """Create keyword settings for Fandango() constructor"""
     LOGGER.debug(f"Pre-sanitized settings: {args}")
-    settings = initial_settings.copy()
+    settings = initial_settings.copy() if initial_settings is not None else {}
     _copy_setting(args, settings, "population_size")
     _copy_setting(args, settings, "mutation_rate")
     _copy_setting(args, settings, "crossover_rate")
@@ -171,7 +172,7 @@ def get_file_mode(
 
 def parse_contents_from_args(
     args: argparse.Namespace,
-    given_grammars: list[Grammar] = [],
+    given_grammars: Iterable[Grammar] = (),
     check: bool = True,
 ) -> tuple[Optional[Grammar], list[Constraint | SoftValue]]:
     """Parse .fan content as given in args"""
@@ -247,7 +248,7 @@ class Server(NetworkParty):
 
 def parse_constraints_from_args(
     args: argparse.Namespace,
-    given_grammars: list[Grammar] = [],
+    given_grammars: Iterable[Grammar] = (),
     check: bool = True,
 ) -> tuple[Optional[Grammar], list[Constraint | SoftValue]]:
     """Parse .fan constraints as given in args"""
@@ -340,8 +341,14 @@ def parse_file(
 
 
 def exec_single(
-    code: str, _globals: dict[str, Any] = {}, _locals: dict[str, Any] = {}
+    code: str,
+    _globals: Optional[dict[str, Any]] = None,
+    _locals: Optional[dict[str, Any]] = None,
 ) -> None:
     """Execute CODE in 'single' mode, printing out results if any"""
+    if _globals is None:
+        _globals = {}
+    if _locals is None:
+        _locals = {}
     block = compile(code, "<input>", mode="single")
     exec(block, _globals, _locals)

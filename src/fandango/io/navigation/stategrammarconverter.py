@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from typing import Optional
 from fandango.errors import FandangoValueError
 from fandango.language.symbols.symbol import Symbol
 from fandango.language.symbols.non_terminal import NonTerminal
@@ -45,14 +46,14 @@ class StateGrammarConverter(NodeVisitor[list[Node], Node]):
     def process(
         self,
         rules: dict[NonTerminal, Node],
-        start_symbol: NonTerminal = NonTerminal("<start>"),
+        start_symbol: Optional[NonTerminal] = None,
     ) -> dict[NonTerminal, Node]:
         """
         Applies the grammar reduction to the provided grammar.
         """
         self._reduced = dict()
         self.seen_keys = set()
-        self.seen_keys.add(start_symbol)
+        self.seen_keys.add(start_symbol or NonTerminal("<start>"))
         self.processed_keys = set()
         diff_keys = self.seen_keys - self.processed_keys
         while len(diff_keys) != 0:

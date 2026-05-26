@@ -15,8 +15,7 @@ def is_syntactically_valid_csv(csv_string):
         reader = csv.reader(csv_file)
 
         # Iterate through the reader to trigger any parsing errors
-        for row in reader:
-            pass
+        list(reader)
 
         # If no errors, it's a valid CSV syntactically
         return True

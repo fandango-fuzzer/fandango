@@ -582,5 +582,5 @@ def test_tree_value_direct_access_non_base_type(base_value):
     with pytest.warns(DeprecationWarning):
         assert base_value.startswith(DerivationTree(Terminal("Hello")))
 
-    with pytest.raises(Exception):
+    with pytest.raises(AssertionError):
         base_value.startswith(1.0)  # float is illegal base type

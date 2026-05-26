@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 import random
 import struct
 from abc import ABC, abstractmethod
@@ -548,11 +549,12 @@ def havoc_mutations() -> tuple[ByteLevelMutationOperator, ...]:
     )
 
 
+HAVOC_MUTATIONS = havoc_mutations()
+
+
 def havoc_mutate(
     input_: DerivationTree,
-    mutations: (
-        list[ByteLevelMutationOperator] | tuple[ByteLevelMutationOperator, ...]
-    ) = havoc_mutations(),
+    mutations: Sequence[ByteLevelMutationOperator] = HAVOC_MUTATIONS,
     max_stack_pow: int = 7,
     nop_probability: float = 0,
 ) -> bytes:

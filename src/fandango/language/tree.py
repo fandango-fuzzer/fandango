@@ -101,6 +101,7 @@ def forward_to_tree_value_methods(
                 warnings.warn(
                     f"Method {name} already exists on {cls.__name__}, skipping",
                     Warning,
+                    stacklevel=2,
                 )
             else:
                 setattr(cls, name, make_method(name))
@@ -347,6 +348,7 @@ class DerivationTree:
         warnings.warn(
             "Use find_subtrees instead [deprecated after version 1.1.1]",
             category=DeprecationWarning,
+            stacklevel=2,
         )
         return list(self.find_subtrees(symbol))
 
@@ -366,7 +368,7 @@ class DerivationTree:
             ],
             [],
         )
-        for o_node_id, o_iter_id, rep in self.origin_repetitions:
+        for o_node_id, _o_iter_id, _rep in self.origin_repetitions:
             if o_node_id == node_id:
                 trees.append(self)
                 break

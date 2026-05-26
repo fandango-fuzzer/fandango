@@ -29,7 +29,7 @@ class IterParsingTester(Parser):
         self._iter_parser.new_parse(start, mode, hookin_parent, starter_bit)
         for char in word[:-1]:
             next(self._iter_parser.consume(char), None)
-        for tree, is_complete in self._iter_parser.consume(word[-1]):
+        for tree, _is_complete in self._iter_parser.consume(word[-1]):
             yield tree
 
 

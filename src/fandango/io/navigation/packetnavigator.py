@@ -16,10 +16,9 @@ from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 
 
 class PacketNavigator(GrammarNavigator):
-
-    def __init__(
-        self, grammar: Grammar, start_symbol: NonTerminal = NonTerminal("<start>")
-    ):
+    def __init__(self, grammar: Grammar, start_symbol: Optional[NonTerminal] = None):
+        if start_symbol is None:
+            start_symbol = NonTerminal("<start>")
         reduced_rules = StateGrammarConverter(grammar.grammar_settings).process(
             grammar.rules, start_symbol
         )
@@ -142,7 +141,7 @@ class PacketNavigator(GrammarNavigator):
         found_trees, include_k_paths = self._find_trees_including_k_paths(
             included_k_paths, tree
         )
-        for suggested_tree, is_complete in found_trees:
+        for suggested_tree, _is_complete in found_trees:
             path = self.astar_tree_symbols(
                 tree=suggested_tree, destination_k_path=destination_k_path
             )

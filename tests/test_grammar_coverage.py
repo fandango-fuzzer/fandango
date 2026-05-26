@@ -118,7 +118,7 @@ class Server(NetworkParty):
             fandango = GrammarCoverageTest.gen_fandango(
                 CoverageGoal.STATE_INPUTS, host="127.0.0.1", port=server.port
             )
-            for solution in fandango.generate(mode=FuzzingMode.IO):
+            for _solution in fandango.generate(mode=FuzzingMode.IO):
                 pass
         finally:
             server.stop()
