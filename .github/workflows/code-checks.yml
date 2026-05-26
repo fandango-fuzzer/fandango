@@ -32,6 +32,28 @@ jobs:
         run: |
           uv run black --check .
 
+  flake8-check:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ["3.13"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Fandango
+        uses: ./.github/workflows/setup-fandango
+        with:
+          python-version: ${{ matrix.python-version }}
+          needs-sudo: true
+          skip-parser: 1
+
+      - name: Run flake8
+        run: |
+          uv run flake8 src tests evaluation scripts
+
   uv-check:
     runs-on: ${{ matrix.os }}
 
