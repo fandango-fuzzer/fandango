@@ -1,0 +1,16 @@
+[flake8]
+max-line-length = 88
+extend-ignore = W503, E501
+exclude =
+    .git,
+    __pycache__,
+    .venv,
+    build,
+    dist,
+    fcc,
+    evaluation/protocol_testing_eval/profuzzbench,
+    src/fandango/language/parser/FandangoLexer.py,
+    src/fandango/language/parser/sa_fandango.py,
+    src/fandango/language/parser/*Parser*.py,
+    src/fandango/converters/antlr/ANTLRv4*.py,
+    src/fandango/converters/antlr/LexerAdaptor*.py
