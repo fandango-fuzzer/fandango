@@ -24,9 +24,9 @@ class Trace:
         self.sa = sa
         self.trace = trace
 
-    ###############################################
-    ## Helpers functions for objective functions ##
-    ###############################################
+    #############################################
+    # Helpers functions for objective functions #
+    #############################################
 
     def CoveredBasicBlocks(self) -> set[ModuleBBID]:
         covered = set()
@@ -69,9 +69,9 @@ class Trace:
                                 covered.add(bb_id)
         return covered
 
-    ###################################################################
-    ## Objective functions, which can be used in Fadango constraints ##
-    ###################################################################
+    #################################################################
+    # Objective functions, which can be used in Fadango constraints #
+    #################################################################
 
     # a.k.a. "SlowFuzz"
     def ExecutionPathLength(self) -> int:

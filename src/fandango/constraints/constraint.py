@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from collections.abc import Collection
-import traceback
 from typing import TYPE_CHECKING, Any, Optional
 import warnings
 from fandango.constraints.base import GeneticBase

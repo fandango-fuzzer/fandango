@@ -1,14 +1,13 @@
 import random
 from collections.abc import Generator, Iterator
 from collections import defaultdict
-from typing import Any, cast, Optional, Iterable, Callable
+from typing import Any, cast, Optional
 from collections.abc import Sequence
 import warnings
 import itertools
 
 
 from fandango.errors import FandangoValueError, FandangoParseError
-from fandango.io.navigation import coverage_goal
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.coverage_goal import CoverageGoal
 from fandango.language.grammar import FuzzingMode, ParsingMode, closest_match
@@ -16,7 +15,6 @@ from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.literal_generator import LiteralGenerator
 from fandango.language.grammar.node_visitors.disambiguator import Disambiguator
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
-from fandango.language.grammar.nodes import node
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.char_set import CharSet
 from fandango.language.grammar.nodes.concatenation import Concatenation

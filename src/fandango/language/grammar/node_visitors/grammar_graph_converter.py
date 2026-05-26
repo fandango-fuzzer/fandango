@@ -91,7 +91,7 @@ class GrammarGraphNode(abc.ABC):
                     walked_node = next_walked_node
                     break
             if not found_node:
-                raise GrammarWalkError(f"Grammar graph doesn't match tree structure.")
+                raise GrammarWalkError("Grammar graph doesn't match tree structure.")
         return walked_node
 
 
@@ -156,7 +156,6 @@ class GrammarGraph:
 class GrammarGraphConverter(
     NodeVisitor[None, tuple[GrammarGraphNode, list[GrammarGraphNode]]]
 ):
-
     def __init__(
         self, grammar_rules: dict[NonTerminal, Node], start_symbol: NonTerminal
     ):

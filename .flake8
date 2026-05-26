@@ -1,6 +1,12 @@
 [flake8]
 max-line-length = 88
-extend-ignore = W503, E501
+extend-ignore =
+    # line break before/after binary operator; to unify with black
+    W503,
+    # whitespace before ':'; to unify with black
+    E203,
+    # line too long
+    E501
 exclude =
     .git,
     __pycache__,

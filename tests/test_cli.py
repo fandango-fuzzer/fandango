@@ -55,7 +55,7 @@ class TestCLI(unittest.TestCase):
     def test_help(self):
         command = ["fandango", "--help"]
         out, err, code = run_command(command)
-        _parser = get_parser(True)
+        _ = get_parser(True)
         self.assertEqual(0, code, code)
         self.assertEqual(err, "", err)
 

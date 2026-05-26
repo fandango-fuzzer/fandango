@@ -4,7 +4,7 @@
 # tree.visualize()
 
 from graphviz import Digraph
-from IPython.display import display_svg, display_png
+from IPython.display import display_png
 
 
 class Tree:

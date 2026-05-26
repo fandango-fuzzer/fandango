@@ -610,7 +610,6 @@ class DerivationTree:
             """
             Output the derivation tree as (specialized) grammar
             """
-            nonlocal include_position, include_value
             assert isinstance(node.symbol, NonTerminal)
 
             s = "  " * start_indent + f"{node.symbol.name()} ::="
@@ -975,7 +974,6 @@ class DerivationTree:
         else:
             raise ValueError(f"Invalid value type: {value.type_}")
 
-    ## Comparison operations
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, DerivationTree):
             return hash(self) == hash(other)

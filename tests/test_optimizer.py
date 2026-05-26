@@ -109,7 +109,7 @@ class GeneticTest(unittest.TestCase):
             target_population_size=initial_count,
         )
 
-        _initial_solutions = list(generator)  # drain initial solutions
+        _ = list(generator)  # drain initial solutions
 
         copy_of_initial_population = deepcopy(population)
 
@@ -289,7 +289,7 @@ class GeneticTest(unittest.TestCase):
                 self.fandango.evaluator.evaluate_individual,
             )
         )
-        _solutions1 = list(gen1)
+        _ = list(gen1)  # force generator evaluation
         mutant1 = gen1.return_value
 
         gen2 = GeneratorWithReturn(
@@ -299,7 +299,7 @@ class GeneticTest(unittest.TestCase):
                 self.fandango.evaluator.evaluate_individual,
             )
         )
-        _solutions2 = list(gen2)
+        _ = list(gen2)  # force generator evaluation
         mutant2 = gen2.return_value
 
         # Check that the mutated children are of the correct type
