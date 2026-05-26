@@ -726,6 +726,7 @@ book = [
     { name = "docutils" },
     { name = "faker" },
     { name = "flake8" },
+    { name = "flake8-bugbear" },
     { name = "ghp-import" },
     { name = "graphviz" },
     { name = "jupyter-book" },
@@ -756,6 +757,7 @@ development = [
     { name = "docutils" },
     { name = "faker" },
     { name = "flake8" },
+    { name = "flake8-bugbear" },
     { name = "mypy" },
     { name = "numpy" },
     { name = "pandas" },
@@ -782,6 +784,7 @@ full = [
     { name = "docutils" },
     { name = "faker" },
     { name = "flake8" },
+    { name = "flake8-bugbear" },
     { name = "ghp-import" },
     { name = "graphviz" },
     { name = "jupyter-book" },
@@ -843,6 +846,7 @@ requires-dist = [
     { name = "fandango-fuzzer", extras = ["development"], marker = "extra == 'book'" },
     { name = "fandango-fuzzer", extras = ["test"], marker = "extra == 'development'" },
     { name = "flake8", marker = "extra == 'development'", specifier = ">=7.0.0" },
+    { name = "flake8-bugbear", marker = "extra == 'development'", specifier = ">=15.11.0" },
     { name = "ghp-import", marker = "extra == 'book'", specifier = ">=2.1.0" },
     { name = "gnureadline", marker = "implementation_name != 'pypy' and sys_platform != 'win32'", specifier = ">=8.2.13" },
     { name = "graphviz", marker = "extra == 'book'", specifier = ">=0.20.3" },
@@ -909,6 +913,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/9b/af/fbfe3c4b5a657d79e5c47a2827a362f9e1b763336a52f926126aa6dc7123/flake8-7.3.0.tar.gz", hash = "sha256:fe044858146b9fc69b551a4b490d69cf960fcb78ad1edcb84e7fbb1b4a8e3872", size = 48326, upload-time = "2025-06-20T19:31:35.838Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/9f/56/13ab06b4f93ca7cac71078fbe37fcea175d3216f31f85c3168a6bbd0bb9a/flake8-7.3.0-py2.py3-none-any.whl", hash = "sha256:b9696257b9ce8beb888cdbe31cf885c90d31928fe202be0889a7cdafad32f01e", size = 57922, upload-time = "2025-06-20T19:31:34.425Z" },
+]
+
+[[package]]
+name = "flake8-bugbear"
+version = "25.11.29"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "attrs" },
+    { name = "flake8" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ec/20/2a996e2fca7810bd1b031901d65fc4292630895afcb946ebd00568bdc669/flake8_bugbear-25.11.29.tar.gz", hash = "sha256:b5d06710f3d26e595541ad303ad4d5cb52578bd4bccbb2c2c0b2c72e243dafc8", size = 84896, upload-time = "2025-11-29T20:51:57.75Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0d/42/c18f199780d99a6f6a64c4a36f4ad28a445d9e11968a6025b21d0c8b6802/flake8_bugbear-25.11.29-py3-none-any.whl", hash = "sha256:9bf15e2970e736d2340da4c0a70493db964061c9c38f708cfe1f7b2d87392298", size = 37861, upload-time = "2025-11-29T20:51:56.439Z" },
 ]
 
 [[package]]

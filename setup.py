@@ -11,7 +11,9 @@ LIB_EXT = "pyd" if platform.system().lower() == "windows" else "so"
 
 
 class BuildFailed(Exception):
-    def __init__(self, message: str):
+    def __init__(  # noqa: B042 # we actually want different construct calls for the superclasses
+        self, message: str
+    ):
         self.message = message
 
     def __str__(self):

@@ -149,6 +149,7 @@ def _attach_to_first_arg(
                 warnings.warn(
                     f"Method {name} already exists on {cls.__name__}, skipping",
                     Warning,
+                    stacklevel=2,
                 )
             else:
                 setattr(cls, name, make_method(name))
@@ -189,6 +190,7 @@ def _attach_to_underlying(
                 warnings.warn(
                     f"Method {name} already exists on {cls.__name__}, skipping",
                     Warning,
+                    stacklevel=2,
                 )
             else:
                 setattr(cls, name, make_method(name))
@@ -341,10 +343,12 @@ class TreeValue:
         self,
         value: Optional[str | bytes | int],
         *,
-        trailing_bits: list[int] = [],
+        trailing_bits: Optional[list[int]] = None,
         allow_empty: bool = False,
     ):
         self._value: Optional[str | bytes]
+        if trailing_bits is None:
+            trailing_bits = []
         assert all(
             bit & 1 == bit for bit in trailing_bits
         ), "trailing bits must be 0 or 1, got " + str(trailing_bits)

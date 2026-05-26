@@ -476,7 +476,7 @@ class IoEvaluator(Evaluator):
             fill_up_by_msg_nt: dict[PacketNonTerminal, list[DerivationTree]] = {}
             for ind in [*self._past_trees, *population]:
                 msgs = ind.protocol_msgs()
-                for i, msg in enumerate(msgs):
+                for msg in msgs:
                     assert msg.sender is not None
                     assert isinstance(msg.msg.symbol, NonTerminal)
                     key = PacketNonTerminal(msg.sender, msg.recipient, msg.msg.symbol)

@@ -90,8 +90,8 @@ class ComparisonConstraint(Constraint):
         operator: Comparison,
         left: str,
         right: str,
-        left_searches: dict[str, NonTerminalSearch] = dict(),
-        right_searches: dict[str, NonTerminalSearch] = dict(),
+        left_searches: Optional[dict[str, NonTerminalSearch]] = None,
+        right_searches: Optional[dict[str, NonTerminalSearch]] = None,
         **kwargs: Unpack[GeneticBaseInitArgs],
     ) -> None:
         """
@@ -103,6 +103,8 @@ class ComparisonConstraint(Constraint):
         :param dict[str, NonTerminalSearch] right_searches: The searches to use for the right side.
         :param kwargs: Additional keyword arguments.
         """
+        left_searches = left_searches or {}
+        right_searches = right_searches or {}
         assert (
             "searches" not in kwargs
         ), "don't provide searches combination, instead provide left_searches and right_searches"

@@ -53,7 +53,7 @@ def tests_find_nt(constructor):
                 assert c.children[1] == d
                 assert list(c.find_subtrees(constructor("<d>"))) == [d]
             case _:
-                assert False
+                raise AssertionError("Should not happen")
 
 
 def test_find_nt_is_breadth_first():

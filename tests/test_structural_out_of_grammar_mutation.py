@@ -36,7 +36,7 @@ setting all_with_type(TerminalNode) terminal_should_repeat = 1.0
         elif num_as == 0:
             found_empty = True
         else:
-            assert False, f"Unexpected tree: {tree_str}"
+            raise AssertionError(f"Unexpected tree: {tree_str}")
     assert found_empty
     assert found_multiple
 

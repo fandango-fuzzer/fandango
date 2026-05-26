@@ -19,8 +19,7 @@ def main():
         coverage_goal=CoverageGoal.STATE_INPUTS,
     )
 
-    for solution in fandango.generate(mode=FuzzingMode.IO):
-        pass
+    list(fandango.generate(mode=FuzzingMode.IO))  # force evaluation of generator
 
 
 if __name__ == "__main__":

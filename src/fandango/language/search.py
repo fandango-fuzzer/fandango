@@ -228,13 +228,15 @@ class NonTerminalSearch(abc.ABC):
 
     def __repr__(self) -> str:
         warnings.warn(
-            f"Don't rely on the __repr__ impl on {self.__class__.__name__}, use method specific to your usecase. Report this as a bug if this is called from within Fandango."
+            f"Don't rely on the __repr__ impl on {self.__class__.__name__}, use method specific to your usecase. Report this as a bug if this is called from within Fandango.",
+            stacklevel=2,
         )
         return f"{self.__class__.__name__}({self.format_as_spec()})"
 
     def __str__(self) -> str:
         warnings.warn(
-            f"Don't rely on the __str__ impl on {self.__class__.__name__}, use method specific to your usecase. Report this as a bug if this is called from within Fandango."
+            f"Don't rely on the __str__ impl on {self.__class__.__name__}, use method specific to your usecase. Report this as a bug if this is called from within Fandango.",
+            stacklevel=2,
         )
         return self.format_as_spec()
 

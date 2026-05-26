@@ -76,6 +76,6 @@ def test_generate_with_single_soft_constraint(benchmark: BenchmarkFixture):
             if s == "9999":
                 return
 
-        assert False, f"9999 not found in the first 50 solutions: {solutions}"
+        raise AssertionError(f"9999 not found in the first 50 solutions: {solutions}")
 
     benchmark(func)

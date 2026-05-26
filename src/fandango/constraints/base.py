@@ -113,11 +113,15 @@ class GeneticBase(abc.ABC):
         return self.fitness(tree, scope, local_variables).success
 
     def __str__(self) -> str:
-        warnings.warn("Don't rely on this, use method specific to your usecase")
+        warnings.warn(
+            "Don't rely on this, use method specific to your usecase", stacklevel=2
+        )
         return self.format_as_spec()
 
     def __repr__(self) -> str:
-        warnings.warn("Don't rely on this, use method specific to your usecase")
+        warnings.warn(
+            "Don't rely on this, use method specific to your usecase", stacklevel=2
+        )
         return f"{self.__class__.__name__}({self.format_as_spec()})"
 
     @abc.abstractmethod

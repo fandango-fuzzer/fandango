@@ -1,3 +1,4 @@
+from collections.abc import Container, Iterable
 import re
 from typing import IO, Optional
 
@@ -33,14 +34,14 @@ def parse(
     use_stdlib: bool = True,
     check: bool = True,
     lazy: bool = False,
-    given_grammars: list[Grammar] = [],
+    given_grammars: Iterable[Grammar] = (),
     start_symbol: Optional[str] = None,
-    includes: Optional[list[str]] = [],
+    includes: Optional[list[str]] = None,
     parties: Optional[list[str]] = None,
     max_repetitions: int = 5,
 ) -> tuple[Optional[Grammar], list[Constraint | SoftValue]]:
     """
-    Parse .fan content, handling multiple files, standard library, and includes.
+    Parse .fan content, handling multiple files, standard library.
     :param fan_files: One (open) .fan file, one string, or a list of these
     :param constraints: List of constraints (as strings); default: []
     :param use_cache: If True (default), cache parsing results
@@ -49,11 +50,13 @@ def parse(
     :param lazy: If True, the constraints are evaluated lazily
     :param given_grammars: Grammars to use in addition to the standard library
     :param start_symbol: The grammar start symbol (default: "<start>")
-    :param includes: A list of directories to search for include files; default: []
     :param parties: If given, list of parties to consider in the grammar
     :param max_repetitions: The maximal number of repetitions
     :return: A tuple of the grammar and constraints
     """
+
+    if includes is None:
+        includes = []
 
     if not isinstance(fan_files, list):
         fan_files = [fan_files]
@@ -63,9 +66,6 @@ def parse(
 
     if constraints is None:
         constraints = []
-
-    if includes is None:
-        includes = []
 
     if start_symbol is None:
         start_symbol = "<start>"
@@ -98,7 +98,7 @@ def parse(
         grammars.append(stdlib_grammar)
         parsed_constraints.extend(stdlib_constraints)
 
-    grammars += given_grammars
+    grammars.extend(given_grammars)
 
     LOGGER.debug("Reading files")
 
@@ -204,7 +204,7 @@ def parse(
 def check_grammar_consistency(
     grammar: Grammar,
     *,
-    given_used_symbols: set[str] = set(),
+    given_used_symbols: Container[str] = frozenset(),
     start_symbol: str = "<start>",
 ) -> None:
     check_grammar_definitions(
@@ -216,7 +216,7 @@ def check_grammar_consistency(
 def check_grammar_definitions(
     grammar: Grammar,
     *,
-    given_used_symbols: set[str] = set(),
+    given_used_symbols: Container[str] = frozenset(),
     start_symbol: str = "<start>",
 ) -> None:
     if not grammar:

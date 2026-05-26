@@ -13,7 +13,7 @@ import subprocess
 import sys
 import threading
 import time
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import Optional, IO
 
 from fandango.errors import FandangoError, FandangoValueError
@@ -204,9 +204,11 @@ class FandangoParty(ABC):
             f"Party {self.party_name}: receive_msg() has been deprecated. Use receive() instead; note the changed argument order"
         )
 
+    @abstractmethod
     def start(self) -> None:
         raise NotImplementedError("start() method not implemented")
 
+    @abstractmethod
     def stop(self) -> None:
         raise NotImplementedError("stop() method not implemented")
 
@@ -244,6 +246,7 @@ class ProtocolImplementation(ABC):
     def io_instance(self) -> "FandangoIO":
         return self._party_instance.io_instance
 
+    @abstractmethod
     def send(
         self, message: DerivationTree | str | bytes, recipient: Optional[str]
     ) -> None:
@@ -254,12 +257,14 @@ class ProtocolImplementation(ABC):
         """
         raise NotImplementedError("send() method not implemented")
 
+    @abstractmethod
     def start(self) -> None:
         """
         Invoked when protocol communication (re)starts.
         """
         raise NotImplementedError("start() method not implemented")
 
+    @abstractmethod
     def stop(self) -> None:
         """
         Invoked when protocol communication stops.
@@ -267,6 +272,7 @@ class ProtocolImplementation(ABC):
         raise NotImplementedError("stop() method not implemented")
 
     @property
+    @abstractmethod
     def protocol_type(self) -> Protocol:
         """
         :return: The protocol type (`Protocol`) of this protocol implementation.
@@ -830,9 +836,7 @@ class FandangoIO(object):
         fragments: list[tuple[str, str, str | bytes]] = []
         prev_sender: Optional[str] = None
         prev_recipient: Optional[str] = None
-        for idx, (sender, recipient, msg_fragment) in enumerate(
-            self.get_received_msgs()
-        ):
+        for sender, recipient, msg_fragment in self.get_received_msgs():
             if (
                 prev_sender != sender
                 or prev_recipient != recipient
