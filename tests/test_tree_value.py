@@ -6,9 +6,9 @@ from fandango.language.tree_value import (
     DIRECT_ACCESS_METHODS_BASE_TO_FIRST_ARG_TYPE,
     DIRECT_ACCESS_METHODS_BASE_TO_UNDERLYING_TYPE,
     TreeValue,
+    TreeValueType,
     trailing_bits_to_int,
 )
-from fandango.language.tree_value import TreeValue, TreeValueType, trailing_bits_to_int
 
 A_BITS = [int(bit) for bit in f"{ord('a'):08b}"]
 ONE_BITS = [int(bit) for bit in f"{ord('1'):08b}"]

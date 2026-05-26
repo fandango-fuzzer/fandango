@@ -7,7 +7,6 @@ from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node, NodeType
-from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.tree import DerivationTree
 
 if TYPE_CHECKING:

@@ -1,4 +1,4 @@
-from typing import Optional, Generic, TypeVar
+from typing import Optional
 
 from fandango.language.tree import DerivationTree
 from fandango.language import Grammar, NonTerminal

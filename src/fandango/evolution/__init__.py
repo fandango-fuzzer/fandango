@@ -1,4 +1,4 @@
-from typing import Optional, TypeVar, Generic
+from typing import TypeVar, Generic
 from collections.abc import Generator, Iterator
 
 # Define type variables for generator type and return type

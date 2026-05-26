@@ -72,7 +72,6 @@ def set_command(args: argparse.Namespace) -> None:
     """Set global settings"""
     global DEFAULT_FAN_CONTENT
     global DEFAULT_CONSTRAINTS
-    global DEFAULT_SETTINGS
 
     if args.fan_files:
         LOGGER.info("Parsing Fandango content")

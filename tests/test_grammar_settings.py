@@ -18,7 +18,7 @@ INT_KEY = next(
 def get_grammar(
     selector_probability_pairs: list[tuple[str, dict[str, Any]]],
 ) -> Grammar:
-    raw_spec = f"""
+    raw_spec = """
 <start> ::= "a" | <b>*
 <b> ::= "b"
 """

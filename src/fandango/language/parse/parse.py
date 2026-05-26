@@ -1,13 +1,9 @@
 import re
-import uuid
-from copy import deepcopy
 from typing import IO, Optional
 
-from fandango.constraints import predicates
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
 from fandango.errors import FandangoValueError
-from fandango.io import CURRENT_ENV_KEY
 from fandango.language.grammar import FuzzingMode, closest_match
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.node_visitors.symbol_finder import SymbolFinder
@@ -205,9 +201,6 @@ def parse(
     return grammar, parsed_constraints
 
 
-### Consistency Checks
-
-
 def check_grammar_consistency(
     grammar: Grammar,
     *,
@@ -304,7 +297,6 @@ def check_grammar_types(
 
     def get_type(tree: Node, rule_symbol: str) -> tuple[Optional[str], int, int, int]:
         # LOGGER.debug(f"Checking type of {tree!s} in {rule_symbol!s} ({tree.node_type!s})")
-        nonlocal symbol_types, grammar
 
         tp: Optional[str]
         if isinstance(tree, TerminalNode):

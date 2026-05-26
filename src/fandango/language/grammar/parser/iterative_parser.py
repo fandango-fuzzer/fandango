@@ -825,7 +825,7 @@ class IterativeParser(
                             TreeValueType.TRAILING_BITS_ONLY
                         ):
                             # Scan a bit
-                            match = self.scan_bit(
+                            _ = self.scan_bit(
                                 state,
                                 word,
                                 table,
@@ -835,7 +835,7 @@ class IterativeParser(
                             )
                         else:
                             if state.dot is not None and state.dot.is_regex:
-                                match = self.scan_regex(
+                                _ = self.scan_regex(
                                     state,
                                     word,
                                     table,
@@ -844,7 +844,7 @@ class IterativeParser(
                                     self._parsing_mode,
                                 )
                             else:
-                                match = self.scan_bytes(
+                                _ = self.scan_bytes(
                                     state,
                                     word,
                                     table,

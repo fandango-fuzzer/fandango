@@ -156,66 +156,55 @@ lexer: Optional[FandangoLexerBase] = None
 
 
 def at_start_of_input() -> None:
-    global lexer
     assert lexer is not None
     lexer.at_start_of_input()
 
 
 def open_brace() -> None:
-    global lexer
     assert lexer is not None
     lexer.open_brace()
 
 
 def close_brace() -> None:
-    global lexer
     assert lexer is not None
     lexer.close_brace()
 
 
 def python_start() -> None:
-    global lexer
     assert lexer is not None
     lexer.python_start()
 
 
 def python_end() -> None:
-    global lexer
     assert lexer is not None
     lexer.python_end()
 
 
 def on_newline() -> None:
-    global lexer
     assert lexer is not None
     lexer.on_newline()
 
 
 def fstring_start() -> None:
-    global lexer
     assert lexer is not None
     lexer.fstring_start()
 
 
 def fstring_end() -> None:
-    global lexer
     assert lexer is not None
     lexer.fstring_end()
 
 
 def is_not_fstring() -> bool:
-    global lexer
     assert lexer is not None
     return bool(lexer.is_not_fstring())
 
 
 def filepath_start() -> None:
-    global lexer
     assert lexer is not None
     lexer.filepath_start()
 
 
 def filepath_end() -> None:
-    global lexer
     assert lexer is not None
     lexer.filepath_end()

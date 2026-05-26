@@ -65,7 +65,7 @@ LINES = None
 
 def use_visualization() -> bool:
     """Return True if we should use visualization while Fandango is running"""
-    global COLUMNS, LINES, USE_VISUALIZATION
+    global COLUMNS, LINES
 
     if os.environ.get("FANDANGO_DISABLE_VISUALIZATION"):
         return False
@@ -195,6 +195,6 @@ def log_guidance_hint(message: str) -> None:
 def log_message_coverage(
     coverage: list[tuple[NonTerminal, float]],
 ) -> None:
-    LOGGER.info(f"Current message coverage:")
+    LOGGER.info("Current message coverage:")
     for symbol, coverage_val in coverage:
         LOGGER.info(f"{symbol}: {coverage_val:.2f}")
