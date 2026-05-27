@@ -1,23 +1,22 @@
 import random
-from typing import Optional, Union
 from collections import Counter
-from collections.abc import Generator, Sequence, Callable
-
+from collections.abc import Callable, Generator, Sequence
+from typing import Optional, Union
 
 from fandango.constraints.constraint import Constraint
-from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
-from fandango.constraints.soft import SoftValue
 from fandango.constraints.failing_tree import (
     ApplyAllSuggestions,
     FailingTree,
     NopSuggestion,
     Suggestion,
 )
+from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
+from fandango.constraints.soft import SoftValue
 from fandango.evolution import GeneratorWithReturn
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.language import NonTerminal
-from fandango.language.tree import DerivationTree
 from fandango.language.grammar.grammar import Grammar, KPath
+from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER, print_exception
 
 
@@ -57,9 +56,9 @@ class Evaluator:
 
         for constraint in constraints:
             if "DynamicAnalysis" in constraint.format_as_spec():
-                assert (
-                    self.fcc is not None
-                ), "FCC is required for DynamicAnalysis constraint"
+                assert self.fcc is not None, (
+                    "FCC is required for DynamicAnalysis constraint"
+                )
                 constraint.global_variables["DynamicAnalysis"] = (
                     self.fcc.dynamic_analysis.trace_input
                 )
@@ -278,7 +277,9 @@ class Evaluator:
         self._fitness_cache[key] = (fitness, failing_trees, suggestion)
         return fitness, failing_trees, suggestion
 
-    def evaluate_population(self, population: list[DerivationTree]) -> Generator[
+    def evaluate_population(
+        self, population: list[DerivationTree]
+    ) -> Generator[
         DerivationTree,
         None,
         list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
@@ -293,7 +294,7 @@ class Evaluator:
             evaluation = [
                 (ind, fitness + bonus, failing_trees, suggestion)
                 for (ind, fitness, failing_trees, suggestion), bonus in zip(
-                    evaluation, bonuses
+                    evaluation, bonuses, strict=False
                 )
             ]
         return evaluation
@@ -460,7 +461,9 @@ class IoEvaluator(Evaluator):
         self._fitness_cache[key] = (fitness, failing_trees, suggestion)
         return fitness, failing_trees, suggestion
 
-    def evaluate_population(self, population: list[DerivationTree]) -> Generator[
+    def evaluate_population(
+        self, population: list[DerivationTree]
+    ) -> Generator[
         DerivationTree,
         None,
         list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
@@ -476,7 +479,7 @@ class IoEvaluator(Evaluator):
             fill_up_by_msg_nt: dict[PacketNonTerminal, list[DerivationTree]] = {}
             for ind in [*self._past_trees, *population]:
                 msgs = ind.protocol_msgs()
-                for i, msg in enumerate(msgs):
+                for msg in msgs:
                     assert msg.sender is not None
                     assert isinstance(msg.msg.symbol, NonTerminal)
                     key = PacketNonTerminal(msg.sender, msg.recipient, msg.msg.symbol)

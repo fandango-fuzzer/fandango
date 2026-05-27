@@ -1,4 +1,4 @@
-from fandango.evolution.algorithm import SimpleGeneticAlgorithm, LoggerLevel
+from fandango.evolution.algorithm import LoggerLevel, SimpleGeneticAlgorithm
 from fandango.io.navigation.coverage_goal import CoverageGoal
 from fandango.language.grammar import FuzzingMode
 from fandango.language.parse.parse import parse
@@ -19,8 +19,7 @@ def main():
         coverage_goal=CoverageGoal.STATE_INPUTS,
     )
 
-    for solution in fandango.generate(mode=FuzzingMode.IO):
-        pass
+    list(fandango.generate(mode=FuzzingMode.IO))  # force evaluation of generator
 
 
 if __name__ == "__main__":

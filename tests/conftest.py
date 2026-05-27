@@ -1,6 +1,8 @@
 import os
-from fandango.beartype import activate_beartype
+
 import pytest
+
+from fandango.beartype import activate_beartype
 
 
 def pytest_configure(config: pytest.Config):

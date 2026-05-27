@@ -1,7 +1,7 @@
-from abc import ABC, abstractmethod
-from collections.abc import Callable, Generator
 import enum
 import logging
+from abc import ABC, abstractmethod
+from collections.abc import Callable, Generator
 from typing import Optional
 
 from fandango.constraints.constraint import Constraint
@@ -23,6 +23,10 @@ class LoggerLevel(enum.Enum):
     CRITICAL = logging.CRITICAL
 
 
+DEFAULT_CROSSOVER_OPERATOR = SimpleSubtreeCrossover()
+DEFAULT_MUTATION_OPERATOR = SimpleMutation()
+
+
 class GeneticAlgorithm(ABC):
     @abstractmethod
     def __init__(
@@ -33,10 +37,10 @@ class GeneticAlgorithm(ABC):
         initial_population: Optional[list[DerivationTree | str]] = None,
         expected_fitness: float = 1.0,
         elitism_rate: float = 0.1,
-        crossover_method: CrossoverOperator = SimpleSubtreeCrossover(),
+        crossover_method: CrossoverOperator = DEFAULT_CROSSOVER_OPERATOR,
         crossover_rate: float = 0.8,
         tournament_size: float = 0.1,
-        mutation_method: MutationOperator = SimpleMutation(),
+        mutation_method: MutationOperator = DEFAULT_MUTATION_OPERATOR,
         mutation_rate: float = 0.2,
         destruction_rate: float = 0.0,
         logger_level: Optional[LoggerLevel] = None,

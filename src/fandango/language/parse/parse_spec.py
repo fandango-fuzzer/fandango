@@ -1,8 +1,8 @@
-from typing import Optional, Any
+from typing import Any, Optional
 
-from fandango.language.parse.spec import FandangoSpec, CachedFandangoSpec
 from fandango.language.parse.parse_tree import parse_tree
 from fandango.language.parse.slice_parties import slice_parties
+from fandango.language.parse.spec import CachedFandangoSpec, FandangoSpec
 from fandango.logger import LOGGER
 
 
@@ -15,7 +15,7 @@ def parse_content(
     parties: Optional[list[str]] = None,
     max_repetitions: int = 5,
     includes: Optional[list[str]] = None,
-    used_symbols: set[str] = set(),
+    used_symbols: Optional[set[str]] = None,
     pyenv_globals: Optional[dict[str, Any]] = None,
     pyenv_locals: Optional[dict[str, Any]] = None,
 ) -> FandangoSpec:
@@ -32,6 +32,8 @@ def parse_content(
     """
     cached_spec: Optional[CachedFandangoSpec] = None
     use_cache = False
+    if used_symbols is None:
+        used_symbols = set()
 
     if use_cache:
         cached_spec = CachedFandangoSpec.load(fan_contents, filename)

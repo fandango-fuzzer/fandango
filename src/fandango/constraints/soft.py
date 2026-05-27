@@ -1,13 +1,13 @@
-from collections.abc import Callable, Collection
 import math
+from collections.abc import Callable, Collection
 from typing import Any, Optional
-from cachetools import LRUCache
 
+from cachetools import LRUCache
 from tdigest.tdigest import TDigest as BaseTDigest
 
+from fandango.constraints.base import GeneticBase
 from fandango.constraints.failing_tree import FailingTree
 from fandango.constraints.fitness import ValueFitness
-from fandango.constraints.base import GeneticBase
 from fandango.language.search import NonTerminalSearch
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree

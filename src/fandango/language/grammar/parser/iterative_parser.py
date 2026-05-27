@@ -1,23 +1,20 @@
 from collections.abc import Generator
 from copy import deepcopy
-from typing import Optional, Any
+from typing import Any, Optional
 
 from fandango.errors import FandangoValueError
 from fandango.language.grammar import ParsingMode
-from fandango.language.grammar.parser.column import Column
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
-from fandango.language.grammar.nodes.node import Node, NodeType
-from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
-from fandango.language.grammar.nodes.terminal import TerminalNode
-from fandango.language.grammar.nodes.repetition import Repetition
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
-from fandango.language.grammar.nodes.repetition import Option
-from fandango.language.grammar.nodes.repetition import Plus
-from fandango.language.grammar.nodes.repetition import Star
+from fandango.language.grammar.nodes.node import Node, NodeType
+from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
+from fandango.language.grammar.nodes.terminal import TerminalNode
+from fandango.language.grammar.parser.column import Column
 from fandango.language.grammar.parser.parse_state import (
-    ParseState,
     ParserStateSymbolContent,
+    ParseState,
 )
 from fandango.language.grammar.parser.parser_tree import ParserDerivationTree
 from fandango.language.symbols import NonTerminal, Terminal
@@ -170,7 +167,7 @@ class IterativeParser(
         else:
             node_min = node.min
             node_max = node.max
-        for rep in range(node_min, node_max):
+        for _rep in range(node_min, node_max):
             alts = [[nt]]
             if prev is not None:
                 alts.append([nt, prev])
@@ -825,7 +822,7 @@ class IterativeParser(
                             TreeValueType.TRAILING_BITS_ONLY
                         ):
                             # Scan a bit
-                            match = self.scan_bit(
+                            _ = self.scan_bit(
                                 state,
                                 word,
                                 table,
@@ -835,7 +832,7 @@ class IterativeParser(
                             )
                         else:
                             if state.dot is not None and state.dot.is_regex:
-                                match = self.scan_regex(
+                                _ = self.scan_regex(
                                     state,
                                     word,
                                     table,
@@ -844,7 +841,7 @@ class IterativeParser(
                                     self._parsing_mode,
                                 )
                             else:
-                                match = self.scan_bytes(
+                                _ = self.scan_bytes(
                                     state,
                                     word,
                                     table,

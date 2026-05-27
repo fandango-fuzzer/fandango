@@ -4,11 +4,8 @@ from typing import Optional
 
 from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.io import FandangoIO
-from fandango.io.navigation.packetforecaster import (
-    ForecastingResult,
-    ForecastingPacket,
-)
-from fandango.language import Grammar, NonTerminal, DerivationTree
+from fandango.io.navigation.packetforecaster import ForecastingPacket, ForecastingResult
+from fandango.language import DerivationTree, Grammar, NonTerminal
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.parser.iterative_parser import IterativeParser
 
@@ -58,9 +55,7 @@ def parse_next_remote_packet(
     msg_sender = None
     # We might have received messages from different parties. Select a party that sent a message and is
     # in the current forecast.
-    for idx, (msg_sender, msg_recipient, _) in enumerate(
-        io_instance.get_received_msgs()
-    ):
+    for msg_sender, _msg_recipient, _ in io_instance.get_received_msgs():
         if msg_sender in forecast.get_msg_parties():
             break
 
@@ -100,10 +95,6 @@ def parse_next_remote_packet(
             )
             if time.time() - start_time > wait_for_completion_time:
                 if len(complete_parses) == 0:
-                    nt_list = map(
-                        lambda x: repr(x), forecast_non_terminals.get_non_terminals()
-                    )
-                    applicable_nt_str = str(" | ".join(nt_list))
                     current_parse_str = "Incompletely parsed NonTerminals:"
                     for incomplete_nt in available_non_terminals:
                         nt_parser = nt_parsers[incomplete_nt]
@@ -111,9 +102,6 @@ def parse_next_remote_packet(
                         current_parse_str += (
                             f"\n{str(incomplete_nt)}: {str(current_parse)}"
                         )
-                    received_msgs = (
-                        f"Received messages: {io_instance.get_full_fragments()}"
-                    )
 
                     raise FandangoFailedError(
                         f"Timeout while waiting for next message fragment from {msg_sender}. \n"
@@ -170,7 +158,7 @@ def parse_next_remote_packet(
             )
         else:
             raise FandangoFailedError(
-                f"Could not parse received message fragments into predicted NonTerminals.\n"
+                "Could not parse received message fragments into predicted NonTerminals.\n"
                 + generate_parsing_error_msg_information(
                     forecast_non_terminals.get_non_terminals(),
                     available_non_terminals,

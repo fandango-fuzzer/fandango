@@ -1,8 +1,8 @@
 #!/usr/bin/env pytest
-from fandango import parse
 from fandango.api import Fandango
 from fandango.language.grammar import FuzzingMode
 from fandango.language.tree import DerivationTree
+
 from .utils import RESOURCES_ROOT
 
 

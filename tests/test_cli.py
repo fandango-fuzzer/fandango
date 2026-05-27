@@ -13,9 +13,9 @@ from unittest.mock import patch
 from fandango import DISTRIBUTION_NAME
 from fandango.cli import get_parser
 from fandango.cli.upgrade import (
+    Version,
     check_for_fandango_update,
     check_package_for_update,
-    Version,
     version,
 )
 
@@ -55,7 +55,7 @@ class TestCLI(unittest.TestCase):
     def test_help(self):
         command = ["fandango", "--help"]
         out, err, code = run_command(command)
-        _parser = get_parser(True)
+        _ = get_parser(True)
         self.assertEqual(0, code, code)
         self.assertEqual(err, "", err)
 

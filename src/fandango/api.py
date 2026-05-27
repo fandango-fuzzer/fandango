@@ -1,18 +1,19 @@
-from abc import ABC, abstractmethod
-from collections.abc import Callable, Generator
 import itertools
 import logging
 import time
+from abc import ABC, abstractmethod
+from collections.abc import Callable, Generator
 from typing import IO, Any, Optional, cast
+
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
+from fandango.errors import FandangoFailedError, FandangoParseError
+from fandango.evolution.algorithm import DefaultAlgorithm
 from fandango.language.grammar import FuzzingMode, ParsingMode
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.parse.parse import parse
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
-from fandango.evolution.algorithm import DefaultAlgorithm
-from fandango.errors import FandangoFailedError, FandangoParseError
 
 DEFAULT_MAX_GENERATIONS = 500
 

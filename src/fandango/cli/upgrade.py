@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 
 import json
+import os
+import sys
 import time
 import urllib.request
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
-import sys
-import os
 
-from importlib.metadata import version, PackageNotFoundError
-from packaging.version import Version, InvalidVersion
+from packaging.version import InvalidVersion, Version
 
-from fandango.language.parse.cache import get_cache_dir
-from fandango.cli.parser import terminal_link
 from fandango import DISTRIBUTION_NAME
+from fandango.cli.parser import terminal_link
+from fandango.language.parse.cache import get_cache_dir
 
 # How often to check for updates (in seconds)
 CHECK_INTERVAL_SECONDS = 7 * 24 * 60 * 60  # one week

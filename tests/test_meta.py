@@ -1,12 +1,12 @@
+import importlib
 import os
 import sys
-import importlib
 import warnings
-from contextlib import contextmanager
 from collections.abc import Generator
+from contextlib import contextmanager
 
-from beartype.roar import BeartypeCallHintParamViolation
 import pytest
+from beartype.roar import BeartypeCallHintParamViolation
 
 from fandango.meta import dummy_function_to_check_if_beartype_is_active
 

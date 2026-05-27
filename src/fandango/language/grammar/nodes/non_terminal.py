@@ -1,14 +1,13 @@
-from typing import TYPE_CHECKING, Any, Optional
 from collections.abc import Iterator, Sequence
+from typing import TYPE_CHECKING, Any, Optional
+
 from fandango.errors import FandangoValueError
-from fandango.language.symbols import Symbol
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.node import Node, NodeType
+from fandango.language.symbols import Symbol
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
-from fandango.language.symbols.symbol import Symbol
-from fandango.language.symbols.non_terminal import NonTerminal
 
 if TYPE_CHECKING:
     import fandango.language.grammar.node_visitors

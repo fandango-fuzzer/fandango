@@ -33,6 +33,9 @@ class FandangoStateConverter(FandangoConverter):
 """
         return header + str(parsed_spec.grammar.to_states(format=format))
 
+    def to_fan(self) -> str:
+        raise NotImplementedError("Not implemented")
+
 
 if __name__ == "__main__":
     for filename in sys.argv[1:]:
