@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  black-check:
+  ruff-check:
     runs-on: ubuntu-latest
 
     strategy:
@@ -28,31 +28,13 @@ jobs:
           needs-sudo: true
           skip-parser: 1
 
-      - name: Check formatting with black
+      - name: Check formatting with ruff
         run: |
-          uv run black --check .
+          uv run ruff format --check .
 
-  flake8-check:
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        python-version: ["3.13"]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Fandango
-        uses: ./.github/workflows/setup-fandango
-        with:
-          python-version: ${{ matrix.python-version }}
-          needs-sudo: true
-          skip-parser: 1
-
-      - name: Run flake8
+      - name: Run ruff
         run: |
-          uv run flake8 src tests evaluation scripts
+          uv run ruff check src tests evaluation scripts
 
   uv-check:
     runs-on: ${{ matrix.os }}

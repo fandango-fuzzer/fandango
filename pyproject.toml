@@ -69,14 +69,11 @@ test = [
 
 development = [
     "fandango-fuzzer[test]",
-    "black>=25.1.0",
-    "flake8>=7.0.0",
-    "flake8-bugbear>=15.11.0",
-    "flake8-isort>=7.0.0",
     "matplotlib>=3.10.0",
     "mypy>=1.16.0",
     "pre-commit>=4.2.0",
     "pygls>=2.0.0a4",            # language server
+    "ruff>=0.14.0",
     "scikit-build-core>=0.11.6",
     "speedy-antlr-tool>=1.4.3",
     "types-setuptools>=73.0.1",  # enable mypy to check setup.py
@@ -84,7 +81,7 @@ development = [
 ]
 
 book = [
-    "fandango-fuzzer[development]", # need e.g. black and faker
+    "fandango-fuzzer[development]", # need e.g. ruff and faker
     "aiosmtpd>=1.4.6",              # example server for protocol testing
     "docutils>=0.20.1",             # Jupyter-book needs docutils<=0.20
     "ghp-import>=2.1.0",
@@ -104,13 +101,26 @@ repository = "https://github.com/fandango-fuzzer/fandango/"
 [project.scripts]
 fandango = "fandango.cli:main"
 
-[tool.black]
+[tool.ruff]
 line-length = 88
-target-version = ['py311']
+target-version = "py311"
+exclude = [
+    "build",
+    "dist",
+    "fcc",
+    "evaluation/protocol_testing_eval/profuzzbench",
+    "src/fandango/language/parser/FandangoLexer.py",
+    "src/fandango/language/parser/sa_fandango.py",
+    "src/fandango/language/parser/*Parser*.py",
+    "src/fandango/converters/antlr/ANTLRv4*.py",
+    "src/fandango/converters/antlr/LexerAdaptor*.py",
+]
 
-[tool.isort]
-profile = "black"
-line_length = 88
+[tool.ruff.lint]
+select = ["E", "F", "B", "I"]
+ignore = [
+    "E501", # line too long
+]
 
 [tool.mypy]
 follow_untyped_imports = true
