@@ -1,4 +1,3 @@
-from collections.abc import Set
 from typing import Optional, Any
 
 from fandango.language.parse.spec import FandangoSpec, CachedFandangoSpec
@@ -16,7 +15,7 @@ def parse_content(
     parties: Optional[list[str]] = None,
     max_repetitions: int = 5,
     includes: Optional[list[str]] = None,
-    used_symbols: Set[str] = frozenset(),
+    used_symbols: Optional[set[str]] = None,
     pyenv_globals: Optional[dict[str, Any]] = None,
     pyenv_locals: Optional[dict[str, Any]] = None,
 ) -> FandangoSpec:
@@ -33,6 +32,8 @@ def parse_content(
     """
     cached_spec: Optional[CachedFandangoSpec] = None
     use_cache = False
+    if used_symbols is None:
+        used_symbols = set()
 
     if use_cache:
         cached_spec = CachedFandangoSpec.load(fan_contents, filename)
@@ -46,7 +47,7 @@ def parse_content(
             lazy,
             filename=filename,
             max_repetitions=max_repetitions,
-            used_symbols=set(used_symbols),
+            used_symbols=used_symbols,
             includes=includes,
         )
         if use_cache:
