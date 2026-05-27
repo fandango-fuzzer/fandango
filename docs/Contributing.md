@@ -138,7 +138,7 @@ $ pip install pre-commit
 $ pre-commit install
 ```
 
-This will run code formatting, linting with flake8, and type checking before every commit.
+This will run code formatting, linting with Ruff, and type checking before every commit.
 
 ```{warning}
 The [tests](sec:running-tests) are not run as part of pre-commit, because they take significant time to complete. Run them manually.
