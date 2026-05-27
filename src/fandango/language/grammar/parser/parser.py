@@ -1,10 +1,10 @@
+from collections.abc import Generator
 from copy import deepcopy
 from typing import Optional
-from collections.abc import Generator
 
 from fandango.language.grammar import ParsingMode
-from fandango.language.grammar.parser.iterative_parser import IterativeParser
 from fandango.language.grammar.nodes.node import Node
+from fandango.language.grammar.parser.iterative_parser import IterativeParser
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 
@@ -37,7 +37,7 @@ class Parser:
         if `allow_incomplete` is True, the function will return trees even if the input ends prematurely.
         """
         self._iter_parser.new_parse(start, mode, hookin_parent, starter_bit)
-        for tree, is_complete in self._iter_parser.consume(word):
+        for tree, _is_complete in self._iter_parser.consume(word):
             yield tree
 
     def parse_forest(

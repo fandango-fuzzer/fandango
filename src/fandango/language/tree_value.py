@@ -1,8 +1,9 @@
 from __future__ import annotations
+
+import enum
+import warnings
 from collections.abc import Callable
 from typing import Any, Optional
-import warnings
-import enum
 
 from fandango.errors import FandangoConversionError, FandangoValueError
 
@@ -40,7 +41,7 @@ def _str_to_bytes(value: str, encoding: str) -> bytes:
     except UnicodeEncodeError as e:
         raise FandangoConversionError(
             f"string to bytes conversion failed, string: {value}, encoding: {encoding}, error: {e}"
-        )
+        ) from e
 
 
 def _bytes_to_str(value: bytes, encoding: str) -> str:
@@ -57,7 +58,7 @@ def _bytes_to_str(value: bytes, encoding: str) -> str:
     except UnicodeDecodeError as e:
         raise FandangoConversionError(
             f"bytes to string conversion failed, bytes: {value!r}, encoding: {encoding}, error: {e}"
-        )
+        ) from e
 
 
 def _get_exclusive_base_type_method_is_implemented_for(name: str) -> Optional[type]:
@@ -104,9 +105,9 @@ def _attach_to_first_arg(
                 )
 
                 if len(args) == 0:
-                    assert (
-                        len(kwargs) == 1
-                    ), f"Method {name} must have at least one unnamed argument or exactly one named argument"
+                    assert len(kwargs) == 1, (
+                        f"Method {name} must have at least one unnamed argument or exactly one named argument"
+                    )
                     k, v = list(kwargs.items())[0]
                     # cannot import DerivationTree because of circular import
                     if v.__class__.__name__ == "DerivationTree":
@@ -135,7 +136,9 @@ def _attach_to_first_arg(
                 str,
                 bytes,
                 int,
-            ], f"Cannot determine the type the base should be converted to based on argument of type {base_type.__name__}"
+            ], (
+                f"Cannot determine the type the base should be converted to based on argument of type {base_type.__name__}"
+            )
 
             base = base_type(self)
             return getattr(base, name)(*args, **kwargs)
@@ -149,6 +152,7 @@ def _attach_to_first_arg(
                 warnings.warn(
                     f"Method {name} already exists on {cls.__name__}, skipping",
                     Warning,
+                    stacklevel=2,
                 )
             else:
                 setattr(cls, name, make_method(name))
@@ -189,6 +193,7 @@ def _attach_to_underlying(
                 warnings.warn(
                     f"Method {name} already exists on {cls.__name__}, skipping",
                     Warning,
+                    stacklevel=2,
                 )
             else:
                 setattr(cls, name, make_method(name))
@@ -341,26 +346,28 @@ class TreeValue:
         self,
         value: Optional[str | bytes | int],
         *,
-        trailing_bits: list[int] = [],
+        trailing_bits: Optional[list[int]] = None,
         allow_empty: bool = False,
     ):
         self._value: Optional[str | bytes]
-        assert all(
-            bit & 1 == bit for bit in trailing_bits
-        ), "trailing bits must be 0 or 1, got " + str(trailing_bits)
+        if trailing_bits is None:
+            trailing_bits = []
+        assert all(bit & 1 == bit for bit in trailing_bits), (
+            "trailing bits must be 0 or 1, got " + str(trailing_bits)
+        )
 
         if isinstance(value, int):
-            assert (
-                value & 1 == value
-            ), "ints are used for bit values, and must thus be 0 or 1"
+            assert value & 1 == value, (
+                "ints are used for bit values, and must thus be 0 or 1"
+            )
             assert trailing_bits == [], "trailing bits are not supported for int values"
             trailing_bits = [value]
             value = None
 
         if value is None:
-            assert (
-                allow_empty or len(trailing_bits) > 0
-            ), "None values must have trailing bits"
+            assert allow_empty or len(trailing_bits) > 0, (
+                "None values must have trailing bits"
+            )
 
         self._value = value
         self._trailing_bits = trailing_bits
@@ -597,7 +604,7 @@ class TreeValue:
                 except ValueError as e:
                     raise FandangoConversionError(
                         f"int conversion failed, value: {self._value!r}, encoding: {bytes_to_str_encoding}, error: {e}"
-                    )
+                    ) from e
             else:
                 raise FandangoValueError(
                     f"Invalid value type: {type(self._value)}, {self._trailing_bits}. This should not happen, please report this as a bug"

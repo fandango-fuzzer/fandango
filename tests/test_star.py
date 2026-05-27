@@ -1,22 +1,22 @@
-from typing import cast
 import unittest
+from typing import cast
 
-from fandango.language.parse.parse import parse
-from fandango.constraints.constraint import Constraint
 from fandango.constraints.comparison import ComparisonConstraint
+from fandango.constraints.constraint import Constraint
 from fandango.constraints.exists import ExistsConstraint
-from fandango.constraints.forall import ForallConstraint
 from fandango.constraints.failing_tree import Comparison
-from fandango.language.symbols import NonTerminal, Terminal
-from fandango.language.tree import DerivationTree
+from fandango.constraints.forall import ForallConstraint
 from fandango.language.grammar.grammar import Grammar
+from fandango.language.parse.parse import parse
 from fandango.language.search import (
     AnnotatedSearch,
-    StarSearch,
-    RuleSearch,
     AttributeSearch,
     DescendantAttributeSearch,
+    RuleSearch,
+    StarSearch,
 )
+from fandango.language.symbols import NonTerminal, Terminal
+from fandango.language.tree import DerivationTree
 
 
 class TestStar(unittest.TestCase):

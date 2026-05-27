@@ -11,27 +11,32 @@ from fandango.constraints.soft import SoftValue
 from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.adaptation import AdaptiveTuner
-from fandango.evolution.algorithm.base import GeneticAlgorithm, LoggerLevel
-from fandango.evolution.crossover import CrossoverOperator, SimpleSubtreeCrossover
+from fandango.evolution.algorithm.base import (
+    DEFAULT_CROSSOVER_OPERATOR,
+    DEFAULT_MUTATION_OPERATOR,
+    GeneticAlgorithm,
+    LoggerLevel,
+)
+from fandango.evolution.crossover import CrossoverOperator
 from fandango.evolution.evaluation import Evaluator, IoEvaluator
-from fandango.evolution.mutation import MutationOperator, SimpleMutation
+from fandango.evolution.mutation import MutationOperator
 from fandango.evolution.population import IoPopulationManager, PopulationManager
 from fandango.evolution.profiler import Profiler
 from fandango.io import FandangoIO
 from fandango.io.navigation.coverage_goal import CoverageGoal
 from fandango.io.navigation.packetselector import PacketSelector
 from fandango.io.packetparser import parse_next_remote_packet
-from fandango.language.symbols import NonTerminal
 from fandango.language.grammar import FuzzingMode
 from fandango.language.grammar.grammar import Grammar
+from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import (
     LOGGER,
     clear_visualization,
+    log_guidance_hint,
     log_message_transfer,
     print_exception,
     visualize_evaluation,
-    log_guidance_hint,
 )
 
 
@@ -44,10 +49,10 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
         initial_population: Optional[list[DerivationTree | str]] = None,
         expected_fitness: float = 1.0,
         elitism_rate: float = 0.1,
-        crossover_method: CrossoverOperator = SimpleSubtreeCrossover(),
+        crossover_method: CrossoverOperator = DEFAULT_CROSSOVER_OPERATOR,
         crossover_rate: float = 0.8,
         tournament_size: float = 0.1,
-        mutation_method: MutationOperator = SimpleMutation(),
+        mutation_method: MutationOperator = DEFAULT_MUTATION_OPERATOR,
         mutation_rate: float = 0.2,
         destruction_rate: float = 0.0,
         logger_level: Optional[LoggerLevel] = None,
@@ -359,7 +364,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
         :param solution_callback: A callback function to be called for each solution.
         :return: A list of DerivationTree objects, all of which are valid solutions to the grammar (or satisfy the minimum fitness threshold). The function may run indefinitely if neither max_generations nor desired_solutions are provided.
         """
-        warnings.warn("Use .generate instead", DeprecationWarning)
+        warnings.warn("Use .generate instead", DeprecationWarning, stacklevel=2)
         if self.grammar.fuzzing_mode == FuzzingMode.COMPLETE:
             return self._evolve_single(
                 max_generations, desired_solutions, solution_callback
@@ -370,7 +375,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
             raise FandangoValueError(f"Invalid mode: {self.grammar.fuzzing_mode}")
 
     def _evolve_io(self, max_generations: Optional[int] = None) -> list[DerivationTree]:
-        warnings.warn("Use .generate instead", DeprecationWarning)
+        warnings.warn("Use .generate instead", DeprecationWarning, stacklevel=2)
         return list(self._generate_io(max_generations=max_generations))
 
     def generate(
@@ -627,7 +632,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
                                         mode=FuzzingMode.COMPLETE,
                                     )
                                 )
-                            except StopIteration:
+                            except StopIteration as err:
                                 all_allowed_packets = (
                                     self.population_manager.fuzzable_packets
                                     + self.population_manager.fallback_packets
@@ -640,7 +645,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
                                 )
                                 raise FandangoFailedError(
                                     f"Couldn't find solution for any packet: {nonterminals_str}"
-                                )
+                                ) from err
                     next_tree = evolve_result
                 else:
                     next_tree = solutions[0]

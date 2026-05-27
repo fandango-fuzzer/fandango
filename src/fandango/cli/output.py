@@ -1,12 +1,13 @@
 import argparse
 import contextlib
 import ctypes
-from io import UnsupportedOperation
 import os
 import subprocess
 import sys
 import tempfile
+from io import UnsupportedOperation
 from typing import IO, Any
+
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER, clear_visualization
 

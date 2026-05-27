@@ -10,10 +10,10 @@ from antlr4.CommonTokenStream import CommonTokenStream
 from antlr4.FileStream import FileStream
 from antlr4.tree.Tree import TerminalNode
 
-from fandango.converters.FandangoConverter import FandangoConverter
 from fandango.converters.antlr.ANTLRv4Lexer import ANTLRv4Lexer
 from fandango.converters.antlr.ANTLRv4Parser import ANTLRv4Parser
 from fandango.converters.antlr.ANTLRv4ParserVisitor import ANTLRv4ParserVisitor
+from fandango.converters.FandangoConverter import FandangoConverter
 from fandango.language.parse.parser_error_listeners import PythonAntlrErrorListener
 
 

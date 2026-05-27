@@ -1,5 +1,5 @@
 # wildcard import required for usage in spec files
-from fandango.io import *  # noqa: F403
+from fandango.io import *  # noqa: F401, F403
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 

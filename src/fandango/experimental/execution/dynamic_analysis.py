@@ -1,17 +1,18 @@
+import json
 import os
 import subprocess
 import tempfile
-import json
 from typing import Optional, Union
+
 from cachetools import LRUCache
 
+from fandango.experimental.execution.static_analysis import StaticAnalysis
 from fandango.experimental.execution.trace_types import (
-    ModuleName,
     BasicBlockID,
     ModuleBBID,
     ModuleFunction,
+    ModuleName,
 )
-from fandango.experimental.execution.static_analysis import StaticAnalysis
 from fandango.logger import LOGGER
 
 
@@ -24,9 +25,9 @@ class Trace:
         self.sa = sa
         self.trace = trace
 
-    ###############################################
-    ## Helpers functions for objective functions ##
-    ###############################################
+    #############################################
+    # Helpers functions for objective functions #
+    #############################################
 
     def CoveredBasicBlocks(self) -> set[ModuleBBID]:
         covered = set()
@@ -69,9 +70,9 @@ class Trace:
                                 covered.add(bb_id)
         return covered
 
-    ###################################################################
-    ## Objective functions, which can be used in Fadango constraints ##
-    ###################################################################
+    #################################################################
+    # Objective functions, which can be used in Fadango constraints #
+    #################################################################
 
     # a.k.a. "SlowFuzz"
     def ExecutionPathLength(self) -> int:

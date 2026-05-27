@@ -1,4 +1,5 @@
 from typing import Any, Optional
+
 from fandango.errors import FandangoError, FandangoValueError
 from fandango.io import FandangoIO, FandangoParty
 from fandango.language.grammar.grammar import Grammar

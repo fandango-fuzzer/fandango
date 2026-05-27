@@ -1,13 +1,14 @@
 #!/usr/bin/env pytest
 
 import itertools
+import logging
 import random
 import unittest
-import logging
 
 import pytest
 
 from fandango import Fandango
+
 from .utils import DOCS_ROOT, RESOURCES_ROOT
 
 
@@ -86,13 +87,13 @@ def test_even_number(even_number):
     is_even = int(even_number) % 2 == 0
     successful_parse = len(parses) > 0
 
-    assert (
-        successful_parse == is_even
-    ), f"parsed for {even_number} the following: {parses}"
+    assert successful_parse == is_even, (
+        f"parsed for {even_number} the following: {parses}"
+    )
 
-    assert all(
-        all(c.check(p) for c in fan.constraints) for p in parses
-    ), f"some parses did not match the constraints for {even_number}"
+    assert all(all(c.check(p) for c in fan.constraints) for p in parses), (
+        f"some parses did not match the constraints for {even_number}"
+    )
 
 
 if __name__ == "__main__":

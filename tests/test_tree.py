@@ -1,7 +1,9 @@
 # Tests are spread all over the place, adding this while none other are available.
 
-import pytest
 from collections.abc import Generator
+
+import pytest
+
 from fandango.language.parse.parse import parse
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
@@ -53,7 +55,7 @@ def tests_find_nt(constructor):
                 assert c.children[1] == d
                 assert list(c.find_subtrees(constructor("<d>"))) == [d]
             case _:
-                assert False
+                raise AssertionError("Should not happen")
 
 
 def test_find_nt_is_breadth_first():

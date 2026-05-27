@@ -1,22 +1,22 @@
 from typing import Optional
 
 from fandango.io import FandangoIO
-from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.coverage_goal import CoverageGoal
-from fandango.io.navigation.stategrammarconverter import StateGrammarConverter
+from fandango.io.navigation.packetforecaster import (
+    ForecastingPacket,
+    ForecastingResult,
+    PacketForecaster,
+)
+from fandango.io.navigation.packetnavigator import PacketNavigator
+from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.powerschedule import (
     PowerScheduleCoverage,
     PowerScheduleKPath,
 )
-from fandango.language.tree import DerivationTree
-from fandango.io.navigation.packetforecaster import (
-    ForecastingPacket,
-    PacketForecaster,
-    ForecastingResult,
-)
-from fandango.io.navigation.packetnavigator import PacketNavigator
+from fandango.io.navigation.stategrammarconverter import StateGrammarConverter
 from fandango.language.grammar.grammar import Grammar, KPath
 from fandango.language.symbols import NonTerminal, Symbol
+from fandango.language.tree import DerivationTree
 from fandango.logger import log_guidance_hint
 
 
@@ -286,7 +286,7 @@ class PacketSelector:
         )
         all_current_msgs = prev_msgs + current_session_msgs
         new_msgs = []
-        for prev, new in zip(self._prev_session_msgs, all_current_msgs):
+        for prev, new in zip(self._prev_session_msgs, all_current_msgs, strict=False):
             if prev != new:
                 new_msgs.extend(current_session_msgs)
                 return new_msgs

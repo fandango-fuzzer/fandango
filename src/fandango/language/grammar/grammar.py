@@ -1,38 +1,29 @@
-import random
-from collections.abc import Generator, Iterator
-from collections import defaultdict
-from typing import Any, cast, Optional, Iterable, Callable
-from collections.abc import Sequence
-import warnings
 import itertools
+import random
+import warnings
+from collections import defaultdict
+from collections.abc import Generator, Iterator, Sequence
+from typing import Any, Optional, cast
 
-
-from fandango.errors import FandangoValueError, FandangoParseError
-from fandango.io.navigation import coverage_goal
-from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
+import fandango.language.grammar.nodes as nodes
+from fandango.errors import FandangoParseError, FandangoValueError
 from fandango.io.navigation.coverage_goal import CoverageGoal
+from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.language.grammar import FuzzingMode, ParsingMode, closest_match
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.literal_generator import LiteralGenerator
 from fandango.language.grammar.node_visitors.disambiguator import Disambiguator
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
-from fandango.language.grammar.nodes import node
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.char_set import CharSet
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
-import fandango.language.grammar.nodes as nodes
-from fandango.language.grammar.nodes.repetition import (
-    Option,
-    Plus,
-    Repetition,
-    Star,
-)
+from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.grammar.parser.parser import Parser
+from fandango.language.symbols import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree, TreeTuple
-from fandango.language.symbols import Symbol, Terminal, NonTerminal
 from fandango.language.tree_value import TreeValueType
 from fandango.logger import LOGGER
 
@@ -231,7 +222,8 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
 
         if isinstance(string, tuple):
             warnings.warn(
-                "Returning a tree in the shape of a tuple from a generator is deprecated, as it is parsed into a tree, then immediately stringified and parsed against the grammar. You should instead return a str/bytes directly"
+                "Returning a tree in the shape of a tuple from a generator is deprecated, as it is parsed into a tree, then immediately stringified and parsed against the grammar. You should instead return a str/bytes directly",
+                stacklevel=2,
             )
             string = str(DerivationTree.from_tree(string))
         tree = self.parse(string, symbol)
@@ -302,13 +294,15 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
 
     def finalize_globals(self) -> None:
         """Finalize global variables by evaluating any callables."""
-        for key, value in self._global_variables.items():
+        for _key, value in self._global_variables.items():
             if "__globals__" in dir(value):
                 value.__globals__.update(self._global_variables)
 
     def get_protocol_messages(
-        self, start_symbol: NonTerminal = NonTerminal("<start>")
+        self, start_symbol: Optional[NonTerminal] = None
     ) -> set[PacketNonTerminal]:
+        if start_symbol is None:
+            start_symbol = NonTerminal("<start>")
         work = set()
         work.add(self.rules[start_symbol])
         seen = set()
@@ -596,12 +590,12 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         self,
         symbol: str | NonTerminal,
         param: str,
-        searches_map: dict[str, NonTerminalNode] = {},
+        searches_map: Optional[dict[str, NonTerminalNode]] = None,
     ) -> None:
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
         self.generators[symbol] = LiteralGenerator(
-            call=param, nonterminals=searches_map
+            call=param, nonterminals=(searches_map or {})
         )
 
     def remove_generator(self, symbol: str | NonTerminal) -> None:
@@ -626,7 +620,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         self,
         derivation_trees: list[DerivationTree],
         k: int,
-        non_terminal: NonTerminal = NonTerminal("<start>"),
+        non_terminal: Optional[NonTerminal] = None,
         overlap_to_root: bool = False,
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
         input_parties: Optional[set[str]] = None,
@@ -634,6 +628,8 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         """
         Returns a list of uncovered k-paths in the grammar given a set of derivation trees.
         """
+        if non_terminal is None:
+            non_terminal = NonTerminal("<start>")
         all_k_paths = self.generate_all_k_paths(
             k=k,
             non_terminal=non_terminal,
@@ -656,13 +652,15 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         self,
         derivation_trees: list[DerivationTree],
         k: int,
-        non_terminal: NonTerminal = NonTerminal("<start>"),
+        non_terminal: Optional[NonTerminal] = None,
         overlap_to_root: bool = False,
     ) -> float:
         """
         Computes the k-path coverage of the grammar given a set of derivation trees.
         Returns a score between 0 and 1 representing the fraction of k-paths covered.
         """
+        if non_terminal is None:
+            non_terminal = NonTerminal("<start>")
         # Generate all possible k-paths in the grammar
         all_k_paths = self.generate_all_k_paths(
             k=k, non_terminal=non_terminal, overlap_to_root=overlap_to_root
@@ -686,7 +684,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         self,
         *,
         k: int,
-        non_terminal: NonTerminal = NonTerminal("<start>"),
+        non_terminal: Optional[NonTerminal] = None,
         overlap_to_root: bool = False,
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
         input_parties: Optional[set[str]] = None,
@@ -700,6 +698,8 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         :param coverage_goal: The coverage goal to consider when generating paths.
         :return: All paths of length up to *k* within this grammar.
         """
+        if non_terminal is None:
+            non_terminal = NonTerminal("<start>")
         if input_parties is None:
             input_parties = set()
         cache_key = (non_terminal, overlap_to_root, coverage_goal)
@@ -1000,10 +1000,14 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                 cur_path = (NonTerminalNode(tree.nonterminal, self._grammar_settings),)
             assert tree.symbol == cast(NonTerminalNode, cur_path[-1]).symbol
             disambiguation = disambiguator.visit(self.rules[tree.nonterminal])
-            for tree, path in zip(
-                tree.children, disambiguation[tuple(c.symbol for c in tree.children)]
+            for inner_tree, path in zip(
+                tree.children,
+                disambiguation[tuple(c.symbol for c in tree.children)],
+                strict=False,
             ):
-                self.traverse_derivation(tree, disambiguator, paths, cur_path + path)
+                self.traverse_derivation(
+                    inner_tree, disambiguator, paths, cur_path + path
+                )
         else:
             raise FandangoValueError(
                 f"Unknown symbol type: {type(tree.symbol)}: {tree.symbol}"

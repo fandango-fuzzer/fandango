@@ -1,6 +1,4 @@
-from fandango.errors import FandangoValueError
 from fandango.language import NonTerminal
-from fandango.language.grammar import closest_match
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.node_visitors.packet_truncator import PacketTruncator
 

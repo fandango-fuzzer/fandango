@@ -1,6 +1,7 @@
 from typing import Optional
-from fandango.language.tree import DerivationTree
+
 from fandango.language.symbols.symbol import Symbol
+from fandango.language.tree import DerivationTree
 
 
 class ParserDerivationTree(DerivationTree):

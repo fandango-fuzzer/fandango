@@ -1,13 +1,13 @@
+import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Collection
-import traceback
 from typing import TYPE_CHECKING, Any, Optional
-import warnings
+
 from fandango.constraints.base import GeneticBase
-from fandango.language.tree import DerivationTree
 from fandango.constraints.fitness import ConstraintFitness
 from fandango.language.search import NonTerminalSearch
 from fandango.language.symbols.non_terminal import NonTerminal
+from fandango.language.tree import DerivationTree
 
 if TYPE_CHECKING:
     from fandango.constraints.constraint_visitor import ConstraintVisitor
