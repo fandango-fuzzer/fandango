@@ -1,8 +1,8 @@
-from typing import Optional, Any
+from typing import Any, Optional
 
-from fandango.language.parse.spec import FandangoSpec, CachedFandangoSpec
 from fandango.language.parse.parse_tree import parse_tree
 from fandango.language.parse.slice_parties import slice_parties
+from fandango.language.parse.spec import CachedFandangoSpec, FandangoSpec
 from fandango.logger import LOGGER
 
 

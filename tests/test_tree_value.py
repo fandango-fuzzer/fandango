@@ -1,4 +1,5 @@
 import pytest
+
 from fandango.errors import FandangoConversionError
 from fandango.language.symbols.terminal import Terminal
 from fandango.language.tree import DerivationTree

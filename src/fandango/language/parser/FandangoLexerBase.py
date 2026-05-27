@@ -1,13 +1,15 @@
 from __future__ import annotations
+
 import re
 import sys
-from typing import TextIO, Optional
+from typing import Optional, TextIO
 
-# noinspection PyUnresolvedReferences
-from fandango.language.parser.FandangoParser import FandangoParser
 from antlr4.InputStream import InputStream
 from antlr4.Lexer import Lexer
 from antlr4.Token import CommonToken, Token
+
+# noinspection PyUnresolvedReferences
+from fandango.language.parser.FandangoParser import FandangoParser
 
 
 class FandangoLexerBase(Lexer):

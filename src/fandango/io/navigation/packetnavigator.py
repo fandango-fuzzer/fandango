@@ -1,18 +1,18 @@
-from typing import Optional
 from collections.abc import Generator
+from typing import Optional
 
-from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.grammarnavigator import GrammarNavigator
-from fandango.io.navigation.stategrammarconverter import StateGrammarConverter
 from fandango.io.navigation.packetiterativeparser import PacketIterativeParser
-from fandango.language import Grammar, DerivationTree
-from fandango.language.grammar.grammar import KPath
-from fandango.language.symbols.non_terminal import NonTerminal
+from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
+from fandango.io.navigation.stategrammarconverter import StateGrammarConverter
+from fandango.language import DerivationTree, Grammar
 from fandango.language.grammar import ParsingMode
+from fandango.language.grammar.grammar import KPath
 from fandango.language.grammar.node_visitors.grammar_graph_converter import (
     GrammarGraphNode,
 )
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.symbols.non_terminal import NonTerminal
 
 
 class PacketNavigator(GrammarNavigator):

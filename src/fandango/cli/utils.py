@@ -1,10 +1,10 @@
 import argparse
-from collections.abc import Iterable
 import difflib
 import logging
 import os
-from typing import IO, Any, Optional
 import zipfile
+from collections.abc import Iterable
+from typing import IO, Any, Optional
 
 from fandango.api import Fandango
 from fandango.constraints.constraint import Constraint

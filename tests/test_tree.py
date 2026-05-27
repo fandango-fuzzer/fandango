@@ -1,7 +1,9 @@
 # Tests are spread all over the place, adding this while none other are available.
 
-import pytest
 from collections.abc import Generator
+
+import pytest
+
 from fandango.language.parse.parse import parse
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree

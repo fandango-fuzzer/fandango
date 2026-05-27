@@ -1,23 +1,22 @@
 import random
-from typing import Optional, Union
 from collections import Counter
-from collections.abc import Generator, Sequence, Callable
-
+from collections.abc import Callable, Generator, Sequence
+from typing import Optional, Union
 
 from fandango.constraints.constraint import Constraint
-from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
-from fandango.constraints.soft import SoftValue
 from fandango.constraints.failing_tree import (
     ApplyAllSuggestions,
     FailingTree,
     NopSuggestion,
     Suggestion,
 )
+from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
+from fandango.constraints.soft import SoftValue
 from fandango.evolution import GeneratorWithReturn
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.language import NonTerminal
-from fandango.language.tree import DerivationTree
 from fandango.language.grammar.grammar import Grammar, KPath
+from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER, print_exception
 
 

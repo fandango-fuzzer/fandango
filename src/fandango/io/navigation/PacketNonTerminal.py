@@ -1,4 +1,4 @@
-from typing import Optional, Any
+from typing import Any, Optional
 
 from fandango.language.symbols.non_terminal import NonTerminal
 

@@ -1,10 +1,10 @@
+import abc
 import random
 from collections import Counter
-from typing import TypeVar, Generic
-import abc
+from typing import Generic, TypeVar
 
-from fandango.language.symbols import Symbol
 from fandango.language.grammar.grammar import KPath
+from fandango.language.symbols import Symbol
 
 ScheduleType = TypeVar("ScheduleType")
 

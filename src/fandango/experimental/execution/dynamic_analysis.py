@@ -1,17 +1,18 @@
+import json
 import os
 import subprocess
 import tempfile
-import json
 from typing import Optional, Union
+
 from cachetools import LRUCache
 
+from fandango.experimental.execution.static_analysis import StaticAnalysis
 from fandango.experimental.execution.trace_types import (
-    ModuleName,
     BasicBlockID,
     ModuleBBID,
     ModuleFunction,
+    ModuleName,
 )
-from fandango.experimental.execution.static_analysis import StaticAnalysis
 from fandango.logger import LOGGER
 
 

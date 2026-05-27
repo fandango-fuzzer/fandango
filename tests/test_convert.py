@@ -1,7 +1,7 @@
 #!/usr/bin/env pytest
 import sys
-
 import unittest
+
 import pytest
 
 from .utils import DOCS_ROOT, PROJECT_ROOT, run_command

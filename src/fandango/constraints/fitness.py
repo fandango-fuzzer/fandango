@@ -1,6 +1,7 @@
 import abc
 import copy
 from typing import Optional
+
 from fandango.constraints.failing_tree import FailingTree, Suggestion
 
 

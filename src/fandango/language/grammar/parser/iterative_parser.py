@@ -1,23 +1,20 @@
 from collections.abc import Generator
 from copy import deepcopy
-from typing import Optional, Any
+from typing import Any, Optional
 
 from fandango.errors import FandangoValueError
 from fandango.language.grammar import ParsingMode
-from fandango.language.grammar.parser.column import Column
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
-from fandango.language.grammar.nodes.node import Node, NodeType
-from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
-from fandango.language.grammar.nodes.terminal import TerminalNode
-from fandango.language.grammar.nodes.repetition import Repetition
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
-from fandango.language.grammar.nodes.repetition import Option
-from fandango.language.grammar.nodes.repetition import Plus
-from fandango.language.grammar.nodes.repetition import Star
+from fandango.language.grammar.nodes.node import Node, NodeType
+from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
+from fandango.language.grammar.nodes.terminal import TerminalNode
+from fandango.language.grammar.parser.column import Column
 from fandango.language.grammar.parser.parse_state import (
-    ParseState,
     ParserStateSymbolContent,
+    ParseState,
 )
 from fandango.language.grammar.parser.parser_tree import ParserDerivationTree
 from fandango.language.symbols import NonTerminal, Terminal

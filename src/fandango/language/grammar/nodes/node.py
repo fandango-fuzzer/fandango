@@ -1,12 +1,13 @@
 import abc
 import copy
 import enum
+import warnings
 from collections.abc import Iterator, Sequence
 from typing import TYPE_CHECKING, Any, Optional
-import warnings
+
 from fandango.errors import FandangoValueError
-from fandango.language.symbols import Symbol
 from fandango.language.grammar.has_settings import HasSettings
+from fandango.language.symbols import Symbol
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
 

@@ -1,11 +1,12 @@
 #!/usr/bin/env pytest
 
-from collections.abc import Generator
 import itertools
 import unittest
+from collections.abc import Generator
 
 from fandango.evolution.algorithm import DefaultAlgorithm, LoggerLevel
 from fandango.language.parse.parse import parse
+
 from .utils import RESOURCES_ROOT, run_command
 
 

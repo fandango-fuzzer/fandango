@@ -1,6 +1,6 @@
 def activate_beartype() -> None:
-    from beartype.claw import beartype_this_package
     from beartype import BeartypeConf
+    from beartype.claw import beartype_this_package
 
     skip_packages = (
         "fandango.language.grammar.grammar",  # GrammarProcessor sometimes passes searches instead of NonTerminalNodes to Grammar.set_generator

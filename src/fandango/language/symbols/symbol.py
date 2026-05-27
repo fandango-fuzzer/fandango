@@ -1,7 +1,6 @@
 import abc
 import enum
-from typing import Any
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from fandango.language.tree_value import TreeValue, TreeValueType
 

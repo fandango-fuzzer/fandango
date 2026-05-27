@@ -4,8 +4,8 @@ search criteria.
 """
 
 import abc
-from typing import Generic, Optional, Any, TypeVar
 import warnings
+from typing import Any, Generic, Optional, TypeVar
 
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree

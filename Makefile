@@ -325,6 +325,10 @@ ls-files:
 	@echo 'Listing files in the repository...'
 	@$(GIT_LS_FILES) | sort
 
+lock:
+	uv lock
+	uv export --output-file=pylock.toml --all-extras --locked
+
 ## Statistics
 .PHONY: stats statistics
 stats statistics:

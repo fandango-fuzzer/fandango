@@ -1,7 +1,8 @@
 import os
-from pathlib import Path
 import platform
 import shutil
+from pathlib import Path
+
 from xdg_base_dirs import xdg_cache_home
 
 

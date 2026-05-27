@@ -5,8 +5,6 @@ import io
 import logging
 import os
 import re
-from uuid import UUID
-
 import select
 import socket
 import subprocess
@@ -14,13 +12,14 @@ import sys
 import threading
 import time
 from abc import ABC, abstractmethod
-from typing import Optional, IO
+from typing import IO, Hashable, Optional
+from uuid import UUID
+
+from _contextvars import ContextVar
 
 from fandango.errors import FandangoError, FandangoValueError
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
-from typing import Hashable
-from _contextvars import ContextVar
 
 EnvKey = Hashable
 
@@ -972,8 +971,8 @@ class ProcessManager(object):
         LOGGER.info(f"Starting subprocess with command {command}")
 
         if sys.platform != "win32":
-            import tty
             import pty
+            import tty
 
             master_fd, slave_fd = pty.openpty()
             tty.setraw(master_fd)

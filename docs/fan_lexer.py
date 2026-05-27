@@ -6,7 +6,7 @@
 #     $ ./fan_lexer.py FILE...
 
 from pygments.lexers.python import PythonLexer
-from pygments.token import Name, Keyword
+from pygments.token import Keyword, Name
 
 
 class FanLexer(PythonLexer):

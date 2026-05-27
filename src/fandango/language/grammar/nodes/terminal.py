@@ -1,8 +1,11 @@
 import random
 import re
-from typing import TYPE_CHECKING, Any
 from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any
+
 import exrex
+
+import fandango.language.grammar.nodes as nodes
 from fandango.errors import FandangoValueError
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.node import Node, NodeType
@@ -10,8 +13,6 @@ from fandango.language.symbols import Symbol, Terminal
 from fandango.language.tree import DerivationTree
 from fandango.language.tree_value import TreeValueType
 from fandango.logger import LOGGER
-
-import fandango.language.grammar.nodes as nodes
 
 if TYPE_CHECKING:
     import fandango.language.grammar.node_visitors

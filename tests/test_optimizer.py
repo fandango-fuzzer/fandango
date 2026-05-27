@@ -1,10 +1,10 @@
 #!/usr/bin/env pytest
 
-from collections.abc import Generator
-from copy import deepcopy
 import itertools
 import random
 import unittest
+from collections.abc import Generator
+from copy import deepcopy
 
 from fandango.constraints.failing_tree import Suggestion
 from fandango.constraints.fitness import FailingTree
@@ -13,6 +13,7 @@ from fandango.evolution.algorithm import DefaultAlgorithm, LoggerLevel
 from fandango.evolution.population import PopulationManager
 from fandango.language.parse.parse import parse
 from fandango.language.tree import DerivationTree
+
 from .utils import RESOURCES_ROOT
 
 

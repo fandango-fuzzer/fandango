@@ -1,7 +1,7 @@
 import os
 import subprocess
-from pathlib import Path
 import sys
+from pathlib import Path
 
 TEST_ROOT = Path(__file__).parent
 RESOURCES_ROOT = TEST_ROOT / "resources"

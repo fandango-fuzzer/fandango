@@ -1,10 +1,10 @@
 import logging
 from typing import Optional
 
-from pygls.lsp.server import LanguageServer
 import lsprotocol.types as lsp
 from antlr4.InputStream import InputStream
 from antlr4.Token import Token
+from pygls.lsp.server import LanguageServer
 
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.server.semantic_tokens import (

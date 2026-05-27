@@ -1,5 +1,7 @@
 from itertools import islice
+
 import pytest
+
 from fandango import DerivationTree
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.algorithm import DefaultAlgorithm

@@ -72,6 +72,8 @@ development = [
     "black>=25.1.0",
     "flake8>=7.0.0",
     "flake8-bugbear>=15.11.0",
+    "flake8-isort>=7.0.0",
+    "matplotlib>=3.10.0",
     "mypy>=1.16.0",
     "pre-commit>=4.2.0",
     "pygls>=2.0.0a4",            # language server
@@ -106,6 +108,10 @@ fandango = "fandango.cli:main"
 line-length = 88
 target-version = ['py311']
 
+[tool.isort]
+profile = "black"
+line_length = 88
+
 [tool.mypy]
 follow_untyped_imports = true
 check_untyped_defs = true
@@ -115,7 +121,7 @@ exclude = [
     'build/',
     'dist/',
     'fcc/*',
-    'evaluation/protocol_testing_eval/profuzzbench/*',
+    'evaluation/protocol_testing_eval/profuzzbench/.*',
     'src/fandango/language/parser/FandangoLexer\.py$',
     'src/fandango/language/parser/FandangoParser\.py$',
     'src/fandango/language/parser/FandangoParserVisitor\.py$',

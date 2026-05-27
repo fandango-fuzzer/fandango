@@ -7,7 +7,7 @@ import time
 import uuid
 import warnings
 from pathlib import Path
-from typing import Optional, Any
+from typing import Any, Optional
 
 import cachedir_tag
 from antlr4.tree.Tree import ParseTree
