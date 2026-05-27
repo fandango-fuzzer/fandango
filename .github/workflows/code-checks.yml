@@ -81,10 +81,10 @@ jobs:
       - name: Check if `pylock.toml` is up-to-date
         shell: bash
         run: |
-          uv export --all-extras --locked --output-file=pylock.toml
+          uv export --output-file=pylock.toml --all-extras --locked
 
           if ! git diff --quiet -- pylock.toml; then
-              echo "Error: pylock.toml is out of sync with uv.lock. Please run 'uv export --all-extras --locked --output-file=pylock.toml'."
+              echo "Error: pylock.toml is out of sync with uv.lock. Please run 'uv export --output-file=pylock.toml --all-extras --locked'."
               git diff -- pylock.toml
               exit 1
           fi
