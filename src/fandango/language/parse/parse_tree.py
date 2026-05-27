@@ -24,12 +24,12 @@ def parse_tree(filename: str, fan_contents: str) -> ParseTree:
                 from ..parser import (  # type: ignore[attr-defined]  # noqa: F401
                     sa_fandango_cpp_parser,
                 )
-            except ImportError:
+            except ImportError as err:
                 raise ImportError(
                     "Requested C++ parser not available. "
                     "Check your installation "
                     "or use '--parser=python'"
-                )
+                ) from err
         elif fandango.Fandango.parser == "python":
             sa_fandango.USE_CPP_IMPLEMENTATION = False
         elif fandango.Fandango.parser == "auto":

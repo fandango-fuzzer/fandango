@@ -11,11 +11,10 @@ import subprocess
 import sys
 import threading
 import time
+from _contextvars import ContextVar
 from abc import ABC, abstractmethod
 from typing import IO, Hashable, Optional
 from uuid import UUID
-
-from _contextvars import ContextVar
 
 from fandango.errors import FandangoError, FandangoValueError
 from fandango.language.tree import DerivationTree
@@ -765,10 +764,10 @@ class FandangoIO(object):
         try:
             assert CURRENT_ENV_KEY.contextVar is not None
             env_key = CURRENT_ENV_KEY.contextVar.get()
-        except LookupError:
+        except LookupError as err:
             raise RuntimeError(
                 "FandangoIO.instance() called without an active environment"
-            )
+            ) from err
 
         with cls._lock:
             if env_key not in cls._instances:
@@ -924,10 +923,10 @@ class ProcessManager(object):
         try:
             assert CURRENT_ENV_KEY.contextVar is not None
             env_key = CURRENT_ENV_KEY.contextVar.get()
-        except LookupError:
+        except LookupError as err:
             raise RuntimeError(
                 "ProcessManager.instance() called without an active environment"
-            )
+            ) from err
 
         with cls._lock:
             if env_key not in cls._instances:
@@ -954,9 +953,9 @@ class ProcessManager(object):
 
     def set_command(self, value: str | list[str], text: bool = True) -> None:
         """Sets the command to be executed to start the process."""
-        assert isinstance(
-            value, (str, list)
-        ), "Command must be a string or a list of strings"
+        assert isinstance(value, (str, list)), (
+            "Command must be a string or a list of strings"
+        )
         with self.lock:
             if self._command == value:
                 return

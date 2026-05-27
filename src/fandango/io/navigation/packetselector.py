@@ -286,7 +286,7 @@ class PacketSelector:
         )
         all_current_msgs = prev_msgs + current_session_msgs
         new_msgs = []
-        for prev, new in zip(self._prev_session_msgs, all_current_msgs):
+        for prev, new in zip(self._prev_session_msgs, all_current_msgs, strict=False):
             if prev != new:
                 new_msgs.extend(current_session_msgs)
                 return new_msgs

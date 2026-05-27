@@ -550,7 +550,9 @@ class SelectiveSearch(NonTerminalSearch):
 
     def _find(self, bases: list[Container]) -> list[Container]:
         result = []
-        for symbol, is_direct, items in zip(*zip(*self.symbols), self.slices):
+        for symbol, is_direct, items in zip(
+            *zip(*self.symbols, strict=False), self.slices, strict=False
+        ):
             children: list[list[DerivationTree]]
             if is_direct:
                 children = [
@@ -591,7 +593,9 @@ class SelectiveSearch(NonTerminalSearch):
 
     def format_as_spec(self) -> str:
         slice_reprs: list[str] = []
-        for symbol, is_direct, items in zip(*self.symbols, self.slices):
+        for symbol, is_direct, items in zip(
+            *self.symbols, self.slices, strict=False
+        ):
             slice_repr = f"{'' if is_direct else '*'}{symbol.format_as_spec()}"
             if items is not None:
                 slice_repr += ": "

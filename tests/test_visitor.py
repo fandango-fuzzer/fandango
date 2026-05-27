@@ -58,7 +58,6 @@ class CountingVisitor(ConstraintVisitor):
 
 
 class LoggingVisitor(ConstraintVisitor):
-
     def __init__(self):
         super().__init__()
         LOGGER.setLevel(logging.DEBUG)
@@ -94,7 +93,6 @@ class LoggingVisitor(ConstraintVisitor):
 
 
 class TestConstraintVisitor(unittest.TestCase):
-
     def get_constraint(self, constraint):
         with open(RESOURCES_ROOT / "constraints.fan", "r") as file:
             _, constraints = parse(

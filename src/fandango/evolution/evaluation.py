@@ -56,9 +56,9 @@ class Evaluator:
 
         for constraint in constraints:
             if "DynamicAnalysis" in constraint.format_as_spec():
-                assert (
-                    self.fcc is not None
-                ), "FCC is required for DynamicAnalysis constraint"
+                assert self.fcc is not None, (
+                    "FCC is required for DynamicAnalysis constraint"
+                )
                 constraint.global_variables["DynamicAnalysis"] = (
                     self.fcc.dynamic_analysis.trace_input
                 )
@@ -277,7 +277,9 @@ class Evaluator:
         self._fitness_cache[key] = (fitness, failing_trees, suggestion)
         return fitness, failing_trees, suggestion
 
-    def evaluate_population(self, population: list[DerivationTree]) -> Generator[
+    def evaluate_population(
+        self, population: list[DerivationTree]
+    ) -> Generator[
         DerivationTree,
         None,
         list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
@@ -292,7 +294,7 @@ class Evaluator:
             evaluation = [
                 (ind, fitness + bonus, failing_trees, suggestion)
                 for (ind, fitness, failing_trees, suggestion), bonus in zip(
-                    evaluation, bonuses
+                    evaluation, bonuses, strict=False
                 )
             ]
         return evaluation
@@ -459,7 +461,9 @@ class IoEvaluator(Evaluator):
         self._fitness_cache[key] = (fitness, failing_trees, suggestion)
         return fitness, failing_trees, suggestion
 
-    def evaluate_population(self, population: list[DerivationTree]) -> Generator[
+    def evaluate_population(
+        self, population: list[DerivationTree]
+    ) -> Generator[
         DerivationTree,
         None,
         list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
