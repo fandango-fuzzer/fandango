@@ -108,7 +108,9 @@ def split_party_spec(
     return name, protocol, host, port
 
 
-class FandangoParty(ABC):
+class FandangoParty(  # noqa: B024 # this is an abstract base class without any abstract methods
+    ABC
+):
     """Base class for all parties in Fandango."""
 
     def __init__(
@@ -204,11 +206,9 @@ class FandangoParty(ABC):
             f"Party {self.party_name}: receive_msg() has been deprecated. Use receive() instead; note the changed argument order"
         )
 
-    @abstractmethod
     def start(self) -> None:
         raise NotImplementedError("start() method not implemented")
 
-    @abstractmethod
     def stop(self) -> None:
         raise NotImplementedError("stop() method not implemented")
 
