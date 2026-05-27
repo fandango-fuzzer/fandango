@@ -63,7 +63,7 @@ class BuildCMakeWithCopy(BuildCMake):
                 print("C++ parser extension successfully installed")
                 return
             except Exception as e:
-                raise BuildFailed(f"Failed to copy extension: {e}")
+                raise BuildFailed(f"Failed to copy extension: {e}") from e
 
 
 setup(

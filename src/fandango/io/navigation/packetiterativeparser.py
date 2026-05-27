@@ -26,7 +26,9 @@ class PacketIterativeParser(IterativeParser):
                 "Reference tree must be set before constructing the incomplete tree!"
             )
         for i_msg, r_msg in zip(
-            i_cpy.protocol_msgs(), self.reference_tree.protocol_msgs()
+            i_cpy.protocol_msgs(),
+            self.reference_tree.protocol_msgs(),
+            strict=False,
         ):
             i_msg.msg.set_children(r_msg.msg.children)
             i_msg.msg.sources = r_msg.msg.sources

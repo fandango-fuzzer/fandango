@@ -1206,7 +1206,7 @@ class SearchProcessor(FandangoParserVisitor):
             kvpairs, searches, search_map = self.visitDouble_starred_kvpairs(
                 ctx.double_starred_kvpairs()
             )
-            keys_, values_ = zip(*kvpairs)
+            keys_, values_ = zip(*kvpairs, strict=True)
             keys.extend(keys_)
             values.extend(values_)
         else:

@@ -125,9 +125,9 @@ def test_size_changes(mutation, input_size):
                 f"Input length: {len(input)}, expected size: {expected_size}"
             )
         else:
-            assert (
-                len(input) == expected_size
-            ), f"{mutation} did not mutate but changed size"
+            assert len(input) == expected_size, (
+                f"{mutation} did not mutate but changed size"
+            )
 
 
 def test_bit_flip_mutation():
@@ -214,9 +214,9 @@ def test_byte_rand_mutation():
         for i in [0, 1, 255]:
             input = bytearray([i] * INPUT_SIZE)
             mutated = mutation.mutate(input)
-            assert mutated == (
-                input != (bytearray([i] * INPUT_SIZE))
-            ), f"Found unexpected mutated input: {str(input)}"
+            assert mutated == (input != (bytearray([i] * INPUT_SIZE))), (
+                f"Found unexpected mutated input: {str(input)}"
+            )
 
 
 @pytest.mark.parametrize(
@@ -512,9 +512,9 @@ def test_bytes_insert_copy_mutation():
             # insertion to the middle
             i, j = diffs
             temp_reconstructed = input[:i] + input[j:]
-            assert (
-                input[i:j] in temp_reconstructed
-            ), f"input: {input}\ninserted slice (from {i} to {j}): {input[i:j]}"
+            assert input[i:j] in temp_reconstructed, (
+                f"input: {input}\ninserted slice (from {i} to {j}): {input[i:j]}"
+            )
         else:
             raise AssertionError(f"Found unexpected number of diffs: {diffs}")
 
@@ -531,6 +531,6 @@ def test_bytes_swap_mutation():
             return
 
         assert input != input_copy, "Input is not mutated"
-        assert (
-            bytearray(sorted(input)) == input_copy
-        ), "Input does not contain all elements anymore"
+        assert bytearray(sorted(input)) == input_copy, (
+            "Input does not contain all elements anymore"
+        )

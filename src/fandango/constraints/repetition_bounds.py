@@ -25,7 +25,9 @@ def _get_first_common_node(
     tree_a: DerivationTree, tree_b: DerivationTree
 ) -> DerivationTree:
     common_node = tree_a.get_root(True)
-    for a_path, b_path in zip(tree_a.get_choices_path(), tree_b.get_choices_path()):
+    for a_path, b_path in zip(
+        tree_a.get_choices_path(), tree_b.get_choices_path(), strict=False
+    ):
         if a_path.index == b_path.index:
             common_node = common_node.children[a_path.index]
         else:
@@ -427,9 +429,9 @@ class RepetitionBoundsConstraint(Constraint):
             if max_bounds_search.parent is not None:
                 parent = max_bounds_search.parent
                 index = index_by_reference(parent.children, max_bounds_search)
-                assert (
-                    index is not None and index > 0
-                ), "Invalid child index for bounds search"
+                assert index is not None and index > 0, (
+                    "Invalid child index for bounds search"
+                )
                 max_bounds_search = parent.children[index - 1]
             else:
                 max_bounds_search = None

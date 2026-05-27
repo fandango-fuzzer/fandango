@@ -1001,7 +1001,9 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             assert tree.symbol == cast(NonTerminalNode, cur_path[-1]).symbol
             disambiguation = disambiguator.visit(self.rules[tree.nonterminal])
             for inner_tree, path in zip(
-                tree.children, disambiguation[tuple(c.symbol for c in tree.children)]
+                tree.children,
+                disambiguation[tuple(c.symbol for c in tree.children)],
+                strict=False,
             ):
                 self.traverse_derivation(
                     inner_tree, disambiguator, paths, cur_path + path

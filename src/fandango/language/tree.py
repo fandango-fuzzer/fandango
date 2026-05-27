@@ -139,9 +139,9 @@ class DerivationTree:
         """
         if not isinstance(symbol, Symbol):
             raise TypeError(f"Expected Symbol, got {type(symbol)}")
-        assert isinstance(
-            symbol, (Terminal, NonTerminal, Slice)
-        ), f"Received symbol of type {type(symbol)}"
+        assert isinstance(symbol, (Terminal, NonTerminal, Slice)), (
+            f"Received symbol of type {type(symbol)}"
+        )
 
         self.hash_cache: Optional[int] = None
         self._parent = parent
@@ -179,9 +179,9 @@ class DerivationTree:
 
     @symbol.setter
     def symbol(self, symbol: Symbol) -> None:
-        assert isinstance(
-            symbol, (Terminal, NonTerminal, Slice)
-        ), f"Received symbol of type {type(symbol)}"
+        assert isinstance(symbol, (Terminal, NonTerminal, Slice)), (
+            f"Received symbol of type {type(symbol)}"
+        )
         self._symbol = symbol
         self.invalidate_hash()
 
@@ -739,10 +739,10 @@ class DerivationTree:
                     try:
                         # Fallback: If current node reference is not in parent.sources, try to get it by value.
                         source_idx = parent.sources.index(current)
-                    except ValueError:
+                    except ValueError as err:
                         raise StepException(
                             f"Cannot find {current.to_repr()} in parent.children: {parent.children} or parent.sources: {parent.sources}"
-                        )
+                        ) from err
                 else:
                     path.append(SourceStep(source_idx))
             current = parent

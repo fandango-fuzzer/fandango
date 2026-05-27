@@ -54,7 +54,7 @@ class PacketNavigator(GrammarNavigator):
 
         for suggested_tree, is_complete in self._parser.consume(history_nts):
             for orig_r_msg, r_msg in zip(
-                tree.protocol_msgs(), suggested_tree.protocol_msgs()
+                tree.protocol_msgs(), suggested_tree.protocol_msgs(), strict=False
             ):
                 assert isinstance(r_msg.msg.symbol, NonTerminal)
                 assert isinstance(orig_r_msg.msg.symbol, NonTerminal)

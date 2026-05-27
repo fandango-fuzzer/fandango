@@ -30,12 +30,12 @@ class StaticAnalysis:
         self.goal_bbid = None
         self.goal_module = None
         self.module_bbid_to_dbg: dict[ModuleName, dict[BasicBlockID, list[str]]] = {}
-        self.call_dist_to_target: dict[ModuleFunction, CallDistanceDict] = (
-            {}
-        )  # maps target (m,f) to the distances from each function to it
-        self.bb_dist_to_target: dict[ModuleBBID, BBDistanceDict] = (
-            {}
-        )  # maps target (m,bb) to the distances from each bb to it
+        self.call_dist_to_target: dict[
+            ModuleFunction, CallDistanceDict
+        ] = {}  # maps target (m,f) to the distances from each function to it
+        self.bb_dist_to_target: dict[
+            ModuleBBID, BBDistanceDict
+        ] = {}  # maps target (m,bb) to the distances from each bb to it
         self.total_bb_count: Union[int, None] = None
         self.setup()
         self.resolved: dict[str, str] = {}

@@ -632,7 +632,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
                                         mode=FuzzingMode.COMPLETE,
                                     )
                                 )
-                            except StopIteration:
+                            except StopIteration as err:
                                 all_allowed_packets = (
                                     self.population_manager.fuzzable_packets
                                     + self.population_manager.fallback_packets
@@ -645,7 +645,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
                                 )
                                 raise FandangoFailedError(
                                     f"Couldn't find solution for any packet: {nonterminals_str}"
-                                )
+                                ) from err
                     next_tree = evolve_result
                 else:
                     next_tree = solutions[0]
