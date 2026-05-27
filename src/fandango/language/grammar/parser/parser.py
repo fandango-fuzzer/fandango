@@ -1,10 +1,10 @@
+from collections.abc import Generator
 from copy import deepcopy
 from typing import Optional
-from collections.abc import Generator
 
 from fandango.language.grammar import ParsingMode
-from fandango.language.grammar.parser.iterative_parser import IterativeParser
 from fandango.language.grammar.nodes.node import Node
+from fandango.language.grammar.parser.iterative_parser import IterativeParser
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 

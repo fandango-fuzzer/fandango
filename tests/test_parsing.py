@@ -13,7 +13,8 @@ from fandango.language.grammar.parser.parser import Parser
 from fandango.language.parse.parse import parse
 from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
-from .utils import RESOURCES_ROOT, DOCS_ROOT, run_command
+
+from .utils import DOCS_ROOT, RESOURCES_ROOT, run_command
 
 
 class IterParsingTester(Parser):

@@ -39,7 +39,8 @@ repos:
                 src/fandango/language/parser/FandangoLexer.py|
                 src/fandango/language/parser/sa_fandango\.py|
                 src/fandango/language/parser/.*Parser.*\.py|
-                src/fandango/converters/antlr/ANTLRv4.*\.py
+                src/fandango/converters/antlr/ANTLRv4.*\.py|
+                evaluation/protocol_testing_eval/profuzzbench/.*
             )$
     -   id: mypy-strict
         name: mypy (strict for src/)
@@ -53,7 +54,8 @@ repos:
                 src/fandango/language/parser/FandangoLexer.py|
                 src/fandango/language/parser/sa_fandango\.py|
                 src/fandango/language/parser/.*Parser.*\.py|
-                src/fandango/converters/antlr/ANTLRv4.*\.py
+                src/fandango/converters/antlr/ANTLRv4.*\.py|
+                evaluation/protocol_testing_eval/profuzzbench/.*
             )$
 - repo: https://github.com/astral-sh/uv-pre-commit
   rev: 0.11.7 # Correspond to uv version

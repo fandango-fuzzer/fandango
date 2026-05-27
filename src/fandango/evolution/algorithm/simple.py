@@ -26,17 +26,17 @@ from fandango.io import FandangoIO
 from fandango.io.navigation.coverage_goal import CoverageGoal
 from fandango.io.navigation.packetselector import PacketSelector
 from fandango.io.packetparser import parse_next_remote_packet
-from fandango.language.symbols import NonTerminal
 from fandango.language.grammar import FuzzingMode
 from fandango.language.grammar.grammar import Grammar
+from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import (
     LOGGER,
     clear_visualization,
+    log_guidance_hint,
     log_message_transfer,
     print_exception,
     visualize_evaluation,
-    log_guidance_hint,
 )
 
 

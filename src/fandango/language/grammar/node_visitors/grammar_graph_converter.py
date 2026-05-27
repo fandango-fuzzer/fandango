@@ -1,15 +1,16 @@
 from __future__ import annotations
+
 import abc
 from typing import Optional
 
 from fandango.errors import FandangoError
-from fandango.language import NonTerminal, Terminal, DerivationTree
+from fandango.language import DerivationTree, NonTerminal, Terminal
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
-from fandango.language.grammar.nodes.repetition import Repetition, Plus, Option, Star
+from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
 
 

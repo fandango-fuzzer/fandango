@@ -1,7 +1,9 @@
 import time
+
 from antlr4.CommonTokenStream import CommonTokenStream
 from antlr4.InputStream import InputStream
 from antlr4.tree.Tree import ParseTree
+
 import fandango
 from fandango.language.parse.parser_error_listeners import (
     PythonAntlrErrorListener,
@@ -19,7 +21,9 @@ def parse_tree(filename: str, fan_contents: str) -> ParseTree:
         if fandango.Fandango.parser == "cpp":
             sa_fandango.USE_CPP_IMPLEMENTATION = True
             try:
-                from ..parser import sa_fandango_cpp_parser  # type: ignore[attr-defined]  # noqa: F401
+                from ..parser import (  # type: ignore[attr-defined]  # noqa: F401
+                    sa_fandango_cpp_parser,
+                )
             except ImportError:
                 raise ImportError(
                     "Requested C++ parser not available. "

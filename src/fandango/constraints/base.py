@@ -1,7 +1,7 @@
 import abc
 import itertools
-from typing import TYPE_CHECKING, Any, Optional, TypedDict
 import warnings
+from typing import TYPE_CHECKING, Any, Optional, TypedDict
 
 from fandango.language.search import Container, NonTerminalSearch
 from fandango.language.symbols.non_terminal import NonTerminal

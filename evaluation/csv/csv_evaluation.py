@@ -2,7 +2,7 @@ import csv
 import time
 from io import StringIO
 
-from fandango.evolution.algorithm import SimpleGeneticAlgorithm, LoggerLevel
+from fandango.evolution.algorithm import LoggerLevel, SimpleGeneticAlgorithm
 from fandango.language.parse.parse import parse
 
 

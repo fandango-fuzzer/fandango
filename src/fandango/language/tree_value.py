@@ -1,8 +1,9 @@
 from __future__ import annotations
+
+import enum
+import warnings
 from collections.abc import Callable
 from typing import Any, Optional
-import warnings
-import enum
 
 from fandango.errors import FandangoConversionError, FandangoValueError
 

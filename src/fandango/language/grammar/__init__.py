@@ -1,5 +1,6 @@
-from collections.abc import Collection
 import enum
+from collections.abc import Collection
+
 from thefuzz import process as thefuzz_process
 
 

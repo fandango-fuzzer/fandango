@@ -3,6 +3,7 @@ import re
 from collections import Counter
 
 import pytest
+
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.grammar_settings import GrammarSetting
 from fandango.language.grammar.nodes.alternative import Alternative

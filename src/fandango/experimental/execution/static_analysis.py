@@ -1,20 +1,20 @@
 import json
 import sys
-from typing import Union
 from pathlib import Path
+from typing import Union
 
 from fandango.experimental.execution.trace_types import (
-    CGType,
+    BasicBlockID,
+    BBDistanceDict,
+    CallDistanceDict,
+    Callee,
     CfgsType,
+    CGType,
+    ModuleBBID,
     ModuleBBToFType,
     ModuleFToFirstBBType,
-    ModuleName,
-    BasicBlockID,
     ModuleFunction,
-    CallDistanceDict,
-    ModuleBBID,
-    BBDistanceDict,
-    Callee,
+    ModuleName,
 )
 
 

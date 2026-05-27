@@ -1,18 +1,19 @@
 from collections.abc import Iterable
-from typing import Union, Optional
+from typing import Optional, Union
 
 from astar import AStar
+
 from fandango.errors import FandangoError
 from fandango.io.navigation.reachability_checker import ReachabilityChecker
 from fandango.language import DerivationTree, Grammar
 from fandango.language.grammar.grammar import KPath
-from fandango.language.symbols import Symbol, NonTerminal
 from fandango.language.grammar.node_visitors.grammar_graph_converter import (
-    GrammarGraphNode,
     EagerGrammarGraphNode,
     GrammarGraphConverter,
+    GrammarGraphNode,
 )
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.symbols import NonTerminal, Symbol
 
 
 class NavigatorTimedOutError(FandangoError):

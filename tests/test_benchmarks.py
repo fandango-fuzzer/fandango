@@ -1,12 +1,15 @@
 import itertools
-import pytest
 import sys
-from fandango.language.parse.parse import parse
+
+import pytest
+from pytest_benchmark.fixture import BenchmarkFixture
+
 from fandango.api import Fandango
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
+from fandango.language.parse.parse import parse
+
 from .utils import RESOURCES_ROOT
-from pytest_benchmark.fixture import BenchmarkFixture
 
 
 def test_parse_spec(benchmark: BenchmarkFixture):

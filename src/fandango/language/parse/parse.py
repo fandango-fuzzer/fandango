@@ -1,5 +1,5 @@
-from collections.abc import Container, Iterable
 import re
+from collections.abc import Container, Iterable
 from typing import IO, Optional
 
 from fandango.constraints.constraint import Constraint

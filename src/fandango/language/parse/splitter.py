@@ -1,12 +1,12 @@
-from collections.abc import Iterable
 import os
-from pathlib import Path
 import platform
+from collections.abc import Iterable
+from pathlib import Path
 from typing import Optional
 
-from fandango.language.parse.parse_tree import parse_tree
 from xdg_base_dirs import xdg_data_dirs, xdg_data_home
 
+from fandango.language.parse.parse_tree import parse_tree
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.parser.FandangoParserVisitor import FandangoParserVisitor
 from fandango.logger import LOGGER

@@ -1,7 +1,7 @@
-from abc import ABC, abstractmethod
-from collections.abc import Callable, Generator
 import enum
 import logging
+from abc import ABC, abstractmethod
+from collections.abc import Callable, Generator
 from typing import Optional
 
 from fandango.constraints.constraint import Constraint

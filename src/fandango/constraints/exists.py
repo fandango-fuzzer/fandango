@@ -1,6 +1,7 @@
-from copy import copy
 import itertools
+from copy import copy
 from typing import Any, Optional, Unpack
+
 from fandango.constraints import LEGACY
 from fandango.constraints.base import GeneticBaseInitArgs
 from fandango.constraints.constraint import Constraint

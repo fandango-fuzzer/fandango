@@ -3,7 +3,7 @@ from io import StringIO
 
 from docutils.core import publish_doctree
 
-from fandango.evolution.algorithm import SimpleGeneticAlgorithm, LoggerLevel
+from fandango.evolution.algorithm import LoggerLevel, SimpleGeneticAlgorithm
 from fandango.language.parse.parse import parse
 
 

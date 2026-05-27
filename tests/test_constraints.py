@@ -2,11 +2,11 @@
 
 import unittest
 
-
 from fandango.constraints.constraint import Constraint
+from fandango.language.parse.parse import parse
 from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
-from fandango.language.parse.parse import parse
+
 from .utils import RESOURCES_ROOT
 
 

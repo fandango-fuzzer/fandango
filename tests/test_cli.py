@@ -13,9 +13,9 @@ from unittest.mock import patch
 from fandango import DISTRIBUTION_NAME
 from fandango.cli import get_parser
 from fandango.cli.upgrade import (
+    Version,
     check_for_fandango_update,
     check_package_for_update,
-    Version,
     version,
 )
 

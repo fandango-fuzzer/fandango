@@ -1,5 +1,5 @@
-from .simple import SimpleGeneticAlgorithm
 from .base import GeneticAlgorithm, LoggerLevel
+from .simple import SimpleGeneticAlgorithm
 
 DefaultAlgorithm = SimpleGeneticAlgorithm
 

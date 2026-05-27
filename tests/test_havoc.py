@@ -1,6 +1,7 @@
 #!/usr/bin/env pytest
 
 from collections import Counter
+
 import pytest
 
 from fandango.evolution import havoc

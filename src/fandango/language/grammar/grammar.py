@@ -1,15 +1,14 @@
-import random
-from collections.abc import Generator, Iterator
-from collections import defaultdict
-from typing import Any, cast, Optional
-from collections.abc import Sequence
-import warnings
 import itertools
+import random
+import warnings
+from collections import defaultdict
+from collections.abc import Generator, Iterator, Sequence
+from typing import Any, Optional, cast
 
-
-from fandango.errors import FandangoValueError, FandangoParseError
-from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
+import fandango.language.grammar.nodes as nodes
+from fandango.errors import FandangoParseError, FandangoValueError
 from fandango.io.navigation.coverage_goal import CoverageGoal
+from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.language.grammar import FuzzingMode, ParsingMode, closest_match
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.literal_generator import LiteralGenerator
@@ -20,17 +19,11 @@ from fandango.language.grammar.nodes.char_set import CharSet
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
-import fandango.language.grammar.nodes as nodes
-from fandango.language.grammar.nodes.repetition import (
-    Option,
-    Plus,
-    Repetition,
-    Star,
-)
+from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.grammar.parser.parser import Parser
+from fandango.language.symbols import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree, TreeTuple
-from fandango.language.symbols import Symbol, Terminal, NonTerminal
 from fandango.language.tree_value import TreeValueType
 from fandango.logger import LOGGER
 

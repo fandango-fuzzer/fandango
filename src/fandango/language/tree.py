@@ -1,8 +1,8 @@
 import copy
-from collections import deque
-from typing import Any, Optional, TYPE_CHECKING, TypeVar, cast
-from collections.abc import Callable, Generator, Iterable, Iterator
 import warnings
+from collections import deque
+from collections.abc import Callable, Generator, Iterable, Iterator
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
 from fandango.language.symbols import NonTerminal, Slice, Symbol, Terminal
 from fandango.language.tree_value import (

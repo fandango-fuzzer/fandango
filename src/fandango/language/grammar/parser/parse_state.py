@@ -1,7 +1,7 @@
 from typing import Any, Optional
 
-from fandango.language.tree import DerivationTree
 from fandango.language.symbols import NonTerminal, Symbol
+from fandango.language.tree import DerivationTree
 
 ParserStateSymbolContent = tuple[Symbol, frozenset[tuple[str, Any]]]
 

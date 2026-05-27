@@ -4,19 +4,18 @@ import time
 import unittest
 from asyncio import Server
 
+from aiosmtpd.controller import Controller
 from aiosmtpd.handlers import Debugging
+from aiosmtpd.smtp import AuthResult, LoginPassword
 
-from fandango.io.navigation.coverage_goal import CoverageGoal
-from fandango.language.grammar import FuzzingMode
-from fandango.language.parse.parse import parse
 from fandango.evolution.algorithm import (
     DefaultAlgorithm,
     GeneticAlgorithm,
     LoggerLevel,
 )
-from aiosmtpd.controller import Controller
-from aiosmtpd.smtp import AuthResult, LoginPassword
-
+from fandango.io.navigation.coverage_goal import CoverageGoal
+from fandango.language.grammar import FuzzingMode
+from fandango.language.parse.parse import parse
 from tests.utils import EVALUATION_ROOT
 
 

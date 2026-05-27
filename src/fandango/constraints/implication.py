@@ -1,9 +1,10 @@
 from copy import copy
-from fandango.constraints.base import GeneticBaseInitArgs
-from fandango.constraints.constraint_visitor import ConstraintVisitor
 from typing import Any, Optional, Unpack
+
 from fandango import DerivationTree
+from fandango.constraints.base import GeneticBaseInitArgs
 from fandango.constraints.constraint import Constraint
+from fandango.constraints.constraint_visitor import ConstraintVisitor
 from fandango.constraints.failing_tree import NopSuggestion
 from fandango.constraints.fitness import ConstraintFitness
 from fandango.language.symbols.non_terminal import NonTerminal

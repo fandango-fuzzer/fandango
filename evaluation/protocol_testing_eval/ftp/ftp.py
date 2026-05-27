@@ -1,6 +1,6 @@
 import sys
 
-from fandango.evolution.algorithm import SimpleGeneticAlgorithm, LoggerLevel
+from fandango.evolution.algorithm import LoggerLevel, SimpleGeneticAlgorithm
 from fandango.language.grammar import FuzzingMode
 from fandango.language.parse.parse import parse
 
