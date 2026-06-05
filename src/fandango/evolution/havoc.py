@@ -472,7 +472,8 @@ class BytesSwapMutation(ByteLevelMutationOperator):
 
             input[second_start : second_start + len(first_temp)] = first_temp
             input[
-                second_start + len(first_temp) : second_start
+                second_start
+                + len(first_temp) : second_start
                 + len(first_temp)
                 + len(middle_temp)
             ] = middle_temp
@@ -495,7 +496,8 @@ class BytesSwapMutation(ByteLevelMutationOperator):
 
             input[first_start : first_start + len(second_temp)] = second_temp
             input[
-                first_start + len(second_temp) : first_start
+                first_start
+                + len(second_temp) : first_start
                 + len(second_temp)
                 + len(middle_temp)
             ] = middle_temp
