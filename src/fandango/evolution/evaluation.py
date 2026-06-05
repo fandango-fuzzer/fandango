@@ -1,5 +1,5 @@
 import random
-from typing import Optional, Union
+from typing import Optional
 from collections import Counter
 from collections.abc import Generator, Sequence, Callable
 
@@ -13,9 +13,6 @@ from fandango.constraints.failing_tree import (
     NopSuggestion,
     Suggestion,
 )
-from fandango.evolution import GeneratorWithReturn
-from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.language import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.language.grammar.grammar import Grammar, KPath
 from fandango.logger import LOGGER, print_exception
