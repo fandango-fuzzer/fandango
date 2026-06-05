@@ -139,9 +139,9 @@ class DerivationTree:
         """
         if not isinstance(symbol, Symbol):
             raise TypeError(f"Expected Symbol, got {type(symbol)}")
-        assert isinstance(
-            symbol, (Terminal, NonTerminal, Slice)
-        ), f"Received symbol of type {type(symbol)}"
+        assert isinstance(symbol, (Terminal, NonTerminal, Slice)), (
+            f"Received symbol of type {type(symbol)}"
+        )
 
         self.hash_cache: Optional[int] = None
         self._parent = parent
@@ -179,9 +179,9 @@ class DerivationTree:
 
     @symbol.setter
     def symbol(self, symbol: Symbol) -> None:
-        assert isinstance(
-            symbol, (Terminal, NonTerminal, Slice)
-        ), f"Received symbol of type {type(symbol)}"
+        assert isinstance(symbol, (Terminal, NonTerminal, Slice)), (
+            f"Received symbol of type {type(symbol)}"
+        )
         self._symbol = symbol
         self.invalidate_hash()
 
