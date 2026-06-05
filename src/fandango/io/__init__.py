@@ -953,9 +953,9 @@ class ProcessManager(object):
 
     def set_command(self, value: str | list[str], text: bool = True) -> None:
         """Sets the command to be executed to start the process."""
-        assert isinstance(
-            value, (str, list)
-        ), "Command must be a string or a list of strings"
+        assert isinstance(value, (str, list)), (
+            "Command must be a string or a list of strings"
+        )
         with self.lock:
             if self._command == value:
                 return
