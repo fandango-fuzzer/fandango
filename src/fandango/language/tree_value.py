@@ -105,9 +105,9 @@ def _attach_to_first_arg(
                 )
 
                 if len(args) == 0:
-                    assert len(kwargs) == 1, (
-                        f"Method {name} must have at least one unnamed argument or exactly one named argument"
-                    )
+                    assert (
+                        len(kwargs) == 1
+                    ), f"Method {name} must have at least one unnamed argument or exactly one named argument"
                     k, v = list(kwargs.items())[0]
                     # cannot import DerivationTree because of circular import
                     if v.__class__.__name__ == "DerivationTree":
@@ -136,9 +136,7 @@ def _attach_to_first_arg(
                 str,
                 bytes,
                 int,
-            ], (
-                f"Cannot determine the type the base should be converted to based on argument of type {base_type.__name__}"
-            )
+            ], f"Cannot determine the type the base should be converted to based on argument of type {base_type.__name__}"
 
             base = base_type(self)
             return getattr(base, name)(*args, **kwargs)
@@ -352,22 +350,22 @@ class TreeValue:
         self._value: Optional[str | bytes]
         if trailing_bits is None:
             trailing_bits = []
-        assert all(bit & 1 == bit for bit in trailing_bits), (
-            "trailing bits must be 0 or 1, got " + str(trailing_bits)
-        )
+        assert all(
+            bit & 1 == bit for bit in trailing_bits
+        ), "trailing bits must be 0 or 1, got " + str(trailing_bits)
 
         if isinstance(value, int):
-            assert value & 1 == value, (
-                "ints are used for bit values, and must thus be 0 or 1"
-            )
+            assert (
+                value & 1 == value
+            ), "ints are used for bit values, and must thus be 0 or 1"
             assert trailing_bits == [], "trailing bits are not supported for int values"
             trailing_bits = [value]
             value = None
 
         if value is None:
-            assert allow_empty or len(trailing_bits) > 0, (
-                "None values must have trailing bits"
-            )
+            assert (
+                allow_empty or len(trailing_bits) > 0
+            ), "None values must have trailing bits"
 
         self._value = value
         self._trailing_bits = trailing_bits

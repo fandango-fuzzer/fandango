@@ -5,6 +5,8 @@ from collections import defaultdict
 from collections.abc import Generator, Iterator, Sequence
 from typing import Any, Optional, cast
 
+from cachetools import LRUCache
+
 import fandango.language.grammar.nodes as nodes
 from fandango.errors import FandangoParseError, FandangoValueError
 from fandango.io.navigation.coverage_goal import CoverageGoal
@@ -48,10 +50,12 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         self._local_variables = local_variables or {}
         self._global_variables = global_variables or {}
         self._parser = Parser(self.rules)
-        self._k_path_cache: dict[
+        self._k_path_cache: LRUCache[
             tuple[NonTerminal, bool, CoverageGoal], list[set[tuple[Symbol, ...]]]
-        ] = dict()
-        self._tree_k_path_cache: dict[int, set[tuple[Symbol, ...]]] = dict()
+        ] = LRUCache(maxsize=10_000)
+        self._tree_k_path_cache: LRUCache[int, set[tuple[Symbol, ...]]] = LRUCache(
+            maxsize=10_000
+        )
 
     @property
     def grammar_settings(self) -> Sequence[HasSettings]:

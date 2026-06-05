@@ -79,7 +79,7 @@ class Value(GeneticBase):
             global_variables=global_variables,
         )
         self.expression = expression
-        self.cache = LRUCache[int, ValueFitness](maxsize=1000)
+        self.cache = LRUCache[int, ValueFitness](maxsize=10_000)
 
     def fitness(
         self,

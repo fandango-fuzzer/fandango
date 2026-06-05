@@ -3,6 +3,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Collection
 from typing import TYPE_CHECKING, Any, Optional
 
+from cachetools import LRUCache
+
 from fandango.constraints.base import GeneticBase
 from fandango.constraints.fitness import ConstraintFitness
 from fandango.language.search import NonTerminalSearch
@@ -31,7 +33,7 @@ class Constraint(GeneticBase, ABC):
         :param Optional[dict[str, Any]] global_variables: The global variables to use.
         """
         super().__init__(searches, local_variables, global_variables)
-        self.cache: dict[int, ConstraintFitness] = dict()
+        self.cache: LRUCache[int, ConstraintFitness] = LRUCache(maxsize=10_000)
 
     @abstractmethod
     def fitness(

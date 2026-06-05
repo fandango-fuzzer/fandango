@@ -2,6 +2,8 @@ from collections.abc import Generator
 from copy import deepcopy
 from typing import Optional
 
+from cachetools import LRUCache
+
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.parser.iterative_parser import IterativeParser
@@ -12,7 +14,7 @@ from fandango.language.tree import DerivationTree
 class Parser:
     def __init__(self, grammar_rules: dict[NonTerminal, Node]):
         self._iter_parser = IterativeParser(grammar_rules)
-        self._cache: dict[
+        self._cache: LRUCache[
             tuple[
                 str | bytes,
                 NonTerminal,
@@ -20,7 +22,7 @@ class Parser:
                 Optional[DerivationTree],
             ],
             list[DerivationTree],
-        ] = {}
+        ] = LRUCache(maxsize=10_000)
 
     def _parse_forest(
         self,
