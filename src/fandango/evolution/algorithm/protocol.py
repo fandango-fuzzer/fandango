@@ -125,6 +125,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             selected_packet_max_generations = int(max_generations / 3)
             overall_max_generations = max_generations - selected_packet_max_generations
 
+        self._packet_algorithm.reset()
         try:
             solutions = [
                 next(

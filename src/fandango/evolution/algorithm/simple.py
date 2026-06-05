@@ -485,6 +485,8 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
 
     def reset(self):
         self.evaluator.flush_fitness_cache()
+        self.evaluator._solution_set.clear()
+        self.evaluator._fitness_cache.clear()
         self.population.clear()
         self._initial_solutions.clear()
         self.adaptive_tuner.reset_parameters()
