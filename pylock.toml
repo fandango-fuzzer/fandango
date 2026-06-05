@@ -623,10 +623,10 @@ wheels = [{ url = "https://files.pythonhosted.org/packages/63/90/89fdfc6f426cc64
 
 [[packages]]
 name = "faker"
-version = "40.18.0"
+version = "40.19.1"
 index = "https://pypi.org/simple"
-sdist = { url = "https://files.pythonhosted.org/packages/18/06/70886e82d8f1d2b73454f3a7c1b7405300128df22e70d85a828951366932/faker-40.18.0.tar.gz", upload-time = 2026-05-14T16:43:04Z, size = 1968243, hashes = { sha256 = "2207575c0e8f90e6ccd6dbef764de875c614d16d3db4eee9712d9a00087f2e70" } }
-wheels = [{ url = "https://files.pythonhosted.org/packages/84/0b/5c0b2d3a4b7a715f1835dd3f963bfbe841a02ae5cad1df8ee0325dfad235/faker-40.18.0-py3-none-any.whl", upload-time = 2026-05-14T16:43:02Z, size = 2006355, hashes = { sha256 = "61a6b94b74605ddb090a065deb197a1c585ae7a874c094cf6693671d271e6083" } }]
+sdist = { url = "https://files.pythonhosted.org/packages/15/01/28c8ddae8caaf82c929655000963d83e3f01265a9af34e823c2ef2eee8ac/faker-40.19.1.tar.gz", upload-time = 2026-05-22T15:57:37Z, size = 1969318, hashes = { sha256 = "76fa71fd3bf320db25e5504eb356f9a76b8a95cd6098524d006f446035b6b89d" } }
+wheels = [{ url = "https://files.pythonhosted.org/packages/49/b4/40a1ec12ec834604f3848143343baf1c67bc9a1096e401907eaa0d25876a/faker-40.19.1-py3-none-any.whl", upload-time = 2026-05-22T15:57:35Z, size = 2007643, hashes = { sha256 = "265259b37c013838baaae34940207288170df385d6c5281413fce56a3504d580" } }]
 
 [[packages]]
 name = "fandango-fuzzer"
@@ -1903,10 +1903,10 @@ wheels = [{ url = "https://files.pythonhosted.org/packages/1e/34/977a29ab1a0f85d
 
 [[packages]]
 name = "pytest-rerunfailures"
-version = "16.2"
+version = "16.3"
 index = "https://pypi.org/simple"
-sdist = { url = "https://files.pythonhosted.org/packages/6b/27/fd0209642f3a1069da3e0be3c7e339f942d052d81ccb1fb4eb9b187d3633/pytest_rerunfailures-16.2.tar.gz", upload-time = 2026-05-13T08:13:26Z, size = 32121, hashes = { sha256 = "5f5a32f15674a3d54f7598388fcd3cc1bc5c37284731a4704a44485dcdda5e23" } }
-wheels = [{ url = "https://files.pythonhosted.org/packages/3f/a5/d8c1ad74529b483044b787ead2d24ecc624bca4084a509002102e4bab8cc/pytest_rerunfailures-16.2-py3-none-any.whl", upload-time = 2026-05-13T08:13:25Z, size = 14505, hashes = { sha256 = "c22a53d2827becc76f057d4ded123c0e726523f2f0e5f0bb4efb31fd59e1f14e" } }]
+sdist = { url = "https://files.pythonhosted.org/packages/4d/f0/74f8e685be7ecd1572c1256132f18fce3a665d7e07649a3f23b7eb2d3bec/pytest_rerunfailures-16.3.tar.gz", upload-time = 2026-05-22T06:51:22Z, size = 34148, hashes = { sha256 = "37c9b1231c8083e9f4e724f50f7a21241822f9516c15c700ebbf218d6452355c" } }
+wheels = [{ url = "https://files.pythonhosted.org/packages/f8/98/58a71d68d3126d7f6a6ed1944c37ec207a4ff3dc66cad3bed7b59d38df61/pytest_rerunfailures-16.3-py3-none-any.whl", upload-time = 2026-05-22T06:51:20Z, size = 15396, hashes = { sha256 = "6bdfb8ffb46c46072e6c16bdedee38b6c13eac620d9415ed5b63152cbf283170" } }]
 
 [[packages]]
 name = "pytest-timeout"
