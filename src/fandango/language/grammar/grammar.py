@@ -52,9 +52,9 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         self._parser = Parser(self.rules)
         self._k_path_cache: LRUCache[
             tuple[NonTerminal, bool, CoverageGoal], list[set[tuple[Symbol, ...]]]
-        ] = LRUCache(maxsize=10_000)
+        ] = LRUCache(maxsize=100_000)
         self._tree_k_path_cache: LRUCache[int, set[tuple[Symbol, ...]]] = LRUCache(
-            maxsize=10_000
+            maxsize=100_000
         )
 
     @property
