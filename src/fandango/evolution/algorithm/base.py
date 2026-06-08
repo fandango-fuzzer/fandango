@@ -23,8 +23,8 @@ class LoggerLevel(enum.Enum):
     CRITICAL = logging.CRITICAL
 
 
-DEFAULT_CROSSOVER_OPERATOR = SimpleSubtreeCrossover()
-DEFAULT_MUTATION_OPERATOR = SimpleMutation()
+DEFAULT_CROSSOVER_OPERATOR: CrossoverOperator = SimpleSubtreeCrossover()
+DEFAULT_MUTATION_OPERATOR: MutationOperator = SimpleMutation()
 
 
 class GeneticAlgorithm(ABC):
