@@ -10,6 +10,7 @@ from fandango.constraints.fitness import ConstraintFitness
 from fandango.language.search import NonTerminalSearch
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
+from fandango.utils import cache_size
 
 if TYPE_CHECKING:
     from fandango.constraints.constraint_visitor import ConstraintVisitor
@@ -33,7 +34,7 @@ class Constraint(GeneticBase, ABC):
         :param Optional[dict[str, Any]] global_variables: The global variables to use.
         """
         super().__init__(searches, local_variables, global_variables)
-        self.cache: LRUCache[int, ConstraintFitness] = LRUCache(maxsize=10_000)
+        self.cache: LRUCache[int, ConstraintFitness] = LRUCache(maxsize=cache_size())
 
     @abstractmethod
     def fitness(

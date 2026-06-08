@@ -20,6 +20,7 @@ from fandango.language import NonTerminal
 from fandango.language.grammar.grammar import Grammar, KPath
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER, print_exception
+from fandango.utils import cache_size
 
 
 class Evaluator:
@@ -46,7 +47,7 @@ class Evaluator:
         self._warnings_are_errors = warnings_are_errors
         self._fitness_cache: LRUCache[
             int, tuple[float, list[FailingTree], Suggestion]
-        ] = LRUCache(maxsize=10_000)
+        ] = LRUCache(maxsize=cache_size())
         self._solution_set: set[int] = set()
         self._checks_made = 0
         self._stop_criterion = stop_criterion

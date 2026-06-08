@@ -28,6 +28,7 @@ from fandango.language.symbols import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree, TreeTuple
 from fandango.language.tree_value import TreeValueType
 from fandango.logger import LOGGER
+from fandango.utils import cache_size
 
 KPath = tuple[Symbol, ...]
 
@@ -52,9 +53,9 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         self._parser = Parser(self.rules)
         self._k_path_cache: LRUCache[
             tuple[NonTerminal, bool, CoverageGoal], list[set[tuple[Symbol, ...]]]
-        ] = LRUCache(maxsize=100_000)
+        ] = LRUCache(maxsize=cache_size())
         self._tree_k_path_cache: LRUCache[int, set[tuple[Symbol, ...]]] = LRUCache(
-            maxsize=100_000
+            maxsize=cache_size()
         )
 
     @property

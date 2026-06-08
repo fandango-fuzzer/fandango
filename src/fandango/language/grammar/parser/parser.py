@@ -9,6 +9,7 @@ from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.parser.iterative_parser import IterativeParser
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
+from fandango.utils import cache_size
 
 
 class Parser:
@@ -22,7 +23,7 @@ class Parser:
                 Optional[DerivationTree],
             ],
             list[DerivationTree],
-        ] = LRUCache(maxsize=10_000)
+        ] = LRUCache(maxsize=cache_size())
 
     def _parse_forest(
         self,
