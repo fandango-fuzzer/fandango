@@ -43,6 +43,8 @@ def output(
         return convert(tree.to_grammar())
     if args.format == "value":
         return convert(tree.to_value())
+    if args.format == "1":
+        return convert("1")
     if args.format == "none":
         return convert("")
 

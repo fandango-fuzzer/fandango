@@ -231,6 +231,24 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
         self.assertEqual(expected, err, err)
         self.assertEqual(0, code, code)
 
+    def test_format_one(self):
+        command = [
+            "fandango",
+            "fuzz",
+            "-f",
+            str(RESOURCES_ROOT / "digit.fan"),
+            "-n",
+            "5",
+            "--format=1",
+            "--random-seed",
+            "426912",
+            "--no-cache",
+        ]
+        out, err, code = run_command(command)
+        self.assertEqual(0, code, code)
+        self.assertEqual(err, "", err)
+        self.assertEqual(["1"] * 5, out.strip().split("\n"))
+
     def test_binfinity(self):
         command = [
             "fandango",
