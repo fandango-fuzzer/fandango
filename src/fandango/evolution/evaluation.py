@@ -3,6 +3,8 @@ from collections import Counter
 from collections.abc import Callable, Generator, Sequence
 from typing import Optional, Union
 
+from cachetools import LRUCache
+
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.failing_tree import (
     ApplyAllSuggestions,
@@ -18,6 +20,7 @@ from fandango.language import NonTerminal
 from fandango.language.grammar.grammar import Grammar, KPath
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER, print_exception
+from fandango.utils import cache_size
 
 
 class Evaluator:
@@ -42,7 +45,9 @@ class Evaluator:
         self._diversity_k = diversity_k
         self._diversity_weight = diversity_weight
         self._warnings_are_errors = warnings_are_errors
-        self._fitness_cache: dict[int, tuple[float, list[FailingTree], Suggestion]] = {}
+        self._fitness_cache: LRUCache[
+            int, tuple[float, list[FailingTree], Suggestion]
+        ] = LRUCache(maxsize=cache_size())
         self._solution_set: set[int] = set()
         self._checks_made = 0
         self._stop_criterion = stop_criterion
@@ -96,9 +101,11 @@ class Evaluator:
         :param population: The population to compute the mutation pool for.
         :return: The mutation pool.
         """
-        weights = [
-            self._fitness_cache[hash((ind.get_root(), ind))][0] for ind in population
-        ]
+        weights = []
+        for ind in population:
+            gen = GeneratorWithReturn(self.evaluate_individual(ind))
+            gen.collect()
+            weights.append(gen.return_value[0])
         if not all(w == 0 for w in weights):
             return random.choices(population, weights=weights, k=len(population))
         else:
@@ -109,7 +116,7 @@ class Evaluator:
         For soft constraints, the normalized fitness may change over time as we observe more inputs, this method flushes the fitness cache if the grammar contains any soft constraints.
         """
         if len(self._soft_constraints) > 0:
-            self._fitness_cache = {}
+            self._fitness_cache.clear()
 
     def compute_diversity_bonus(
         self,
