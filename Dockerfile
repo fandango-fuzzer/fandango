@@ -1,32 +1,28 @@
-# Use a base image with Python 3.11
-FROM python:3.11-slim
+# =============
+# Builder image
+# =============
+FROM ghcr.io/astral-sh/uv:0.11.7-python3.14-trixie-slim AS builder
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
-# Set the working directory inside the container
-WORKDIR /app
-
-# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libffi-dev \
-    libssl-dev \
-    && apt-get clean \
+    build-essential cmake \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy pyproject.toml and other required files
-COPY pyproject.toml README.md LICENSE.md Makefile SECURITY.md /app/
+WORKDIR /app
+COPY pyproject.toml uv.lock setup.py CMakeLists.txt README.md LICENSE.md SECURITY.md ./
+COPY src/ src/
 
-# Install pip, setuptools, wheel, and build
-RUN python -m pip install --upgrade pip setuptools wheel build
+ENV FANDANGO_REQUIRE_BINARY_BUILD=1
+RUN uv sync --frozen --no-dev --no-editable
 
-# Copy the entire project into the container
-COPY . /app
+# =============
+# Runtime image
+# =============
+FROM python:3.14-slim-trixie
 
-# Build the package and install the wheel
-RUN python -m build && pip install dist/*.whl
+WORKDIR /app
+COPY --from=builder /app/pyproject.toml /app/uv.lock ./
+COPY --from=builder /app/.venv /app/.venv
 
-# Keep the container running with a long-running process
-CMD ["tail", "-f", "/dev/null"]
+ENV PATH="/app/.venv/bin:$PATH"
+
+CMD ["fandango"]
