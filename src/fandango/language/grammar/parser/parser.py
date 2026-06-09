@@ -92,14 +92,13 @@ class Parser:
         ):
             tree = self._iter_parser.to_derivation_tree(tree)
             parsed_forest.append(tree)
+            self._cache[cache_key] = parsed_forest
             if include_controlflow:
                 yield tree
             else:
                 collapsed = self.collapse(tree)
                 if collapsed is not None:
                     yield collapsed
-        if parsed_forest:
-            self._cache[cache_key] = parsed_forest
 
     def parse_multiple(
         self,
