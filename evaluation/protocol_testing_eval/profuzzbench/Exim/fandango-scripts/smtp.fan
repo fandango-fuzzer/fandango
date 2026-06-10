@@ -5,18 +5,12 @@ from datetime import datetime, timezone
 # ---------------------------------------------------------------------------
 # Helper functions
 # ---------------------------------------------------------------------------
-def plain_token():
-    # SASL PLAIN: authzid \0 authcid \0 passwd
-    return base64.b64encode(b"\x00the_user\x00the_password").decode("utf-8")
-
 def format_date(unix_time):
     dt = datetime.fromtimestamp(unix_time, tz=timezone.utc)
     return dt.strftime("%a, %d %b %Y %H:%M:%S %z")
 
-def build_bdat_last(msg):
-    # CHUNKING (RFC 3030): the BDAT size MUST equal the chunk's byte length.
-    body = str(msg)
-    return "BDAT " + str(len(body.encode("utf-8"))) + " LAST\r\n" + body
+def encode64(s):
+    return base64.b64encode(str(s).encode("utf-8")).decode("utf-8")
 
 
 <start> ::= <Server:reply> <greeted>
@@ -27,13 +21,39 @@ def build_bdat_last(msg):
 <ehlo_cmd> ::= 'EHLO ' <domain> <crlf>
 <helo_cmd> ::= 'HELO ' <domain> <crlf>
 
-# Either authenticate first or not (modelled as a choice, not a packet-level '?').
-<post_hello> ::= <auth_exchange> <activity> <quit_exchange> | <activity> <quit_exchange>
+# Proper SMTP state machine. After EHLO the session is UNAUTHENTICATED: only AUTH
+# and session/informational commands (NOOP/HELP/RSET/VRFY/EXPN) are valid there.
+# Mail (MAIL/RCPT/DATA) and ETRN are only issued once AUTHENTICATED. This keeps
+# every command within the protocol state in which it is valid.
+<post_hello> ::= <unauth_state>
+
+<unauth_state> ::= <login_ok> <authed_state> \
+                 | <login_fail> <unauth_state> \
+                 | <Client:noop_cmd> <Server:reply> <unauth_state> \
+                 | <Client:help_cmd> <Server:help_reply> <unauth_state> \
+                 | <Client:rset_cmd> <Server:reply> <unauth_state> \
+                 | <Client:vrfy_cmd> <Server:reply> <unauth_state> \
+                 | <Client:expn_cmd> <Server:reply> <unauth_state> \
+                 | <quit_exchange>
+
+<authed_state> ::= <mail_transaction> <authed_state> \
+                 | <Client:noop_cmd> <Server:reply> <authed_state> \
+                 | <Client:help_cmd> <Server:help_reply> <authed_state> \
+                 | <Client:rset_cmd> <Server:reply> <authed_state> \
+                 | <Client:vrfy_cmd> <Server:reply> <authed_state> \
+                 | <Client:expn_cmd> <Server:reply> <authed_state> \
+                 | <Client:etrn_cmd> <Server:reply> <authed_state> \
+                 | <quit_exchange>
+
 <quit_exchange> ::= <Client:quit_cmd> <Server:reply>
 <quit_cmd> ::= 'QUIT' <crlf>
 
 # ---- Authentication --------------------------------------------------------
-<auth_exchange> ::= <auth_login_ok> | <auth_login_bad> | <auth_plain_ok> | <auth_plain_bad>
+# A successful login moves to the authenticated state; a failed one stays
+# unauthenticated. Only AUTH LOGIN is used: it is the only mechanism Exim
+# advertises here (AUTH PLAIN returns 504, so it would not be within protocol).
+<login_ok> ::= <auth_login_ok>
+<login_fail> ::= <auth_login_bad>
 
 <auth_login_ok> ::= <Client:auth_login_cmd> <Server:reply> \
                     <Client:user_ok> <Server:reply> \
@@ -44,25 +64,16 @@ def build_bdat_last(msg):
 <auth_login_cmd> ::= 'AUTH LOGIN' <crlf>
 <user_ok> ::= 'dGhlX3VzZXI=' <crlf>
 <pass_ok> ::= 'dGhlX3Bhc3N3b3Jk' <crlf>
-<user_any> ::= <b64> <crlf>
-<pass_bad> ::= <b64> <crlf>
+# Wrong credentials must be VALID base64, otherwise Exim aborts the AUTH exchange
+# with "501 Invalid base64 data" before the password step and the session desyncs.
+# Encoding a random word guarantees decodable base64 (and is almost never the real
+# user/password), so the server proceeds to the 535 auth-failure path.
+<user_any> ::= <wrong_b64> <crlf>
+<pass_bad> ::= <wrong_b64> <crlf>
+<wrong_b64> ::= r'[A-Za-z0-9+/]+={0,2}' := encode64(<wrong_word>)
+<wrong_word> ::= r'[a-zA-Z0-9_]{1,16}'
 
-<auth_plain_ok> ::= <Client:auth_plain_ok_cmd> <Server:reply>
-<auth_plain_bad> ::= <Client:auth_plain_bad_cmd> <Server:reply>
-<auth_plain_ok_cmd> ::= 'AUTH PLAIN ' <plain_ok> <crlf>
-<auth_plain_bad_cmd> ::= 'AUTH PLAIN ' <b64> <crlf>
-<plain_ok> ::= <b64> := plain_token()
-
-# ---- Activity: a recursive sequence of transactions and stand-alone commands
-<activity> ::= <action> <activity> | <action>
-<action> ::= <mail_transaction> \
-           | <Client:vrfy_cmd> <Server:reply> \
-           | <Client:expn_cmd> <Server:reply> \
-           | <Client:etrn_cmd> <Server:reply> \
-           | <Client:noop_cmd> <Server:reply> \
-           | <Client:help_cmd> <Server:help_reply> \
-           | <Client:rset_cmd> <Server:reply>
-
+# ---- Session / informational commands (valid in either state) --------------
 <vrfy_cmd> ::= 'VRFY ' <vrfy_arg> <crlf>
 <vrfy_arg> ::= <mailbox> | <local_part>
 <expn_cmd> ::= 'EXPN ' <local_part> <crlf>
@@ -82,13 +93,14 @@ def build_bdat_last(msg):
 <reverse_path> ::= <mailbox> | ''            # MAIL FROM:<> is a valid (bounce) sender
 # Each ESMTP parameter appears at most once, in a fixed order (all inside this
 # one client packet, so '?' here is safe for the navigator).
-<mail_params> ::= <p_size> <p_body> <p_ret> <p_envid> <p_auth> <p_prdr>
+# (PRDR is omitted: it makes Exim emit an extra per-recipient response sequence
+# after DATA that this single-reply data phase does not model.)
+<mail_params> ::= <p_size> <p_body> <p_ret> <p_envid> <p_auth>
 <p_size> ::= ' SIZE=' <number> | ''
 <p_body> ::= ' BODY=' <body_type> | ''
 <p_ret> ::= ' RET=' <ret_value> | ''
 <p_envid> ::= ' ENVID=' <xtext> | ''
 <p_auth> ::= ' AUTH=<>' | ''
-<p_prdr> ::= ' PRDR' | ''
 <body_type> ::= '7BIT' | '8BITMIME'
 <ret_value> ::= 'FULL' | 'HDRS'
 
@@ -109,10 +121,22 @@ def build_bdat_last(msg):
 
 # ---- Message content (headers + body) --------------------------------------
 <mail_content> ::= <headers> <crlf> <body>
-<headers> ::= <h_from> <h_to> <opt_headers>
-<opt_headers> ::= <opt_header> <opt_headers> | <opt_header>
-<opt_header> ::= <h_subject> | <h_cc> | <h_replyto> | <h_sender> | <h_date> \
-               | <h_messageid> | <h_mime> | <h_ctype> | <h_cte> | <h_xheader>
+# Mandatory From/To plus each optional header at most once in a fixed order.
+# (Bounded instead of open recursion over header types: the same Exim header
+# parsing is exercised, but the k-path set is finite and fully coverable, so the
+# STATE_INPUTS goal can actually complete.)
+<headers> ::= <h_from> <h_to> <oh_subject> <oh_cc> <oh_replyto> <oh_sender> \
+              <oh_date> <oh_messageid> <oh_mime> <oh_ctype> <oh_cte> <oh_xheader>
+<oh_subject> ::= <h_subject> | ''
+<oh_cc> ::= <h_cc> | ''
+<oh_replyto> ::= <h_replyto> | ''
+<oh_sender> ::= <h_sender> | ''
+<oh_date> ::= <h_date> | ''
+<oh_messageid> ::= <h_messageid> | ''
+<oh_mime> ::= <h_mime> | ''
+<oh_ctype> ::= <h_ctype> | ''
+<oh_cte> ::= <h_cte> | ''
+<oh_xheader> ::= <h_xheader> | ''
 <h_from> ::= 'From: ' <mailbox> <crlf>
 <h_to> ::= 'To: ' <mailbox> <crlf>
 <h_cc> ::= 'Cc: ' <mailbox> <crlf>
@@ -129,8 +153,10 @@ def build_bdat_last(msg):
 <cte_value> ::= '7bit' | '8bit' | 'base64' | 'quoted-printable'
 <date_value> ::= <formatted_date> := format_date(random.randint(1, 2147483647))
 <formatted_date> ::= r'[A-Za-z0-9:+, ]+'
-<body> ::= <body_line> <body_more>
-<body_more> ::= <body_line> <body_more> | ''
+# Body bounded to 1-3 lines (finite k-paths, still exercises body reception).
+<body> ::= <body_line> <body_line2> <body_line3>
+<body_line2> ::= <body_line> | ''
+<body_line3> ::= <body_line> | ''
 <body_line> ::= <safe_text> <crlf>
 
 # ---- Lexical primitives ----------------------------------------------------
@@ -142,7 +168,6 @@ def build_bdat_last(msg):
 <number> ::= r'[1-9][0-9]{0,6}'
 <token> ::= r'[A-Za-z0-9\-]{1,16}'
 <xtext> ::= r'[A-Za-z0-9]{1,24}'
-<b64> ::= r'[A-Za-z0-9+/]{2,40}={0,2}'
 <printable> ::= r'[A-Za-z0-9 _.\-]{1,40}'
 <safe_text> ::= r'[A-Za-z0-9 _.\-]{0,60}'
 <crlf> ::= '\r\n'

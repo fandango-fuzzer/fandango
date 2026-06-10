@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Copy the local Fandango checkout into the build context, then build.
+./sync-fandango.sh
 docker build . -f Dockerfile-fandango -t exim-fandango
 
 docker run --rm -it \

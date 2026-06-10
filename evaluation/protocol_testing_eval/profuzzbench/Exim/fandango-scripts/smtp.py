@@ -8,7 +8,7 @@ from fandango.language.grammar import FuzzingMode
 from fandango.language.parse.parse import parse
 
 # Guidance (A* k-path navigation) can be toggled via env for experimentation.
-GUIDANCE = os.environ.get("FANDANGO_GUIDANCE", "0") == "1"
+GUIDANCE = os.environ.get("FANDANGO_GUIDANCE", "1") == "1"
 
 
 def run_once():
@@ -18,8 +18,8 @@ def run_once():
     fandango = Fandango(
         grammar=grammar,
         constraints=constraints,
-        logger_level=LoggerLevel.INFO,
-        coverage_goal=CoverageGoal.STATE_INPUTS_OUTPUTS,
+        logger_level=LoggerLevel.DEBUG,
+        coverage_goal=CoverageGoal.STATE_INPUTS,
     )
     fandango.coverage_log_interval = 10
     fandango.enable_guidance(GUIDANCE)
@@ -30,15 +30,8 @@ def run_once():
 def main():
     sys.setrecursionlimit(10**6)
     start = time.time()
-    runs = 0
-    try:
-        while True:
-            run_once()
-            runs += 1
-    except KeyboardInterrupt:
-        pass
-    finally:
-        print("Completed %d generate() passes in %.1f s." % (runs, time.time() - start))
+    run_once()
+    print("Done in %.1f s." % (time.time() - start))
 
 
 if __name__ == "__main__":
