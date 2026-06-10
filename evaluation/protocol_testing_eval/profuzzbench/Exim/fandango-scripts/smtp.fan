@@ -1,133 +1,172 @@
 import base64
-import socket
-from datetime import datetime, timezone
 import random
+from datetime import datetime, timezone
 
-def format_unix_time(unix_time):
+# ---------------------------------------------------------------------------
+# Helper functions
+# ---------------------------------------------------------------------------
+def plain_token():
+    # SASL PLAIN: authzid \0 authcid \0 passwd
+    return base64.b64encode(b"\x00the_user\x00the_password").decode("utf-8")
+
+def format_date(unix_time):
     dt = datetime.fromtimestamp(unix_time, tz=timezone.utc)
-    return dt.strftime('%a, %d %b %Y %H:%M:%S %z')
+    return dt.strftime("%a, %d %b %Y %H:%M:%S %z")
 
-def str_to_unix_time(unix_time_formatted):
-    dt = datetime.strptime(unix_time_formatted, '%a, %d %b %Y %H:%M:%S %z')
-    return int(dt.timestamp())
-
-def encode64(input):
-    return base64.b64encode(str(input).encode('utf-8')).decode('utf-8')
-
-def decode64(input):
-    return base64.b64decode(str(input).encode('utf-8')).decode('utf-8')
-
-<start> ::= <state_setup>
-
-# When setting up the connection the server sends a id message and exchange an ehlo. Afterwards the grammar leads over to <state_logged_out>.
-<state_setup> ::= <Server:response_setup><Client:request_ehlo><Server:response_ehlo><state_logged_out>
-
-# In state logged out the grammar accepts either a failing or a successful login.
-<state_logged_out> ::= <exchange_login_valid> | <exchange_login_invalid>
-
-# When logged in the grammar accepts either a quit (terminating the connection) or a mail exchange.
-<state_logged_in> ::= ((<exchange_mail> | <exchange_help> | <exchange_noop>) <state_logged_in>) | <exchange_quit>
-
-# A successful login consist of the correct username and password and leads to the logged in state.
-<exchange_login_valid> ::= <Client:request_auth><Server:response_auth_expect_user><Client:request_auth_user_correct><Server:response_auth_expect_pass> \
-    <Client:request_auth_pass_correct><Server:response_auth_success><state_logged_in>
-
-# A failed login consist of incorrect username and incorrect password, incorrect username and correct
-# password or correct username and incorrect password. The rule ends with the fuzzer going back into the logged out state.
-<exchange_login_invalid> ::= <Client:request_auth><Server:response_auth_expect_user> \
-                          ((<Client:request_auth_user_correct> \
-                            <Server:response_auth_expect_pass> \
-                            <Client:request_auth_pass_incorrect> \
-                          ) \
-                               | \
-                          (<Client:request_auth_user_incorrect> \
-                            <Server:response_auth_expect_pass> \
-                            (<Client:request_auth_pass_incorrect>|<Client:request_auth_pass_correct>) \
-                          )) \
-                           <Server:response_auth_fail><state_logged_out>
-
-<request_auth> ::= 'AUTH LOGIN\r\n'
-<response_auth_expect_user> ::= '334 ' r'[^\r\n]+' '\r\n'
-<request_auth_user_correct> ::= 'dGhlX3VzZXI=\r\n'
-<request_auth_user_incorrect> ::= <user_incorrect_64> '\r\n'
-<response_auth_expect_pass> ::= '334 ' r'[^\r\n]+' '\r\n'
-<request_auth_pass_correct> ::= 'dGhlX3Bhc3N3b3Jk\r\n'
-<request_auth_pass_incorrect> ::= <pass_incorrect_64> '\r\n'
-<response_auth_success> ::= '235 ' r'[^\r\n]+' '\r\n'
-<response_auth_fail> ::= '535 ' r'[^\r\n]+' '\r\n'
-
-<user_incorrect_64> ::= r'[a-zA-Z0-9\+\\\=]+' := encode64(<user_incorrect>)
-<pass_incorrect_64> ::= r'[a-zA-Z0-9\+\\\=]+' := encode64(<pass_incorrect>)
-
-<user_incorrect> ::= r'^(?!the_user$)([a-zA-Z0-9_]+)' := decode64(<user_incorrect_64>)
-<pass_incorrect> ::= r'^(?!the_password$)([a-zA-Z0-9_]+)' := decode64(<pass_incorrect_64>)
+def build_bdat_last(msg):
+    # CHUNKING (RFC 3030): the BDAT size MUST equal the chunk's byte length.
+    body = str(msg)
+    return "BDAT " + str(len(body.encode("utf-8"))) + " LAST\r\n" + body
 
 
-<response_setup> ::= '220 ' r'[^\r\n]+' '\r\n'
-<request_ehlo> ::= 'EHLO ' <client_identifier> '\r\n'
-<client_identifier> ::= r'([a-zA-Z0-9\-\.]+[ ]?)+' := 'io.fandango-fuzzer.local'
-<response_ehlo> ::= <response_ehlo_param>+<response_ehlo_end> := '250-fandango-server\r\n250-8BITMIME\r\n250-AUTH PLAIN LOGIN\r\n250 Ok\r\n'
-<response_ehlo_param> ::= '250-' r'[^\r\n]+' '\r\n'
-<response_ehlo_end> ::= '250 ' r'[^\r\n]+' '\r\n'
+<start> ::= <Server:reply> <greeted>
 
-<exchange_quit> ::= <Client:request_quit> <Server:response_quit>
-<exchange_noop> ::= <Client:request_noop> <Server:positive_response>
-<exchange_help> ::= <Client:request_help> <Server:response_help>
-<request_quit> ::= 'QUIT\r\n'
-<response_quit> ::= '221 ' r'[^\r\n]+' '\r\n'
+# ---- Greeting + HELO/EHLO --------------------------------------------------
+<greeted> ::= <hello_exchange> <post_hello>
+<hello_exchange> ::= <Client:ehlo_cmd> <Server:ehlo_reply> | <Client:helo_cmd> <Server:reply>
+<ehlo_cmd> ::= 'EHLO ' <domain> <crlf>
+<helo_cmd> ::= 'HELO ' <domain> <crlf>
 
-# When sending a mail the client to the server, the client first tells the server who he is and where to send the mail
-# to, afterwards the client send mail headers and the mail body before finally submitting the mail and goind back to the logged in state.
-<exchange_mail> ::= <Client:request_mail_from><Server:response_mail_from> \
-    <Client:request_mail_to><Server:response_mail_to> \
-    <Client:request_mail_data><Server:response_mail_data> \
-    <Client:Server:mail_data><Server:positive_response>
+# Either authenticate first or not (modelled as a choice, not a packet-level '?').
+<post_hello> ::= <auth_exchange> <activity> <quit_exchange> | <activity> <quit_exchange>
+<quit_exchange> ::= <Client:quit_cmd> <Server:reply>
+<quit_cmd> ::= 'QUIT' <crlf>
 
-<mail_data> ::= <mail_header><mail_body>
-<mail_header> ::= <mail_header_subject> \
-    <mail_header_from> \
-    <mail_header_to> \
-    <mail_header_date> \
-    <mail_header_mailer> \
-    <mail_header_mime> \
-    <mail_header_content_type> \
-    <mail_header_encoding> \
-    <mail_header_end>
-<mail_body> ::= <mail_contents_64><mail_body_end>
+# ---- Authentication --------------------------------------------------------
+<auth_exchange> ::= <auth_login_ok> | <auth_login_bad> | <auth_plain_ok> | <auth_plain_bad>
 
-<request_mail_from> ::= 'MAIL FROM:<' <email_address> '>\r\n'
-<response_mail_from> ::= '250 ' r'[^\r\n]+' '\r\n'
-<request_mail_to> ::= 'RCPT TO:<' <email_address> '>\r\n'
-<response_mail_to> ::= '250 ' r'[^\r\n]+' '\r\n'
-<request_mail_data> ::= 'DATA\r\n'
-<response_mail_data> ::= '354 ' r'[^\r\n]+' '\r\n'
-<request_noop> ::= "NOOP" (' ' r"[^ \r\n]*")? '\r\n'
-<request_help> ::= 'HELP' '\r\n'
-<response_help> ::= (r"2\d\d" "-" (r"[^\r\n\x80-\xFF]*")? '\r\n')* r"2\d\d" (' ' r"[^\r\n\x80-\xFF]*")? '\r\n'
+<auth_login_ok> ::= <Client:auth_login_cmd> <Server:reply> \
+                    <Client:user_ok> <Server:reply> \
+                    <Client:pass_ok> <Server:reply>
+<auth_login_bad> ::= <Client:auth_login_cmd> <Server:reply> \
+                     <Client:user_any> <Server:reply> \
+                     <Client:pass_bad> <Server:reply>
+<auth_login_cmd> ::= 'AUTH LOGIN' <crlf>
+<user_ok> ::= 'dGhlX3VzZXI=' <crlf>
+<pass_ok> ::= 'dGhlX3Bhc3N3b3Jk' <crlf>
+<user_any> ::= <b64> <crlf>
+<pass_bad> ::= <b64> <crlf>
 
-<mail_body_end> ::= '\r\n\r\n.\r\n'
-<mail_contents_64> ::= r'[a-zA-Z0-9\+\\\=]+' := encode64(<mail_contents>)
-<mail_contents> ::= r'([a-zA-Z0-9\r\n]+)' := decode64(<mail_contents_64>)
+<auth_plain_ok> ::= <Client:auth_plain_ok_cmd> <Server:reply>
+<auth_plain_bad> ::= <Client:auth_plain_bad_cmd> <Server:reply>
+<auth_plain_ok_cmd> ::= 'AUTH PLAIN ' <plain_ok> <crlf>
+<auth_plain_bad_cmd> ::= 'AUTH PLAIN ' <b64> <crlf>
+<plain_ok> ::= <b64> := plain_token()
 
-<mail_header_subject> ::= 'subject: ' r'[a-zA-Z0-9\-\_\:\. ]+' '\r\n'
-<mail_header_from> ::= 'from: ' <email_address> '\r\n'
-<mail_header_to> ::= 'to: ' <email_address> '\r\n'
-<mail_header_date> ::= 'date: ' <unix_time_formatted> '\r\n'
-<mail_header_mailer> ::= 'x-mailer: ' r'[a-zA-Z ]+' '\r\n'
-<mail_header_mime> ::= 'mime-version: 1.0\r\n'
-<mail_header_content_type> ::= 'content-type: text/plain; charset=utf-8\r\n'
-<mail_header_encoding> ::= 'content-transfer-encoding: base64\r\n'
-<mail_header_end> ::= '\r\n'
-<positive_response> ::= '250' (' ' r'[^\r\n]+')? '\r\n'
-<email_address> ::= r'[a-z]+@[a-z]+\.de'
-<unix_time_formatted> ::= r'[a-zA-Z0-9\:\+\, ]+' := format_unix_time(int(<unix_time>))
-<unix_time> ::= <unix_time_number> := str(str_to_unix_time(str(<unix_time_formatted>)))
-<unix_time_number> ::= r'[1-9][0-9]+' := str(random.randint(0, 2147483647))
+# ---- Activity: a recursive sequence of transactions and stand-alone commands
+<activity> ::= <action> <activity> | <action>
+<action> ::= <mail_transaction> \
+           | <Client:vrfy_cmd> <Server:reply> \
+           | <Client:expn_cmd> <Server:reply> \
+           | <Client:etrn_cmd> <Server:reply> \
+           | <Client:noop_cmd> <Server:reply> \
+           | <Client:help_cmd> <Server:help_reply> \
+           | <Client:rset_cmd> <Server:reply>
 
-where forall <mail> in <mail_data>:
-    (str(<mail>..<request_mail_from>.<email_address>) == str(<mail>..<mail_header_from>.<email_address>)
-    and str(<mail>..<request_mail_to>.<email_address>) == str(<mail>..<mail_header_to>.<email_address>))
+<vrfy_cmd> ::= 'VRFY ' <vrfy_arg> <crlf>
+<vrfy_arg> ::= <mailbox> | <local_part>
+<expn_cmd> ::= 'EXPN ' <local_part> <crlf>
+<etrn_cmd> ::= 'ETRN ' <etrn_arg> <crlf>
+<etrn_arg> ::= <domain> | '#' <local_part>
+<noop_cmd> ::= 'NOOP' <noop_tail> <crlf>
+<noop_tail> ::= ' ' <printable> | ''
+<help_cmd> ::= 'HELP' <help_tail> <crlf>
+<help_tail> ::= ' ' <help_topic> | ''
+<help_topic> ::= 'HELO' | 'EHLO' | 'MAIL' | 'RCPT' | 'DATA' | 'BDAT' | 'AUTH' | 'VRFY' | 'EXPN' | 'NOOP' | 'QUIT' | 'RSET' | 'HELP'
+<rset_cmd> ::= 'RSET' <crlf>
 
+# ---- Mail transaction ------------------------------------------------------
+<mail_transaction> ::= <Client:mail_cmd> <Server:reply> <rcpt_list> <message_phase>
+
+<mail_cmd> ::= 'MAIL FROM:<' <reverse_path> '>' <mail_params> <crlf>
+<reverse_path> ::= <mailbox> | ''            # MAIL FROM:<> is a valid (bounce) sender
+# Each ESMTP parameter appears at most once, in a fixed order (all inside this
+# one client packet, so '?' here is safe for the navigator).
+<mail_params> ::= <p_size> <p_body> <p_ret> <p_envid> <p_auth> <p_prdr>
+<p_size> ::= ' SIZE=' <number> | ''
+<p_body> ::= ' BODY=' <body_type> | ''
+<p_ret> ::= ' RET=' <ret_value> | ''
+<p_envid> ::= ' ENVID=' <xtext> | ''
+<p_auth> ::= ' AUTH=<>' | ''
+<p_prdr> ::= ' PRDR' | ''
+<body_type> ::= '7BIT' | '8BITMIME'
+<ret_value> ::= 'FULL' | 'HDRS'
+
+<rcpt_list> ::= <Client:rcpt_cmd> <Server:reply> <rcpt_list> | <Client:rcpt_cmd> <Server:reply>
+<rcpt_cmd> ::= 'RCPT TO:<' <forward_path> '>' <rcpt_params> <crlf>
+<forward_path> ::= <mailbox>
+<rcpt_params> ::= <p_notify> <p_orcpt>
+<p_notify> ::= ' NOTIFY=' <notify_value> | ''
+<p_orcpt> ::= ' ORCPT=rfc822;' <xtext> | ''
+<notify_value> ::= 'NEVER' | <notify_opt> | <notify_opt> ',' <notify_opt>
+<notify_opt> ::= 'SUCCESS' | 'FAILURE' | 'DELAY'
+
+<message_phase> ::= <data_phase>
+<data_phase> ::= <Client:data_cmd> <Server:reply> <Client:data_message> <Server:reply>
+<data_cmd> ::= 'DATA' <crlf>
+# mail_content already ends with CRLF, so appending '.' CRLF terminates the data.
+<data_message> ::= <mail_content> '.' <crlf>
+
+# ---- Message content (headers + body) --------------------------------------
+<mail_content> ::= <headers> <crlf> <body>
+<headers> ::= <h_from> <h_to> <opt_headers>
+<opt_headers> ::= <opt_header> <opt_headers> | <opt_header>
+<opt_header> ::= <h_subject> | <h_cc> | <h_replyto> | <h_sender> | <h_date> \
+               | <h_messageid> | <h_mime> | <h_ctype> | <h_cte> | <h_xheader>
+<h_from> ::= 'From: ' <mailbox> <crlf>
+<h_to> ::= 'To: ' <mailbox> <crlf>
+<h_cc> ::= 'Cc: ' <mailbox> <crlf>
+<h_replyto> ::= 'Reply-To: ' <mailbox> <crlf>
+<h_sender> ::= 'Sender: ' <mailbox> <crlf>
+<h_subject> ::= 'Subject: ' <printable> <crlf>
+<h_date> ::= 'Date: ' <date_value> <crlf>
+<h_messageid> ::= 'Message-ID: <' <local_part> '@' <domain> '>' <crlf>
+<h_mime> ::= 'MIME-Version: 1.0' <crlf>
+<h_ctype> ::= 'Content-Type: ' <content_type> <crlf>
+<h_cte> ::= 'Content-Transfer-Encoding: ' <cte_value> <crlf>
+<h_xheader> ::= 'X-' <token> ': ' <printable> <crlf>
+<content_type> ::= 'text/plain; charset=utf-8' | 'text/html' | 'multipart/mixed; boundary=abc'
+<cte_value> ::= '7bit' | '8bit' | 'base64' | 'quoted-printable'
+<date_value> ::= <formatted_date> := format_date(random.randint(1, 2147483647))
+<formatted_date> ::= r'[A-Za-z0-9:+, ]+'
+<body> ::= <body_line> <body_more>
+<body_more> ::= <body_line> <body_more> | ''
+<body_line> ::= <safe_text> <crlf>
+
+# ---- Lexical primitives ----------------------------------------------------
+<mailbox> ::= <local_part> '@' <domain>
+# Exim-acceptable: no restricted chars (% ! /), no leading/trailing dot or hyphen.
+<local_part> ::= r'[a-zA-Z0-9]' | r'[a-zA-Z0-9][a-zA-Z0-9._+\-]{0,20}[a-zA-Z0-9]'
+<domain> ::= <label> '.' <label> | <label> '.' <label> '.' <label>
+<label> ::= r'[a-zA-Z0-9]' | r'[a-zA-Z0-9][a-zA-Z0-9\-]{0,10}[a-zA-Z0-9]'
+<number> ::= r'[1-9][0-9]{0,6}'
+<token> ::= r'[A-Za-z0-9\-]{1,16}'
+<xtext> ::= r'[A-Za-z0-9]{1,24}'
+<b64> ::= r'[A-Za-z0-9+/]{2,40}={0,2}'
+<printable> ::= r'[A-Za-z0-9 _.\-]{1,40}'
+<safe_text> ::= r'[A-Za-z0-9 _.\-]{0,60}'
+<crlf> ::= '\r\n'
+# Body lines never start with '.', so SMTP dot-stuffing is not required.
+
+# ---- Server replies --------------------------------------------------------
+<reply> ::= <resp_code> <resp_final_text> <crlf>
+<resp_final_text> ::= ' ' <resp_text> | ''
+
+<ehlo_reply> ::= <ehlo_line> <ehlo_more> <ehlo_final>
+<ehlo_more> ::= <ehlo_line> <ehlo_more> | ''
+<ehlo_line> ::= <resp_code> '-' <resp_text> <crlf>
+<ehlo_final> ::= <resp_code> ' ' <resp_text> <crlf>
+
+<help_reply> ::= <help_more> <help_final>
+<help_more> ::= <help_line> <help_more> | ''
+<help_line> ::= <resp_code> '-' <resp_text> <crlf>
+<help_final> ::= <resp_code> <help_final_text> <crlf>
+<help_final_text> ::= ' ' <resp_text> | ''
+
+<resp_code> ::= r'[2-5][0-9][0-9]'
+<resp_text> ::= r'[^\r\n]*'
+
+# ---- Parties ---------------------------------------------------------------
 class Client(NetworkParty):
     def __init__(self):
         super().__init__(

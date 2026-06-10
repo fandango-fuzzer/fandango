@@ -134,6 +134,28 @@ RUN cd ${WORKDIR} && \
     echo 'AUTH_PLAINTEXT=yes' >> Local/Makefile && \
     make CFLAGS="-fprofile-arcs -ftest-coverage" LDFLAGS="-fprofile-arcs -ftest-coverage" LFLAGS+="-lgcov --coverage" clean all $MAKE_OPT
 
+# Download and compile Exim with clang source-based coverage (LLVM) for the
+# differential-coverage comparison. The profile output path is baked into the
+# binary (%p = pid) so it works even though Exim strips most of its environment;
+# children write a .profraw to /coverage on exit.
+RUN mkdir -p /coverage && chmod 0777 /coverage
+RUN cd ${WORKDIR} && \
+    git clone https://github.com/Exim/exim exim-covcc && \
+    cd exim-covcc && \
+    git checkout 38903fb && \
+    patch -p1 < ${WORKDIR}/exim-rand.patch && \
+    patch -p1 < ${WORKDIR}/exim-log-bug.patch && \
+    cd src; mkdir Local; cp src/EDITME Local/Makefile && \
+    cd Local; patch -p1 < ${WORKDIR}/exim.patch; cd .. && \
+    echo 'AUTH_PLAINTEXT=yes' >> Local/Makefile && \
+    make CC=clang-11 \
+      CFLAGS="-fprofile-instr-generate=/coverage/exim-%p.profraw -fcoverage-mapping -g -O0" \
+      LFLAGS+="-fprofile-instr-generate=/coverage/exim-%p.profraw -fcoverage-mapping" \
+      clean all $MAKE_OPT
+
+# Install the differential-coverage analysis tool.
+RUN python3.11 -m pip install --no-cache-dir "git+https://github.com/riesentoaster/differential-coverage.git"
+
 # Configure exim and enable a plaintext LOGIN authenticator for Fandango.
 # Sender verification is disabled because exim.configure.patch removes the
 # dnslookup router, so non-local senders (e.g. a@b.de from the grammar) would
@@ -143,6 +165,7 @@ RUN cd /usr/exim && \
     awk '/^begin authenticators/{print; while((getline line < "/tmp/exim-fandango-auth.conf")>0) print line; close("/tmp/exim-fandango-auth.conf"); next}1' configure > configure.new && \
     mv configure.new configure && \
     sed -i '/require verify[[:space:]]*=[[:space:]]*sender/s/^/#/' configure && \
+    sed -i '1i dsn_advertise_hosts = *' configure && \
     chmod 1777 /var/mail
 
 ENV PATH="/usr/exim/bin:${PATH}"
