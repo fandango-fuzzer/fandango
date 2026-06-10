@@ -25,7 +25,7 @@ if $(strstr $FUZZER "afl"); then
   #Step-1. Do Fuzzing
   #Move to fuzzing folder
   cd $WORKDIR/${TARGET_DIR}
-  cp ./src/build-Linux-x86_64/exim /usr/exim/bin/exim
+  cp ./src/build-Linux-*/exim /usr/exim/bin/exim
   timeout -k 0 --preserve-status $TIMEOUT /home/ubuntu/${FUZZER}/afl-fuzz -d -i ${INPUTS} -x ${WORKDIR}/smtp.dict -o $OUTDIR -N tcp://127.0.0.1/25 $OPTIONS -c ${WORKDIR}/clean exim -bd -d -oX 25 -oP /var/lock/exim.pid
 
   STATUS=$?
@@ -37,7 +37,7 @@ if $(strstr $FUZZER "afl"); then
   #Step-2. Collect code coverage over time
   #Move to gcov folder
   cd $WORKDIR/exim-gcov
-  cp ./src/build-Linux-x86_64/exim /usr/exim/bin/exim
+  cp ./src/build-Linux-*/exim /usr/exim/bin/exim
 
   #The last argument passed to cov_script should be 0 if the fuzzer is afl/nwe and it should be 1 if the fuzzer is based on aflnet
   #0: the test case is a concatenated message sequence -- there is no message boundary

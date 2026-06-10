@@ -41,3 +41,29 @@ cd $PFBENCH/results-exim
 
 profuzzbench_plot.py -i results.csv -p exim -r 4 -c 60 -s 1 -o cov_over_time.png
 ```
+
+## Step-5. Run Fandango
+The following commands run Fandango to measure the code coverage it reaches on Exim
+(SMTP). It builds a dedicated image (`Dockerfile-fandango`) that contains an
+additional gcov-instrumented Exim build (`exim-fandango`) and a plaintext
+`AUTH LOGIN` authenticator (`the_user` / `the_password`) so the SMTP grammar can
+drive Exim through its full state machine.
+
+```bash
+cd $PFBENCH/subjects/SMTP/Exim
+
+mkdir results-fandango
+./run-fandango-standalone.sh
+```
+
+Fandango's IO generation runs indefinitely, so the run is time-bounded by
+`FUZZ_TIME` seconds (default `3600`, matching the AFLNet fuzzing timeout for a
+fair comparison). Override it, e.g. for a quick smoke test:
+
+```bash
+FUZZ_TIME=120 ./run-fandango-standalone.sh
+```
+
+The resulting line/branch coverage report is written as HTML into
+`results-fandango/` (`index.html`), and the final line/branch totals are printed
+to stdout.
