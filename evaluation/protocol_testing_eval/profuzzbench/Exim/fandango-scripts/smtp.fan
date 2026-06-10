@@ -12,6 +12,12 @@ def format_date(unix_time):
 def encode64(s):
     return base64.b64encode(str(s).encode("utf-8")).decode("utf-8")
 
+def bdat_len(chunk):
+    # Byte length of a BDAT chunk as a decimal string. The message content is
+    # ASCII (the lexical regexes never emit non-ASCII), so character count equals
+    # byte count; CRLF counts as the 2 bytes it is.
+    return str(len(str(chunk)))
+
 
 <start> ::= <Server:reply> <greeted>
 
@@ -21,29 +27,29 @@ def encode64(s):
 <ehlo_cmd> ::= 'EHLO ' <domain> <crlf>
 <helo_cmd> ::= 'HELO ' <domain> <crlf>
 
-# Proper SMTP state machine. After EHLO the session is UNAUTHENTICATED: only AUTH
-# and session/informational commands (NOOP/HELP/RSET/VRFY/EXPN) are valid there.
-# Mail (MAIL/RCPT/DATA) and ETRN are only issued once AUTHENTICATED. This keeps
-# every command within the protocol state in which it is valid.
 <post_hello> ::= <unauth_state>
 
-<unauth_state> ::= <login_ok> <authed_state> \
-                 | <login_fail> <unauth_state> \
-                 | <Client:noop_cmd> <Server:reply> <unauth_state> \
-                 | <Client:help_cmd> <Server:help_reply> <unauth_state> \
-                 | <Client:rset_cmd> <Server:reply> <unauth_state> \
-                 | <Client:vrfy_cmd> <Server:reply> <unauth_state> \
-                 | <Client:expn_cmd> <Server:reply> <unauth_state> \
-                 | <quit_exchange>
+<unauth_state> ::= <unauth_info> <unauth_info> <unauth_outcome>
+<unauth_info> ::= <Client:noop_cmd> <Server:reply> \
+                | <Client:help_cmd> <Server:help_reply> \
+                | <Client:rset_cmd> <Server:reply> \
+                | <Client:vrfy_cmd> <Server:reply> \
+                | <Client:expn_cmd> <Server:reply> \
+                | ''
+<unauth_outcome> ::= <opt_login_fail> <login_ok> <authed_state> \
+                   | <login_fail> <quit_exchange> \
+                   | <quit_exchange>
+<opt_login_fail> ::= <login_fail> | ''
 
-<authed_state> ::= <mail_transaction> <authed_state> \
-                 | <Client:noop_cmd> <Server:reply> <authed_state> \
-                 | <Client:help_cmd> <Server:help_reply> <authed_state> \
-                 | <Client:rset_cmd> <Server:reply> <authed_state> \
-                 | <Client:vrfy_cmd> <Server:reply> <authed_state> \
-                 | <Client:expn_cmd> <Server:reply> <authed_state> \
-                 | <Client:etrn_cmd> <Server:reply> <authed_state> \
-                 | <quit_exchange>
+<authed_state> ::= <authed_info> <authed_info> <mail_loop>
+<authed_info> ::= <Client:noop_cmd> <Server:reply> \
+                | <Client:help_cmd> <Server:help_reply> \
+                | <Client:rset_cmd> <Server:reply> \
+                | <Client:vrfy_cmd> <Server:reply> \
+                | <Client:expn_cmd> <Server:reply> \
+                | <Client:etrn_cmd> <Server:reply> \
+                | ''
+<mail_loop> ::= <mail_transaction> <mail_loop> | <quit_exchange>
 
 <quit_exchange> ::= <Client:quit_cmd> <Server:reply>
 <quit_cmd> ::= 'QUIT' <crlf>
@@ -87,7 +93,16 @@ def encode64(s):
 <rset_cmd> ::= 'RSET' <crlf>
 
 # ---- Mail transaction ------------------------------------------------------
-<mail_transaction> ::= <Client:mail_cmd> <Server:reply> <rcpt_list> <message_phase>
+<mail_transaction> ::= <Client:mail_cmd> <Server:reply> <rcpt_list> <message_phase> \
+                     | <prdr_transaction>
+
+<prdr_transaction> ::= <Client:prdr_mail_cmd> <Server:reply> \
+                       <Client:rcpt_cmd> <Server:reply> \
+                       <Client:rcpt_cmd> <Server:reply> \
+                       <Client:data_cmd> <Server:reply> \
+                       <Client:data_message> <Server:prdr_reply>
+<prdr_mail_cmd> ::= 'MAIL FROM:<' <reverse_path> '>' <mail_params> ' PRDR' <crlf>
+<prdr_reply> ::= <reply> <reply> <reply> <reply>
 
 <mail_cmd> ::= 'MAIL FROM:<' <reverse_path> '>' <mail_params> <crlf>
 <reverse_path> ::= <mailbox> | ''            # MAIL FROM:<> is a valid (bounce) sender
@@ -113,18 +128,24 @@ def encode64(s):
 <notify_value> ::= 'NEVER' | <notify_opt> | <notify_opt> ',' <notify_opt>
 <notify_opt> ::= 'SUCCESS' | 'FAILURE' | 'DELAY'
 
-<message_phase> ::= <data_phase>
+# A message is submitted either with the classic DATA/dot path or, since Exim
+# advertises CHUNKING, with the BDAT path (RFC 3030). BDAT carries a length-prefixed
+# chunk instead of a dot-terminated stream.
+<message_phase> ::= <data_phase> | <bdat_phase>
 <data_phase> ::= <Client:data_cmd> <Server:reply> <Client:data_message> <Server:reply>
 <data_cmd> ::= 'DATA' <crlf>
 # mail_content already ends with CRLF, so appending '.' CRLF terminates the data.
 <data_message> ::= <mail_content> '.' <crlf>
 
+<bdat_phase> ::= <Client:bdat_last_cmd> <Server:bdat_reply>
+<bdat_reply> ::= <resp_code> '-' <resp_text> <crlf> <resp_code> <resp_final_text> <crlf>
+<bdat_last_cmd> ::= 'BDAT ' <bdat_size> ' LAST' <crlf> <bdat_chunk>
+<bdat_size> ::= r'[0-9]{1,7}'
+<bdat_chunk> ::= <mail_content>
+where <bdat_size> == bdat_len(<bdat_chunk>)
+
 # ---- Message content (headers + body) --------------------------------------
 <mail_content> ::= <headers> <crlf> <body>
-# Mandatory From/To plus each optional header at most once in a fixed order.
-# (Bounded instead of open recursion over header types: the same Exim header
-# parsing is exercised, but the k-path set is finite and fully coverable, so the
-# STATE_INPUTS goal can actually complete.)
 <headers> ::= <h_from> <h_to> <oh_subject> <oh_cc> <oh_replyto> <oh_sender> \
               <oh_date> <oh_messageid> <oh_mime> <oh_ctype> <oh_cte> <oh_xheader>
 <oh_subject> ::= <h_subject> | ''
@@ -171,7 +192,6 @@ def encode64(s):
 <printable> ::= r'[A-Za-z0-9 _.\-]{1,40}'
 <safe_text> ::= r'[A-Za-z0-9 _.\-]{0,60}'
 <crlf> ::= '\r\n'
-# Body lines never start with '.', so SMTP dot-stuffing is not required.
 
 # ---- Server replies --------------------------------------------------------
 <reply> ::= <resp_code> <resp_final_text> <crlf>

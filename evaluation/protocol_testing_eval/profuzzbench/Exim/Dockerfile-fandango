@@ -45,11 +45,12 @@ RUN python3 -m pip install --upgrade pip==20.3.4 && \
 
 RUN python3.11 -m pip install -U pip setuptools wheel
 
-# Install Fandango
-RUN git clone https://github.com/fandango-fuzzer/fandango.git && \
-    cd fandango && \
-    git checkout io_replication && \
-    python3.11 -m pip install --no-cache-dir -e ".[test]"
+# Install Fandango from the LOCAL checkout copied into the build context by
+# sync-fandango.sh (run it before building). Installed editable (-e) and the C++
+# parser is recompiled here for the container; mount Python subtrees at runtime
+# for live edits without rebuilding. See README Step-7.
+COPY .fandango-local /fandango
+RUN cd /fandango && python3.11 -m pip install --no-cache-dir -e ".[test]"
 
 # Use ubuntu as default username
 USER ubuntu
@@ -160,12 +161,22 @@ RUN python3.11 -m pip install --no-cache-dir "git+https://github.com/riesentoast
 # Sender verification is disabled because exim.configure.patch removes the
 # dnslookup router, so non-local senders (e.g. a@b.de from the grammar) would
 # otherwise fail "verify = sender" and the MAIL/RCPT/DATA flow could not complete.
+#
+# A catch-all router (fandango_catchall -> local_delivery) is added so EVERY
+# message is delivered locally and leaves the spool. Without it, mail to the
+# grammar's non-local recipients is unrouteable and freezes in the spool; the
+# deterministic message-ids from exim-rand.patch then collide ("Failed to create
+# spool file ...-D: File exists"), which Exim reports as a panic and answers with
+# a burst of "421 Unexpected failure" -- a benchmark-patch artefact, not real
+# SMTP behaviour. Delivering messages keeps the spool clean and avoids it.
 RUN cd /usr/exim && \
     patch -p1 < ${WORKDIR}/exim.configure.patch && \
     awk '/^begin authenticators/{print; while((getline line < "/tmp/exim-fandango-auth.conf")>0) print line; close("/tmp/exim-fandango-auth.conf"); next}1' configure > configure.new && \
     mv configure.new configure && \
     sed -i '/require verify[[:space:]]*=[[:space:]]*sender/s/^/#/' configure && \
     sed -i '1i dsn_advertise_hosts = *' configure && \
+    awk '/^begin routers/{print; print "fandango_catchall:"; print "  driver = accept"; print "  transport = local_delivery"; print "  user = ubuntu"; print ""; next}1' configure > configure.new && \
+    mv configure.new configure && \
     chmod 1777 /var/mail
 
 ENV PATH="/usr/exim/bin:${PATH}"

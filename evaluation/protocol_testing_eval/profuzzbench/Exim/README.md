@@ -1,5 +1,3 @@
-Please carefully read the [main README.md](../../../README.md), which is stored in the benchmark's root folder, before following this subject-specific guideline.
-
 # Fuzzing Exim server with AFLNet and AFLnwe
 Please follow the steps below to run and collect experimental results for Exim.
 
@@ -46,8 +44,7 @@ profuzzbench_plot.py -i results.csv -p exim -r 4 -c 60 -s 1 -o cov_over_time.png
 The following commands run Fandango to measure the code coverage it reaches on Exim
 (SMTP). It builds a dedicated image (`Dockerfile-fandango`) that contains an
 additional gcov-instrumented Exim build (`exim-fandango`) and a plaintext
-`AUTH LOGIN` authenticator (`the_user` / `the_password`) so the SMTP grammar can
-drive Exim through its full state machine.
+`AUTH LOGIN` authenticator (`the_user` / `the_password`).
 
 ```bash
 cd $PFBENCH/subjects/SMTP/Exim
@@ -56,9 +53,7 @@ mkdir results-fandango
 ./run-fandango-standalone.sh
 ```
 
-Fandango's IO generation runs indefinitely, so the run is time-bounded by
-`FUZZ_TIME` seconds (default `3600`, matching the AFLNet fuzzing timeout for a
-fair comparison). Override it, e.g. for a quick smoke test:
+Set `FUZZ_TIME` to limit how long Fandango is allowed to run:
 
 ```bash
 FUZZ_TIME=120 ./run-fandango-standalone.sh

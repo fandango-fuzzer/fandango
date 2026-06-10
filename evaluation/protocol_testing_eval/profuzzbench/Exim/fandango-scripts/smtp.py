@@ -9,6 +9,12 @@ from fandango.language.parse.parse import parse
 
 # Guidance (A* k-path navigation) can be toggled via env for experimentation.
 GUIDANCE = os.environ.get("FANDANGO_GUIDANCE", "1") == "1"
+# When "1" (default), the run stops as soon as full grammar (k-path) coverage is
+# reached -- a fast "converge then stop" measurement. Set to "0" for a
+# coverage-MAXIMIZING run: after full grammar coverage, guidance is dropped and
+# Fandango keeps generating (random sessions) until the wall-clock FUZZ_TIME, to
+# accumulate as much incidental code coverage as possible.
+STOP_ON_FULL = os.environ.get("FANDANGO_STOP_ON_FULL", "1") == "1"
 
 
 def run_once():
@@ -23,6 +29,7 @@ def run_once():
     )
     fandango.coverage_log_interval = 10
     fandango.enable_guidance(GUIDANCE)
+    fandango.stop_on_full_coverage = STOP_ON_FULL
     for _ in fandango.generate(mode=FuzzingMode.IO):
         pass
 
