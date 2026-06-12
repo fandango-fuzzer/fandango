@@ -773,7 +773,8 @@ class TimerControl(FandangoParty):
     def start_timer(self, name: str, time_s: int) -> None:
         def timer_sleep():
             for _ in range(time_s * 10):
-                if (not name in self.timers) or (not self.timers[name][1]):
+                entry = self.timers.get(name)
+                if entry is None or not entry[1]:
                     return
                 time.sleep(0.1)
             self._on_timer_expire(name)
@@ -784,20 +785,24 @@ class TimerControl(FandangoParty):
 
     def stop_timers(self, name: Optional[str] = None) -> None:
         with self.lock:
-            timers_to_stop = list(self.timers.keys())
             if name is not None:
                 timers_to_stop = [name]
+            else:
+                timers_to_stop = list(self.timers.keys())
+            to_join: list[tuple[str, threading.Thread]] = []
             for timer_name in timers_to_stop:
                 if timer_name not in self.timers:
                     continue
-                timeout, running, timer_thread = self.timers[timer_name]
-                self.timers[timer_name] = timeout, False, timer_thread
-            for timer_name in timers_to_stop:
-                if timer_name not in self.timers:
-                    continue
-                _, _, timer_thread = self.timers[timer_name]
+                timeout, _, timer_thread = self.timers[timer_name]
+                self.timers[timer_name] = (timeout, False, timer_thread)
+                to_join.append((timer_name, timer_thread))
+        current = threading.current_thread()
+        for _, timer_thread in to_join:
+            if timer_thread is not current:
                 timer_thread.join()
-                del self.timers[timer_name]
+        with self.lock:
+            for timer_name, _ in to_join:
+                self.timers.pop(timer_name, None)
 
     def send(
         self, message: DerivationTree | str | bytes, recipient: Optional[str]
