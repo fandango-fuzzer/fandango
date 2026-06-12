@@ -228,7 +228,9 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 )
                 next_history_tree = self._generate_packet(max_generations=max_generations)
                 if self._io_instance.received_msg():
-                    return None
+                    continue
+                if next_history_tree is None:
+                    continue
                 new_packet = next_history_tree.protocol_msgs()[-1]
                 if (
                         new_packet.recipient is None
@@ -241,8 +243,6 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                         new_packet.msg,
                         True,
                     )
-                if next_history_tree is None:
-                    continue
                 self._protocol_tree = next_history_tree
             else:
                 self._protocol_tree = self._handle_remote_response()
