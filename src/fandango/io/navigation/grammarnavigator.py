@@ -158,7 +158,6 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         search_len = len(self.search_symbols)
         chain_len = len(current_chain)
 
-        # check if k-paths equal/has been found
         strict = 0
         for i in range(1, min(search_len, chain_len) + 1):
             if current_chain[-i:] == self.search_symbols[:i]:
@@ -167,23 +166,20 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
             return 0
 
         chain_strs = [str(s) for s in current_chain]
-        j = 0
-        for cs in chain_strs:
-            if j < search_len and cs == str(self.search_symbols[j]):
-                j += 1
 
-        # Sub-gradient toward search_symbols[j] (the next unmet symbol) via the
-        # static reference distance, taken as min over the chain. Reaching an
-        # on-path state usually requires detouring through OFF-path symbols first,
-        # so the chain minimum remembers the closest committed frontier instead of treating the
-        # detour as a dead end. remaining * BIG dominates so matching one more
-        # k-path symbol always beats any within-plateau sub-gradient improvement.
+        # Sub-gradient toward search_symbols[strict] (the next symbol that would
+        # extend the live suffix) via the static reference distance, taken as min
+        # over the chain. Reaching an on-path state usually requires detouring
+        # through OFF-path symbols first, so the chain minimum remembers the
+        # closest committed frontier instead of treating the detour as a dead end.
+        # remaining * BIG dominates so matching one more k-path symbol always beats
+        # any within-plateau sub-gradient improvement.
         BIG = 1_000_000
         sub = self._SUB_UNREACHABLE
-        if j < search_len and self._target_dists is not None and j < len(
+        if strict < search_len and self._target_dists is not None and strict < len(
             self._target_dists
         ):
-            dmap = self._target_dists[j]
+            dmap = self._target_dists[strict]
             best = None
             for cs in chain_strs:
                 d = dmap.get(cs)
@@ -192,7 +188,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
             if best is not None:
                 sub = best
         # Never return 0 here
-        return max((search_len - j) * BIG + sub, 1)
+        return max((search_len - strict) * BIG + sub, 1)
 
     def heuristic_cost_estimate(
         self, current: GrammarGraphNode, goal: GrammarGraphNode
