@@ -4,7 +4,10 @@ from typing import Union, Optional
 
 from astar import AStar
 from fandango.errors import FandangoError
-from fandango.io.navigation.reachability_checker import ReachabilityChecker
+from fandango.io.navigation.reachability_checker import (
+    ReachabilityChecker,
+    ReachabilityResult,
+)
 from fandango.language import DerivationTree, Grammar
 from fandango.language.grammar.grammar import KPath
 from fandango.language.grammar.nodes.terminal import TerminalNode
@@ -210,7 +213,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
 
     def check_reachability_w_controlflow(
         self, *, tree: Optional[DerivationTree] = None, destination_k_path: KPath
-    ) -> bool:
+    ) -> ReachabilityResult:
         checker = ReachabilityChecker(self.grammar)
         return checker.find_reachability(tree=tree, k_path_to_reach=destination_k_path)
 
@@ -221,10 +224,10 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
             return []
         if not self.check_reachability_w_controlflow(
             destination_k_path=destination_k_path, tree=tree
-        ):
+        ).path_reachable:
             if not self.check_reachability_w_controlflow(
                 destination_k_path=destination_k_path
-            ) and destination_k_path[0] != NonTerminal("<start>"):
+            ).path_reachable and destination_k_path[0] != NonTerminal("<start>"):
                 raise FandangoError(
                     f"Symbol {destination_k_path} is not reachable in grammar."
                 )
