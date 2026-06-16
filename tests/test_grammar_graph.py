@@ -5,8 +5,10 @@ from fandango.api import Fandango
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.grammarnavigator import GrammarNavigator
 from fandango.io.navigation.packetnavigator import PacketNavigator
+from fandango.io.navigation.reachability_checker import ReachabilityChecker
 from fandango.language import NonTerminal, DerivationTree
 from fandango.language.grammar import ParsingMode
+from fandango.language.grammar.grammar import KPath
 from fandango.language.grammar.node_visitors.grammar_graph_converter import (
     GrammarGraphNode,
 )
@@ -114,3 +116,47 @@ class TestGrammarGraph(unittest.TestCase):
         assert path is not None
         if None not in path:
             self.assertFalse("Expected symbol to be not reachable")
+
+    def test_packet_navigator_symbol_not_extensible(self):
+        grammar = self.get_grammar(RESOURCES_ROOT / "navigation_io.fan")
+        checker = ReachabilityChecker(grammar)
+
+        tree_to_continue = grammar.parse(
+            "a",
+            mode=ParsingMode.INCOMPLETE,
+            include_controlflow=True,
+        )
+        k_path: KPath = (NonTerminal("<start>"), NonTerminal("<test>"), NonTerminal("<state_4>"),)
+        result_1 = checker.find_reachability(k_path_to_reach=k_path, tree=tree_to_continue)
+        self.assertTrue(result_1.path_reachable)
+        self.assertTrue(result_1.completable_by_extension)
+
+        tree_to_continue = grammar.parse(
+            "ab",
+            mode=ParsingMode.INCOMPLETE,
+            include_controlflow=True,
+        )
+        k_path: KPath = (NonTerminal("<start>"), NonTerminal("<test>"), NonTerminal("<state_4>"),)
+        result_1 = checker.find_reachability(k_path_to_reach=k_path, tree=tree_to_continue)
+        self.assertTrue(result_1.path_reachable)
+        self.assertFalse(result_1.completable_by_extension)
+
+        tree_to_continue = grammar.parse(
+            "ad",
+            mode=ParsingMode.INCOMPLETE,
+            include_controlflow=True,
+        )
+        k_path: KPath = (NonTerminal("<start>"), NonTerminal("<test>"), NonTerminal("<state_4>"),)
+        result_1 = checker.find_reachability(k_path_to_reach=k_path, tree=tree_to_continue)
+        self.assertTrue(result_1.path_reachable)
+        self.assertTrue(result_1.completable_by_extension)
+
+        k_path: KPath = (NonTerminal("<start>"), NonTerminal("<test>"), NonTerminal("<G>"),)
+        result_1 = checker.find_reachability(k_path_to_reach=k_path, tree=tree_to_continue)
+        self.assertTrue(result_1.path_reachable)
+        self.assertFalse(result_1.completable_by_extension)
+
+        k_path: KPath = (NonTerminal("<start>"), NonTerminal("<test>"), NonTerminal("<H>"),)
+        result_1 = checker.find_reachability(k_path_to_reach=k_path, tree=tree_to_continue)
+        self.assertTrue(result_1.path_reachable)
+        self.assertTrue(result_1.completable_by_extension)
