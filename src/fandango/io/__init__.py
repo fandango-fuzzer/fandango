@@ -772,10 +772,12 @@ class TimerControl(FandangoParty):
 
     def start_timer(self, name: str, time_s: int) -> None:
         def timer_sleep():
-            for _ in range(time_s * 10):
-                entry = self.timers.get(name)
-                if entry is None or not entry[1]:
-                    return
+            time_elapsed = 0
+            while time_elapsed < time_s:
+                with self.lock:
+                    entry = self.timers.get(name)
+                    if entry is None or not entry[1]:
+                        return
                 time.sleep(0.1)
             self._on_timer_expire(name)
         timer_thread = threading.Thread(target=timer_sleep)
@@ -796,10 +798,6 @@ class TimerControl(FandangoParty):
                 timeout, _, timer_thread = self.timers[timer_name]
                 self.timers[timer_name] = (timeout, False, timer_thread)
                 to_join.append((timer_name, timer_thread))
-        current = threading.current_thread()
-        for _, timer_thread in to_join:
-            if timer_thread is not current:
-                timer_thread.join()
         with self.lock:
             for timer_name, _ in to_join:
                 self.timers.pop(timer_name, None)
