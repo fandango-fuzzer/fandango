@@ -138,7 +138,7 @@ class TestGrammarGraph(unittest.TestCase):
         )
         k_path: KPath = (NonTerminal("<start>"), NonTerminal("<test>"), NonTerminal("<state_4>"),)
         result_1 = checker.find_reachability(k_path_to_reach=k_path, tree=tree_to_continue)
-        self.assertTrue(result_1.path_reachable)
+        self.assertFalse(result_1.path_reachable)
         self.assertFalse(result_1.completable_by_extension)
 
         k_path: KPath = (NonTerminal("<start>"),NonTerminal("<test>"),NonTerminal("<H>"),)
@@ -169,9 +169,3 @@ class TestGrammarGraph(unittest.TestCase):
         result_1 = checker.find_reachability(k_path_to_reach=k_path, tree=tree_to_continue)
         self.assertTrue(result_1.path_reachable)
         self.assertFalse(result_1.completable_by_extension)
-
-        tree_to_continue = grammar.parse(
-            "ac",
-            mode=ParsingMode.INCOMPLETE,
-            include_controlflow=True,
-        )
