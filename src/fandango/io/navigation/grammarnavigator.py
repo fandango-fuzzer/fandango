@@ -53,6 +53,11 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         self.comparisons = 0
         self.search_symbols: Optional[list[Symbol]] = None
         self.is_search_end_node = False
+        # The realized path of the existing derivation, recorded only when the
+        # k-path cannot be completed by extension. The heuristic ignores whatever
+        # leading prefix a node's chain shares with this dead-end path, so the
+        # match it already provides is not mistaken for progress.
+        self._forbidden_path: tuple[Symbol, ...] = tuple()
         self._dist_cache: dict[str, dict[str, int]] = {}
         # One distance map per symbol of the ACTIVE target k-path, so the
         # heuristic can guide toward whichever k-path symbol is needed next.
@@ -155,16 +160,40 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
     ) -> list[Symbol]:
         return _path_symbols(node, include_controlflow)
 
-    def heuristic_path_symbols(self, current_chain: list[Symbol]) -> int:
+    def _live_suffix_len(self, current_chain: list[Symbol]) -> int:
+        """Longest suffix of ``current_chain`` that is a prefix of the k-path."""
         if not self.search_symbols or not current_chain:
-            return 1
+            return 0
         search_len = len(self.search_symbols)
         chain_len = len(current_chain)
-
         strict = 0
         for i in range(1, min(search_len, chain_len) + 1):
             if current_chain[-i:] == self.search_symbols[:i]:
                 strict = i
+        return strict
+
+    def _strip_forbidden_prefix(self, current_chain: list[Symbol]) -> list[Symbol]:
+        """
+        Drop the longest leading run a node's chain shares with the recorded
+        dead-end path. Only the part beyond it is genuine progress, so a match
+        that merely reproduces (a prefix of) the dead-end path collapses to
+        nothing while a fresh occurrence further down keeps its credit.
+        """
+        if not self._forbidden_path:
+            return current_chain
+        i = 0
+        limit = min(len(current_chain), len(self._forbidden_path))
+        while i < limit and current_chain[i] == self._forbidden_path[i]:
+            i += 1
+        return current_chain[i:]
+
+    def heuristic_path_symbols(self, current_chain: list[Symbol]) -> int:
+        if not self.search_symbols or not current_chain:
+            return 1
+        current_chain = self._strip_forbidden_prefix(current_chain)
+        search_len = len(self.search_symbols)
+
+        strict = self._live_suffix_len(current_chain)
         if strict == search_len:
             return 0
 
@@ -222,9 +251,10 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
     ) -> Optional[list[GrammarGraphNode | None]]:
         if len(destination_k_path) == 0:
             return []
-        if not self.check_reachability_w_controlflow(
+        reachability = self.check_reachability_w_controlflow(
             destination_k_path=destination_k_path, tree=tree
-        ).path_reachable:
+        )
+        if not reachability.path_reachable:
             if not self.check_reachability_w_controlflow(
                 destination_k_path=destination_k_path
             ).path_reachable and destination_k_path[0] != NonTerminal("<start>"):
@@ -247,6 +277,14 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         else:
             start_nav_node = self.graph.start
         self.search_symbols = list(destination_k_path)
+        # Record the realized derivation path as forbidden only when there is an
+        # existing derivation whose match cannot be completed by extension.
+        if tree is not None and not reachability.completable_by_extension:
+            self._forbidden_path = tuple(
+                self._get_path_symbols(start_nav_node, False)
+            )
+        else:
+            self._forbidden_path = tuple()
         # Precompute static reference distances to each symbol of the k-path so
         # the heuristic has a gradient toward whichever symbol is needed next
         # (not just the first). Crossing message-state plateaus between two
