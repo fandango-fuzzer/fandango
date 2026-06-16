@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from functools import lru_cache
 from typing import Union, Optional
 
 from astar import AStar
@@ -6,6 +7,7 @@ from fandango.errors import FandangoError
 from fandango.io.navigation.reachability_checker import ReachabilityChecker
 from fandango.language import DerivationTree, Grammar
 from fandango.language.grammar.grammar import KPath
+from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.symbols import Symbol, NonTerminal
 from fandango.language.grammar.node_visitors.grammar_graph_converter import (
     GrammarGraphNode,
@@ -13,6 +15,20 @@ from fandango.language.grammar.node_visitors.grammar_graph_converter import (
     GrammarGraphConverter,
 )
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+
+
+@lru_cache(maxsize=16384)
+def _path_symbols(node: "GrammarGraphNode", include_controlflow: bool) -> list[Symbol]:
+    """Cache the symbol chain from a grammar-graph node up to the root."""
+    node_chain = [node]
+    current = node
+    while current.parent is not None:
+        current = current.parent
+        node_chain.append(current)
+    node_chain.reverse()
+    if include_controlflow:
+        return [n.node.to_symbol() for n in node_chain]
+    return [n.node.to_symbol() for n in node_chain if not n.node.is_controlflow]
 
 
 class NavigatorTimedOutError(FandangoError):
@@ -34,21 +50,84 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         self.comparisons = 0
         self.search_symbols: Optional[list[Symbol]] = None
         self.is_search_end_node = False
+        self._dist_cache: dict[str, dict[str, int]] = {}
+        # One distance map per symbol of the ACTIVE target k-path, so the
+        # heuristic can guide toward whichever k-path symbol is needed next.
+        self._target_dists: Optional[list[dict[str, int]]] = None
+        # Reference graph. Shows which symbols directly reference which others.
+        self._ref_fwd: Optional[dict[str, set[str]]] = None
+
+    _SUB_UNREACHABLE = 100_000
+
+    def _reference_graph(self) -> dict[str, set[str]]:
+        """symbol -> set of non-terminals it directly references in its rule body."""
+        if self._ref_fwd is not None:
+            return self._ref_fwd
+
+        def references(body) -> set[str]:
+            out: set[str] = set()
+            stack = [body]
+            seen: set[int] = set()
+            while stack:
+                n = stack.pop()
+                if id(n) in seen:
+                    continue
+                seen.add(id(n))
+                if isinstance(n, (NonTerminalNode, TerminalNode)):
+                    out.add(str(n.symbol))
+                    continue
+                for child in n.children():
+                    stack.append(child)
+            return out
+
+        fwd: dict[str, set[str]] = {}
+        for nt, body in self.grammar.rules.items():
+            fwd[str(nt)] = references(body)
+        self._ref_fwd = fwd
+        return fwd
+
+    def _symbol_distances_to(self, target: Symbol) -> dict[str, int]:
+        """Distance (in rule references) from every symbol to ``target``."""
+        key = str(target)
+        cached = self._dist_cache.get(key)
+        if cached is not None:
+            return cached
+
+        from collections import deque
+
+        fwd = self._reference_graph()
+        rev: dict[str, set[str]] = {}
+        for a, outs in fwd.items():
+            for b in outs:
+                rev.setdefault(b, set()).add(a)
+
+        # Perform breadth-first search from target to every reachable symbol,
+        # record the shortest nr of hops to reach each symbol.
+        dist: dict[str, int] = {key: 0}
+        dq = deque([key])
+        while dq:
+            s = dq.popleft()
+            for p in rev.get(s, ()):
+                if p not in dist:
+                    dist[p] = dist[s] + 1
+                    dq.append(p)
+        self._dist_cache[key] = dist
+        return dist
 
     def astar(
         self,
         start: GrammarGraphNode,
         goal: GrammarGraphNode,
-        reversePath: bool = False,
+        reverse_path: bool = False,
     ) -> Union[Iterable[GrammarGraphNode], None]:
         """
         Overloaded method. Don't call this directly, use astar_tree or astar_search_end instead.
         """
         self.comparisons = 0
-        return super().astar(start, goal, reversePath)
+        return super().astar(start, goal, reverse_path)
 
-    def neighbors(self, node: GrammarGraphNode) -> list[GrammarGraphNode]:
-        return node.reaches
+    def neighbors(self, n: GrammarGraphNode) -> list[GrammarGraphNode]:
+        return n.reaches
 
     def set_message_cost(self, cost: int) -> None:
         self.message_cost = cost
@@ -71,32 +150,42 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
     def _get_path_symbols(
         node: GrammarGraphNode, include_controlflow: bool
     ) -> list[Symbol]:
-        node_chain = [node]
-        current = node
-        while current.parent is not None:
-            current = current.parent
-            node_chain.append(current)
-        chain = list(map(lambda x: x.node.to_symbol(), node_chain))
-        chain = chain[::-1]
-        if include_controlflow:
-            return chain
-        deleted = 0
-        for idx, symbol in enumerate(list(chain)):
-            if isinstance(symbol, NonTerminal) and symbol.name().startswith("<__"):
-                del chain[idx - deleted]
-                deleted += 1
-        return chain
+        return _path_symbols(node, include_controlflow)
 
     def heuristic_path_symbols(self, current_chain: list[Symbol]) -> int:
         if not self.search_symbols or not current_chain:
             return 1
-        max_overlap = 0
         search_len = len(self.search_symbols)
         chain_len = len(current_chain)
+
+        strict = 0
         for i in range(1, min(search_len, chain_len) + 1):
             if current_chain[-i:] == self.search_symbols[:i]:
-                max_overlap = i
-        return int(search_len - max_overlap)
+                strict = i
+        if strict == search_len:
+            return 0
+
+        chain_strs = [str(s) for s in current_chain]
+
+        # Sub-gradient toward search_symbols[strict] (the next symbol that would
+        # extend the live suffix) via the static reference distance, taken as min
+        # over the chain. Reaching an on-path state usually requires detouring
+        # through OFF-path symbols first.
+        BIG = 1_000_000
+        sub = self._SUB_UNREACHABLE
+        if strict < search_len and self._target_dists is not None and strict < len(
+            self._target_dists
+        ):
+            dmap = self._target_dists[strict]
+            best = None
+            for cs in chain_strs:
+                d = dmap.get(cs)
+                if d is not None and (best is None or d < best):
+                    best = d
+            if best is not None:
+                sub = best
+        # Never return 0 here
+        return max((search_len - strict) * BIG + sub, 1)
 
     def heuristic_cost_estimate(
         self, current: GrammarGraphNode, goal: GrammarGraphNode
@@ -155,6 +244,13 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         else:
             start_nav_node = self.graph.start
         self.search_symbols = list(destination_k_path)
+        # Precompute static reference distances to each symbol of the k-path so
+        # the heuristic has a gradient toward whichever symbol is needed next
+        # (not just the first). Crossing message-state plateaus between two
+        # k-path symbols otherwise degenerates to brute force.
+        self._target_dists = [
+            self._symbol_distances_to(s) for s in destination_k_path
+        ]
         a_star_path = self.astar(
             start_nav_node,
             EagerGrammarGraphNode(NonTerminalNode(NonTerminal("<dummy>"), []), []),
