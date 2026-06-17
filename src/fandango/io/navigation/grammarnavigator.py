@@ -39,7 +39,6 @@ class NavigatorTimedOutError(FandangoError):
 
 
 class GrammarNavigator(AStar[GrammarGraphNode]):
-
     def __init__(
         self, grammar: Grammar, start_symbol: NonTerminal = NonTerminal("<start>")
     ):
@@ -205,8 +204,10 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         # through OFF-path symbols first.
         BIG = 1_000_000
         sub = self._SUB_UNREACHABLE
-        if strict < search_len and self._target_dists is not None and strict < len(
-            self._target_dists
+        if (
+            strict < search_len
+            and self._target_dists is not None
+            and strict < len(self._target_dists)
         ):
             dmap = self._target_dists[strict]
             best = None
@@ -280,18 +281,14 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         # Record the realized derivation path as forbidden only when there is an
         # existing derivation whose match cannot be completed by extension.
         if tree is not None and not reachability.completable_by_extension:
-            self._forbidden_path = tuple(
-                self._get_path_symbols(start_nav_node, False)
-            )
+            self._forbidden_path = tuple(self._get_path_symbols(start_nav_node, False))
         else:
             self._forbidden_path = tuple()
         # Precompute static reference distances to each symbol of the k-path so
         # the heuristic has a gradient toward whichever symbol is needed next
         # (not just the first). Crossing message-state plateaus between two
         # k-path symbols otherwise degenerates to brute force.
-        self._target_dists = [
-            self._symbol_distances_to(s) for s in destination_k_path
-        ]
+        self._target_dists = [self._symbol_distances_to(s) for s in destination_k_path]
         a_star_path = self.astar(
             start_nav_node,
             EagerGrammarGraphNode(NonTerminalNode(NonTerminal("<dummy>"), []), []),

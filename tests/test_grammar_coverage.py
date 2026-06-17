@@ -12,7 +12,8 @@ from fandango.language.parse.parse import parse
 from fandango.evolution.algorithm import (
     DefaultAlgorithm,
     GeneticAlgorithm,
-    LoggerLevel, ProtocolAlgorithm,
+    LoggerLevel,
+    ProtocolAlgorithm,
 )
 from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import AuthResult, LoginPassword
@@ -93,10 +94,7 @@ class Server(NetworkParty):
             )
         assert grammar is not None
         return ProtocolAlgorithm(
-            packet_algorithm=DefaultAlgorithm(
-                grammar=grammar,
-                constraints=constraints
-            ),
+            packet_algorithm=DefaultAlgorithm(grammar=grammar, constraints=constraints),
             coverage_goal=coverage_goal,
         )
 

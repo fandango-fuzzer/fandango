@@ -4,6 +4,7 @@ Tests for permutation-aware handling in PacketSelector:
   - When a permutation peer arrives out of order, it is removed from the
     guide path in-place rather than triggering a full re-plan
 """
+
 import unittest
 
 from fandango.api import Fandango
@@ -53,7 +54,9 @@ class _StubSelector(PacketSelector):
     """PacketSelector with forecasting/party stubs so guide-path tests
     don't depend on a live IO instance or full coverage computation."""
 
-    def next_fuzzer_parties(self, show_fuzzer_controlled=True, show_external_controlled=False):
+    def next_fuzzer_parties(
+        self, show_fuzzer_controlled=True, show_external_controlled=False
+    ):
         return ["StdOut"] if show_fuzzer_controlled else []
 
     def get_fuzzer_packets(self):
@@ -88,10 +91,17 @@ class TestPermutationGroupBuilding(unittest.TestCase):
 
     def test_collect_packet_symbols_from_permutation_node(self):
         settings = self.grammar.grammar_settings
-        nt_a = NonTerminalNode(NonTerminal("<msg_a>"), settings, sender="StdOut", recipient=None)
-        nt_b = NonTerminalNode(NonTerminal("<msg_b>"), settings, sender="StdOut", recipient=None)
+        nt_a = NonTerminalNode(
+            NonTerminal("<msg_a>"), settings, sender="StdOut", recipient=None
+        )
+        nt_b = NonTerminalNode(
+            NonTerminal("<msg_b>"), settings, sender="StdOut", recipient=None
+        )
         alt = Alternative(
-            [Concatenation([nt_a, nt_b], settings), Concatenation([nt_b, nt_a], settings)],
+            [
+                Concatenation([nt_a, nt_b], settings),
+                Concatenation([nt_b, nt_a], settings),
+            ],
             settings,
             is_permutation=True,
         )
@@ -101,8 +111,12 @@ class TestPermutationGroupBuilding(unittest.TestCase):
 
     def test_non_permutation_alternative_yields_no_group(self):
         settings = self.grammar.grammar_settings
-        nt_a = NonTerminalNode(NonTerminal("<msg_a>"), settings, sender="StdOut", recipient=None)
-        nt_b = NonTerminalNode(NonTerminal("<msg_b>"), settings, sender="StdOut", recipient=None)
+        nt_a = NonTerminalNode(
+            NonTerminal("<msg_a>"), settings, sender="StdOut", recipient=None
+        )
+        nt_b = NonTerminalNode(
+            NonTerminal("<msg_b>"), settings, sender="StdOut", recipient=None
+        )
         alt = Alternative([nt_a, nt_b], settings, is_permutation=False)
         groups: dict[NonTerminal, frozenset[NonTerminal]] = {}
         sel = self._bare_selector()
@@ -151,7 +165,9 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
         sel._select_next_packet()
 
         self.assertIn(pnt_a, sel._guide_path, "pnt_a should still be pending")
-        self.assertNotIn(pnt_b, sel._guide_path, "pnt_b arrived – should be gone from path")
+        self.assertNotIn(
+            pnt_b, sel._guide_path, "pnt_b arrived – should be gone from path"
+        )
         self.assertIn(pnt_c, sel._guide_path, "pnt_c should still be pending")
 
     def test_guide_path_unchanged_when_no_new_messages(self):

@@ -215,12 +215,22 @@ class PacketSelector:
         assert self.forecasting_result is not None
         return len(self.forecasting_result.complete_trees) != 0
 
-    def next_fuzzer_parties(self, show_fuzzer_controlled = True, show_external_controlled = False) -> list[str]:
+    def next_fuzzer_parties(
+        self, show_fuzzer_controlled=True, show_external_controlled=False
+    ) -> list[str]:
         assert self.forecasting_result is not None
         return list(
             filter(
-                lambda x: (self.io_instance.parties[x].is_fuzzer_controlled() and show_fuzzer_controlled) or
-                          (not self.io_instance.parties[x].is_fuzzer_controlled() and show_external_controlled),
+                lambda x: (
+                    (
+                        self.io_instance.parties[x].is_fuzzer_controlled()
+                        and show_fuzzer_controlled
+                    )
+                    or (
+                        not self.io_instance.parties[x].is_fuzzer_controlled()
+                        and show_external_controlled
+                    )
+                ),
                 self.forecasting_result.get_msg_parties(),
             )
         )

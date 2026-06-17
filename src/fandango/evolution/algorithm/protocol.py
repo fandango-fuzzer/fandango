@@ -19,7 +19,6 @@ from fandango.logger import LOGGER, log_guidance_hint, log_message_transfer
 
 
 class ProtocolAlgorithm(GeneticAlgorithm):
-
     def __init__(
         self,
         packet_algorithm: GeneticAlgorithm,
@@ -29,11 +28,11 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._start_symbol = NonTerminal("<start>")
         self._packet_algorithm = packet_algorithm
         self.grammar = packet_algorithm.grammar
-        self._population_manager = IoPopulationManager(self.grammar, str(self._start_symbol))
-        self._packet_algorithm.population_manager = self._population_manager
-        self._protocol_tree: DerivationTree = DerivationTree(
-            self._start_symbol
+        self._population_manager = IoPopulationManager(
+            self.grammar, str(self._start_symbol)
         )
+        self._packet_algorithm.population_manager = self._population_manager
+        self._protocol_tree: DerivationTree = DerivationTree(self._start_symbol)
         self._past_interactions: list[DerivationTree] = []
         self._coverage_goal = coverage_goal
         self._remote_response_timeout = remote_response_timeout
@@ -42,24 +41,19 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             self.grammar,
             self._io_instance,
             self._protocol_tree,
-            self._packet_algorithm.diversity_k
+            self._packet_algorithm.diversity_k,
         )
         self._packet_selector.set_coverage_goal(self._coverage_goal)
         self._packet_coverage_filter = PacketCoverageFilter(
-            self._packet_algorithm.diversity_k,
-            self.grammar
+            self._packet_algorithm.diversity_k, self.grammar
         )
-
 
     def _is_protocol_run_complete(self) -> bool:
         return (
-            (
-                len(self._packet_selector.get_next_parties()) == 0
-                or self._packet_selector.is_guide_to_end()
-                or self._coverage_goal == CoverageGoal.SINGLE_DERIVATION
-            )
-            and self._packet_selector.is_complete()
-        )
+            len(self._packet_selector.get_next_parties()) == 0
+            or self._packet_selector.is_guide_to_end()
+            or self._coverage_goal == CoverageGoal.SINGLE_DERIVATION
+        ) and self._packet_selector.is_complete()
 
     def _wait_for_remote_message(self, timeout: float) -> bool:
         wait_start = time.time()
@@ -94,9 +88,13 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 # does not corrupt the shared base tree for the next candidate.
                 history_tree = hookin_option.tree.deepcopy(copy_parent=False)
                 history_tree.append(hookin_option.path[1:-1], packet_tree)
-                _solutions, (fitness, _failing_trees, _suggestion) = GeneratorWithReturn(
-                    self._packet_algorithm.evaluator.evaluate_individual(history_tree)
-                ).collect()
+                _solutions, (fitness, _failing_trees, _suggestion) = (
+                    GeneratorWithReturn(
+                        self._packet_algorithm.evaluator.evaluate_individual(
+                            history_tree
+                        )
+                    ).collect()
+                )
                 assert fitness <= 1.0
                 if fitness == 1.0:
                     log_message_transfer(
@@ -115,7 +113,6 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 False,
             )
         raise FandangoParseError("Remote response does not match constraints")
-
 
     def _generate_packet(self, max_generations: int | None = None) -> DerivationTree:
         if max_generations is None:
@@ -136,9 +133,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                             eval_individual=self._packet_algorithm.evaluator.evaluate_individual,
                             max_nodes=self._packet_algorithm.adaptive_tuner.current_max_nodes,
                             target_population_size=self._packet_algorithm.population_size,
-                        )
+                        ),
                     )
-
                 )
             ]
         except StopIteration:
@@ -155,7 +151,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     lambda x: self._packet_coverage_filter.filter(x),
                     self._packet_algorithm.generate(
                         max_generations=selected_packet_max_generations
-                    )
+                    ),
                 )
             )
         except StopIteration:
@@ -167,9 +163,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._population_manager.allow_fallback_packets = True
         try:
             return next(
-                self._packet_algorithm.generate(
-                    max_generations=overall_max_generations
-                )
+                self._packet_algorithm.generate(max_generations=overall_max_generations)
             )
         except StopIteration:
             all_allowed_packets = (
@@ -182,7 +176,6 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             raise FandangoFailedError(
                 f"Couldn't find solution for any packet: {nonterminals_str}"
             )
-
 
     def _is_failed_forecast(self) -> bool:
         return (
@@ -226,15 +219,21 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 self._packet_coverage_filter.set_existing_derivations(
                     [self._protocol_tree] + self._past_interactions
                 )
-                next_history_tree = self._generate_packet(max_generations=max_generations)
+                next_history_tree = self._generate_packet(
+                    max_generations=max_generations
+                )
                 if self._io_instance.received_msg():
                     continue
                 new_packet = next_history_tree.protocol_msgs()[-1]
                 if (
-                        new_packet.recipient is None
-                        or not self._io_instance.parties[new_packet.recipient].is_fuzzer_controlled()
+                    new_packet.recipient is None
+                    or not self._io_instance.parties[
+                        new_packet.recipient
+                    ].is_fuzzer_controlled()
                 ):
-                    self._io_instance.transmit(new_packet.sender, new_packet.recipient, new_packet.msg)
+                    self._io_instance.transmit(
+                        new_packet.sender, new_packet.recipient, new_packet.msg
+                    )
                     log_message_transfer(
                         new_packet.sender,
                         new_packet.recipient,
@@ -265,11 +264,12 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         LOGGER.debug(f"Trying to generate: {', '.join(preferred_symbols)}")
 
     def _should_generate_next_packet(self) -> bool:
-        return len(self._packet_selector.next_fuzzer_parties()) != 0 and not self._io_instance.received_msg()
+        return (
+            len(self._packet_selector.next_fuzzer_parties()) != 0
+            and not self._io_instance.received_msg()
+        )
 
     def reset(self):
         self._packet_algorithm.reset()
         self._past_interactions.clear()
-        self._protocol_tree = DerivationTree(
-            self._start_symbol
-        )
+        self._protocol_tree = DerivationTree(self._start_symbol)

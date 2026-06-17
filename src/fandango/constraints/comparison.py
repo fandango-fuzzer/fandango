@@ -103,9 +103,9 @@ class ComparisonConstraint(Constraint):
         :param dict[str, NonTerminalSearch] right_searches: The searches to use for the right side.
         :param kwargs: Additional keyword arguments.
         """
-        assert (
-            "searches" not in kwargs
-        ), "don't provide searches combination, instead provide left_searches and right_searches"
+        assert "searches" not in kwargs, (
+            "don't provide searches combination, instead provide left_searches and right_searches"
+        )
         searches: dict[str, NonTerminalSearch] = {}
         searches.update(
             {

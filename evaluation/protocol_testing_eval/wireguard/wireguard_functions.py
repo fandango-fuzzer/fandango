@@ -15,19 +15,20 @@ IDENTIFIER = b"WireGuard v1 zx2c4 Jason@zx2c4.com"
 LABEL_MAC1 = b"mac1----"
 LABEL_COOKIE = b"cookie--"
 
-unencrypted_ephemeral = b'\x00'
+unencrypted_ephemeral = b"\x00"
 responder_ephemeral_public: bytes = (
-    x25519.X25519PrivateKey.from_private_bytes(b'\x01' * 32)
+    x25519.X25519PrivateKey.from_private_bytes(b"\x01" * 32)
     .public_key()
     .public_bytes_raw()
 )
-tai_64n = b''
-responder_sender_index: bytes = b'\x00' * 4
+tai_64n = b""
+responder_sender_index: bytes = b"\x00" * 4
 
-session_sending_key = b'\x00' * 32
-session_receiving_key = b'\x00' * 32
+session_sending_key = b"\x00" * 32
+session_receiving_key = b"\x00" * 32
 sending_key_counter = 0
 receiving_key_counter = 0
+
 
 class Client(NetworkParty):
     def __init__(self):
@@ -41,9 +42,12 @@ class Client(NetworkParty):
         increment_receiving_key_counter()
         super().receive(message, "Server")
 
-    def send(self, message: DerivationTree | str | bytes, recipient: Optional[str] = None) -> None:
+    def send(
+        self, message: DerivationTree | str | bytes, recipient: Optional[str] = None
+    ) -> None:
         increment_sending_key_counter()
         super().send(message, recipient)
+
 
 class Server(NetworkParty):
     def __init__(self):
@@ -59,100 +63,127 @@ class Server(NetworkParty):
             set_responder_ephemeral(message[12:44])
         super().receive(message, sender)
 
+
 def get_session_sending_key() -> bytes:
     return session_sending_key
+
 
 def get_session_receiving_key() -> bytes:
     return session_receiving_key
 
+
 def get_unencrypted_ephemeral() -> bytes:
     return unencrypted_ephemeral
 
+
 def get_responder_ephemeral() -> bytes:
     return responder_ephemeral_public
+
 
 def set_responder_ephemeral(data: bytes) -> None:
     global responder_ephemeral_public
     responder_ephemeral_public = data
 
+
 def get_responder_sender_index() -> bytes:
     return responder_sender_index
+
 
 def set_responder_sender_index(data: bytes) -> None:
     global responder_sender_index
     responder_sender_index = data
 
+
 def get_sending_key_counter() -> int:
     return sending_key_counter
 
+
 def get_sending_key_counter_as_bytes() -> bytes:
-    return struct.pack('<Q', sending_key_counter)
+    return struct.pack("<Q", sending_key_counter)
+
 
 def get_receiving_key_counter() -> int:
     return receiving_key_counter
 
+
 def get_receiving_key_counter_as_bytes() -> bytes:
-    return struct.pack('<Q', receiving_key_counter)
+    return struct.pack("<Q", receiving_key_counter)
+
 
 def increment_sending_key_counter() -> None:
     global sending_key_counter
     sending_key_counter += 1
 
+
 def increment_receiving_key_counter() -> None:
     global receiving_key_counter
     receiving_key_counter += 1
 
+
 def get_tai_64n() -> bytes:
     return tai_64n
 
+
 def TAI64N() -> bytes:
     t = time.time()
-    secs = int(t) + 0x400000000000000a
+    secs = int(t) + 0x400000000000000A
     nanos = int((t - int(t)) * 1e9)
     global tai_64n
     tai_64n = struct.pack(">Q", secs) + struct.pack(">I", nanos)
     return tai_64n
 
+
 def MAC(key: bytes, data: bytes) -> bytes:
     return blake2s(data, key=key, digest_size=16).digest()
+
 
 def DH(private: x25519.X25519PrivateKey, public: x25519.X25519PublicKey) -> bytes:
     return private.exchange(public)
 
-def AEAD(key: bytes, nonce: int|bytes, plaintext: bytes, ad: bytes) -> bytes:
+
+def AEAD(key: bytes, nonce: int | bytes, plaintext: bytes, ad: bytes) -> bytes:
     if isinstance(nonce, int):
         nonce = b"\x00" * 4 + struct.pack("<Q", nonce)
     return ChaCha20Poly1305(key).encrypt(nonce, plaintext, ad)
 
+
 def HASH(data: bytes) -> bytes:
     return blake2s(data, digest_size=32).digest()
+
 
 def HMAC_blake2s(key: bytes, data: bytes) -> bytes:
     h = hmac.HMAC(key, hashes.BLAKE2s(32))
     h.update(data)
     return h.finalize()
 
-def AEAD_decrypt(key: bytes, nonce: int|bytes, ciphertext: bytes, ad: bytes) -> bytes:
+
+def AEAD_decrypt(key: bytes, nonce: int | bytes, ciphertext: bytes, ad: bytes) -> bytes:
     if isinstance(nonce, int):
         nonce = b"\x00" * 4 + struct.pack("<Q", nonce)
     return ChaCha20Poly1305(key).decrypt(nonce, ciphertext, ad)
 
-def create_handshake_initiation_full(initiator_static_private, initiator_ephemeral_private,
-                                      responder_static_public, timestamp64n):
+
+def create_handshake_initiation_full(
+    initiator_static_private,
+    initiator_ephemeral_private,
+    responder_static_public,
+    timestamp64n,
+):
     chaining_key = HASH(CONSTRUCTION)
-    hash_ = HASH(HASH(chaining_key + IDENTIFIER) +
-                 responder_static_public.public_bytes_raw())
+    hash_ = HASH(
+        HASH(chaining_key + IDENTIFIER) + responder_static_public.public_bytes_raw()
+    )
 
     ephemeral_public = initiator_ephemeral_private.public_key().public_bytes_raw()
     hash_ = HASH(hash_ + ephemeral_public)
 
     temp = HMAC_blake2s(chaining_key, ephemeral_public)
-    chaining_key = HMAC_blake2s(temp, b'\x01')
+    chaining_key = HMAC_blake2s(temp, b"\x01")
 
     dh1 = DH(initiator_ephemeral_private, responder_static_public)
     temp = HMAC_blake2s(chaining_key, dh1)
-    chaining_key = HMAC_blake2s(temp, b'\x01')
-    key = HMAC_blake2s(temp, chaining_key + b'\x02')
+    chaining_key = HMAC_blake2s(temp, b"\x01")
+    key = HMAC_blake2s(temp, chaining_key + b"\x02")
 
     static_public = initiator_static_private.public_key().public_bytes_raw()
     encrypted_static = AEAD(key, 0, static_public, hash_)
@@ -160,8 +191,8 @@ def create_handshake_initiation_full(initiator_static_private, initiator_ephemer
 
     dh2 = DH(initiator_static_private, responder_static_public)
     temp = HMAC_blake2s(chaining_key, dh2)
-    chaining_key = HMAC_blake2s(temp, b'\x01')
-    key = HMAC_blake2s(temp, chaining_key + b'\x02')
+    chaining_key = HMAC_blake2s(temp, b"\x01")
+    key = HMAC_blake2s(temp, chaining_key + b"\x02")
 
     encrypted_timestamp = AEAD(key, 0, timestamp64n, hash_)
     hash_ = HASH(hash_ + encrypted_timestamp)
@@ -176,50 +207,67 @@ def create_handshake_initiation_full(initiator_static_private, initiator_ephemer
     return msg, chaining_key, hash_
 
 
-def create_handshake_initiation(initiator_static_private, initiator_ephemeral_private,
-                                 responder_static_public, timestamp64n):
+def create_handshake_initiation(
+    initiator_static_private,
+    initiator_ephemeral_private,
+    responder_static_public,
+    timestamp64n,
+):
     msg, _, _ = create_handshake_initiation_full(
-        initiator_static_private, initiator_ephemeral_private,
-        responder_static_public, timestamp64n)
+        initiator_static_private,
+        initiator_ephemeral_private,
+        responder_static_public,
+        timestamp64n,
+    )
     return msg
 
-def initiator_mac_1(msg: bytes, responder_static_public: x25519.X25519PublicKey) -> bytes:
+
+def initiator_mac_1(
+    msg: bytes, responder_static_public: x25519.X25519PublicKey
+) -> bytes:
     mac1_key = HASH(LABEL_MAC1 + responder_static_public.public_bytes_raw())
     mac1 = MAC(mac1_key, msg)
     return mac1
 
 
-def derive_session_keys(initiator_static_private, initiator_ephemeral_private,
-                         responder_static_public, timestamp64n,
-                         resp_ephemeral_bytes: bytes,
-                         psk: bytes = b'\x00' * 32):
+def derive_session_keys(
+    initiator_static_private,
+    initiator_ephemeral_private,
+    responder_static_public,
+    timestamp64n,
+    resp_ephemeral_bytes: bytes,
+    psk: bytes = b"\x00" * 32,
+):
     _, ck, h = create_handshake_initiation_full(
-        initiator_static_private, initiator_ephemeral_private,
-        responder_static_public, timestamp64n)
+        initiator_static_private,
+        initiator_ephemeral_private,
+        responder_static_public,
+        timestamp64n,
+    )
 
     resp_eph_pub = x25519.X25519PublicKey.from_public_bytes(resp_ephemeral_bytes)
 
     h = HASH(h + resp_ephemeral_bytes)
     temp = HMAC_blake2s(ck, resp_ephemeral_bytes)
-    ck = HMAC_blake2s(temp, b'\x01')
+    ck = HMAC_blake2s(temp, b"\x01")
 
     dh1 = DH(initiator_ephemeral_private, resp_eph_pub)
     temp = HMAC_blake2s(ck, dh1)
-    ck = HMAC_blake2s(temp, b'\x01')
+    ck = HMAC_blake2s(temp, b"\x01")
 
     dh2 = DH(initiator_static_private, resp_eph_pub)
     temp = HMAC_blake2s(ck, dh2)
-    ck = HMAC_blake2s(temp, b'\x01')
+    ck = HMAC_blake2s(temp, b"\x01")
 
     temp = HMAC_blake2s(ck, psk)
-    ck   = HMAC_blake2s(temp, b'\x01')
-    tau  = HMAC_blake2s(temp, ck + b'\x02')
+    ck = HMAC_blake2s(temp, b"\x01")
+    tau = HMAC_blake2s(temp, ck + b"\x02")
     h = HASH(h + tau)
 
-    temp1 = HMAC_blake2s(ck, b'')
-    temp2 = HMAC_blake2s(temp1, b'\x01')
-    temp3 = HMAC_blake2s(temp1, temp2 + b'\x02')
-    sending_key   = temp2
+    temp1 = HMAC_blake2s(ck, b"")
+    temp2 = HMAC_blake2s(temp1, b"\x01")
+    temp3 = HMAC_blake2s(temp1, temp2 + b"\x02")
+    sending_key = temp2
     receiving_key = temp3
 
     global session_sending_key, session_receiving_key
@@ -233,20 +281,28 @@ def derive_session_keys(initiator_static_private, initiator_ephemeral_private,
     return sending_key, receiving_key
 
 
-def encrypt_transport(sending_key: bytes, counter_bytes: bytes,
-                       plaintext: bytes = b'') -> bytes:
+def encrypt_transport(
+    sending_key: bytes, counter_bytes: bytes, plaintext: bytes = b""
+) -> bytes:
     pad_len = (16 - len(plaintext) % 16) % 16
-    padded  = plaintext + b'\x00' * pad_len
-    counter = struct.unpack('<Q', counter_bytes)[0]
-    return AEAD(sending_key, counter, padded, b'')
+    padded = plaintext + b"\x00" * pad_len
+    counter = struct.unpack("<Q", counter_bytes)[0]
+    return AEAD(sending_key, counter, padded, b"")
+
 
 def decrypt_transport(key, counter_bytes, ciphertext):
-    counter = struct.unpack('<Q', counter_bytes)[0]
-    padded = AEAD_decrypt(key, counter, ciphertext, b'')
-    return padded.rstrip(b'\x00')
+    counter = struct.unpack("<Q", counter_bytes)[0]
+    padded = AEAD_decrypt(key, counter, ciphertext, b"")
+    return padded.rstrip(b"\x00")
+
 
 def count_data_packets(packet_nt):
-    return len(packet_nt.prefix().get_root().find_all_nodes(NonTerminal("<data_counter>"), exclude_read_only=False))
+    return len(
+        packet_nt.prefix()
+        .get_root()
+        .find_all_nodes(NonTerminal("<data_counter>"), exclude_read_only=False)
+    )
+
 
 def generate_udp_checksum(udp_packet_tree: DerivationTree):
     data = bytes(udp_packet_tree)
@@ -268,22 +324,29 @@ def generate_udp_checksum(udp_packet_tree: DerivationTree):
     return checksum.to_bytes(2, byteorder="big")
 
 
-def encrypt_cookie(nonce: DerivationTree, unencrypted_cookie: DerivationTree, responder_static_public) -> bytes:
+def encrypt_cookie(
+    nonce: DerivationTree, unencrypted_cookie: DerivationTree, responder_static_public
+) -> bytes:
     tau = HASH(LABEL_COOKIE + responder_static_public.public_bytes_raw())
-    encrypted_cookie = AEAD(tau, bytes(nonce), bytes(unencrypted_cookie), b'LAST_RECEIVED_MSG__MAC_1')
+    encrypted_cookie = AEAD(
+        tau, bytes(nonce), bytes(unencrypted_cookie), b"LAST_RECEIVED_MSG__MAC_1"
+    )
     return encrypted_cookie
+
 
 def decrypt_cookie(cookie_reply: DerivationTree, responder_static_public) -> bytes:
     nonce = bytes(cookie_reply)[:24]
     ciphertext = bytes(cookie_reply)[24:]
     tau = HASH(LABEL_COOKIE + responder_static_public.public_bytes_raw())
-    AEAD_decrypt(tau, nonce, ciphertext, b'LAST_RECEIVED_MSG__MAC_1')
+    AEAD_decrypt(tau, nonce, ciphertext, b"LAST_RECEIVED_MSG__MAC_1")
     pass
+
 
 def extract_cookie_nonce(cookie_reply: DerivationTree) -> bytes:
     return bytes(cookie_reply)[:24]
 
+
 def generate_cookie() -> bytes:
     initiator_ip = Client.instance().protocol_impl.ip
-    responder_changing_secret_every_two_minutes = b'CHANGE_ME'
+    responder_changing_secret_every_two_minutes = b"CHANGE_ME"
     return MAC(responder_changing_secret_every_two_minutes, initiator_ip)

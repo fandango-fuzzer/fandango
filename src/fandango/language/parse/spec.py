@@ -228,9 +228,7 @@ class CachedFandangoSpec:
         cache_dir = get_cache_dir()
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir, mode=0o700, exist_ok=True)
-            cachedir_tag.tag(
-                cache_dir, application="Fandango"
-            )  # type: ignore[no-untyped-call] # cachedir_tag doesn't provide types
+            cachedir_tag.tag(cache_dir, application="Fandango")  # type: ignore[no-untyped-call] # cachedir_tag doesn't provide types
 
         # Keep separate hashes for different Fandango and Python versions
         hash_contents = fan_contents + fandango.version() + "-" + sys.version

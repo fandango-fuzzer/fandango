@@ -333,9 +333,9 @@ def test_to_underlying_type_no_arg(method):
         check_method(DerivationTree(Terminal(b"1")), method)
         check_method(TreeValue(b"1"), method)
         run += 1
-    assert (
-        run > 0
-    ), f"{method} not found in dirs of 1, {set(dir(1) + dir('1') + dir(b'1'))}"
+    assert run > 0, (
+        f"{method} not found in dirs of 1, {set(dir(1) + dir('1') + dir(b'1'))}"
+    )
 
 
 UNDERLYING_TYPE_INT_ARG = [
@@ -380,9 +380,9 @@ def test_to_underlying_type_int_arg(method):
         check_method(DerivationTree(Terminal(left[2])), method, right[2])
         check_method(TreeValue(left[2]), method, right[2])
         run += 1
-    assert (
-        run > 0
-    ), f"{method} not found in dirs of 1, {set(dir(1) + dir('1') + dir(b'1'))}"
+    assert run > 0, (
+        f"{method} not found in dirs of 1, {set(dir(1) + dir('1') + dir(b'1'))}"
+    )
 
 
 MODS = [
@@ -420,9 +420,9 @@ def test_to_underlying_type_mod(method):
         )
         assert not callable(getattr(TreeValue(left[2]), method)(right[2]))
         run += 1
-    assert (
-        run > 0
-    ), f"{method} not found in dirs of 1, {set(dir(1) + dir('1') + dir(b'1'))}"
+    assert run > 0, (
+        f"{method} not found in dirs of 1, {set(dir(1) + dir('1') + dir(b'1'))}"
+    )
 
 
 FORMATS = [
@@ -456,9 +456,9 @@ def test_to_underlying_type_format(method):
         check_method(TreeValue(b"{}"), method, b"1")
         run += 1
 
-    assert (
-        run > 0
-    ), f"{method} not found in dirs of 1, {set(dir(1) + dir('1') + dir(b'1'))}"
+    assert run > 0, (
+        f"{method} not found in dirs of 1, {set(dir(1) + dir('1') + dir(b'1'))}"
+    )
 
 
 FORMAT_MAP = [
@@ -550,9 +550,9 @@ def test_to_first_arg(method):
         assert not callable(getattr(DerivationTree(Terminal(b"1")), method)(b"1"))
         assert not callable(getattr(TreeValue(b"1"), method)(b"1"))
         run += 1
-    assert (
-        run > 0
-    ), f"{method} not found in dirs of 1, {set(dir(1) + dir('1') + dir(b'1'))}"
+    assert run > 0, (
+        f"{method} not found in dirs of 1, {set(dir(1) + dir('1') + dir(b'1'))}"
+    )
 
 
 def test_check_all_direct_methods_tested():

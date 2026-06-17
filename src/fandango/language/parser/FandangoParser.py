@@ -30984,7 +30984,6 @@ def serializedATN():
 
 
 class FandangoParser(Parser):
-
     grammarFileName = "FandangoParser.g4"
 
     atn = ATNDeserializer().deserialize(serializedATN())
@@ -32000,9 +31999,7 @@ class FandangoParser(Parser):
             _la = self._input.LA(1)
             while (
                 ((_la) & ~0x3F) == 0 and ((1 << _la) & 5764605280868090362) != 0
-            ) or (
-                (((_la - 78)) & ~0x3F) == 0 and ((1 << (_la - 78)) & 8683006489) != 0
-            ):
+            ) or (((_la - 78) & ~0x3F) == 0 and ((1 << (_la - 78)) & 8683006489) != 0):
                 self.state = 505
                 self.statement()
                 self.state = 509
@@ -32495,7 +32492,7 @@ class FandangoParser(Parser):
             _la = self._input.LA(1)
             while (
                 ((_la) & ~0x3F) == 0 and ((1 << _la) & 5116089176692883840) != 0
-            ) or ((((_la - 82)) & ~0x3F) == 0 and ((1 << (_la - 82)) & 4194433) != 0):
+            ) or (((_la - 82) & ~0x3F) == 0 and ((1 << (_la - 82)) & 4194433) != 0):
                 self.state = 620
                 self.operator()
                 self.state = 625
@@ -32778,7 +32775,7 @@ class FandangoParser(Parser):
             _la = self._input.LA(1)
             while (
                 ((_la) & ~0x3F) == 0 and ((1 << _la) & 5116089176692883840) != 0
-            ) or ((((_la - 82)) & ~0x3F) == 0 and ((1 << (_la - 82)) & 4194433) != 0):
+            ) or (((_la - 82) & ~0x3F) == 0 and ((1 << (_la - 82)) & 4194433) != 0):
                 self.state = 646
                 self.symbol()
                 self.state = 651
@@ -32867,7 +32864,7 @@ class FandangoParser(Parser):
                 if (
                     ((_la) & ~0x3F) == 0 and ((1 << _la) & 5116125804241158648) != 0
                 ) or (
-                    (((_la - 78)) & ~0x3F) == 0 and ((1 << (_la - 78)) & 93071897) != 0
+                    ((_la - 78) & ~0x3F) == 0 and ((1 << (_la - 78)) & 93071897) != 0
                 ):
                     self.state = 662
                     self.expression()
@@ -32880,7 +32877,7 @@ class FandangoParser(Parser):
                 if (
                     ((_la) & ~0x3F) == 0 and ((1 << _la) & 5116125804241158648) != 0
                 ) or (
-                    (((_la - 78)) & ~0x3F) == 0 and ((1 << (_la - 78)) & 93071897) != 0
+                    ((_la - 78) & ~0x3F) == 0 and ((1 << (_la - 78)) & 93071897) != 0
                 ):
                     self.state = 666
                     self.expression()
@@ -33268,7 +33265,7 @@ class FandangoParser(Parser):
                             ((_la) & ~0x3F) == 0
                             and ((1 << _la) & 5116125804241158648) != 0
                         ) or (
-                            (((_la - 78)) & ~0x3F) == 0
+                            ((_la - 78) & ~0x3F) == 0
                             and ((1 << (_la - 78)) & 93071897) != 0
                         ):
                             self.state = 717
@@ -35085,7 +35082,7 @@ class FandangoParser(Parser):
             self.expr()
             self.state = 1152
             _la = self._input.LA(1)
-            if not (((((_la - 104)) & ~0x3F) == 0 and ((1 << (_la - 104)) & 127) != 0)):
+            if not (((_la - 104) & ~0x3F) == 0 and ((1 << (_la - 104)) & 127) != 0):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -36546,7 +36543,7 @@ class FandangoParser(Parser):
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             if (((_la) & ~0x3F) == 0 and ((1 << _la) & 5120027567020818936) != 0) or (
-                (((_la - 78)) & ~0x3F) == 0
+                ((_la - 78) & ~0x3F) == 0
                 and ((1 << (_la - 78)) & 1125908589849113) != 0
             ):
                 self.state = 1340
@@ -36723,7 +36720,7 @@ class FandangoParser(Parser):
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             if (((_la) & ~0x3F) == 0 and ((1 << _la) & 5116125804241158648) != 0) or (
-                (((_la - 78)) & ~0x3F) == 0 and ((1 << (_la - 78)) & 93071897) != 0
+                ((_la - 78) & ~0x3F) == 0 and ((1 << (_la - 78)) & 93071897) != 0
             ):
                 self.state = 1359
                 self.type_expressions()
@@ -36871,7 +36868,7 @@ class FandangoParser(Parser):
                 if not (
                     (((_la) & ~0x3F) == 0 and ((1 << _la) & 5120027567020818936) != 0)
                     or (
-                        (((_la - 78)) & ~0x3F) == 0
+                        ((_la - 78) & ~0x3F) == 0
                         and ((1 << (_la - 78)) & 1125908589849113) != 0
                     )
                 ):
@@ -37854,9 +37851,7 @@ class FandangoParser(Parser):
             self.enterOuterAlt(localctx, 1)
             self.state = 1485
             _la = self._input.LA(1)
-            if not (
-                ((((_la - 113)) & ~0x3F) == 0 and ((1 << (_la - 113)) & 8191) != 0)
-            ):
+            if not (((_la - 113) & ~0x3F) == 0 and ((1 << (_la - 113)) & 8191) != 0):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -39149,7 +39144,7 @@ class FandangoParser(Parser):
                 if (
                     ((_la) & ~0x3F) == 0 and ((1 << _la) & 5116125804241158648) != 0
                 ) or (
-                    (((_la - 78)) & ~0x3F) == 0 and ((1 << (_la - 78)) & 93071897) != 0
+                    ((_la - 78) & ~0x3F) == 0 and ((1 << (_la - 78)) & 93071897) != 0
                 ):
                     self.state = 1632
                     self.arguments()
@@ -39301,7 +39296,7 @@ class FandangoParser(Parser):
             self.state = 1656
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la - 56)) & ~0x3F) == 0 and ((1 << (_la - 56)) & 2181038151) != 0:
+            if ((_la - 56) & ~0x3F) == 0 and ((1 << (_la - 56)) & 2181038151) != 0:
                 self.state = 1655
                 self.params()
 
@@ -39530,10 +39525,7 @@ class FandangoParser(Parser):
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
                     if not (
-                        (
-                            ((_la) & ~0x3F) == 0
-                            and ((1 << _la) & 5116089176692883456) != 0
-                        )
+                        ((_la) & ~0x3F) == 0 and ((1 << _la) & 5116089176692883456) != 0
                     ):
                         break
 
@@ -39609,7 +39601,7 @@ class FandangoParser(Parser):
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 if not (
-                    (((_la) & ~0x3F) == 0 and ((1 << _la) & 5116089176692883456) != 0)
+                    ((_la) & ~0x3F) == 0 and ((1 << _la) & 5116089176692883456) != 0
                 ):
                     break
 
@@ -39700,7 +39692,7 @@ class FandangoParser(Parser):
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 if not (
-                    (((_la) & ~0x3F) == 0 and ((1 << _la) & 5116089176692883456) != 0)
+                    ((_la) & ~0x3F) == 0 and ((1 << _la) & 5116089176692883456) != 0
                 ):
                     break
 
@@ -39841,10 +39833,7 @@ class FandangoParser(Parser):
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
                     if not (
-                        (
-                            ((_la) & ~0x3F) == 0
-                            and ((1 << _la) & 5116089176692883456) != 0
-                        )
+                        ((_la) & ~0x3F) == 0 and ((1 << _la) & 5116089176692883456) != 0
                     ):
                         break
 
@@ -41506,7 +41495,7 @@ class FandangoParser(Parser):
                 if (
                     ((_la) & ~0x3F) == 0 and ((1 << _la) & 5116125804241158648) != 0
                 ) or (
-                    (((_la - 78)) & ~0x3F) == 0 and ((1 << (_la - 78)) & 93071897) != 0
+                    ((_la - 78) & ~0x3F) == 0 and ((1 << (_la - 78)) & 93071897) != 0
                 ):
                     self.state = 2041
                     self.star_named_expressions()
@@ -42759,7 +42748,7 @@ class FandangoParser(Parser):
                 if (
                     ((_la) & ~0x3F) == 0 and ((1 << _la) & 5116124636009988600) != 0
                 ) or (
-                    (((_la - 81)) & ~0x3F) == 0
+                    ((_la - 81) & ~0x3F) == 0
                     and ((1 << (_la - 81)) & 1125899909005571) != 0
                 ):
                     self.state = 2156
@@ -42778,7 +42767,7 @@ class FandangoParser(Parser):
                 if (
                     ((_la) & ~0x3F) == 0 and ((1 << _la) & 5116124636009988600) != 0
                 ) or (
-                    (((_la - 81)) & ~0x3F) == 0
+                    ((_la - 81) & ~0x3F) == 0
                     and ((1 << (_la - 81)) & 1125899909005571) != 0
                 ):
                     self.state = 2161
@@ -42844,7 +42833,7 @@ class FandangoParser(Parser):
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             if (((_la) & ~0x3F) == 0 and ((1 << _la) & 5116124636009988600) != 0) or (
-                (((_la - 81)) & ~0x3F) == 0
+                ((_la - 81) & ~0x3F) == 0
                 and ((1 << (_la - 81)) & 1125899909005571) != 0
             ):
                 self.state = 2169
@@ -46349,7 +46338,7 @@ class FandangoParser(Parser):
                             ((_la) & ~0x3F) == 0
                             and ((1 << _la) & 5116125804241158648) != 0
                         ) or (
-                            (((_la - 78)) & ~0x3F) == 0
+                            ((_la - 78) & ~0x3F) == 0
                             and ((1 << (_la - 78)) & 93071897) != 0
                         ):
                             self.state = 2587
@@ -46542,7 +46531,7 @@ class FandangoParser(Parser):
                 if (
                     ((_la) & ~0x3F) == 0 and ((1 << _la) & 5116125804241158648) != 0
                 ) or (
-                    (((_la - 78)) & ~0x3F) == 0 and ((1 << (_la - 78)) & 93071897) != 0
+                    ((_la - 78) & ~0x3F) == 0 and ((1 << (_la - 78)) & 93071897) != 0
                 ):
                     self.state = 2618
                     self.expression()
@@ -46555,7 +46544,7 @@ class FandangoParser(Parser):
                 if (
                     ((_la) & ~0x3F) == 0 and ((1 << _la) & 5116125804241158648) != 0
                 ) or (
-                    (((_la - 78)) & ~0x3F) == 0 and ((1 << (_la - 78)) & 93071897) != 0
+                    ((_la - 78) & ~0x3F) == 0 and ((1 << (_la - 78)) & 93071897) != 0
                 ):
                     self.state = 2622
                     self.expression()
@@ -46572,7 +46561,7 @@ class FandangoParser(Parser):
                     if (
                         ((_la) & ~0x3F) == 0 and ((1 << _la) & 5116125804241158648) != 0
                     ) or (
-                        (((_la - 78)) & ~0x3F) == 0
+                        ((_la - 78) & ~0x3F) == 0
                         and ((1 << (_la - 78)) & 93071897) != 0
                     ):
                         self.state = 2626
@@ -46925,7 +46914,7 @@ class FandangoParser(Parser):
             self.state = 2668
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la - 56)) & ~0x3F) == 0 and ((1 << (_la - 56)) & 2181038151) != 0:
+            if ((_la - 56) & ~0x3F) == 0 and ((1 << (_la - 56)) & 2181038151) != 0:
                 self.state = 2667
                 self.lambda_params()
 
@@ -47142,10 +47131,7 @@ class FandangoParser(Parser):
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
                     if not (
-                        (
-                            ((_la) & ~0x3F) == 0
-                            and ((1 << _la) & 5116089176692883456) != 0
-                        )
+                        ((_la) & ~0x3F) == 0 and ((1 << _la) & 5116089176692883456) != 0
                     ):
                         break
 
@@ -47225,7 +47211,7 @@ class FandangoParser(Parser):
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 if not (
-                    (((_la) & ~0x3F) == 0 and ((1 << _la) & 5116089176692883456) != 0)
+                    ((_la) & ~0x3F) == 0 and ((1 << _la) & 5116089176692883456) != 0
                 ):
                     break
 
@@ -47320,7 +47306,7 @@ class FandangoParser(Parser):
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 if not (
-                    (((_la) & ~0x3F) == 0 and ((1 << _la) & 5116089176692883456) != 0)
+                    ((_la) & ~0x3F) == 0 and ((1 << _la) & 5116089176692883456) != 0
                 ):
                     break
 
@@ -47433,10 +47419,7 @@ class FandangoParser(Parser):
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
                     if not (
-                        (
-                            ((_la) & ~0x3F) == 0
-                            and ((1 << _la) & 5116089176692883456) != 0
-                        )
+                        ((_la) & ~0x3F) == 0 and ((1 << _la) & 5116089176692883456) != 0
                     ):
                         break
 
@@ -50259,10 +50242,10 @@ class FandangoParser(Parser):
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 while (
-                    (((_la - 8)) & ~0x3F) == 0
+                    ((_la - 8) & ~0x3F) == 0
                     and ((1 << (_la - 8)) & 740842138635337725) != 0
                 ) or (
-                    (((_la - 75)) & ~0x3F) == 0
+                    ((_la - 75) & ~0x3F) == 0
                     and ((1 << (_la - 75)) & 171136785840078843) != 0
                 ):
                     self.state = 2977
@@ -50282,10 +50265,10 @@ class FandangoParser(Parser):
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 while (
-                    (((_la - 8)) & ~0x3F) == 0
+                    ((_la - 8) & ~0x3F) == 0
                     and ((1 << (_la - 8)) & 380554168445698045) != 0
                 ) or (
-                    (((_la - 75)) & ~0x3F) == 0
+                    ((_la - 75) & ~0x3F) == 0
                     and ((1 << (_la - 75)) & 171136785840078843) != 0
                 ):
                     self.state = 2985
@@ -50305,10 +50288,10 @@ class FandangoParser(Parser):
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 while (
-                    (((_la - 8)) & ~0x3F) == 0
+                    ((_la - 8) & ~0x3F) == 0
                     and ((1 << (_la - 8)) & 596726950559481853) != 0
                 ) or (
-                    (((_la - 75)) & ~0x3F) == 0
+                    ((_la - 75) & ~0x3F) == 0
                     and ((1 << (_la - 75)) & 180143985094819835) != 0
                 ):
                     self.state = 2993
@@ -50328,10 +50311,10 @@ class FandangoParser(Parser):
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 while (
-                    (((_la - 8)) & ~0x3F) == 0
+                    ((_la - 8) & ~0x3F) == 0
                     and ((1 << (_la - 8)) & 308496574407770109) != 0
                 ) or (
-                    (((_la - 75)) & ~0x3F) == 0
+                    ((_la - 75) & ~0x3F) == 0
                     and ((1 << (_la - 75)) & 180143985094819835) != 0
                 ):
                     self.state = 3001
@@ -50502,7 +50485,7 @@ class FandangoParser(Parser):
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             if (((_la) & ~0x3F) == 0 and ((1 << _la) & 5116125804241158648) != 0) or (
-                (((_la - 78)) & ~0x3F) == 0 and ((1 << (_la - 78)) & 93071897) != 0
+                ((_la - 78) & ~0x3F) == 0 and ((1 << (_la - 78)) & 93071897) != 0
             ):
                 self.state = 3019
                 self.star_named_expressions()
@@ -50567,7 +50550,7 @@ class FandangoParser(Parser):
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             if (((_la) & ~0x3F) == 0 and ((1 << _la) & 5116125804241158648) != 0) or (
-                (((_la - 78)) & ~0x3F) == 0 and ((1 << (_la - 78)) & 93071897) != 0
+                ((_la - 78) & ~0x3F) == 0 and ((1 << (_la - 78)) & 93071897) != 0
             ):
                 self.state = 3025
                 self.star_named_expression()
@@ -50678,7 +50661,7 @@ class FandangoParser(Parser):
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             if (((_la) & ~0x3F) == 0 and ((1 << _la) & 5116125804241158648) != 0) or (
-                (((_la - 78)) & ~0x3F) == 0 and ((1 << (_la - 78)) & 93071897) != 0
+                ((_la - 78) & ~0x3F) == 0 and ((1 << (_la - 78)) & 93071897) != 0
             ):
                 self.state = 3038
                 self.double_starred_kvpairs()
@@ -52187,7 +52170,7 @@ class FandangoParser(Parser):
                 if (
                     ((_la) & ~0x3F) == 0 and ((1 << _la) & 5116124636009988600) != 0
                 ) or (
-                    (((_la - 78)) & ~0x3F) == 0 and ((1 << (_la - 78)) & 83896857) != 0
+                    ((_la - 78) & ~0x3F) == 0 and ((1 << (_la - 78)) & 83896857) != 0
                 ):
                     self.state = 3243
                     self.star_targets_tuple_seq()
@@ -52206,7 +52189,7 @@ class FandangoParser(Parser):
                 if (
                     ((_la) & ~0x3F) == 0 and ((1 << _la) & 5116124636009988600) != 0
                 ) or (
-                    (((_la - 78)) & ~0x3F) == 0 and ((1 << (_la - 78)) & 83896857) != 0
+                    ((_la - 78) & ~0x3F) == 0 and ((1 << (_la - 78)) & 83896857) != 0
                 ):
                     self.state = 3248
                     self.star_targets_list_seq()
@@ -52530,7 +52513,7 @@ class FandangoParser(Parser):
                             ((_la) & ~0x3F) == 0
                             and ((1 << _la) & 5116125804241158648) != 0
                         ) or (
-                            (((_la - 78)) & ~0x3F) == 0
+                            ((_la - 78) & ~0x3F) == 0
                             and ((1 << (_la - 78)) & 93071897) != 0
                         ):
                             self.state = 3288
@@ -52762,7 +52745,7 @@ class FandangoParser(Parser):
                 if (
                     ((_la) & ~0x3F) == 0 and ((1 << _la) & 5116124636009988600) != 0
                 ) or (
-                    (((_la - 78)) & ~0x3F) == 0 and ((1 << (_la - 78)) & 83896857) != 0
+                    ((_la - 78) & ~0x3F) == 0 and ((1 << (_la - 78)) & 83896857) != 0
                 ):
                     self.state = 3322
                     self.del_targets()
@@ -52780,7 +52763,7 @@ class FandangoParser(Parser):
                 if (
                     ((_la) & ~0x3F) == 0 and ((1 << _la) & 5116124636009988600) != 0
                 ) or (
-                    (((_la - 78)) & ~0x3F) == 0 and ((1 << (_la - 78)) & 83896857) != 0
+                    ((_la - 78) & ~0x3F) == 0 and ((1 << (_la - 78)) & 83896857) != 0
                 ):
                     self.state = 3327
                     self.del_targets()
@@ -53057,7 +53040,7 @@ class FandangoParser(Parser):
             self.enterOuterAlt(localctx, 1)
             self.state = 3394
             _la = self._input.LA(1)
-            if not ((((_la) & ~0x3F) == 0 and ((1 << _la) & 5116089176692883456) != 0)):
+            if not (((_la) & ~0x3F) == 0 and ((1 << _la) & 5116089176692883456) != 0):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)

@@ -16,7 +16,6 @@ from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 
 
 class PacketNavigator(GrammarNavigator):
-
     def __init__(
         self, grammar: Grammar, start_symbol: NonTerminal = NonTerminal("<start>")
     ):

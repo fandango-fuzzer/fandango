@@ -19,7 +19,6 @@ def _is_controlflow_symbol(symbol: Symbol) -> bool:
 
 
 class ExtensionAnalyzer(ContinuingNodeVisitor):
-
     def __init__(self, grammar: Grammar):
         super().__init__(grammar)
         self.open_path: tuple[Symbol, ...] = tuple()

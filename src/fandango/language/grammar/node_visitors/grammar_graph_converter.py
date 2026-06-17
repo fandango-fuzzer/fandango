@@ -156,7 +156,6 @@ class GrammarGraph:
 class GrammarGraphConverter(
     NodeVisitor[None, tuple[GrammarGraphNode, list[GrammarGraphNode]]]
 ):
-
     def __init__(
         self, grammar_rules: dict[NonTerminal, Node], start_symbol: NonTerminal
     ):

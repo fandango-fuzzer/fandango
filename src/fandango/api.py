@@ -12,7 +12,12 @@ from fandango.language.grammar.grammar import Grammar
 from fandango.language.parse.parse import parse
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
-from fandango.evolution.algorithm import DefaultAlgorithm, GeneticAlgorithm, ProtocolAlgorithm, SimpleGeneticAlgorithm
+from fandango.evolution.algorithm import (
+    DefaultAlgorithm,
+    GeneticAlgorithm,
+    ProtocolAlgorithm,
+    SimpleGeneticAlgorithm,
+)
 from fandango.errors import FandangoFailedError, FandangoParseError
 
 DEFAULT_MAX_GENERATIONS = 500
@@ -276,7 +281,8 @@ class Fandango(FandangoBase):
                         grammar=self.grammar,
                         constraints=constraints,
                         start_symbol=start_symbol,
-                        **settings),
+                        **settings,
+                    ),
                 )
             case _:
                 raise ValueError(f"Unknown fuzzing mode: {self._last_fuzzing_mode}")
