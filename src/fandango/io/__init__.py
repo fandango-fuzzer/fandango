@@ -138,17 +138,6 @@ class FandangoParty(ABC):
         return FandangoIO.instance().parties[party_name]
 
     @property
-    def is_synthetic(self) -> bool:
-        """
-        A fuzzer party is "synthetic" when it only performs local state
-        changes (timer management, logging) and never transmits real
-        network bytes. Such parties must be processed immediately even
-        if a remote message has already arrived in the buffer.
-        :return: True if this party is synthetic.
-        """
-        return False
-
-    @property
     def connection_mode(self) -> ConnectionMode:
         """
         :return: connection mode of the party
@@ -762,9 +751,6 @@ class TimerControl(FandangoParty):
     def start(self) -> None:
         pass
 
-    def is_synthetic(self) -> bool:
-        return True
-
     def stop(self) -> None:
         self.stop_timers()
 
@@ -840,9 +826,6 @@ class TimerEvent(FandangoParty):
     def __init__(self):
         super().__init__(connection_mode=ConnectionMode.EXTERNAL)
 
-    def is_synthetic(self) -> bool:
-        return False
-
     def start(self) -> None:
         pass
 
@@ -885,7 +868,6 @@ class FandangoIO(object):
         """
         self.receive: list[tuple[str, str, str | bytes]] = []
         self.parties: dict[str, FandangoParty] = {}
-        self.synthetic_parties: dict[str, FandangoParty] = {}
         self.receive_lock = threading.Lock()
 
     def reset_parties(self) -> None:
@@ -896,7 +878,6 @@ class FandangoIO(object):
         for party in self.parties.values():
             party.stop()
         self.parties.clear()
-        self.synthetic_parties.clear()
         with self.receive_lock:
             self.receive.clear()
             for party in party_instances:
@@ -1011,9 +992,6 @@ class FandangoIO(object):
 
     def register_party(self, party: FandangoParty) -> None:
         self.parties[party.party_name] = party
-        if party.is_synthetic:
-            self.synthetic_parties[party.party_name] = party
-        pass
 
 
 class ProcessManager(object):
