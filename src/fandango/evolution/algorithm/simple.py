@@ -483,7 +483,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
 
         return solutions
 
-    def reset(self):
+    def reset(self) -> None:
         self.evaluator.flush_fitness_cache()
         self.evaluator._solution_set.clear()
         self.evaluator._fitness_cache.clear()

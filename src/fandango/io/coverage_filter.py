@@ -31,7 +31,7 @@ class PacketCoverageFilter:
             and PacketNonTerminal(msg.sender, msg.recipient, msg.symbol) == packet_type
         }
 
-    def set_existing_derivations(self, past_trees: list[DerivationTree]):
+    def set_existing_derivations(self, past_trees: list[DerivationTree]) -> None:
         self._past_trees = past_trees
         self.hold_back_solutions.clear()
         self._solution_set.clear()

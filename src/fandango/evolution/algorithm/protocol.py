@@ -5,6 +5,7 @@ from collections.abc import Generator
 
 from fandango.errors import FandangoFailedError, FandangoParseError
 from fandango.evolution import GeneratorWithReturn
+from fandango.evolution.algorithm.simple import SimpleGeneticAlgorithm
 from fandango.evolution.algorithm.base import GeneticAlgorithm
 from fandango.evolution.population import IoPopulationManager
 from fandango.io import FandangoIO
@@ -21,7 +22,7 @@ from fandango.logger import LOGGER, log_guidance_hint, log_message_transfer
 class ProtocolAlgorithm(GeneticAlgorithm):
     def __init__(
         self,
-        packet_algorithm: GeneticAlgorithm,
+        packet_algorithm: SimpleGeneticAlgorithm,
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS,
         remote_response_timeout: float = 15.0,
     ):
@@ -269,7 +270,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             and not self._io_instance.received_msg()
         )
 
-    def reset(self):
+    def reset(self) -> None:
         self._packet_algorithm.reset()
         self._past_interactions.clear()
         self._protocol_tree = DerivationTree(self._start_symbol)
