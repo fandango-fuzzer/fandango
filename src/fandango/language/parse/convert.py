@@ -123,7 +123,9 @@ class GrammarProcessor(FandangoParserVisitor):
         return GrammarSetting(selector, rules)
 
     def visitAlternative(self, ctx: FandangoParser.AlternativeContext) -> Node:
-        nodes: list[Node] = [self.visitConcatenation(child) for child in ctx.concatenation()]
+        nodes: list[Node] = [
+            self.visitConcatenation(child) for child in ctx.concatenation()
+        ]
         if len(nodes) == 1:
             return nodes[0]
         self.seenAlternatives += 1
@@ -316,7 +318,9 @@ class GrammarProcessor(FandangoParserVisitor):
         else:
             raise FandangoValueError(f"Unknown symbol: {ctx.getText()}")
 
-    def visitNonterminal_right(self, ctx: FandangoParser.Nonterminal_rightContext) -> Node:
+    def visitNonterminal_right(
+        self, ctx: FandangoParser.Nonterminal_rightContext
+    ) -> Node:
         if ctx.identifier(1) is None:
             return NonTerminalNode(
                 NonTerminal("<" + ctx.identifier(0).getText() + ">"),

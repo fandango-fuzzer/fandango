@@ -68,4 +68,4 @@ class GeneticAlgorithm(ABC):
 
     @abstractmethod
     def reset(self) -> None:
-       pass
+        pass

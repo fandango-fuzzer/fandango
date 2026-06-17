@@ -10,6 +10,7 @@ from fandango.io.navigation.reachability_checker import (
 )
 from fandango.language import DerivationTree, Grammar
 from fandango.language.grammar.grammar import KPath
+from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.symbols import Symbol, NonTerminal
 from fandango.language.grammar.node_visitors.grammar_graph_converter import (
@@ -71,7 +72,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         if self._ref_fwd is not None:
             return self._ref_fwd
 
-        def references(body) -> set[str]:
+        def references(body: Node) -> set[str]:
             out: set[str] = set()
             stack = [body]
             seen: set[int] = set()
