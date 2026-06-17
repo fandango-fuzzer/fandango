@@ -12,6 +12,7 @@ Grammar under test (ambiguous_io.fan):
 The Fuzzer.send() immediately injects the Extern reply so the algorithm
 receives it before timing out.
 """
+
 import unittest
 
 from fandango.api import Fandango

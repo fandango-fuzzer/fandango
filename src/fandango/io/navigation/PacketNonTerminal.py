@@ -4,7 +4,6 @@ from fandango.language.symbols.non_terminal import NonTerminal
 
 
 class PacketNonTerminal:
-
     def __init__(
         self, sender: Optional[str], recipient: Optional[str], symbol: NonTerminal
     ):

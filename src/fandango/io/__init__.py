@@ -752,12 +752,10 @@ class In(FandangoParty):
             if self.close_post_transmit:
                 self.proc.stdin.close()
 
-class TimerControl(FandangoParty):
 
+class TimerControl(FandangoParty):
     def __init__(self):
-        super().__init__(
-            connection_mode=ConnectionMode.CONNECT
-        )
+        super().__init__(connection_mode=ConnectionMode.CONNECT)
         self.timers: dict[str, tuple[int, bool, threading.Thread]] = {}
         self.lock = threading.Lock()
 
@@ -780,6 +778,7 @@ class TimerControl(FandangoParty):
                         return
                 time.sleep(0.1)
             self._on_timer_expire(name)
+
         timer_thread = threading.Thread(target=timer_sleep)
         with self.lock:
             self.timers[name] = (time.time_ns(), True, timer_thread)
@@ -805,16 +804,20 @@ class TimerControl(FandangoParty):
     def send(
         self, message: DerivationTree | str | bytes, recipient: Optional[str]
     ) -> None:
-        timer_id_node = message.find_all_nodes(NonTerminal("<timer_id>"), exclude_read_only=False)
+        timer_id_node = message.find_all_nodes(
+            NonTerminal("<timer_id>"), exclude_read_only=False
+        )
         if len(timer_id_node) == 0:
             raise ValueError("No timer_id found in timer message")
         timer_id = str(timer_id_node[0])
         if len(message.children) == 0:
             raise ValueError("No timer_command found in timer message")
-        timer_cmd = str(message).split(' ')[0]
+        timer_cmd = str(message).split(" ")[0]
 
         if timer_cmd == "start:":
-            timer_time_s_nodes = message.find_all_nodes(NonTerminal("<timer_timeout>"), exclude_read_only=False)
+            timer_time_s_nodes = message.find_all_nodes(
+                NonTerminal("<timer_timeout>"), exclude_read_only=False
+            )
             if len(timer_time_s_nodes) == 0:
                 raise ValueError("No timer_timeout found in timer message")
             self.stop_timers(timer_id)
@@ -826,18 +829,16 @@ class TimerControl(FandangoParty):
 
         pass
 
-
     def _on_timer_expire(self, name):
         with self.lock:
             if name in self.timers:
                 del self.timers[name]
         self.receive(f"expired: {name}\n", "TimerEvent")
 
+
 class TimerEvent(FandangoParty):
     def __init__(self):
-        super().__init__(
-            connection_mode=ConnectionMode.EXTERNAL
-        )
+        super().__init__(connection_mode=ConnectionMode.EXTERNAL)
 
     def is_synthetic(self) -> bool:
         return False
@@ -1072,9 +1073,9 @@ class ProcessManager(object):
 
     def set_command(self, value: str | list[str], text: bool = True) -> None:
         """Sets the command to be executed to start the process."""
-        assert isinstance(
-            value, (str, list)
-        ), "Command must be a string or a list of strings"
+        assert isinstance(value, (str, list)), (
+            "Command must be a string or a list of strings"
+        )
         with self.lock:
             if self._command == value:
                 return

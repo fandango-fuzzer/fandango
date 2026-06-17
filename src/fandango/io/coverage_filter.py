@@ -7,12 +7,7 @@ from fandango.language.tree import DerivationTree
 
 
 class PacketCoverageFilter:
-
-    def __init__(
-            self,
-            diversity_k: int,
-            grammar: Grammar
-    ):
+    def __init__(self, diversity_k: int, grammar: Grammar):
         self._diversity_k = diversity_k
         self._grammar = grammar
         self._submitted_solutions: set[int] = set()
@@ -75,7 +70,7 @@ class PacketCoverageFilter:
         assert msg_hash is not None and msg_key is not None
         state_path_tree = msg.get_path()
         if len(state_path_tree) > self._diversity_k:
-            state_path_tree = state_path_tree[-self._diversity_k:]
+            state_path_tree = state_path_tree[-self._diversity_k :]
         state_path = tuple(map(lambda x: x.symbol, state_path_tree))
         assert isinstance(symbol, NonTerminal)
         uncovered_paths = self._grammar.get_uncovered_k_paths(
@@ -107,9 +102,9 @@ class PacketCoverageFilter:
                 self._solution_set.add(msg_hash)
             return individual
         elif (
-                msg_hash not in self._submitted_solutions
-                and msg_hash not in self._solution_set
-                and msg_hash not in self.hold_back_solutions
+            msg_hash not in self._submitted_solutions
+            and msg_hash not in self._solution_set
+            and msg_hash not in self.hold_back_solutions
         ):
             self.hold_back_solutions.add(individual)
         return None

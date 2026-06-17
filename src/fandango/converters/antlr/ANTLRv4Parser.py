@@ -5721,7 +5721,6 @@ def serializedATN():
 
 
 class ANTLRv4Parser(Parser):
-
     grammarFileName = "ANTLRv4Parser.g4"
 
     atn = ATNDeserializer().deserialize(serializedATN())
@@ -6167,9 +6166,7 @@ class ANTLRv4Parser(Parser):
             self.state = 138
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la - 37)) & ~0x3F) == 0 and (
-                (1 << (_la - 37)) & 34359738383
-            ) != 0:
+            while ((_la - 37) & ~0x3F) == 0 and ((1 << (_la - 37)) & 34359738383) != 0:
                 self.state = 135
                 self.prequelConstruct()
                 self.state = 140
@@ -7843,7 +7840,7 @@ class ANTLRv4Parser(Parser):
                 self.state = 350
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if not ((((_la) & ~0x3F) == 0 and ((1 << _la) & 248489627877376) != 0)):
+                if not (((_la) & ~0x3F) == 0 and ((1 << _la) & 248489627877376) != 0):
                     break
 
         except RecognitionException as re:
@@ -7893,7 +7890,7 @@ class ANTLRv4Parser(Parser):
             self.enterOuterAlt(localctx, 1)
             self.state = 352
             _la = self._input.LA(1)
-            if not ((((_la) & ~0x3F) == 0 and ((1 << _la) & 248489627877376) != 0)):
+            if not (((_la) & ~0x3F) == 0 and ((1 << _la) & 248489627877376) != 0):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -8402,7 +8399,7 @@ class ANTLRv4Parser(Parser):
                 self.state = 407
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la - 64)) & ~0x3F) == 0 and ((1 << (_la - 64)) & 11) != 0:
+                if ((_la - 64) & ~0x3F) == 0 and ((1 << (_la - 64)) & 11) != 0:
                     self.state = 406
                     self.ebnfSuffix()
 
@@ -8414,7 +8411,7 @@ class ANTLRv4Parser(Parser):
                 self.state = 411
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la - 64)) & ~0x3F) == 0 and ((1 << (_la - 64)) & 11) != 0:
+                if ((_la - 64) & ~0x3F) == 0 and ((1 << (_la - 64)) & 11) != 0:
                     self.state = 410
                     self.ebnfSuffix()
 
@@ -9240,7 +9237,7 @@ class ANTLRv4Parser(Parser):
             self.state = 516
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la - 64)) & ~0x3F) == 0 and ((1 << (_la - 64)) & 11) != 0:
+            if ((_la - 64) & ~0x3F) == 0 and ((1 << (_la - 64)) & 11) != 0:
                 self.state = 515
                 self.blockSuffix()
 
@@ -9838,7 +9835,7 @@ class ANTLRv4Parser(Parser):
             self.state = 591
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la - 37)) & ~0x3F) == 0 and ((1 << (_la - 37)) & 34359869441) != 0:
+            if ((_la - 37) & ~0x3F) == 0 and ((1 << (_la - 37)) & 34359869441) != 0:
                 self.state = 582
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)

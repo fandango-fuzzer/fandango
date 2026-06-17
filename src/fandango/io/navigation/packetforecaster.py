@@ -182,7 +182,6 @@ class ForecastingResult:
 
 
 class PacketForecaster:
-
     def __init__(self, grammar: Grammar):
         reduced_rules = StateGrammarConverter(grammar.grammar_settings).process(
             grammar.rules

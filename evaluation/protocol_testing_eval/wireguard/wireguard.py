@@ -1,4 +1,8 @@
-from fandango.evolution.algorithm import SimpleGeneticAlgorithm, LoggerLevel, ProtocolAlgorithm
+from fandango.evolution.algorithm import (
+    SimpleGeneticAlgorithm,
+    LoggerLevel,
+    ProtocolAlgorithm,
+)
 from fandango.io.navigation.coverage_goal import CoverageGoal
 from fandango.language.grammar import FuzzingMode
 from fandango.language.parse.parse import parse

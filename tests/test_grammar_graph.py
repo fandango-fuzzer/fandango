@@ -126,29 +126,49 @@ class TestGrammarGraph(unittest.TestCase):
             mode=ParsingMode.INCOMPLETE,
             include_controlflow=True,
         )
-        k_path: KPath = (NonTerminal("<start>"), NonTerminal("<test>"), NonTerminal("<state_4>"),)
-        result_1 = checker.find_reachability(k_path_to_reach=k_path, tree=tree_to_continue)
-        self.assertTrue(result_1.path_reachable)
-        self.assertTrue(result_1.completable_by_extension)
-
-        tree_to_continue = grammar.parse(
-             "ac",
-             mode=ParsingMode.INCOMPLETE,
-             include_controlflow=True,
+        k_path: KPath = (
+            NonTerminal("<start>"),
+            NonTerminal("<test>"),
+            NonTerminal("<state_4>"),
         )
-        k_path: KPath = (NonTerminal("<start>"), NonTerminal("<test>"), NonTerminal("<state_4>"),)
-        result_1 = checker.find_reachability(k_path_to_reach=k_path, tree=tree_to_continue)
-        self.assertFalse(result_1.path_reachable)
-        self.assertFalse(result_1.completable_by_extension)
-
-        k_path: KPath = (NonTerminal("<start>"),NonTerminal("<test>"),NonTerminal("<H>"),)
         result_1 = checker.find_reachability(
             k_path_to_reach=k_path, tree=tree_to_continue
         )
         self.assertTrue(result_1.path_reachable)
         self.assertTrue(result_1.completable_by_extension)
 
-        k_path: KPath = (NonTerminal("<start>"),NonTerminal("<test>"),NonTerminal("<G>"),)
+        tree_to_continue = grammar.parse(
+            "ac",
+            mode=ParsingMode.INCOMPLETE,
+            include_controlflow=True,
+        )
+        k_path: KPath = (
+            NonTerminal("<start>"),
+            NonTerminal("<test>"),
+            NonTerminal("<state_4>"),
+        )
+        result_1 = checker.find_reachability(
+            k_path_to_reach=k_path, tree=tree_to_continue
+        )
+        self.assertFalse(result_1.path_reachable)
+        self.assertFalse(result_1.completable_by_extension)
+
+        k_path: KPath = (
+            NonTerminal("<start>"),
+            NonTerminal("<test>"),
+            NonTerminal("<H>"),
+        )
+        result_1 = checker.find_reachability(
+            k_path_to_reach=k_path, tree=tree_to_continue
+        )
+        self.assertTrue(result_1.path_reachable)
+        self.assertTrue(result_1.completable_by_extension)
+
+        k_path: KPath = (
+            NonTerminal("<start>"),
+            NonTerminal("<test>"),
+            NonTerminal("<G>"),
+        )
         result_1 = checker.find_reachability(
             k_path_to_reach=k_path, tree=tree_to_continue
         )
@@ -160,12 +180,24 @@ class TestGrammarGraph(unittest.TestCase):
             mode=ParsingMode.INCOMPLETE,
             include_controlflow=True,
         )
-        k_path: KPath = (NonTerminal("<start>"), NonTerminal("<test>"), NonTerminal("<state_4>"),)
-        result_1 = checker.find_reachability(k_path_to_reach=k_path, tree=tree_to_continue)
+        k_path: KPath = (
+            NonTerminal("<start>"),
+            NonTerminal("<test>"),
+            NonTerminal("<state_4>"),
+        )
+        result_1 = checker.find_reachability(
+            k_path_to_reach=k_path, tree=tree_to_continue
+        )
         self.assertTrue(result_1.path_reachable)
         self.assertTrue(result_1.completable_by_extension)
 
-        k_path: KPath = (NonTerminal("<start>"), NonTerminal("<test>"), NonTerminal("<G>"),)
-        result_1 = checker.find_reachability(k_path_to_reach=k_path, tree=tree_to_continue)
+        k_path: KPath = (
+            NonTerminal("<start>"),
+            NonTerminal("<test>"),
+            NonTerminal("<G>"),
+        )
+        result_1 = checker.find_reachability(
+            k_path_to_reach=k_path, tree=tree_to_continue
+        )
         self.assertTrue(result_1.path_reachable)
         self.assertFalse(result_1.completable_by_extension)
