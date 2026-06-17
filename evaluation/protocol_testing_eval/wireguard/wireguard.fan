@@ -1,4 +1,4 @@
-from wireguard3functions import *
+from wireguard_functions import *
 import base64
 
 FAST_TIMERS = True
