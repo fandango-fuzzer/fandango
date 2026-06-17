@@ -743,7 +743,7 @@ class In(FandangoParty):
 
 
 class TimerControl(FandangoParty):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(connection_mode=ConnectionMode.CONNECT)
         self.timers: dict[str, tuple[int, bool, threading.Thread]] = {}
         self.lock = threading.Lock()
@@ -755,7 +755,7 @@ class TimerControl(FandangoParty):
         self.stop_timers()
 
     def start_timer(self, name: str, time_s: int) -> None:
-        def timer_sleep():
+        def timer_sleep() -> None:
             time_elapsed = 0
             while time_elapsed < time_s:
                 with self.lock:
@@ -790,6 +790,8 @@ class TimerControl(FandangoParty):
     def send(
         self, message: DerivationTree | str | bytes, recipient: Optional[str]
     ) -> None:
+        if not isinstance(message, DerivationTree):
+            raise ValueError("Timer message must be a DerivationTree")
         timer_id_node = message.find_all_nodes(
             NonTerminal("<timer_id>"), exclude_read_only=False
         )
@@ -815,7 +817,7 @@ class TimerControl(FandangoParty):
 
         pass
 
-    def _on_timer_expire(self, name):
+    def _on_timer_expire(self, name: str) -> None:
         with self.lock:
             if name in self.timers:
                 del self.timers[name]
@@ -823,7 +825,7 @@ class TimerControl(FandangoParty):
 
 
 class TimerEvent(FandangoParty):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(connection_mode=ConnectionMode.EXTERNAL)
 
     def start(self) -> None:
