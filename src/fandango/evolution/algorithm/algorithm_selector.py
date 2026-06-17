@@ -1,12 +1,13 @@
 from fandango.language import Grammar
 from fandango.language.grammar import FuzzingMode
+from fandango.evolution.algorithm.base import GeneticAlgorithm
 
 
 class AlgorithmSelector:
     def __init__(self, grammar: Grammar):
         self._grammar = grammar
 
-    def select(self):
+    def select(self) -> type[GeneticAlgorithm]:
         match self._grammar.fuzzing_mode:
             case FuzzingMode.COMPLETE:
                 from fandango.evolution.algorithm.simple import SimpleGeneticAlgorithm

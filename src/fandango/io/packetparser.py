@@ -174,7 +174,7 @@ def parse_next_remote_packet(
             )
 
     max_parse_idx = -1
-    yield_items = set()
+    yield_items: set[tuple[NonTerminal, DerivationTree]] = set()
     for non_terminal, (parse_idx, parse_tree) in complete_parses.items():
         if parse_idx < max_parse_idx:
             continue

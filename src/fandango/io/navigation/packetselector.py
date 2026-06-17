@@ -216,7 +216,9 @@ class PacketSelector:
         return len(self.forecasting_result.complete_trees) != 0
 
     def next_fuzzer_parties(
-        self, show_fuzzer_controlled=True, show_external_controlled=False
+        self,
+        show_fuzzer_controlled: bool = True,
+        show_external_controlled: bool = False,
     ) -> list[str]:
         assert self.forecasting_result is not None
         return list(
