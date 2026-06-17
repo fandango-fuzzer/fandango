@@ -4,25 +4,26 @@ import ast
 import os
 
 import pytest
-from antlr4 import InputStream, CommonTokenStream, BailErrorStrategy
+from antlr4 import BailErrorStrategy, CommonTokenStream, InputStream
 from antlr4.error.Errors import ParseCancellationException
 
 from fandango.constraints import predicates
 from fandango.constraints.comparison import ComparisonConstraint
 from fandango.constraints.failing_tree import Comparison
-from fandango.language.parse.convert import (
-    GrammarProcessor,
-    SearchProcessor,
-    PythonProcessor,
-)
-from fandango.language.parse.splitter import FandangoSplitter
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.nodes.alternative import Alternative
+from fandango.language.parse.convert import (
+    GrammarProcessor,
+    PythonProcessor,
+    SearchProcessor,
+)
 from fandango.language.parse.parse import parse
+from fandango.language.parse.splitter import FandangoSplitter
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.search import AnnotatedSearch, RuleSearch
 from fandango.language.symbols import NonTerminal
+
 from .utils import RESOURCES_ROOT
 
 FUZZINGBOOK_GRAMMAR = {

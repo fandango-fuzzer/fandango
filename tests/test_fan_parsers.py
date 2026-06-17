@@ -1,15 +1,15 @@
 #!/usr/bin/env pytest
 
 import glob
-from pathlib import Path
 import random
 import shutil
 import tempfile
 import unittest
+from pathlib import Path
 
 import pytest
 
-from .utils import RESOURCES_ROOT, DOCS_ROOT, run_command
+from .utils import DOCS_ROOT, RESOURCES_ROOT, run_command
 
 files = glob.glob(str(RESOURCES_ROOT / "*.fan")) + glob.glob(str(DOCS_ROOT / "*.fan"))
 diff_probability = 5 / len(files)  # Randomly test about 5 files

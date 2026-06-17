@@ -13,7 +13,8 @@ from fandango.language.grammar.parser.parser import Parser
 from fandango.language.parse.parse import parse
 from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
-from .utils import RESOURCES_ROOT, DOCS_ROOT, run_command
+
+from .utils import DOCS_ROOT, RESOURCES_ROOT, run_command
 
 
 class IterParsingTester(Parser):
@@ -29,7 +30,7 @@ class IterParsingTester(Parser):
         self._iter_parser.new_parse(start, mode, hookin_parent, starter_bit)
         for char in word[:-1]:
             next(self._iter_parser.consume(char), None)
-        for tree, is_complete in self._iter_parser.consume(word[-1]):
+        for tree, _is_complete in self._iter_parser.consume(word[-1]):
             yield tree
 
 

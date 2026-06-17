@@ -1,4 +1,4 @@
-from fandango.evolution.algorithm import SimpleGeneticAlgorithm, LoggerLevel
+from fandango.evolution.algorithm import LoggerLevel, SimpleGeneticAlgorithm
 from fandango.language.grammar import FuzzingMode
 from fandango.language.parse.parse import parse
 
@@ -14,8 +14,7 @@ def main():
         logger_level=LoggerLevel.INFO,
     )
 
-    for solution in fandango.generate(mode=FuzzingMode.IO):
-        pass
+    list(fandango.generate(mode=FuzzingMode.IO))  # force evaluation of generator
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@ MAKEFLAGS=--warn-undefined-variables
 # Programs
 PYTHON = python
 PYTEST = pytest
-BLACK = black
+RUFF = ruff
 PIP = $(PYTHON) -m pip
 SED = sed
 PAGELABELS = $(PYTHON) -m pagelabels
@@ -97,7 +97,7 @@ endif
 $(PARSER)/FandangoParser.py: $(LEXER_G4) $(PARSER_G4) Makefile
 	$(ANTLR) -Dlanguage=Python3 -Xexact-output-dir -o $(PARSER) \
 		-visitor -no-listener $(PARSER_G4)
-	$(BLACK) $(SRC)/language
+	$(RUFF) format $(SRC)/language
 
 $(CPP_PARSER)/FandangoLexer.cpp: $(LEXER_G4) Makefile
 	$(ANTLR) -Dlanguage=Cpp -Xexact-output-dir -o $(CPP_PARSER) \
@@ -113,12 +113,12 @@ $(CPP_PARSER)/FandangoParser.cpp: $(LEXER_G4) $(PARSER_G4) $(SRC)/language/gener
 	$(ANTLR) -Dlanguage=Cpp -Xexact-output-dir -o $(CPP_PARSER) \
 		-visitor -no-listener $(PARSER_G4)
 	cd $(SRC)/language && $(PYTHON) generate-parser.py
-	$(BLACK) $(SRC)/language
+	$(RUFF) format $(SRC)/language
 	@echo 'Now run "pip install -e ." to compile C++ files'
 
-.PHONY: format black
-format black:
-	$(BLACK) src
+.PHONY: format
+format:
+	$(RUFF) format src
 
 ## Documentation
 DOCS = docs
@@ -324,6 +324,10 @@ GIT_LS_FILES = git ls-files --exclude-standard | \
 ls-files:
 	@echo 'Listing files in the repository...'
 	@$(GIT_LS_FILES) | sort
+
+lock:
+	uv lock
+	uv export --output-file=pylock.toml --all-extras --locked
 
 ## Statistics
 .PHONY: stats statistics

@@ -2,11 +2,11 @@
 
 import unittest
 
-
 from fandango.constraints.constraint import Constraint
+from fandango.language.parse.parse import parse
 from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
-from fandango.language.parse.parse import parse
+
 from .utils import RESOURCES_ROOT
 
 
@@ -391,7 +391,9 @@ where int(<number>) < 100000
         ]
 
         for tree, sat_even, sat_greater, sat_less in examples:
-            for sat, constraint in zip((sat_even, sat_greater, sat_less), constraints):
+            for sat, constraint in zip(
+                (sat_even, sat_greater, sat_less), constraints, strict=True
+            ):
                 assert isinstance(constraint, Constraint)
                 fitness = constraint.fitness(tree)
                 self.assertEqual(sat, fitness.success, fitness.success)

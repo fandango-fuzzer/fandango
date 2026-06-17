@@ -1,12 +1,13 @@
 import argparse
 import contextlib
 import ctypes
-from io import UnsupportedOperation
 import os
 import subprocess
 import sys
 import tempfile
+from io import UnsupportedOperation
 from typing import IO, Any
+
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER, clear_visualization
 
@@ -42,6 +43,8 @@ def output(
         return convert(tree.to_grammar())
     if args.format == "value":
         return convert(tree.to_value())
+    if args.format == "1":
+        return convert("1")
     if args.format == "none":
         return convert("")
 

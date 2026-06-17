@@ -1,12 +1,13 @@
-from typing import NamedTuple, Optional, Set
+from typing import NamedTuple, Optional
 
 from fandango.io.navigation.visitor.continuing_nodevisitor import ContinuingNodeVisitor
+from fandango.language.grammar.grammar import Grammar
+from fandango.language.symbols import Symbol, NonTerminal
 from fandango.language.grammar.grammar import KPath
 from fandango.language.grammar.nodes.node import Node
-from fandango.language.tree import DerivationTree
-from fandango.language import Grammar, Symbol, NonTerminal, Terminal
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.terminal import TerminalNode
+from fandango.language.tree import DerivationTree
 
 
 class ReachabilityResult(NamedTuple):

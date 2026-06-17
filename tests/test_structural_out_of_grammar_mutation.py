@@ -3,6 +3,7 @@ import re
 from collections import Counter
 
 import pytest
+
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.grammar_settings import GrammarSetting
 from fandango.language.grammar.nodes.alternative import Alternative
@@ -36,7 +37,7 @@ setting all_with_type(TerminalNode) terminal_should_repeat = 1.0
         elif num_as == 0:
             found_empty = True
         else:
-            assert False, f"Unexpected tree: {tree_str}"
+            raise AssertionError(f"Unexpected tree: {tree_str}")
     assert found_empty
     assert found_multiple
 

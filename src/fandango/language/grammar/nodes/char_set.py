@@ -1,5 +1,6 @@
-from typing import TYPE_CHECKING, Any
 from collections.abc import Iterator, Sequence
+from typing import TYPE_CHECKING, Any
+
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.grammar.nodes.terminal import TerminalNode

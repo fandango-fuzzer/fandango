@@ -1,8 +1,9 @@
 from collections.abc import Iterable
 from functools import lru_cache
-from typing import Union, Optional
+from typing import Optional, Union
 
 from astar import AStar
+
 from fandango.errors import FandangoError
 from fandango.io.navigation.reachability_checker import (
     ReachabilityChecker,
@@ -12,13 +13,13 @@ from fandango.language import DerivationTree, Grammar
 from fandango.language.grammar.grammar import KPath
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.terminal import TerminalNode
-from fandango.language.symbols import Symbol, NonTerminal
 from fandango.language.grammar.node_visitors.grammar_graph_converter import (
-    GrammarGraphNode,
     EagerGrammarGraphNode,
     GrammarGraphConverter,
+    GrammarGraphNode,
 )
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.symbols import NonTerminal, Symbol
 
 
 @lru_cache(maxsize=16384)
@@ -40,9 +41,9 @@ class NavigatorTimedOutError(FandangoError):
 
 
 class GrammarNavigator(AStar[GrammarGraphNode]):
-    def __init__(
-        self, grammar: Grammar, start_symbol: NonTerminal = NonTerminal("<start>")
-    ):
+    def __init__(self, grammar: Grammar, start_symbol: Optional[NonTerminal] = None):
+        if start_symbol is None:
+            start_symbol = NonTerminal("<start>")
         graph_converter = GrammarGraphConverter(grammar.rules, start_symbol)
         self.grammar = grammar
         self.graph = graph_converter.process()

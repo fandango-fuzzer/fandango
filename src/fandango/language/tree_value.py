@@ -1,8 +1,9 @@
 from __future__ import annotations
+
+import enum
+import warnings
 from collections.abc import Callable
 from typing import Any, Optional
-import warnings
-import enum
 
 from fandango.errors import FandangoConversionError, FandangoValueError
 
@@ -40,7 +41,7 @@ def _str_to_bytes(value: str, encoding: str) -> bytes:
     except UnicodeEncodeError as e:
         raise FandangoConversionError(
             f"string to bytes conversion failed, string: {value}, encoding: {encoding}, error: {e}"
-        )
+        ) from e
 
 
 def _bytes_to_str(value: bytes, encoding: str) -> str:
@@ -57,7 +58,7 @@ def _bytes_to_str(value: bytes, encoding: str) -> str:
     except UnicodeDecodeError as e:
         raise FandangoConversionError(
             f"bytes to string conversion failed, bytes: {value!r}, encoding: {encoding}, error: {e}"
-        )
+        ) from e
 
 
 def _get_exclusive_base_type_method_is_implemented_for(name: str) -> Optional[type]:
@@ -151,6 +152,7 @@ def _attach_to_first_arg(
                 warnings.warn(
                     f"Method {name} already exists on {cls.__name__}, skipping",
                     Warning,
+                    stacklevel=2,
                 )
             else:
                 setattr(cls, name, make_method(name))
@@ -191,6 +193,7 @@ def _attach_to_underlying(
                 warnings.warn(
                     f"Method {name} already exists on {cls.__name__}, skipping",
                     Warning,
+                    stacklevel=2,
                 )
             else:
                 setattr(cls, name, make_method(name))
@@ -343,10 +346,12 @@ class TreeValue:
         self,
         value: Optional[str | bytes | int],
         *,
-        trailing_bits: list[int] = [],
+        trailing_bits: Optional[list[int]] = None,
         allow_empty: bool = False,
     ):
         self._value: Optional[str | bytes]
+        if trailing_bits is None:
+            trailing_bits = []
         assert all(bit & 1 == bit for bit in trailing_bits), (
             "trailing bits must be 0 or 1, got " + str(trailing_bits)
         )
@@ -599,7 +604,7 @@ class TreeValue:
                 except ValueError as e:
                     raise FandangoConversionError(
                         f"int conversion failed, value: {self._value!r}, encoding: {bytes_to_str_encoding}, error: {e}"
-                    )
+                    ) from e
             else:
                 raise FandangoValueError(
                     f"Invalid value type: {type(self._value)}, {self._trailing_bits}. This should not happen, please report this as a bug"

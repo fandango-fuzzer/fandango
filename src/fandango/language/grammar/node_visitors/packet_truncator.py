@@ -1,13 +1,13 @@
 from typing import Optional
 
-from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
-from fandango.language.grammar.nodes.repetition import Repetition, Star, Plus, Option
+from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
+from fandango.language.symbols.non_terminal import NonTerminal
 
 
 class PacketTruncator(NodeVisitor[bool, bool]):

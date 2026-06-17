@@ -1,4 +1,5 @@
 from typing import Optional
+
 from antlr4.error.ErrorListener import ErrorListener
 from antlr4.InputStream import InputStream
 from antlr4.Recognizer import Recognizer

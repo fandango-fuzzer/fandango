@@ -1,6 +1,8 @@
 import os
-from fandango.beartype import activate_beartype
+
 import pytest
+
+from fandango.beartype import activate_beartype
 
 
 def pytest_configure(config: pytest.Config):
@@ -24,6 +26,7 @@ def pytest_collection_modifyitems(items: list[pytest.Item]):
         "evaluation",
         "cli",
         "softconstraint",
+        "execution_feedback",
         "optimizer",
         "fan_parsers",
     ]

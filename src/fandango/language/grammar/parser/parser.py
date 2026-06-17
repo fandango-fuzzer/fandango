@@ -1,26 +1,29 @@
+from collections.abc import Generator
 from copy import deepcopy
 from typing import Optional
-from collections.abc import Generator
+
+from cachetools import LRUCache
 
 from fandango.language.grammar import ParsingMode
-from fandango.language.grammar.parser.iterative_parser import IterativeParser
 from fandango.language.grammar.nodes.node import Node
+from fandango.language.grammar.parser.iterative_parser import IterativeParser
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
+from fandango.utils import cache_size
 
 
 class Parser:
     def __init__(self, grammar_rules: dict[NonTerminal, Node]):
         self._iter_parser = IterativeParser(grammar_rules)
-        self._cache: dict[
+        self._cache: LRUCache[
             tuple[
                 str | bytes,
                 NonTerminal,
                 ParsingMode,
-                Optional[DerivationTree],
+                int,
             ],
             list[DerivationTree],
-        ] = {}
+        ] = LRUCache(maxsize=cache_size())
 
     def _parse_forest(
         self,
@@ -37,7 +40,7 @@ class Parser:
         if `allow_incomplete` is True, the function will return trees even if the input ends prematurely.
         """
         self._iter_parser.new_parse(start, mode, hookin_parent, starter_bit)
-        for tree, is_complete in self._iter_parser.consume(word):
+        for tree, _is_complete in self._iter_parser.consume(word):
             yield tree
 
     def parse_forest(
@@ -67,18 +70,19 @@ class Parser:
         if isinstance(start, str):
             start = NonTerminal(start)
 
-        cache_key = (word, start, mode, hookin_parent)
-        forest: list[DerivationTree]
+        cache_key = (word, start, mode, hash(hookin_parent))
         if cache_key in self._cache:
-            forest = self._cache[cache_key]
-            for tree in forest:
+            for tree in self._cache[cache_key]:
                 tree = deepcopy(tree)
                 if not include_controlflow:
                     collapsed = self.collapse(tree)
                     if collapsed is not None:
                         yield collapsed
+                else:
+                    yield tree
             return
 
+        parsed_forest: list[DerivationTree] = []
         for tree in self._parse_forest(
             word,
             start,
@@ -87,10 +91,8 @@ class Parser:
             starter_bit=starter_bit,
         ):
             tree = self._iter_parser.to_derivation_tree(tree)
-            if cache_key in self._cache:
-                self._cache[cache_key].append(tree)
-            else:
-                self._cache[cache_key] = [tree]
+            parsed_forest.append(tree)
+            self._cache[cache_key] = parsed_forest
             if include_controlflow:
                 yield tree
             else:

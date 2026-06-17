@@ -5,11 +5,8 @@ from typing import Optional
 
 from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.io import FandangoIO
-from fandango.io.navigation.packetforecaster import (
-    ForecastingResult,
-    ForecastingPacket,
-)
-from fandango.language import Grammar, NonTerminal, DerivationTree
+from fandango.io.navigation.packetforecaster import ForecastingPacket, ForecastingResult
+from fandango.language import DerivationTree, Grammar, NonTerminal
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.parser.iterative_parser import IterativeParser
 
@@ -59,9 +56,7 @@ def parse_next_remote_packet(
     msg_sender = None
     # We might have received messages from different parties. Select a party that sent a message and is
     # in the current forecast.
-    for idx, (msg_sender, msg_recipient, _) in enumerate(
-        io_instance.get_received_msgs()
-    ):
+    for msg_sender, _msg_recipient, _ in io_instance.get_received_msgs():
         if msg_sender in forecast.get_msg_parties():
             break
 
@@ -164,7 +159,7 @@ def parse_next_remote_packet(
             )
         else:
             raise FandangoFailedError(
-                f"Could not parse received message fragments into predicted NonTerminals.\n"
+                "Could not parse received message fragments into predicted NonTerminals.\n"
                 + generate_parsing_error_msg_information(
                     forecast_non_terminals.get_non_terminals(),
                     available_non_terminals,

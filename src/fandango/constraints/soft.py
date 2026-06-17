@@ -1,17 +1,18 @@
-from collections.abc import Callable, Collection
 import math
+from collections.abc import Callable, Collection
 from typing import Any, Optional
-from cachetools import LRUCache
 
+from cachetools import LRUCache
 from tdigest.tdigest import TDigest as BaseTDigest
 
+from fandango.constraints.base import GeneticBase
 from fandango.constraints.failing_tree import FailingTree
 from fandango.constraints.fitness import ValueFitness
-from fandango.constraints.base import GeneticBase
 from fandango.language.search import NonTerminalSearch
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import print_exception
+from fandango.utils import cache_size
 
 
 class TDigest(BaseTDigest):
@@ -79,7 +80,7 @@ class Value(GeneticBase):
             global_variables=global_variables,
         )
         self.expression = expression
-        self.cache = LRUCache[int, ValueFitness](maxsize=1000)
+        self.cache = LRUCache[int, ValueFitness](maxsize=cache_size())
 
     def fitness(
         self,

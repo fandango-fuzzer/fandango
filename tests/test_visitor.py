@@ -1,8 +1,8 @@
 #!/usr/bin/env pytest
 
+import logging
 import unittest
 from collections import defaultdict
-import logging
 
 from fandango.constraints.comparison import ComparisonConstraint
 from fandango.constraints.conjunction import ConjunctionConstraint
@@ -16,6 +16,7 @@ from fandango.constraints.implication import ImplicationConstraint
 from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
 from fandango.language.parse.parse import parse
 from fandango.logger import LOGGER
+
 from .utils import RESOURCES_ROOT
 
 

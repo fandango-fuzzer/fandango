@@ -1,6 +1,7 @@
 #!/usr/bin/env pytest
 
 from collections import Counter
+
 import pytest
 
 from fandango.evolution import havoc
@@ -276,7 +277,7 @@ def test_bytes_delete_mutation():
                 assert len(input) + other_keys[0] == 257  # diff => prior length + 1
             case _:
                 # should never happen
-                assert False
+                raise AssertionError("Should not happen")
 
 
 def test_bytes_expand_mutation():
@@ -307,13 +308,15 @@ def test_bytes_insert_mutation():
                     # if all values between start and i are the same, we are in the repetition
                     stop = i
                 else:
-                    assert False, (
+                    raise AssertionError(
                         f"Found multiple repetitions after index {i} in input {input}. start: {start}, stop: {stop}"
                     )
             elif input[i] != input[i - 1] + 1:
                 jumps.append(i)
         if len(jumps) > 2:
-            assert False, f"Found unexpected number of jumps: {jumps} in input {input}"
+            raise AssertionError(
+                f"Found unexpected number of jumps: {jumps} in input {input}"
+            )
 
         input = bytearray([0] * INPUT_SIZE)
         assert mutation.mutate(input)
@@ -339,13 +342,15 @@ def test_bytes_rand_insert_mutation():
                     # if all values between start and i are the same, we are in the repetition
                     stop = i
                 else:
-                    assert False, (
+                    raise AssertionError(
                         f"Found multiple repetitions after index {i} in input {input}. start: {start}, stop: {stop}"
                     )
             elif input[i] != input[i - 1] + 1:
                 jumps.append(i)
         if len(jumps) > 2:
-            assert False, f"Found unexpected number of jumps: {jumps} in input {input}"
+            raise AssertionError(
+                f"Found unexpected number of jumps: {jumps} in input {input}"
+            )
 
         input = bytearray([0] * INPUT_SIZE)
         assert mutation.mutate(input)
@@ -369,7 +374,7 @@ def test_bytes_rand_insert_mutation():
                     == 0
                 )
             case _:
-                assert False
+                raise AssertionError("Should not happen")
 
 
 def test_bytes_set_mutation():
@@ -393,13 +398,15 @@ def test_bytes_set_mutation():
                     # if all values between start and i are the same, we are in the repetition
                     stop = i
                 else:
-                    assert False, (
+                    raise AssertionError(
                         f"Found multiple repetitions after index {i} in input {input}. start: {start}, stop: {stop}"
                     )
             elif input[i] != input[i - 1] + 1:
                 jumps.append(i)
         if len(jumps) > 2:
-            assert False, f"Found unexpected number of jumps: {jumps} in input {input}"
+            raise AssertionError(
+                f"Found unexpected number of jumps: {jumps} in input {input}"
+            )
 
         input = bytearray([0] * INPUT_SIZE)
         mutation.mutate(input)
@@ -426,13 +433,15 @@ def test_bytes_rand_set_mutation():
                     # if all values between start and i are the same, we are in the repetition
                     stop = i
                 else:
-                    assert False, (
+                    raise AssertionError(
                         f"Found multiple repetitions after index {i} in input {input}. start: {start}, stop: {stop}"
                     )
             elif input[i] != input[i - 1] + 1:
                 jumps.append(i)
         if len(jumps) > 2:
-            assert False, f"Found unexpected number of jumps: {jumps} in input {input}"
+            raise AssertionError(
+                f"Found unexpected number of jumps: {jumps} in input {input}"
+            )
 
         input = bytearray([0] * INPUT_SIZE)
         if not mutation.mutate(input):
@@ -457,7 +466,7 @@ def test_bytes_rand_set_mutation():
                     == 0
                 )
             case _:
-                assert False
+                raise AssertionError("Should not happen")
 
 
 def test_bytes_copy_mutation():
@@ -507,7 +516,7 @@ def test_bytes_insert_copy_mutation():
                 f"input: {input}\ninserted slice (from {i} to {j}): {input[i:j]}"
             )
         else:
-            assert False, f"Found unexpected number of diffs: {diffs}"
+            raise AssertionError(f"Found unexpected number of diffs: {diffs}")
 
 
 def test_bytes_swap_mutation():

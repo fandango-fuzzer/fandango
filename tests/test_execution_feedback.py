@@ -1,13 +1,14 @@
 #!/usr/bin/env pytest
 
-from shutil import which
-import unittest
-import subprocess
 import os
 import shlex
+import subprocess
 import sys
-import pytest
+import unittest
 from pathlib import Path
+from shutil import which
+
+import pytest
 
 from fandango.experimental import ExperimentalWarning
 

@@ -5,23 +5,21 @@ import io
 import logging
 import os
 import re
-from uuid import UUID
-
 import select
 import socket
 import subprocess
 import sys
 import threading
 import time
-from abc import ABC
-from typing import Optional, IO
+from _contextvars import ContextVar
+from abc import ABC, abstractmethod
+from typing import IO, Hashable, Optional
+from uuid import UUID
 
 from fandango.errors import FandangoError, FandangoValueError
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
-from typing import Hashable
-from _contextvars import ContextVar
 
 EnvKey = Hashable
 
@@ -109,7 +107,9 @@ def split_party_spec(
     return name, protocol, host, port
 
 
-class FandangoParty(ABC):
+class FandangoParty(  # noqa: B024 # this is an abstract base class without any abstract methods
+    ABC
+):
     """Base class for all parties in Fandango."""
 
     def __init__(
@@ -245,6 +245,7 @@ class ProtocolImplementation(ABC):
     def io_instance(self) -> "FandangoIO":
         return self._party_instance.io_instance
 
+    @abstractmethod
     def send(
         self, message: DerivationTree | str | bytes, recipient: Optional[str]
     ) -> None:
@@ -255,12 +256,14 @@ class ProtocolImplementation(ABC):
         """
         raise NotImplementedError("send() method not implemented")
 
+    @abstractmethod
     def start(self) -> None:
         """
         Invoked when protocol communication (re)starts.
         """
         raise NotImplementedError("start() method not implemented")
 
+    @abstractmethod
     def stop(self) -> None:
         """
         Invoked when protocol communication stops.
@@ -268,6 +271,7 @@ class ProtocolImplementation(ABC):
         raise NotImplementedError("stop() method not implemented")
 
     @property
+    @abstractmethod
     def protocol_type(self) -> Protocol:
         """
         :return: The protocol type (`Protocol`) of this protocol implementation.
@@ -854,10 +858,10 @@ class FandangoIO(object):
         try:
             assert CURRENT_ENV_KEY.contextVar is not None
             env_key = CURRENT_ENV_KEY.contextVar.get()
-        except LookupError:
+        except LookupError as err:
             raise RuntimeError(
                 "FandangoIO.instance() called without an active environment"
-            )
+            ) from err
 
         with cls._lock:
             if env_key not in cls._instances:
@@ -924,14 +928,12 @@ class FandangoIO(object):
         fragments: list[tuple[str, str, str | bytes]] = []
         prev_sender: Optional[str] = None
         prev_recipient: Optional[str] = None
-        for idx, (sender, recipient, msg_fragment) in enumerate(
-            self.get_received_msgs()
-        ):
+        for sender, recipient, msg_fragment in self.get_received_msgs():
             if (
                 prev_sender != sender
                 or prev_recipient != recipient
                 or (
-                    type(fragments[-1][2]) != type(msg_fragment) if fragments else False
+                    type(fragments[-1][2]) is type(msg_fragment) if fragments else False
                 )
             ):
                 prev_sender = sender
@@ -1023,10 +1025,10 @@ class ProcessManager(object):
         try:
             assert CURRENT_ENV_KEY.contextVar is not None
             env_key = CURRENT_ENV_KEY.contextVar.get()
-        except LookupError:
+        except LookupError as err:
             raise RuntimeError(
                 "ProcessManager.instance() called without an active environment"
-            )
+            ) from err
 
         with cls._lock:
             if env_key not in cls._instances:
@@ -1070,8 +1072,8 @@ class ProcessManager(object):
         LOGGER.info(f"Starting subprocess with command {command}")
 
         if sys.platform != "win32":
-            import tty
             import pty
+            import tty
 
             master_fd, slave_fd = pty.openpty()
             tty.setraw(master_fd)
