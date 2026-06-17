@@ -623,10 +623,10 @@ wheels = [{ url = "https://files.pythonhosted.org/packages/63/90/89fdfc6f426cc64
 
 [[packages]]
 name = "faker"
-version = "40.20.0"
+version = "40.21.0"
 index = "https://pypi.org/simple"
-sdist = { url = "https://files.pythonhosted.org/packages/ca/9d/e83d22cf16c58585445a2b444f8c42b82ac99e63a723f1ca8640e09f2b90/faker-40.20.0.tar.gz", upload-time = 2026-06-01T22:21:02Z, size = 1970005, hashes = { sha256 = "0305002eb7441dbbc774b48ec95f4794188fcedf1f4697d205cb59a38db8d6ee" } }
-wheels = [{ url = "https://files.pythonhosted.org/packages/74/10/9c60cc41aff51780ffa1475130c03cebe1256b69af944ce863511da49b5d/faker-40.20.0-py3-none-any.whl", upload-time = 2026-06-01T22:21:00Z, size = 2008434, hashes = { sha256 = "d66c65751b70e179515c163bfb3e3fb89139395bb9f0eb78bfdf8c6c81aa9c8c" } }]
+sdist = { url = "https://files.pythonhosted.org/packages/e8/6f/d7b251fb31de7dce0e482680bf7ca876aa0043f475c04aeefa1459ea80d4/faker-40.21.0.tar.gz", upload-time = 2026-06-02T17:53:46Z, size = 1970295, hashes = { sha256 = "2fdee1b650a723a54432db9c6dfe17cfa29d1adc8bd60520444a07698524ba4d" } }
+wheels = [{ url = "https://files.pythonhosted.org/packages/bb/77/6adb5a9dcd028f687f81fc9f789591f9572cb5a46454337122add004e134/faker-40.21.0-py3-none-any.whl", upload-time = 2026-06-02T17:53:44Z, size = 2008808, hashes = { sha256 = "cb6601b2ae8e128895dc96814d271eab6b930a2d2d7932c6f9ff26785c24ee18" } }]
 
 [[packages]]
 name = "fandango-fuzzer"
