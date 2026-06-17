@@ -16,6 +16,7 @@ def main():
     fandango = SimpleGeneticAlgorithm(
         grammar=grammar,
         constraints=constraints,
+        population_size=10,
         logger_level=LoggerLevel.INFO,
         coverage_goal=CoverageGoal.STATE_INPUTS_OUTPUTS,
     )
