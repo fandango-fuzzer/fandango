@@ -23,49 +23,42 @@ class ExtensionAnalyzer(ContinuingNodeVisitor):
     def __init__(self, grammar: Grammar):
         super().__init__(grammar)
         self.open_path: tuple[Symbol, ...] = tuple()
-        self.next_children: set[Symbol] = set()
+        self.extension_points: list[tuple[tuple[Symbol, ...], Symbol]] = []
         self._captured = False
 
     def analyze(self, tree: Optional[DerivationTree]) -> None:
         self.open_path = tuple()
-        self.next_children = set()
+        self.extension_points = []
         self._captured = False
         self.find(tree)
 
-    def _capture_open_path(self) -> None:
-        if self._captured:
-            return
-        self._captured = True
-        self.open_path = tuple(
+    def _current_open_path(self) -> tuple[Symbol, ...]:
+        return tuple(
             symbol
             for symbol, is_exploring in self.current_path
             if not is_exploring and not _is_controlflow_symbol(symbol)
         )
+
+    def _capture_open_path(self, open_path: tuple[Symbol, ...]) -> None:
+        if self._captured:
+            return
+        self._captured = True
+        self.open_path = open_path
 
     def onNonTerminalNodeVisit(
         self, node: NonTerminalNode, is_exploring: bool
     ) -> tuple[bool, bool]:
         if not is_exploring:
             return True, True
-        self._capture_open_path()
-        self.next_children.add(node.symbol)
+        open_path = self._current_open_path()
+        self._capture_open_path(open_path)
+        self.extension_points.append((open_path, node.symbol))
         return True, False
 
     def onTerminalNodeVisit(self, node: TerminalNode, is_exploring: bool) -> bool:
         if is_exploring:
-            self._capture_open_path()
+            self._capture_open_path(self._current_open_path())
         return True
-
-    def find_longest_suffix(
-        self, path: tuple[Symbol, ...], suffix_path: tuple[Symbol, ...]
-    ) -> tuple[Symbol, ...]:
-        max_overlap = 0
-        search_len = len(suffix_path)
-        chain_len = len(path)
-        for i in range(1, min(search_len, chain_len) + 1):
-            if path[-i:] == suffix_path[:i]:
-                max_overlap = i
-        return suffix_path[:max_overlap]
 
 
 class ReachabilityChecker(ContinuingNodeVisitor):
@@ -101,23 +94,29 @@ class ReachabilityChecker(ContinuingNodeVisitor):
             return False
         continuation = ExtensionAnalyzer(self.grammar)
         continuation.analyze(tree)
-        open_path = continuation.open_path
-        if not open_path:
+        if not continuation.open_path:
             return False
         k_path = tuple(self.k_path_to_reach)
-        match = continuation.find_longest_suffix(open_path, k_path)
-        if len(match) == 0:
-            return False
-        if len(match) == len(k_path):
+        # The whole k-path is already realized on the rightmost open path.
+        if len(self.find_longest_suffix(continuation.open_path, k_path)) == len(k_path):
             return True
-        next_symbol = k_path[len(match)]
-        if next_symbol not in continuation.next_children:
-            return False
-        if not isinstance(next_symbol, NonTerminal):
-            return False
-        return self.test_reachability_from_node(
-            NonTerminalNode(next_symbol, []), k_path[len(match) :]
-        )
+        # A still-open node on the rightmost path already realizes a non-empty
+        # prefix of the k-path and can produce the next k-path symbol as a child
+        # by extension. So we need to check if any open nonterminal along that
+        # path can produce the next k-path symbol.
+        for parent_path, child in continuation.extension_points:
+            if not isinstance(child, NonTerminal):
+                continue
+            match_len = len(self.find_longest_suffix(parent_path, k_path))
+            if not 0 < match_len < len(k_path):
+                continue
+            if child != k_path[match_len]:
+                continue
+            if self.test_reachability_from_node(
+                NonTerminalNode(child, []), k_path[match_len:]
+            ):
+                return True
+        return False
 
     def test_reachability_from_node(
         self, node: NonTerminalNode, k_path_to_reach: KPath

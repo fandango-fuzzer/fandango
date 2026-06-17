@@ -203,17 +203,23 @@ class TestGrammarGraph(unittest.TestCase):
         )
         self.assertTrue(result_1.path_reachable)
         self.assertFalse(result_1.completable_by_extension)
-        
+
     def test_smtp(self):
-        packet_history = ('<response_setup><request_ehlo><response_ehlo><request_auth><response_auth_expect_user>'
-                          '<request_auth_user_correct><response_auth_expect_pass><request_auth_pass_incorrect>'
-                          '<response_auth_fail><request_auth><response_auth_expect_user><request_auth_user_incorrect>'
-                          '<response_auth_expect_pass><request_auth_pass_incorrect><response_auth_fail><request_auth>'
-                          '<response_auth_expect_user><request_auth_user_correct><response_auth_expect_pass>'
-                          '<request_auth_pass_correct><response_auth_success><request_mail_from><response_mail_from>')
-        dest_k_path = (NonTerminal("<exchange_login_valid>"), NonTerminal("<state_logged_in>"), 
-                       NonTerminal("<state_logged_in>"), NonTerminal("<state_logged_in>"), 
-                       NonTerminal("<state_logged_in>"))
+        packet_history = (
+            "<response_setup><request_ehlo><response_ehlo><request_auth><response_auth_expect_user>"
+            "<request_auth_user_correct><response_auth_expect_pass><request_auth_pass_incorrect>"
+            "<response_auth_fail><request_auth><response_auth_expect_user><request_auth_user_incorrect>"
+            "<response_auth_expect_pass><request_auth_pass_incorrect><response_auth_fail><request_auth>"
+            "<response_auth_expect_user><request_auth_user_correct><response_auth_expect_pass>"
+            "<request_auth_pass_correct><response_auth_success><request_mail_from><response_mail_from>"
+        )
+        dest_k_path = (
+            NonTerminal("<exchange_login_valid>"),
+            NonTerminal("<state_logged_in>"),
+            NonTerminal("<state_logged_in>"),
+            NonTerminal("<state_logged_in>"),
+            NonTerminal("<state_logged_in>"),
+        )
         client_def = """
 class Client(FandangoParty):
     def __init__(self):
@@ -227,7 +233,7 @@ class Server(FandangoParty):
             connection_mode=ConnectionMode.EXTERNAL
         )
         """
-        
+
         with open(EVALUATION_ROOT / "protocol_testing_eval/smtp/smtp.fan") as f:
             grammar, constraints = parse(
                 [f, client_def],
@@ -237,16 +243,23 @@ class Server(FandangoParty):
             grammar.rules, NonTerminal("<start>")
         )
         state_grammar = Grammar(
-                grammar_settings=grammar.grammar_settings,
-                rules=reduced_rules,
-                fuzzing_mode=grammar.fuzzing_mode,
-                local_variables=grammar._local_variables,
-                global_variables=grammar._global_variables,
-            )
+            grammar_settings=grammar.grammar_settings,
+            rules=reduced_rules,
+            fuzzing_mode=grammar.fuzzing_mode,
+            local_variables=grammar._local_variables,
+            global_variables=grammar._global_variables,
+        )
         checker = ReachabilityChecker(state_grammar)
-        hist_tree = state_grammar.parse(word=packet_history, mode=ParsingMode.INCOMPLETE, include_controlflow=True)
+        hist_tree = state_grammar.parse(
+            word=packet_history, mode=ParsingMode.INCOMPLETE, include_controlflow=True
+        )
 
         result = checker.find_reachability(k_path_to_reach=dest_k_path, tree=hist_tree)
         self.assertTrue(result.path_reachable)
         self.assertTrue(result.completable_by_extension)
 
+        navigator = PacketNavigator(grammar, NonTerminal("<start>"))
+        path = navigator.astar_tree_symbols(
+            tree=hist_tree, destination_k_path=dest_k_path
+        )
+        self.assertIsNotNone(path)
