@@ -1,13 +1,14 @@
 #!/usr/bin/env pytest
 
 import itertools
+import logging
 import random
 import unittest
-import logging
 
 import pytest
 
 from fandango import Fandango
+
 from .utils import DOCS_ROOT, RESOURCES_ROOT
 
 

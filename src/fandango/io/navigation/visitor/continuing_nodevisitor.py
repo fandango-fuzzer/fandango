@@ -1,13 +1,13 @@
-from typing import Optional, Generic, TypeVar
+from typing import Optional
 
-from fandango.language.tree import DerivationTree
 from fandango.language import Grammar, NonTerminal
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
-from fandango.language.grammar.nodes.repetition import Repetition, Option, Plus, Star
+from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
+from fandango.language.tree import DerivationTree
 
 
 class GrammarKeyError(KeyError):

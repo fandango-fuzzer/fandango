@@ -5,10 +5,10 @@
 # Usage: python parse_times.py <number_of_iterations> [fandango_args]
 # Example: python parse_times.py 1000 -f docs/persons.fan -n 1000
 
-import subprocess
-import shlex
-import multiprocessing as mp
 import csv
+import multiprocessing as mp
+import shlex
+import subprocess
 import sys
 
 

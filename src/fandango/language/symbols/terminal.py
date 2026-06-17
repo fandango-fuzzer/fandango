@@ -1,11 +1,11 @@
-from io import UnsupportedOperation
 import re
+from io import UnsupportedOperation
 from typing import cast
 
 import regex
 
 from fandango.errors import FandangoValueError
-from fandango.language.symbols import Symbol, SymbolType
+from fandango.language.symbols.symbol import Symbol, SymbolType
 from fandango.language.tree_value import TreeValue, TreeValueType
 
 

@@ -10,10 +10,15 @@ from fandango.constraints.soft import SoftValue
 from fandango.errors import FandangoParseError, FandangoValueError
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.adaptation import AdaptiveTuner
-from fandango.evolution.algorithm.base import GeneticAlgorithm, LoggerLevel
-from fandango.evolution.crossover import CrossoverOperator, SimpleSubtreeCrossover
+from fandango.evolution.algorithm.base import (
+    DEFAULT_CROSSOVER_OPERATOR,
+    DEFAULT_MUTATION_OPERATOR,
+    GeneticAlgorithm,
+    LoggerLevel,
+)
+from fandango.evolution.crossover import CrossoverOperator
 from fandango.evolution.evaluation import Evaluator
-from fandango.evolution.mutation import MutationOperator, SimpleMutation
+from fandango.evolution.mutation import MutationOperator
 from fandango.evolution.population import PopulationManager
 from fandango.evolution.profiler import Profiler
 from fandango.io.navigation.coverage_goal import CoverageGoal
@@ -37,10 +42,10 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
         initial_population: Optional[list[DerivationTree | str]] = None,
         expected_fitness: float = 1.0,
         elitism_rate: float = 0.1,
-        crossover_method: CrossoverOperator = SimpleSubtreeCrossover(),
+        crossover_method: CrossoverOperator = DEFAULT_CROSSOVER_OPERATOR,
         crossover_rate: float = 0.8,
         tournament_size: float = 0.1,
-        mutation_method: MutationOperator = SimpleMutation(),
+        mutation_method: MutationOperator = DEFAULT_MUTATION_OPERATOR,
         mutation_rate: float = 0.2,
         destruction_rate: float = 0.0,
         logger_level: Optional[LoggerLevel] = None,
@@ -318,6 +323,34 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
                 )
                 return True
         return False
+
+    def evolve(
+        self,
+        max_generations: Optional[int] = None,
+        desired_solutions: Optional[int] = None,
+        solution_callback: Callable[[DerivationTree, int], None] = lambda _a, _b: None,
+    ) -> list[DerivationTree]:
+        """
+        Evolves the population of the grammar.
+
+        If both max_generations and desired_solutions are provided, the generation will run until either the maximum number of generations is reached or the desired number of solutions is found. If neither is provided, the generation will run indefinitely.
+
+        TODO: go into more details about Fandango IO mode.
+
+        :param max_generations: The maximum number of generations to evolve.
+        :param desired_solutions: The number of solutions to evolve.
+        :param solution_callback: A callback function to be called for each solution.
+        :return: A list of DerivationTree objects, all of which are valid solutions to the grammar (or satisfy the minimum fitness threshold). The function may run indefinitely if neither max_generations nor desired_solutions are provided.
+        """
+        warnings.warn("Use .generate instead", DeprecationWarning, stacklevel=2)
+        if self.grammar.fuzzing_mode == FuzzingMode.COMPLETE:
+            return self._evolve_single(
+                max_generations, desired_solutions, solution_callback
+            )
+        elif self.grammar.fuzzing_mode == FuzzingMode.IO:
+            return self._evolve_io(max_generations)
+        else:
+            raise FandangoValueError(f"Invalid mode: {self.grammar.fuzzing_mode}")
 
     def generate(
         self,

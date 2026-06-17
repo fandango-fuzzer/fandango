@@ -1,12 +1,13 @@
 import abc
 import copy
 import enum
+import warnings
 from collections.abc import Iterator, Sequence
 from typing import TYPE_CHECKING, Any, Optional
-import warnings
+
 from fandango.errors import FandangoValueError
-from fandango.language.symbols import Symbol
 from fandango.language.grammar.has_settings import HasSettings
+from fandango.language.symbols import Symbol
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
 
@@ -130,7 +131,8 @@ class Node(abc.ABC):
 
     def __str__(self) -> str:
         warnings.warn(
-            f"Don't rely on the __str__ impl on {self.__class__.__name__}. Use a method specific to your usecase, such as format_as_spec(). Report this as a bug if this is called from within Fandango."
+            f"Don't rely on the __str__ impl on {self.__class__.__name__}. Use a method specific to your usecase, such as format_as_spec(). Report this as a bug if this is called from within Fandango.",
+            stacklevel=2,
         )
         return self.format_as_spec()
 
@@ -170,8 +172,10 @@ NODE_SETTINGS_DEFAULTS = {
 class NodeSettings:
     def __init__(
         self,
-        raw_settings: dict[str, Any] = {},
+        raw_settings: Optional[dict[str, Any]] = None,
     ):
+        if raw_settings is None:
+            raw_settings = {}
         self._settings: dict[str, Any] = {}
 
         for k, v in NODE_SETTINGS_DEFAULTS.items():

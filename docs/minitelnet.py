@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
+import re
 import socket
 import subprocess
-import time
-import re
 import sys
+import time
 
 
 def sanitize_hostname(s: str, alt_hostname: str = "smtp.example.com") -> str:

@@ -1,7 +1,8 @@
-from copy import copy
-from typing import Any, Optional, Unpack
-from itertools import zip_longest
 import random
+from copy import copy
+from itertools import zip_longest
+from typing import Any, Optional, Unpack
+
 from fandango.constraints.base import GeneticBaseInitArgs
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.constraint_visitor import ConstraintVisitor
@@ -24,7 +25,9 @@ def _get_first_common_node(
     tree_a: DerivationTree, tree_b: DerivationTree
 ) -> DerivationTree:
     common_node = tree_a.get_root(True)
-    for a_path, b_path in zip(tree_a.get_choices_path(), tree_b.get_choices_path()):
+    for a_path, b_path in zip(
+        tree_a.get_choices_path(), tree_b.get_choices_path(), strict=False
+    ):
         if a_path.index == b_path.index:
             common_node = common_node.children[a_path.index]
         else:
@@ -317,7 +320,7 @@ class RepetitionBoundsConstraint(Constraint):
             container_tree: DerivationTree = container.evaluate()
             search_in_bounds = True
             zip_var = list(zip_longest(max_path, container_tree.get_choices_path()))
-            for i, (max_step, search_step) in enumerate(zip_var):
+            for max_step, search_step in zip_var:
                 if max_step is None:
                     break
                 if search_step is None:

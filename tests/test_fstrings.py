@@ -1,11 +1,11 @@
 import pytest
 
-from fandango.language.parse.parse import parse
-from fandango.errors import FandangoParseError
-from fandango.language.tree import DerivationTree
 from fandango.constraints.comparison import ComparisonConstraint
 from fandango.constraints.expression import ExpressionConstraint
+from fandango.errors import FandangoParseError
+from fandango.language.parse.parse import parse
 from fandango.language.symbols import NonTerminal, Terminal
+from fandango.language.tree import DerivationTree
 
 
 @pytest.mark.parametrize(

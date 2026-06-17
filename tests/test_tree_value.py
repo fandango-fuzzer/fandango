@@ -1,4 +1,5 @@
 import pytest
+
 from fandango.errors import FandangoConversionError
 from fandango.language.symbols.terminal import Terminal
 from fandango.language.tree import DerivationTree
@@ -6,9 +7,9 @@ from fandango.language.tree_value import (
     DIRECT_ACCESS_METHODS_BASE_TO_FIRST_ARG_TYPE,
     DIRECT_ACCESS_METHODS_BASE_TO_UNDERLYING_TYPE,
     TreeValue,
+    TreeValueType,
     trailing_bits_to_int,
 )
-from fandango.language.tree_value import TreeValue, TreeValueType, trailing_bits_to_int
 
 A_BITS = [int(bit) for bit in f"{ord('a'):08b}"]
 ONE_BITS = [int(bit) for bit in f"{ord('1'):08b}"]
@@ -582,5 +583,5 @@ def test_tree_value_direct_access_non_base_type(base_value):
     with pytest.warns(DeprecationWarning):
         assert base_value.startswith(DerivationTree(Terminal("Hello")))
 
-    with pytest.raises(Exception):
+    with pytest.raises(AssertionError):
         base_value.startswith(1.0)  # float is illegal base type

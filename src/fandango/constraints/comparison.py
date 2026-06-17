@@ -1,7 +1,10 @@
-from copy import copy
 import math
+from copy import copy
 from typing import Any, Optional, Unpack, cast
+
 from fandango.constraints.base import GeneticBaseInitArgs
+from fandango.constraints.constraint import Constraint
+from fandango.constraints.constraint_visitor import ConstraintVisitor
 from fandango.constraints.failing_tree import (
     ApplyAllSuggestions,
     ApplyFirstSuggestion,
@@ -10,20 +13,18 @@ from fandango.constraints.failing_tree import (
     NopSuggestion,
     Suggestion,
 )
+from fandango.constraints.fitness import (
+    ConstraintFitness,
+    DistanceAwareConstraintFitness,
+)
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.search import (
     AnnotatedContainer,
     AnnotatedSearch,
     NonTerminalSearch,
 )
-from fandango.language.tree import DerivationTree
-from fandango.constraints.constraint_visitor import ConstraintVisitor
-from fandango.constraints.constraint import Constraint
-from fandango.constraints.fitness import (
-    ConstraintFitness,
-    DistanceAwareConstraintFitness,
-)
 from fandango.language.symbols.non_terminal import NonTerminal
+from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER, print_exception
 
 _MAX_FAILED_COMPARISON_FITNESS = 1 - 1e-4
@@ -90,8 +91,8 @@ class ComparisonConstraint(Constraint):
         operator: Comparison,
         left: str,
         right: str,
-        left_searches: dict[str, NonTerminalSearch] = dict(),
-        right_searches: dict[str, NonTerminalSearch] = dict(),
+        left_searches: Optional[dict[str, NonTerminalSearch]] = None,
+        right_searches: Optional[dict[str, NonTerminalSearch]] = None,
         **kwargs: Unpack[GeneticBaseInitArgs],
     ) -> None:
         """
@@ -103,6 +104,8 @@ class ComparisonConstraint(Constraint):
         :param dict[str, NonTerminalSearch] right_searches: The searches to use for the right side.
         :param kwargs: Additional keyword arguments.
         """
+        left_searches = left_searches or {}
+        right_searches = right_searches or {}
         assert "searches" not in kwargs, (
             "don't provide searches combination, instead provide left_searches and right_searches"
         )

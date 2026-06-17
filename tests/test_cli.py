@@ -13,9 +13,9 @@ from unittest.mock import patch
 from fandango import DISTRIBUTION_NAME
 from fandango.cli import get_parser
 from fandango.cli.upgrade import (
+    Version,
     check_for_fandango_update,
     check_package_for_update,
-    Version,
     version,
 )
 
@@ -24,17 +24,18 @@ from .utils import DOCS_ROOT, IS_BEARTYPE_ACTIVE, RESOURCES_ROOT, run_command
 # beartype somehow scrambles the fixed rng
 if IS_BEARTYPE_ACTIVE:
     expected_with_random_seed = [
-        "60401624495",
-        "68661899668",
-        "73",
-        "58694919430160244779",
-        "9502591836",
-        "7076746807392016295",
-        "94",
-        "389067036846",
-        "43164695741",
-        "4317911847",
+        "6040162449562186",
+        "697",
+        "1743392096838",
+        "59467847818672",
+        "259",
+        "0248279116786637507",
+        "18596",
+        "689148906703684",
+        "4603385988582849169",
+        "1060384046722",
     ]
+
 
 else:
     expected_with_random_seed = [
@@ -55,7 +56,7 @@ class TestCLI(unittest.TestCase):
     def test_help(self):
         command = ["fandango", "--help"]
         out, err, code = run_command(command)
-        _parser = get_parser(True)
+        _ = get_parser(True)
         self.assertEqual(0, code, code)
         self.assertEqual(err, "", err)
 
@@ -230,6 +231,24 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
         self.assertEqual("", out, out)
         self.assertEqual(expected, err, err)
         self.assertEqual(0, code, code)
+
+    def test_format_one(self):
+        command = [
+            "fandango",
+            "fuzz",
+            "-f",
+            str(RESOURCES_ROOT / "digit.fan"),
+            "-n",
+            "5",
+            "--format=1",
+            "--random-seed",
+            "426912",
+            "--no-cache",
+        ]
+        out, err, code = run_command(command)
+        self.assertEqual(0, code, code)
+        self.assertEqual(err, "", err)
+        self.assertEqual(["1"] * 5, out.strip().split("\n"))
 
     def test_binfinity(self):
         command = [

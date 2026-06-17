@@ -6,7 +6,7 @@ import time
 
 from tccbox import tcc_bin_path
 
-from fandango.evolution.algorithm import SimpleGeneticAlgorithm, LoggerLevel
+from fandango.evolution.algorithm import LoggerLevel, SimpleGeneticAlgorithm
 from fandango.language.parse.parse import parse
 
 

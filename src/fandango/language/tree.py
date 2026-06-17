@@ -1,8 +1,8 @@
 import copy
-from collections import deque
-from typing import Any, Optional, TYPE_CHECKING, TypeVar, cast
-from collections.abc import Callable, Generator, Iterable, Iterator
 import warnings
+from collections import deque
+from collections.abc import Callable, Generator, Iterable, Iterator
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
 from fandango.language.symbols import NonTerminal, Slice, Symbol, Terminal
 from fandango.language.tree_value import (
@@ -101,6 +101,7 @@ def forward_to_tree_value_methods(
                 warnings.warn(
                     f"Method {name} already exists on {cls.__name__}, skipping",
                     Warning,
+                    stacklevel=2,
                 )
             else:
                 setattr(cls, name, make_method(name))
@@ -347,6 +348,7 @@ class DerivationTree:
         warnings.warn(
             "Use find_subtrees instead [deprecated after version 1.1.1]",
             category=DeprecationWarning,
+            stacklevel=2,
         )
         return list(self.find_subtrees(symbol))
 
@@ -366,7 +368,7 @@ class DerivationTree:
             ],
             [],
         )
-        for o_node_id, o_iter_id, rep in self.origin_repetitions:
+        for o_node_id, _o_iter_id, _rep in self.origin_repetitions:
             if o_node_id == node_id:
                 trees.append(self)
                 break
@@ -610,7 +612,6 @@ class DerivationTree:
             """
             Output the derivation tree as (specialized) grammar
             """
-            nonlocal include_position, include_value
             assert isinstance(node.symbol, NonTerminal)
 
             s = "  " * start_indent + f"{node.symbol.name()} ::="
@@ -738,10 +739,10 @@ class DerivationTree:
                     try:
                         # Fallback: If current node reference is not in parent.sources, try to get it by value.
                         source_idx = parent.sources.index(current)
-                    except ValueError:
+                    except ValueError as err:
                         raise StepException(
                             f"Cannot find {current.to_repr()} in parent.children: {parent.children} or parent.sources: {parent.sources}"
-                        )
+                        ) from err
                 else:
                     path.append(SourceStep(source_idx))
             current = parent
@@ -975,7 +976,6 @@ class DerivationTree:
         else:
             raise ValueError(f"Invalid value type: {value.type_}")
 
-    ## Comparison operations
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, DerivationTree):
             return hash(self) == hash(other)

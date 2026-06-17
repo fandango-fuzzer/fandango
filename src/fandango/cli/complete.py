@@ -1,8 +1,8 @@
 import glob
-from io import StringIO
 import os
 import re
 import sys
+from io import StringIO
 
 from fandango.cli.commands import COMMANDS
 from fandango.cli.parser import get_parser
