@@ -176,7 +176,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             )
             raise FandangoFailedError(
                 f"Couldn't find solution for any packet: {nonterminals_str}"
-            )
+            ) from None
 
     def _is_failed_forecast(self) -> bool:
         return (
