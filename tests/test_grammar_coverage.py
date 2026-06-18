@@ -11,7 +11,6 @@ from aiosmtpd.smtp import AuthResult, LoginPassword
 from fandango.evolution.algorithm import (
     DefaultAlgorithm,
     GeneticAlgorithm,
-    LoggerLevel,
     ProtocolAlgorithm,
 )
 from fandango.io.navigation.coverage_goal import CoverageGoal

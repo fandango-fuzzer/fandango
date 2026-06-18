@@ -9,7 +9,7 @@ from fandango.io.navigation.reachability_checker import ReachabilityChecker
 from fandango.io.navigation.stategrammarconverter import StateGrammarConverter
 from fandango.language import DerivationTree, NonTerminal
 from fandango.language.grammar import ParsingMode
-from fandango.language.grammar.grammar import KPath, Grammar
+from fandango.language.grammar.grammar import Grammar, KPath
 from fandango.language.grammar.node_visitors.grammar_graph_converter import (
     GrammarGraphNode,
 )
