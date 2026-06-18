@@ -138,6 +138,7 @@ def HMAC_blake2s(key: bytes, data: bytes) -> bytes:
     h.update(data)
     return h.finalize()
 
+
 def create_handshake_initiation_full(
     initiator_static_private,
     initiator_ephemeral_private,
