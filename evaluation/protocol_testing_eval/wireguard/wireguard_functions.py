@@ -23,19 +23,8 @@ responder_ephemeral_public: bytes = (
     .public_bytes_raw()
 )
 tai_64n = b""
-# The responder's sender index, taken from the most recent handshake response.
-# Transport data packets address their receiver_index to this value. Stored as a
-# global (and fed to <data_receiver_index> via a generator) so it always refers to
-# the CURRENT session — a `where ... == <msg_responder>.<sender_index>` constraint
-# became unsatisfiable once rekeying produced several <msg_responder>s in the tree.
 responder_sender_index: bytes = b"\x00" * 4
 
-# Must be 32 bytes: ChaCha20Poly1305 rejects any other length. During the
-# speculative generation of <transport_data> the data_encrypted_payload generator
-# calls encrypt_transport() with this key before derive_session_keys() has run, so
-# a 1-byte placeholder made every transport_data candidate throw ("ChaCha20Poly1305
-# key must be 32 bytes") and the packet could never be generated. The real session
-# keys overwrite these in derive_session_keys().
 session_sending_key = b"\x00" * 32
 session_receiving_key = b"\x00" * 32
 sending_key_counter = 0
