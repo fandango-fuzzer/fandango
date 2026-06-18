@@ -1,22 +1,25 @@
-from typing import Optional, Any
+from typing import Optional
 
 from fandango.io import FandangoIO
-from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.coverage_goal import CoverageGoal
-from fandango.io.navigation.stategrammarconverter import StateGrammarConverter
 from fandango.io.navigation.powerschedule import (
     PowerScheduleCoverage,
     PowerScheduleKPath,
 )
-from fandango.language.tree import DerivationTree
+from fandango.language.grammar.nodes.alternative import Alternative
+from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.grammar.nodes.node import Node
 from fandango.io.navigation.packetforecaster import (
     ForecastingPacket,
-    PacketForecaster,
     ForecastingResult,
+    PacketForecaster,
 )
 from fandango.io.navigation.packetnavigator import PacketNavigator
+from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
+from fandango.io.navigation.stategrammarconverter import StateGrammarConverter
 from fandango.language.grammar.grammar import Grammar, KPath
 from fandango.language.symbols import NonTerminal, Symbol
+from fandango.language.tree import DerivationTree
 from fandango.logger import log_guidance_hint
 
 
@@ -30,7 +33,6 @@ class PacketSelector:
     ):
         self.start_symbol = NonTerminal("<start>")
         self.coverage_goal = CoverageGoal.STATE_INPUTS
-        self._is_enable_guidance = True
         self.grammar = grammar
         self.state_grammar_symbols = self._get_state_grammar_symbols(self.start_symbol)
         self.io_instance = io_instance
@@ -52,10 +54,10 @@ class PacketSelector:
         self._guide_path: list[PacketNonTerminal | NonTerminal | None] = []
         self._current_covered_k_paths: set[KPath] = set()
         self._all_past_covered_k_paths: set[KPath] = set()
+        self._permutation_groups: dict[NonTerminal, frozenset[NonTerminal]] = (
+            self._build_permutation_groups()
+        )
         self.compute(history_tree, self.parst_derivations)
-
-    def enable_guidance(self, enable: bool) -> None:
-        self._is_enable_guidance = enable
 
     def _input_parties(self) -> set[str]:
         parties: set[str] = set()
@@ -63,6 +65,33 @@ class PacketSelector:
             if party.is_fuzzer_controlled():
                 parties.add(party.party_name)
         return parties
+
+    def _build_permutation_groups(self) -> dict[NonTerminal, frozenset[NonTerminal]]:
+        groups: dict[NonTerminal, frozenset[NonTerminal]] = {}
+        for rule in self.grammar.rules.values():
+            self._collect_permutation_groups(rule, groups)
+        return groups
+
+    def _collect_permutation_groups(
+        self, node: Node, groups: dict[NonTerminal, frozenset[NonTerminal]]
+    ) -> None:
+        if isinstance(node, Alternative) and node.is_permutation:
+            symbols: set[NonTerminal] = set()
+            self._collect_packet_symbols_from_node(node, symbols)
+            if len(symbols) > 1:
+                group = frozenset(symbols)
+                for sym in symbols:
+                    groups[sym] = group
+        for child in node.children():
+            self._collect_permutation_groups(child, groups)
+
+    @staticmethod
+    def _collect_packet_symbols_from_node(node: Node, result: set[NonTerminal]) -> None:
+        if isinstance(node, NonTerminalNode) and node.sender is not None:
+            result.add(node.symbol)
+        else:
+            for child in node.children():
+                PacketSelector._collect_packet_symbols_from_node(child, result)
 
     def _get_state_grammar_symbols(
         self, starting_symbol: NonTerminal
@@ -186,11 +215,24 @@ class PacketSelector:
         assert self.forecasting_result is not None
         return len(self.forecasting_result.complete_trees) != 0
 
-    def next_fuzzer_parties(self) -> list[str]:
+    def next_fuzzer_parties(
+        self,
+        show_fuzzer_controlled: bool = True,
+        show_external_controlled: bool = False,
+    ) -> list[str]:
         assert self.forecasting_result is not None
         return list(
             filter(
-                lambda x: self.io_instance.parties[x].is_fuzzer_controlled(),
+                lambda x: (
+                    (
+                        self.io_instance.parties[x].is_fuzzer_controlled()
+                        and show_fuzzer_controlled
+                    )
+                    or (
+                        not self.io_instance.parties[x].is_fuzzer_controlled()
+                        and show_external_controlled
+                    )
+                ),
                 self.forecasting_result.get_msg_parties(),
             )
         )
@@ -222,14 +264,13 @@ class PacketSelector:
         all_derivation_trees.append(self.history_tree)
         return all_derivation_trees
 
-    def _uncovered_paths(self, *, alt_cache: bool = False) -> list[KPath]:
+    def _uncovered_paths(self) -> list[KPath]:
         return self.grammar.get_uncovered_k_paths(
             self._all_derivation_trees(),
             self.diversity_k,
             self.start_symbol,
             coverage_goal=self.coverage_goal,
             input_parties=self._input_parties(),
-            alt_cache=alt_cache,
         )
 
     def _select_next_target(self) -> KPath:
@@ -291,7 +332,7 @@ class PacketSelector:
         )
         all_current_msgs = prev_msgs + current_session_msgs
         new_msgs = []
-        for prev, new in zip(self._prev_session_msgs, all_current_msgs):
+        for prev, new in zip(self._prev_session_msgs, all_current_msgs, strict=False):
             if prev != new:
                 new_msgs.extend(current_session_msgs)
                 return new_msgs
@@ -307,13 +348,10 @@ class PacketSelector:
         )
 
     def _select_next_packet(self) -> list[ForecastingPacket]:
-        if not self._is_enable_guidance:
-            # if len(self._uncovered_paths(alt_cache=True)) == 0:
-            #    return self._get_guide_to_end_packet()
-            return self.get_fuzzer_packets()
-
         if len(self.next_fuzzer_parties()) == 0:
-            return []
+            current_external_parties = set(self.next_fuzzer_parties(False, True))
+            if "TimerEvent" not in current_external_parties:
+                return []
 
         is_new_tree = len(self.parst_derivations) > self.prev_past_derivations_len
         if is_new_tree:
@@ -342,6 +380,23 @@ class PacketSelector:
             for msg in self._new_msgs(is_new_tree):
                 old_next_packet = self._get_next_packet()
                 if old_next_packet is None or old_next_packet.symbol != msg.symbol:
+                    # Check if msg is a permutation peer arriving out of order
+                    assert isinstance(msg.symbol, NonTerminal)
+                    if (
+                        old_next_packet is not None
+                        and old_next_packet.symbol in self._permutation_groups
+                        and msg.symbol
+                        in self._permutation_groups[old_next_packet.symbol]
+                    ):
+                        msg_pnt = PacketNonTerminal(
+                            msg.sender, msg.recipient, msg.symbol
+                        )
+                        if msg_pnt in self._guide_path:
+                            idx = self._guide_path.index(msg_pnt)
+                            self._guide_path = (
+                                self._guide_path[:idx] + self._guide_path[idx + 1 :]
+                            )
+                            continue
                     left_path = True
                     break
                 self._guide_path = self._guide_path[
@@ -419,7 +474,11 @@ class PacketSelector:
         if hookin_states is not None:
             hookin_states_tp = tuple(hookin_states)
 
-        for current_sender in self.next_fuzzer_parties():
+        available_senders = self.next_fuzzer_parties()
+        if "TimerEvent" in self.next_external_parties():
+            available_senders.append("TimerEvent")
+
+        for current_sender in available_senders:
             if sender is not None and current_sender != sender:
                 continue
             for packet in self.forecasting_result[current_sender].nt_to_packet.values():
@@ -443,145 +502,18 @@ class PacketSelector:
                     packets.append(append_packet)
         return packets
 
-    def coverage_percent(self, *, alt_cache: bool = False) -> float:
-        u_paths = self._uncovered_paths(alt_cache=alt_cache)
+    def coverage_percent(self) -> float:
+        u_paths = self._uncovered_paths()
         if len(u_paths) == 0:
             return 1.0
         all_paths = self.grammar.generate_all_k_paths(
             k=self.diversity_k,
             coverage_goal=self.coverage_goal,
             input_parties=self._input_parties(),
-            alt_cache=alt_cache,
         )
         if len(all_paths) == 0:
             return 1.0
         return 1.0 - (len(u_paths) / len(all_paths))
-
-    def _compute_coverage_trees(
-        self, overlap_to_root: bool = False
-    ) -> dict[NonTerminal, tuple[int, int]]:
-        messages_by_nt = self._group_messages_by_nt(self._all_derivation_trees())
-        paths_by_role: dict[str, Any] = {}
-        roles_by_symbol: dict[NonTerminal, Any] = dict()
-        paths_by_role["all_party"] = {
-            "covered": list(),
-            "covered_unique": set(),
-            "all": list(),
-            "all_unique": set(),
-            "symbols": set(),
-        }
-        for pnt in self.grammar.get_protocol_messages(self.start_symbol):
-            sender = pnt.sender
-            symbol = pnt.symbol
-            if sender not in paths_by_role:
-                assert sender is not None
-                paths_by_role[sender] = {
-                    "covered": list(),
-                    "covered_unique": set(),
-                    "all": list(),
-                    "all_unique": set(),
-                    "symbols": set(),
-                }
-            paths_by_role[sender]["symbols"].add(symbol)
-            paths_by_role["all_party"]["symbols"].add(symbol)
-            roles_by_symbol.setdefault(symbol, set()).add(sender)
-            roles_by_symbol[symbol].add("all_party")
-
-        nt_coverage = {}
-        for symbol in self.state_grammar_symbols:
-            all_k_paths = self.grammar.generate_all_k_paths(
-                k=self.diversity_k,
-                non_terminal=symbol,
-                overlap_to_root=overlap_to_root,
-                alt_cache=True,
-            )
-
-            covered_k_paths = set()
-            if symbol in messages_by_nt:
-                for tree in messages_by_nt[symbol]:
-                    covered_k_paths.update(
-                        self.grammar._extract_k_paths_from_tree(
-                            tree, self.diversity_k, overlap_to_root, alt_cache=True
-                        )
-                    )
-            if symbol in roles_by_symbol:
-                for role in roles_by_symbol[symbol]:
-                    paths_by_role[role]["all"].extend(all_k_paths)
-                    paths_by_role[role]["all_unique"].update(all_k_paths)
-                    paths_by_role[role]["covered"].extend(covered_k_paths)
-                    paths_by_role[role]["covered_unique"].update(covered_k_paths)
-            nt_coverage[symbol] = (len(covered_k_paths), len(all_k_paths))
-        for role, paths in paths_by_role.items():
-            nt_coverage[NonTerminal("__role_" + role)] = (
-                len(paths["covered"]),
-                len(paths["all"]),
-            )
-            nt_coverage[NonTerminal("__role_unique_" + role)] = (
-                len(paths["covered_unique"]),
-                len(paths["all_unique"]),
-            )
-        return nt_coverage
-
-    """
-    def _compute_coverage_trees(
-        self, overlap_to_root: bool = False
-    ) -> dict[NonTerminal, tuple[int, int]]:
-        messages_by_nt = self._group_messages_by_nt(self._all_derivation_trees())
-        paths_by_role = {}
-        roles_by_symbol = dict()
-        paths_by_role["all_party"] = {
-            "covered": list(),
-            "covered_unique": set(),
-            "all": list(),
-            "all_unique": set(),
-            "symbols": set(),
-        }
-        for p_nt in self.grammar.get_protocol_messages(self.start_symbol):
-            if p_nt.sender not in paths_by_role:
-                paths_by_role[p_nt.sender] = {
-                    "covered": list(),
-                    "covered_unique": set(),
-                    "all": list(),
-                    "all_unique": set(),
-                    "symbols": set(),
-                }
-            paths_by_role[p_nt.sender]["symbols"].add(p_nt.symbol)
-            paths_by_role["all_party"]["symbols"].add(p_nt.symbol)
-            roles_by_symbol.setdefault(p_nt.symbol, set()).add(p_nt.sender)
-            roles_by_symbol[p_nt.symbol].add("all_party")
-
-        nt_coverage = {}
-        for symbol in self.state_grammar_symbols:
-            all_k_paths = self.grammar.generate_all_k_paths(
-                self.diversity_k, symbol, overlap_to_root
-            )
-
-            covered_k_paths = set()
-            if symbol in messages_by_nt:
-                for tree in messages_by_nt[symbol]:
-                    covered_k_paths.update(
-                        self.grammar._extract_k_paths_from_tree(
-                            tree, self.diversity_k, overlap_to_root
-                        )
-                    )
-            if symbol in roles_by_symbol:
-                for role in roles_by_symbol[symbol]:
-                    paths_by_role[role]["all"].extend(all_k_paths)
-                    paths_by_role[role]["all_unique"].update(all_k_paths)
-                    paths_by_role[role]["covered"].extend(covered_k_paths)
-                    paths_by_role[role]["covered_unique"].update(covered_k_paths)
-            nt_coverage[symbol] = (len(covered_k_paths), len(all_k_paths))
-        for role, paths in paths_by_role.items():
-            nt_coverage[NonTerminal("__role_" + role)] = (
-                len(paths["covered"]),
-                len(paths["all"]),
-            )
-            nt_coverage[NonTerminal("__role_unique_" + role)] = (
-                len(paths["covered_unique"]),
-                len(paths["all_unique"]),
-            )
-        return nt_coverage
-    """
 
     def set_coverage_goal(self, goal: CoverageGoal) -> None:
         self.coverage_goal = goal

@@ -1,22 +1,24 @@
 import random
-from typing import Counter, Optional, Union
-from collections.abc import Generator, Sequence
+from collections import Counter
+from collections.abc import Callable, Generator, Sequence
+from typing import Optional
+
+from cachetools import LRUCache
 
 from fandango.constraints.constraint import Constraint
-from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
-from fandango.constraints.soft import SoftValue
 from fandango.constraints.failing_tree import (
     ApplyAllSuggestions,
     FailingTree,
     NopSuggestion,
     Suggestion,
 )
+from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
+from fandango.constraints.soft import SoftValue
 from fandango.evolution import GeneratorWithReturn
-from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.language import NonTerminal
-from fandango.language.tree import DerivationTree
 from fandango.language.grammar.grammar import Grammar, KPath
+from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER, print_exception
+from fandango.utils import cache_size
 
 
 class Evaluator:
@@ -28,6 +30,10 @@ class Evaluator:
         diversity_k: int,
         diversity_weight: float,
         warnings_are_errors: bool = False,
+        stop_criterion: Optional[Callable[[DerivationTree], bool]] = None,
+        use_fcc: bool = False,
+        put: Optional[str] = None,
+        put_args: Optional[list[str]] = None,
     ):
         self._grammar = grammar
         self._soft_constraints: list[SoftValue] = []
@@ -37,11 +43,28 @@ class Evaluator:
         self._diversity_k = diversity_k
         self._diversity_weight = diversity_weight
         self._warnings_are_errors = warnings_are_errors
-        self._fitness_cache: dict[int, tuple[float, list[FailingTree], Suggestion]] = {}
+        self._fitness_cache: LRUCache[
+            int, tuple[float, list[FailingTree], Suggestion]
+        ] = LRUCache(maxsize=cache_size())
         self._solution_set: set[int] = set()
         self._checks_made = 0
+        self._stop_criterion = stop_criterion
+        self._stop_criterion_met = False
+        self.fcc = None
+        if use_fcc:
+            # dynamic import to only emit the experimental warning when it is actually needed
+            from fandango.experimental.execution.fcc import FCC
+
+            self.fcc = FCC(put, put_args)
 
         for constraint in constraints:
+            if "DynamicAnalysis" in constraint.format_as_spec():
+                assert self.fcc is not None, (
+                    "FCC is required for DynamicAnalysis constraint"
+                )
+                constraint.global_variables["DynamicAnalysis"] = (
+                    self.fcc.dynamic_analysis.trace_input
+                )
             if isinstance(constraint, SoftValue):
                 self._soft_constraints.append(constraint)
             elif isinstance(constraint, RepetitionBoundsConstraint):
@@ -50,6 +73,10 @@ class Evaluator:
                 self._hard_constraints.append(constraint)
             else:
                 raise ValueError(f"Invalid constraint type: {type(constraint)}")
+
+    @property
+    def stop_criterion_met(self) -> bool:
+        return self._stop_criterion_met
 
     @property
     def expected_fitness(self) -> float:
@@ -72,9 +99,11 @@ class Evaluator:
         :param population: The population to compute the mutation pool for.
         :return: The mutation pool.
         """
-        weights = [
-            self._fitness_cache[hash((ind.get_root(), ind))][0] for ind in population
-        ]
+        weights = []
+        for ind in population:
+            gen = GeneratorWithReturn(self.evaluate_individual(ind))
+            gen.collect()
+            weights.append(gen.return_value[0])
         if not all(w == 0 for w in weights):
             return random.choices(population, weights=weights, k=len(population))
         else:
@@ -85,7 +114,7 @@ class Evaluator:
         For soft constraints, the normalized fitness may change over time as we observe more inputs, this method flushes the fitness cache if the grammar contains any soft constraints.
         """
         if len(self._soft_constraints) > 0:
-            self._fitness_cache = {}
+            self._fitness_cache.clear()
 
     def compute_diversity_bonus(
         self,
@@ -245,13 +274,17 @@ class Evaluator:
             )
 
         if fitness >= self._expected_fitness and key not in self._solution_set:
+            if self._stop_criterion:
+                self._stop_criterion_met |= self._stop_criterion(individual)
             self._solution_set.add(key)
             yield individual
 
         self._fitness_cache[key] = (fitness, failing_trees, suggestion)
         return fitness, failing_trees, suggestion
 
-    def evaluate_population(self, population: list[DerivationTree]) -> Generator[
+    def evaluate_population(
+        self, population: list[DerivationTree]
+    ) -> Generator[
         DerivationTree,
         None,
         list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
@@ -266,7 +299,7 @@ class Evaluator:
             evaluation = [
                 (ind, fitness + bonus, failing_trees, suggestion)
                 for (ind, fitness, failing_trees, suggestion), bonus in zip(
-                    evaluation, bonuses
+                    evaluation, bonuses, strict=False
                 )
             ]
         return evaluation
@@ -299,188 +332,3 @@ class Evaluator:
                 tournament[1][0] if tournament[1][0] != parent1 else tournament[2][0]
             )
         return parent1, parent2
-
-
-class IoEvaluator(Evaluator):
-    def __init__(
-        self,
-        grammar: Grammar,
-        constraints: list[Union[Constraint, SoftValue]],
-        expected_fitness: float,
-        diversity_k: int,
-        diversity_weight: float,
-        warnings_are_errors: bool = False,
-    ):
-        super().__init__(
-            grammar,
-            constraints,
-            expected_fitness,
-            diversity_k,
-            diversity_weight,
-            warnings_are_errors,
-        )
-        self._submitted_solutions: set[int] = set()
-        self._hold_back_solutions: set[DerivationTree] = set()
-        self._past_trees: list[DerivationTree] = []
-        self._is_enable_guidance = True
-
-    def enable_guidance(self, value: bool) -> None:
-        self._is_enable_guidance = value
-
-    def get_past_msgs(
-        self, packet_type: Optional[PacketNonTerminal] = None
-    ) -> set[DerivationTree]:
-        msgs = []
-        for tree in self._past_trees:
-            msgs.extend(tree.protocol_msgs())
-        msg_trees = set(map(lambda x: x.msg, msgs))
-        if packet_type is None:
-            return msg_trees
-        return {
-            msg
-            for msg in msg_trees
-            if isinstance(msg.symbol, NonTerminal)
-            and PacketNonTerminal(msg.sender, msg.recipient, msg.symbol) == packet_type
-        }
-
-    def start_next_message(self, past_trees: list[DerivationTree]) -> None:
-        self._hold_back_solutions.clear()
-        self._solution_set.clear()
-        self._fitness_cache.clear()
-        self._past_trees = past_trees
-        for tree in past_trees:
-            for msg in tree.protocol_msgs():
-                tree = msg.msg
-                key = (msg.sender, msg.recipient, tree)
-                self._submitted_solutions.add(hash(key))
-
-    def _is_path_start_with(self, state_path: KPath, path: KPath) -> int:
-        n = len(state_path)
-        m = len(path)
-        max_overlap = min(n, m)
-        for overlap in range(max_overlap, 0, -1):
-            if state_path[-overlap:] == path[:overlap]:
-                return overlap
-        return 0
-
-    def evaluate_individual(
-        self,
-        individual: DerivationTree,
-    ) -> Generator[DerivationTree, None, tuple[float, list[FailingTree], Suggestion]]:
-        key = hash(individual)
-        if key in self._fitness_cache:
-            return self._fitness_cache[key]
-
-        generator = GeneratorWithReturn(super().evaluate_individual(individual))
-        generator.collect()
-        fitness, failing_trees, suggestion = generator.return_value
-        self._fitness_cache[key] = (fitness, failing_trees, suggestion)
-
-        if fitness < self._expected_fitness:
-            return fitness, failing_trees, suggestion
-
-        if len(individual.protocol_msgs()) != 0:
-            msg = individual.protocol_msgs()[-1].msg
-            assert isinstance(msg.symbol, NonTerminal)
-            msg_key = PacketNonTerminal(msg.sender, msg.recipient, msg.symbol)
-            msg_hash = hash(msg)
-        else:
-            msg = None
-            msg_key = None
-            msg_hash = None
-
-        if not self._is_enable_guidance:
-            if key not in self._solution_set:
-                self._solution_set.add(key)
-                yield individual
-            return fitness, failing_trees, suggestion
-
-        if fitness >= self._expected_fitness:
-            if msg is None:
-                yield individual
-            else:
-                assert msg_hash is not None and msg_key is not None
-                state_path_tree = msg.get_path()
-                if len(state_path_tree) > self._diversity_k:
-                    state_path_tree = state_path_tree[-self._diversity_k :]
-                state_path = tuple(map(lambda x: x.symbol, state_path_tree))
-                assert isinstance(msg.symbol, NonTerminal)
-                uncovered_paths = self._grammar.get_uncovered_k_paths(
-                    list(self.get_past_msgs(msg_key)),
-                    self._diversity_k,
-                    msg.symbol,
-                    True,
-                )
-
-                overlap_to_root = any(
-                    0 < self._is_path_start_with(state_path, path) < self._diversity_k
-                    for path in uncovered_paths
-                )
-
-                old_coverage = self._grammar.compute_kpath_coverage(
-                    list(self.get_past_msgs(msg_key)),
-                    self._diversity_k,
-                    msg.symbol,
-                    overlap_to_root=overlap_to_root,
-                )
-                new_coverage = self._grammar.compute_kpath_coverage(
-                    list(self.get_past_msgs(msg_key)) + [msg],
-                    self._diversity_k,
-                    msg.symbol,
-                    overlap_to_root=overlap_to_root,
-                )
-                if old_coverage < new_coverage or new_coverage == 1.0:
-                    if new_coverage < 1.0:
-                        self._solution_set.add(msg_hash)
-                    yield individual
-                elif (
-                    msg_hash not in self._submitted_solutions
-                    and msg_hash not in self._solution_set
-                    and msg_hash not in self._hold_back_solutions
-                ):
-                    self._hold_back_solutions.add(individual)
-
-        self._fitness_cache[key] = (fitness, failing_trees, suggestion)
-        return fitness, failing_trees, suggestion
-
-    def evaluate_population(self, population: list[DerivationTree]) -> Generator[
-        DerivationTree,
-        None,
-        list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
-    ]:
-        evaluation: list[
-            tuple[DerivationTree, float, list[FailingTree], Suggestion]
-        ] = []
-        for ind in population:
-            ind_eval = yield from self.evaluate_individual(ind)
-            evaluation.append((ind, *ind_eval))
-
-        if self._diversity_k > 0 and self._diversity_weight > 0:
-            fill_up_by_msg_nt: dict[PacketNonTerminal, list[DerivationTree]] = {}
-            for ind in [*self._past_trees, *population]:
-                msgs = ind.protocol_msgs()
-                for i, msg in enumerate(msgs):
-                    assert msg.sender is not None
-                    assert isinstance(msg.msg.symbol, NonTerminal)
-                    key = PacketNonTerminal(msg.sender, msg.recipient, msg.msg.symbol)
-                    if key not in fill_up_by_msg_nt:
-                        fill_up_by_msg_nt[key] = []
-                    fill_up_by_msg_nt[key].append(msg.msg)
-
-            for i, ind in enumerate(population):
-                if len(ind.protocol_msgs()) == 0:
-                    continue
-                last_msg = ind.protocol_msgs()[-1]
-                assert isinstance(last_msg.msg.symbol, NonTerminal)
-                key = PacketNonTerminal(
-                    last_msg.sender, last_msg.recipient, last_msg.msg.symbol
-                )
-                bonuses = self.compute_diversity_bonus([ind], fill_up_by_msg_nt[key])
-                evaluation[i] = (
-                    ind,
-                    evaluation[i][1] + bonuses[0],
-                    evaluation[i][2],
-                    evaluation[i][3],
-                )
-
-        return evaluation

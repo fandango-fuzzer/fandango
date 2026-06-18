@@ -4,15 +4,19 @@ import time
 import unittest
 from asyncio import Server
 
+from aiosmtpd.controller import Controller
 from aiosmtpd.handlers import Debugging
+from aiosmtpd.smtp import AuthResult, LoginPassword
 
+from fandango.evolution.algorithm import (
+    DefaultAlgorithm,
+    GeneticAlgorithm,
+    LoggerLevel,
+    ProtocolAlgorithm,
+)
 from fandango.io.navigation.coverage_goal import CoverageGoal
 from fandango.language.grammar import FuzzingMode
 from fandango.language.parse.parse import parse
-from fandango.evolution.algorithm import Fandango, LoggerLevel
-from aiosmtpd.controller import Controller
-from aiosmtpd.smtp import AuthResult, LoginPassword
-
 from tests.utils import EVALUATION_ROOT
 
 
@@ -60,7 +64,9 @@ class SMTPServer:
 
 class GrammarCoverageTest(unittest.TestCase):
     @staticmethod
-    def gen_fandango(coverage_goal: CoverageGoal, host: str, port: int) -> Fandango:
+    def gen_fandango(
+        coverage_goal: CoverageGoal, host: str, port: int
+    ) -> GeneticAlgorithm:
 
         client_def = f"""
 class Client(NetworkParty):
@@ -86,10 +92,8 @@ class Server(NetworkParty):
                 use_stdlib=False,
             )
         assert grammar is not None
-        return Fandango(
-            grammar=grammar,
-            constraints=constraints,
-            logger_level=LoggerLevel.INFO,
+        return ProtocolAlgorithm(
+            packet_algorithm=DefaultAlgorithm(grammar=grammar, constraints=constraints),
             coverage_goal=coverage_goal,
         )
 
@@ -112,7 +116,7 @@ class Server(NetworkParty):
             fandango = GrammarCoverageTest.gen_fandango(
                 CoverageGoal.STATE_INPUTS, host="127.0.0.1", port=server.port
             )
-            for solution in fandango.generate(mode=FuzzingMode.IO):
+            for _solution in fandango.generate(mode=FuzzingMode.IO):
                 pass
         finally:
             server.stop()

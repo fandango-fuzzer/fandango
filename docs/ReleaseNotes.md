@@ -15,7 +15,11 @@ kernelspec:
 
 This document lists major changes across releases.
 
-```{versionadded} 1.1 (January 2026)
+```{versionadded} 1.1.1 (February 2026)
+* Bugfixes
+```
+
+```{versionadded} 1.1 (February 2026)
 * Much enhanced [protocol fuzzing](sec:protocols):
    * Protocol fuzzing is now out of beta.
    * `fandango talk` now keeps on producing diverse interactions, systematically covering states and messages until stopped or 100% coverage is reached.

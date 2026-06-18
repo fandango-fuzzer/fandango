@@ -1,25 +1,24 @@
-from typing import Optional
 from collections.abc import Generator
+from typing import Optional
 
-from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.grammarnavigator import GrammarNavigator
+from fandango.io.navigation.packetiterativeparser import NavigatorPacketIterativeParser
+from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.stategrammarconverter import StateGrammarConverter
-from fandango.io.navigation.packetiterativeparser import PacketIterativeParser
-from fandango.language import Grammar, DerivationTree
-from fandango.language.grammar.grammar import KPath
-from fandango.language.symbols.non_terminal import NonTerminal
+from fandango.language import DerivationTree, Grammar
 from fandango.language.grammar import ParsingMode
+from fandango.language.grammar.grammar import KPath
 from fandango.language.grammar.node_visitors.grammar_graph_converter import (
     GrammarGraphNode,
 )
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.symbols.non_terminal import NonTerminal
 
 
 class PacketNavigator(GrammarNavigator):
-
-    def __init__(
-        self, grammar: Grammar, start_symbol: NonTerminal = NonTerminal("<start>")
-    ):
+    def __init__(self, grammar: Grammar, start_symbol: Optional[NonTerminal] = None):
+        if start_symbol is None:
+            start_symbol = NonTerminal("<start>")
         reduced_rules = StateGrammarConverter(grammar.grammar_settings).process(
             grammar.rules, start_symbol
         )
@@ -36,7 +35,7 @@ class PacketNavigator(GrammarNavigator):
         self._packet_symbols: set[NonTerminal] = set(
             map(lambda x: x.symbol, grammar.get_protocol_messages(start_symbol))
         )
-        self._parser = PacketIterativeParser(reduced_rules)
+        self._parser = NavigatorPacketIterativeParser(reduced_rules)
         self.set_message_cost(1)
 
     def get_controlflow_tree(
@@ -51,11 +50,12 @@ class PacketNavigator(GrammarNavigator):
             yield DerivationTree(NonTerminal("<start>")), False
             return
         self._parser.detailed_tree = tree
+        self._parser.reference_tree = tree
         self._parser.new_parse(NonTerminal("<start>"), ParsingMode.INCOMPLETE)
 
         for suggested_tree, is_complete in self._parser.consume(history_nts):
             for orig_r_msg, r_msg in zip(
-                tree.protocol_msgs(), suggested_tree.protocol_msgs()
+                tree.protocol_msgs(), suggested_tree.protocol_msgs(), strict=False
             ):
                 assert isinstance(r_msg.msg.symbol, NonTerminal)
                 assert isinstance(orig_r_msg.msg.symbol, NonTerminal)
@@ -142,7 +142,7 @@ class PacketNavigator(GrammarNavigator):
         found_trees, include_k_paths = self._find_trees_including_k_paths(
             included_k_paths, tree
         )
-        for suggested_tree, is_complete in found_trees:
+        for suggested_tree, _is_complete in found_trees:
             path = self.astar_tree_symbols(
                 tree=suggested_tree, destination_k_path=destination_k_path
             )

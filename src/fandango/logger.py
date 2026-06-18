@@ -3,7 +3,7 @@ import os
 import sys
 import time
 import traceback
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from ansi_styles import ansiStyles as styles
 
@@ -24,8 +24,7 @@ logging.basicConfig(
 
 
 def print_exception(e: Exception, exception_note: Optional[str] = None) -> None:
-    if exception_note is not None and getattr(Exception, "add_note", None):
-        # Python 3.11+ has add_note() method
+    if exception_note is not None:
         e.add_note(exception_note)
         exception_note = None
 
@@ -66,7 +65,7 @@ LINES = None
 
 def use_visualization() -> bool:
     """Return True if we should use visualization while Fandango is running"""
-    global COLUMNS, LINES, USE_VISUALIZATION
+    global COLUMNS, LINES
 
     if os.environ.get("FANDANGO_DISABLE_VISUALIZATION"):
         return False
@@ -196,6 +195,6 @@ def log_guidance_hint(message: str) -> None:
 def log_message_coverage(
     coverage: list[tuple[NonTerminal, float]],
 ) -> None:
-    LOGGER.info(f"Current message coverage:")
+    LOGGER.info("Current message coverage:")
     for symbol, coverage_val in coverage:
         LOGGER.info(f"{symbol}: {coverage_val:.2f}")

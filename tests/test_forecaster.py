@@ -1,9 +1,9 @@
-from fandango.io.navigation.packetforecaster import PacketForecaster, ForecastingResult
+from fandango.api import Fandango
+from fandango.io.navigation.packetforecaster import ForecastingResult, PacketForecaster
 from fandango.language.grammar import ParsingMode
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 from tests.utils import RESOURCES_ROOT
-from fandango.api import Fandango
 
 
 def get_grammar():

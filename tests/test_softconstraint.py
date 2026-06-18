@@ -1,11 +1,12 @@
 #!/usr/bin/env pytest
 
-from collections.abc import Generator
 import itertools
 import unittest
+from collections.abc import Generator
 
-from fandango.evolution.algorithm import Fandango, LoggerLevel
+from fandango.evolution.algorithm import DefaultAlgorithm, LoggerLevel
 from fandango.language.parse.parse import parse
+
 from .utils import RESOURCES_ROOT, run_command
 
 
@@ -24,7 +25,7 @@ class TestSoft(unittest.TestCase):
             )
         assert grammar_int is not None
         assert constraints_int is not None
-        fandango = Fandango(
+        fandango = DefaultAlgorithm(
             grammar=grammar_int,
             constraints=constraints_int,
             random_seed=random_seed,
@@ -82,6 +83,8 @@ class TestSoftValue(TestSoft):
             "-c",
             "maximizing int(<age>)",
             "-n",
+            "20",
+            "--max-generations",
             "50",
             "--population-size",
             "10",
@@ -104,6 +107,8 @@ class TestSoftValue(TestSoft):
             "--maximize",
             "int(<age>)",
             "-n",
+            "20",
+            "--max-generations",
             "50",
             "--population-size",
             "10",
@@ -112,7 +117,7 @@ class TestSoftValue(TestSoft):
         ]
         out, err, code = run_command(command)
         lines = [line for line in out.split("\n") if line.strip()]
-        last_age = int(lines[-1].split(",")[1])  # e.g., 9999999999999599999999
+        last_age = int(lines[-1].split(",")[1])
         self.assertGreater(last_age, 99999999999)
         self.assertEqual(code, 0, code)
 
@@ -126,6 +131,8 @@ class TestSoftValue(TestSoft):
             "minimizing int(<age>)",
             "-n",
             "20",
+            "--max-generations",
+            "50",
             "--population-size",
             "10",
             "--random-seed",
@@ -147,6 +154,8 @@ class TestSoftValue(TestSoft):
             "int(<age>)",
             "-n",
             "20",
+            "--max-generations",
+            "50",
             "--population-size",
             "10",
             "--random-seed",

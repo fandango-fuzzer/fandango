@@ -1,5 +1,6 @@
 #!/usr/bin/env pytest
 import asyncio
+import json
 import os
 import re
 import shutil
@@ -7,25 +8,34 @@ import subprocess
 import sys
 import time
 import unittest
+from unittest.mock import patch
 
+from fandango import DISTRIBUTION_NAME
 from fandango.cli import get_parser
+from fandango.cli.upgrade import (
+    Version,
+    check_for_fandango_update,
+    check_package_for_update,
+    version,
+)
 
 from .utils import DOCS_ROOT, IS_BEARTYPE_ACTIVE, RESOURCES_ROOT, run_command
 
 # beartype somehow scrambles the fixed rng
 if IS_BEARTYPE_ACTIVE:
     expected_with_random_seed = [
-        "6040162449562",
-        "919987869",
-        "406633715785366",
-        "71",
-        "32",
-        "6926086929080660778",
-        "127241237407878",
-        "63796607480274",
-        "1855",
-        "60484916",
+        "6040162449562186",
+        "697",
+        "1743392096838",
+        "59467847818672",
+        "259",
+        "0248279116786637507",
+        "18596",
+        "689148906703684",
+        "4603385988582849169",
+        "1060384046722",
     ]
+
 
 else:
     expected_with_random_seed = [
@@ -46,7 +56,7 @@ class TestCLI(unittest.TestCase):
     def test_help(self):
         command = ["fandango", "--help"]
         out, err, code = run_command(command)
-        _parser = get_parser(True)
+        _ = get_parser(True)
         self.assertEqual(0, code, code)
         self.assertEqual(err, "", err)
 
@@ -101,6 +111,7 @@ class TestCLI(unittest.TestCase):
         os.remove(RESOURCES_ROOT / "test.txt")
 
     def test_output_multiple_files(self):
+        out_dir = RESOURCES_ROOT / "test_multiple_files"
         command = [
             "fandango",
             "fuzz",
@@ -111,24 +122,20 @@ class TestCLI(unittest.TestCase):
             "--random-seed",
             "426912",
             "-d",
-            str(RESOURCES_ROOT / "test"),
+            str(out_dir),
             "--no-cache",
         ]
-        (
-            out,
-            err,
-            code,
-        ) = run_command(command)
-        self.assertEqual(0, code, code)
+        out, err, code = run_command(command)
         self.assertEqual("", out, out)
         self.assertEqual("", err, err)
+        self.assertEqual(0, code, code)
         for i, expected_value in enumerate(expected_with_random_seed):
-            filename = RESOURCES_ROOT / "test" / f"fandango-{i:04d}.txt"
+            filename = out_dir / f"fandango-{i:04d}.txt"
             with open(filename, "r") as fd:
                 actual = fd.read()
             self.assertEqual(expected_value, actual, actual)
 
-        shutil.rmtree(RESOURCES_ROOT / "test", ignore_errors=True)
+        shutil.rmtree(out_dir, ignore_errors=True)
 
     def test_output_with_libfuzzer_harness(self):
         if sys.platform.startswith("win"):
@@ -224,6 +231,24 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
         self.assertEqual("", out, out)
         self.assertEqual(expected, err, err)
         self.assertEqual(0, code, code)
+
+    def test_format_one(self):
+        command = [
+            "fandango",
+            "fuzz",
+            "-f",
+            str(RESOURCES_ROOT / "digit.fan"),
+            "-n",
+            "5",
+            "--format=1",
+            "--random-seed",
+            "426912",
+            "--no-cache",
+        ]
+        out, err, code = run_command(command)
+        self.assertEqual(0, code, code)
+        self.assertEqual(err, "", err)
+        self.assertEqual(["1"] * 5, out.strip().split("\n"))
 
     def test_binfinity(self):
         command = [
@@ -378,6 +403,93 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
         self.assertEqual(0, code, code)
         self.assertEqual("", out, out)
 
+    def test_output_file_already_exists(self):
+        out_file = RESOURCES_ROOT / "existing_output.txt"
+        try:
+            out_file.write_text("pre-existing content")
+            command = [
+                "fandango",
+                "-v",
+                "fuzz",
+                "-f",
+                str(RESOURCES_ROOT / "digit.fan"),
+                "-n",
+                "1",
+                "-o",
+                str(out_file),
+                "--no-cache",
+            ]
+            out, err, code = run_command(command)
+            self.assertEqual(0, code)
+            self.assertIn("Removing existing output file", err)
+        finally:
+            out_file.unlink(missing_ok=True)
+
+    def test_output_directory_is_file(self):
+        out_dir = RESOURCES_ROOT / "not_a_directory"
+        try:
+            out_dir.write_text("I am a file, not a directory")
+            command = [
+                "fandango",
+                "fuzz",
+                "-f",
+                str(RESOURCES_ROOT / "digit.fan"),
+                "-n",
+                "1",
+                "-d",
+                str(out_dir),
+                "--no-cache",
+            ]
+            out, err, code = run_command(command)
+            self.assertEqual(1, code)
+            self.assertIn(f"{out_dir} is not a directory or is not empty", err)
+        finally:
+            out_dir.unlink(missing_ok=True)
+
+    def test_output_directory_not_empty(self):
+        out_dir = RESOURCES_ROOT / "non_empty_dir"
+        try:
+            out_dir.mkdir(exist_ok=True)
+            (out_dir / "dummy.txt").write_text("occupying space")
+            command = [
+                "fandango",
+                "fuzz",
+                "-f",
+                str(RESOURCES_ROOT / "digit.fan"),
+                "-n",
+                "1",
+                "-d",
+                str(out_dir),
+                "--no-cache",
+            ]
+            out, err, code = run_command(command)
+            self.assertEqual(1, code)
+            self.assertIn(f"{out_dir} is not a directory or is not empty", err)
+        finally:
+            shutil.rmtree(out_dir, ignore_errors=True)
+
+    def test_output_directory_empty_succeeds(self):
+        out_dir = RESOURCES_ROOT / "empty_dir"
+        try:
+            out_dir.mkdir(exist_ok=True)
+            command = [
+                "fandango",
+                "fuzz",
+                "-f",
+                str(RESOURCES_ROOT / "digit.fan"),
+                "-n",
+                "1",
+                "-d",
+                str(out_dir),
+                "--random-seed",
+                "426912",
+                "--no-cache",
+            ]
+            out, err, code = run_command(command)
+            self.assertEqual(0, code, f"stderr: {err}")
+        finally:
+            shutil.rmtree(out_dir, ignore_errors=True)
+
     def test_soliloquy(self):
         async def async_run():
             def run_server():
@@ -433,3 +545,76 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
             client_code,
             f"Client error: {client_err}\n\nClient output: {client_out}",
         )
+
+
+def test_fandango_version_upgrade_skip_set():
+    """Ensure the env var short-circuits the update check without network calls."""
+    with (
+        patch.dict(os.environ, {"FANDANGO_DISABLE_UPDATE_CHECK": "1"}, clear=False),
+        patch("sys.stdout.isatty", return_value=True),
+        patch("fandango.cli.upgrade.check_package_for_update") as mock_check,
+    ):
+        check_for_fandango_update(check_now=True)
+
+    mock_check.assert_not_called()
+
+
+def test_fandango_version_upgrade():
+    """Ensure the update check runs when the env var is not set/falsey."""
+    with (
+        patch.dict(os.environ, {"FANDANGO_DISABLE_UPDATE_CHECK": ""}, clear=False),
+        patch("sys.stdout.isatty", return_value=True),
+        patch("fandango.cli.upgrade.NOTIFIED_IN_THIS_SESSION", False),
+        patch(
+            "fandango.cli.upgrade.check_package_for_update", return_value=False
+        ) as mock_check,
+    ):
+        check_for_fandango_update(check_now=True)
+
+    mock_check.assert_called_once()
+
+
+def test_fandango_version_check_path_works(tmp_path, monkeypatch, capsys):
+    """Ensure the version check path works and the distribution is installed."""
+
+    # This will fail if the distribution is not installed or packaging is missing
+    installed_version = Version(version(DISTRIBUTION_NAME))
+
+    latest_version = Version(
+        f"{installed_version.major}.{installed_version.minor}.{installed_version.micro + 1}"
+    )
+
+    payload = json.dumps({"info": {"version": str(latest_version)}}).encode()
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def read(self):
+            return payload
+
+    def fake_urlopen(url, timeout):
+        # Make sure we are querying PyPI for the right package
+        assert f"/{DISTRIBUTION_NAME}/" in url
+        return FakeResponse()
+
+    monkeypatch.setattr("fandango.cli.upgrade.urllib.request.urlopen", fake_urlopen)
+
+    notified = check_package_for_update(
+        DISTRIBUTION_NAME,
+        cache_dir=tmp_path,
+        check_now=True,
+    )
+
+    assert notified is True
+
+    out, err = capsys.readouterr()
+    assert out == ""
+    expected_prefix = (
+        f"📦 Update available for '{DISTRIBUTION_NAME}': "
+        f"{installed_version} → {latest_version}. See "
+    )
+    assert err.startswith(expected_prefix)

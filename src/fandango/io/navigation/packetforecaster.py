@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Optional, Any
+from typing import Any, Optional
+
 from fandango.errors import FandangoValueError
-from fandango.io.navigation.stategrammarconverter import StateGrammarConverter
 from fandango.io.navigation.packetiterativeparser import PacketIterativeParser
+from fandango.io.navigation.stategrammarconverter import StateGrammarConverter
 from fandango.io.navigation.visitor.continuing_nodevisitor import ContinuingNodeVisitor
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.grammar import Grammar
@@ -182,7 +183,6 @@ class ForecastingResult:
 
 
 class PacketForecaster:
-
     def __init__(self, grammar: Grammar):
         reduced_rules = StateGrammarConverter(grammar.grammar_settings).process(
             grammar.rules
@@ -211,7 +211,7 @@ class PacketForecaster:
             self._parser.new_parse(NonTerminal("<start>"), ParsingMode.INCOMPLETE)
             for suggested_tree, is_complete in self._parser.consume(history_nts):
                 for orig_r_msg, r_msg in zip(
-                    tree.protocol_msgs(), suggested_tree.protocol_msgs()
+                    tree.protocol_msgs(), suggested_tree.protocol_msgs(), strict=False
                 ):
                     assert isinstance(r_msg.msg.symbol, NonTerminal)
                     assert isinstance(orig_r_msg.msg.symbol, NonTerminal)

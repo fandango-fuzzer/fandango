@@ -404,12 +404,12 @@ def verify_transitive(question, response):
     type_byte = bytes(question.find_direct_trees(NonTerminal("<q_type>"))[0])
     allowed_names = [bytes(question.find_direct_trees(NonTerminal("<q_name>"))[0])]
 
-    for ans in response.find_all_trees(NonTerminal("<answer_an>")):
+    for ans in response.find_subtrees("<answer_an>"):
         if (bytes(ans.children[1])[0:2] == pack('>H', 5) and
             bytes(ans.find_direct_trees(NonTerminal("<q_name_optional>"))[0]) in allowed_names):
             allowed_names.append(bytes(ans.children[1].children[0].children[4])) # <type_cname>.<q_name>
 
-    for ans in response.find_all_trees(NonTerminal("<answer_an>")):
+    for ans in response.find_subtrees("<answer_an>"):
         if (bytes(ans.children[1])[0:2] == type_byte and
             bytes(ans.find_direct_trees(NonTerminal("<q_name_optional>"))[0]) in allowed_names):
             return True

@@ -4,10 +4,12 @@ import itertools
 import random
 import unittest
 
-from fandango.evolution.algorithm import Fandango
+from fandango.evolution.algorithm import DefaultAlgorithm
+from fandango.language.grammar.nodes.node import Node
 from fandango.language.symbols import NonTerminal
 from fandango.language.parse.parse import parse
 from fandango.language.tree import DerivationTree
+
 from .utils import RESOURCES_ROOT
 
 
@@ -52,7 +54,7 @@ class ConstraintTest(unittest.TestCase):
 
     @staticmethod
     def get_solutions(grammar, constraints, desired_solutions=1):
-        fandango = Fandango(grammar=grammar, constraints=constraints)
+        fandango = DefaultAlgorithm(grammar=grammar, constraints=constraints)
         return list(itertools.islice(fandango.generate(), desired_solutions))
 
     def test_generators(self):
@@ -97,6 +99,33 @@ class ConstraintTest(unittest.TestCase):
                 self.count_g_params(source_nr), 0, self.count_g_params(source_nr)
             )
 
+    def test_converter_parameter_update(self):
+        with open(RESOURCES_ROOT / "nested_grammar_parameters.fan", "r") as file:
+            grammar, c = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
+        tree = self.get_solutions(grammar, c, desired_solutions=1)[0]
+        self.assertTrue(tree.children[0].children[0].read_only)
+        orig_c_inner = tree.find_all_nodes(NonTerminal("<converted_inner>"))[0]
+        update_orig_inner = grammar.parse("123", start=NonTerminal("<converted_inner>"))
+        updated_tree = tree.replace(grammar, orig_c_inner, update_orig_inner)
+        self.assertTrue(updated_tree.children[0].children[0].read_only)
+
+    def test_permutations(self):
+        with open(RESOURCES_ROOT / "permutation.fan", "r") as file:
+            grammar, c = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
+        start_rule = grammar.rules[NonTerminal("<start>")]
+        self.assertEqual(len(start_rule.children()), 3)
+        perm_rule = start_rule.children()[1]
+        work = set(perm_rule.descendents(grammar))
+        seen: set[Node] = set()
+        while len(work) > 0:
+            node = work.pop()
+            desc = set(node.descendents(grammar))
+            work = work.union(desc.difference(seen))
+            seen.add(node)
+        self.assertEqual(len(seen), 16)
+
     def test_repetitions(self):
         with open(RESOURCES_ROOT / "repetitions.fan", "r") as file:
             grammar, c = parse(file, use_stdlib=False, use_cache=False)
@@ -117,6 +146,15 @@ class ConstraintTest(unittest.TestCase):
         for solution in solutions:
             self.assertGreaterEqual(len(str(solution)), 3)
             self.assertLessEqual(len(str(solution)), 10)
+
+    def test_repetition_global_var(self):
+        with open(RESOURCES_ROOT / "global_var_bounds.fan", "r") as file:
+            grammar, c = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
+
+        solutions = self.get_solutions(grammar, c, desired_solutions=1)
+        for solution in solutions:
+            self.assertEqual(str(solution), "baz" * 10)
 
     def test_repetition_min(self):
         with open(RESOURCES_ROOT / "min_reps.fan", "r") as file:
@@ -173,7 +211,8 @@ class ConstraintTest(unittest.TestCase):
         with open(RESOURCES_ROOT / "gen_number.fan", "r") as file:
             grammar, c = parse(file, use_cache=False, use_stdlib=True)
 
-        _, extra_constraints = parse("where len(str(<start>)) > 60")
+        # no start symbol, so we need to disable checks
+        _, extra_constraints = parse("where len(str(<start>)) > 60", check=False)
         solution = self.get_solutions(
             grammar, c + extra_constraints, desired_solutions=10
         )

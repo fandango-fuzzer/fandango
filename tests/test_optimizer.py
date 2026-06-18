@@ -1,18 +1,19 @@
 #!/usr/bin/env pytest
 
-from collections.abc import Generator
-from copy import deepcopy
 import itertools
 import random
 import unittest
+from collections.abc import Generator
+from copy import deepcopy
 
 from fandango.constraints.failing_tree import Suggestion
 from fandango.constraints.fitness import FailingTree
 from fandango.evolution import GeneratorWithReturn
-from fandango.evolution.algorithm import Fandango, LoggerLevel
+from fandango.evolution.algorithm import DefaultAlgorithm, LoggerLevel
 from fandango.evolution.population import PopulationManager
 from fandango.language.parse.parse import parse
 from fandango.language.tree import DerivationTree
+
 from .utils import RESOURCES_ROOT
 
 
@@ -37,7 +38,7 @@ class GeneticTest(unittest.TestCase):
 
         # Initialize FANDANGO with a fixed random seed for reproducibility
         assert grammar_int is not None
-        self.fandango = Fandango(
+        self.fandango = DefaultAlgorithm(
             grammar=grammar_int,
             constraints=constraints_int,
             population_size=50,
@@ -52,7 +53,7 @@ class GeneticTest(unittest.TestCase):
             grammar_int, constraints_int = parse(f, use_stdlib=False, use_cache=False)
         assert grammar_int is not None
         random.seed(25)  # Set random seed for reproducibility
-        self.fandango = Fandango(
+        self.fandango = DefaultAlgorithm(
             grammar=grammar_int,
             constraints=constraints_int,
             population_size=50,
@@ -109,7 +110,7 @@ class GeneticTest(unittest.TestCase):
             target_population_size=initial_count,
         )
 
-        _initial_solutions = list(generator)  # drain initial solutions
+        _ = list(generator)  # drain initial solutions
 
         copy_of_initial_population = deepcopy(population)
 
@@ -289,7 +290,7 @@ class GeneticTest(unittest.TestCase):
                 self.fandango.evaluator.evaluate_individual,
             )
         )
-        _solutions1 = list(gen1)
+        _ = list(gen1)  # force generator evaluation
         mutant1 = gen1.return_value
 
         gen2 = GeneratorWithReturn(
@@ -299,7 +300,7 @@ class GeneticTest(unittest.TestCase):
                 self.fandango.evaluator.evaluate_individual,
             )
         )
-        _solutions2 = list(gen2)
+        _ = list(gen2)  # force generator evaluation
         mutant2 = gen2.return_value
 
         # Check that the mutated children are of the correct type
@@ -346,7 +347,7 @@ class DeterminismTests(unittest.TestCase):
                 file, use_stdlib=False, use_cache=False
             )
         assert grammar_int is not None
-        fandango = Fandango(
+        fandango = DefaultAlgorithm(
             grammar=grammar_int,
             constraints=constraints_int,
             random_seed=random_seed,
@@ -379,7 +380,7 @@ class TargetedMutations(unittest.TestCase):
                 file, use_stdlib=False, use_cache=False
             )
         assert grammar_int is not None
-        fandango = Fandango(
+        fandango = DefaultAlgorithm(
             grammar=grammar_int,
             constraints=constraints_int,
             random_seed=random_seed,

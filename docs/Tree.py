@@ -3,18 +3,20 @@
 # tree = Tree('<foo>', Tree('"bar"'), Tree('<baz>', Tree('"qux"')))
 # tree.visualize()
 
+from typing import Optional
+
 from graphviz import Digraph
-from IPython.display import display_svg, display_png
+from IPython.display import display_png
 
 
 class Tree:
     id_counter = 1
     dot = None
 
-    def __init__(self, symbol, *children, sources=[]):
+    def __init__(self, symbol, *children, sources: Optional[list] = None):
         self.symbol = symbol
         self._children = children
-        self._sources = sources
+        self._sources = sources if sources is not None else []
 
     def children(self):
         return self._children

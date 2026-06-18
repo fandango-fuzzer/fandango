@@ -10,10 +10,10 @@ from antlr4.CommonTokenStream import CommonTokenStream
 from antlr4.FileStream import FileStream
 from antlr4.tree.Tree import TerminalNode
 
-from fandango.converters.FandangoConverter import FandangoConverter
 from fandango.converters.antlr.ANTLRv4Lexer import ANTLRv4Lexer
 from fandango.converters.antlr.ANTLRv4Parser import ANTLRv4Parser
 from fandango.converters.antlr.ANTLRv4ParserVisitor import ANTLRv4ParserVisitor
+from fandango.converters.FandangoConverter import FandangoConverter
 from fandango.language.parse.parser_error_listeners import PythonAntlrErrorListener
 
 
@@ -66,13 +66,13 @@ class ANTLRFandangoConverterVisitor(ANTLRv4ParserVisitor):
         self.notes = []
         return s
 
-    def visitChildren(self, ctx: Any, sep: str = "", altEmpty: str = "") -> str:
+    def visitChildren(self, node: Any, sep: str = "", altEmpty: str = "") -> str:
         """Visit all children of a context `ctx`. Separate them with `sep`. If they evaluate to an empty string, use `altEmpty` instead."""
-        if ctx is None or ctx.children is None:
+        if node is None or node.children is None:
             return ""
 
         children_s = []
-        for child in ctx.children or []:
+        for child in node.children or []:
             s = self.visit(child)
             if s == "":
                 s = altEmpty

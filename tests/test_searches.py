@@ -3,11 +3,11 @@
 import unittest
 
 from fandango.language.search import (
-    RuleSearch,
     AttributeSearch,
-    ItemSearch,
-    SelectiveSearch,
     DescendantAttributeSearch,
+    ItemSearch,
+    RuleSearch,
+    SelectiveSearch,
     StarSearch,
 )
 from fandango.language.symbols import NonTerminal, Terminal

@@ -1,7 +1,8 @@
-import os
-import time
-
-from fandango.evolution.algorithm import Fandango, LoggerLevel
+from fandango.evolution.algorithm import (
+    LoggerLevel,
+    ProtocolAlgorithm,
+    SimpleGeneticAlgorithm,
+)
 from fandango.io.navigation.coverage_goal import CoverageGoal
 from fandango.language.grammar import FuzzingMode
 from fandango.language.parse.parse import parse
@@ -12,7 +13,7 @@ def main():
     with open("dns.fan") as f:
         grammar, constraints = parse(f, use_stdlib=False)
     assert grammar is not None
-    fandango = Fandango(
+    fandango = SimpleGeneticAlgorithm(
         grammar=grammar,
         constraints=constraints,
         population_size=10,
@@ -21,11 +22,12 @@ def main():
         logger_level=LoggerLevel.INFO,
         coverage_goal=CoverageGoal.STATE_INPUTS,
     )
-    fandango.coverage_log_interval = 10
-    fandango.enable_guidance(True)
+    fandango = ProtocolAlgorithm(
+        packet_algorithm=fandango,
+        coverage_goal=CoverageGoal.STATE_INPUTS,
+    )
 
-    for solution in fandango.generate(mode=FuzzingMode.IO):
-        pass
+    list(fandango.generate(mode=FuzzingMode.IO))  # force evaluation of generator
 
 
 if __name__ == "__main__":

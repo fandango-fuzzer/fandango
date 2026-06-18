@@ -1,24 +1,25 @@
 #!/usr/bin/env python3
 
 import enum
+import io
 import logging
+import os
 import re
-from uuid import UUID
-
 import select
 import socket
 import subprocess
 import sys
 import threading
 import time
-from abc import ABC
-from typing import Optional
+from _contextvars import ContextVar
+from abc import ABC, abstractmethod
+from typing import IO, Hashable, Optional
+from uuid import UUID
 
 from fandango.errors import FandangoError, FandangoValueError
+from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
-from typing import Hashable
-from _contextvars import ContextVar
 
 EnvKey = Hashable
 
@@ -106,7 +107,9 @@ def split_party_spec(
     return name, protocol, host, port
 
 
-class FandangoParty(ABC):
+class FandangoParty(  # noqa: B024 # this is an abstract base class without any abstract methods
+    ABC
+):
     """Base class for all parties in Fandango."""
 
     def __init__(
@@ -122,7 +125,7 @@ class FandangoParty(ABC):
             self.party_name = party_name
         self._connection_mode = connection_mode
         self.io_instance = FandangoIO.instance()
-        self.io_instance.parties[self.party_name] = self
+        self.io_instance.register_party(self)
 
     @classmethod
     def instance(cls, party_name: Optional[str] = None) -> "FandangoParty":
@@ -168,7 +171,7 @@ class FandangoParty(ABC):
         """
         if message is None:
             raise FandangoValueError(
-                f"Party {self.party_name} received None-type message. This indicates a socket closing event. Overload the receive() method of {self.party_name} to handle this case."
+                f"Party {self.party_name} received None-type message. This indicates a socket closing event. Override the receive() method of {self.party_name} to handle this case."
             )
         if sender is None:
             parties = list(
@@ -237,8 +240,12 @@ class ProtocolImplementation(ABC):
         self.port = port
         self.ip_type = ip_type
         self._party_instance = party_instance
-        self.io_instance = party_instance.io_instance
 
+    @property
+    def io_instance(self) -> "FandangoIO":
+        return self._party_instance.io_instance
+
+    @abstractmethod
     def send(
         self, message: DerivationTree | str | bytes, recipient: Optional[str]
     ) -> None:
@@ -249,12 +256,14 @@ class ProtocolImplementation(ABC):
         """
         raise NotImplementedError("send() method not implemented")
 
+    @abstractmethod
     def start(self) -> None:
         """
         Invoked when protocol communication (re)starts.
         """
         raise NotImplementedError("start() method not implemented")
 
+    @abstractmethod
     def stop(self) -> None:
         """
         Invoked when protocol communication stops.
@@ -262,6 +271,7 @@ class ProtocolImplementation(ABC):
         raise NotImplementedError("stop() method not implemented")
 
     @property
+    @abstractmethod
     def protocol_type(self) -> Protocol:
         """
         :return: The protocol type (`Protocol`) of this protocol implementation.
@@ -368,7 +378,6 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
         self._send_thread = threading.Thread(target=self._listen, daemon=True)
         self._send_thread.daemon = True
         self._send_thread.start()
-        print(f"{self.party_name}: connecting to {self.port}")
 
     def stop(self) -> None:
         """Stops the current party."""
@@ -396,7 +405,6 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
             except OSError:
                 pass
             self._sock = None
-        print(f"{self.party_name}: disconnecting from {self.port}")
 
     def _wait_accept(self) -> None:
         """
@@ -681,12 +689,13 @@ class Out(FandangoParty):
     def __init__(self) -> None:
         super().__init__(connection_mode=ConnectionMode.EXTERNAL)
         self.proc = ProcessManager.instance().get_process()
+        self.stdout = ProcessManager.instance().stdout
         threading.Thread(target=self._listen_loop, daemon=True).start()
 
     def _listen_loop(self) -> None:
         while True:
-            if self.proc.stdout is not None:
-                line = self.proc.stdout.read(1)
+            if self.stdout is not None:
+                line = self.stdout.read(1)
                 self.receive(line, self.party_name)
 
 
@@ -723,11 +732,11 @@ class In(FandangoParty):
     ) -> None:
         if self.proc.stdin is not None:
             if isinstance(message, DerivationTree):
-                self.proc.stdin.write(message.to_string())
+                self.proc.stdin.write(message.to_bytes())
             elif isinstance(message, str):
-                self.proc.stdin.write(message)
+                self.proc.stdin.write(message.encode())
             elif isinstance(message, bytes):
-                self.proc.stdin.write(message.decode("utf-8"))
+                self.proc.stdin.write(message)
             else:
                 raise FandangoValueError(
                     f"Party {self.party_name}: Invalid message type: {type(message)}. Must be DerivationTree, str, or bytes."
@@ -735,6 +744,99 @@ class In(FandangoParty):
             self.proc.stdin.flush()
             if self.close_post_transmit:
                 self.proc.stdin.close()
+
+
+class TimerControl(FandangoParty):
+    def __init__(self) -> None:
+        super().__init__(connection_mode=ConnectionMode.CONNECT)
+        self.timers: dict[str, tuple[int, bool, threading.Thread]] = {}
+        self.lock = threading.Lock()
+
+    def start(self) -> None:
+        pass
+
+    def stop(self) -> None:
+        self.stop_timers()
+
+    def start_timer(self, name: str, time_s: int) -> None:
+        def timer_sleep() -> None:
+            time_elapsed = 0
+            while time_elapsed < time_s:
+                with self.lock:
+                    entry = self.timers.get(name)
+                    if entry is None or not entry[1]:
+                        return
+                time.sleep(0.1)
+            self._on_timer_expire(name)
+
+        timer_thread = threading.Thread(target=timer_sleep)
+        with self.lock:
+            self.timers[name] = (time.time_ns(), True, timer_thread)
+            timer_thread.start()
+
+    def stop_timers(self, name: Optional[str] = None) -> None:
+        with self.lock:
+            if name is not None:
+                timers_to_stop = [name]
+            else:
+                timers_to_stop = list(self.timers.keys())
+            to_join: list[tuple[str, threading.Thread]] = []
+            for timer_name in timers_to_stop:
+                if timer_name not in self.timers:
+                    continue
+                timeout, _, timer_thread = self.timers[timer_name]
+                self.timers[timer_name] = (timeout, False, timer_thread)
+                to_join.append((timer_name, timer_thread))
+        with self.lock:
+            for timer_name, _ in to_join:
+                self.timers.pop(timer_name, None)
+
+    def send(
+        self, message: DerivationTree | str | bytes, recipient: Optional[str]
+    ) -> None:
+        if not isinstance(message, DerivationTree):
+            raise ValueError("Timer message must be a DerivationTree")
+        timer_id_node = message.find_all_nodes(
+            NonTerminal("<timer_id>"), exclude_read_only=False
+        )
+        if len(timer_id_node) == 0:
+            raise ValueError("No timer_id found in timer message")
+        timer_id = str(timer_id_node[0])
+        if len(message.children) == 0:
+            raise ValueError("No timer_command found in timer message")
+        timer_cmd = str(message).split(" ")[0]
+
+        if timer_cmd == "start:":
+            timer_time_s_nodes = message.find_all_nodes(
+                NonTerminal("<timer_timeout>"), exclude_read_only=False
+            )
+            if len(timer_time_s_nodes) == 0:
+                raise ValueError("No timer_timeout found in timer message")
+            self.stop_timers(timer_id)
+            self.start_timer(timer_id, int(timer_time_s_nodes[0]))
+        elif timer_cmd == "cancel:":
+            self.stop_timers(timer_id)
+        else:
+            raise ValueError(f"Unknown timer command: {timer_cmd}")
+
+        pass
+
+    def _on_timer_expire(self, name: str) -> None:
+        with self.lock:
+            if name in self.timers:
+                del self.timers[name]
+        self.receive(f"expired: {name}\n", "TimerEvent")
+
+
+class TimerEvent(FandangoParty):
+    def __init__(self) -> None:
+        super().__init__(connection_mode=ConnectionMode.EXTERNAL)
+
+    def start(self) -> None:
+        pass
+
+    def stop(self) -> None:
+        pass
 
 
 class FandangoIO(object):
@@ -756,10 +858,10 @@ class FandangoIO(object):
         try:
             assert CURRENT_ENV_KEY.contextVar is not None
             env_key = CURRENT_ENV_KEY.contextVar.get()
-        except LookupError:
+        except LookupError as err:
             raise RuntimeError(
                 "FandangoIO.instance() called without an active environment"
-            )
+            ) from err
 
         with cls._lock:
             if env_key not in cls._instances:
@@ -826,14 +928,12 @@ class FandangoIO(object):
         fragments: list[tuple[str, str, str | bytes]] = []
         prev_sender: Optional[str] = None
         prev_recipient: Optional[str] = None
-        for idx, (sender, recipient, msg_fragment) in enumerate(
-            self.get_received_msgs()
-        ):
+        for sender, recipient, msg_fragment in self.get_received_msgs():
             if (
                 prev_sender != sender
                 or prev_recipient != recipient
                 or (
-                    type(fragments[-1][2]) != type(msg_fragment) if fragments else False
+                    type(fragments[-1][2]) is type(msg_fragment) if fragments else False
                 )
             ):
                 prev_sender = sender
@@ -856,6 +956,11 @@ class FandangoIO(object):
         """Returns a list of all received messages from external parties."""
         with self.receive_lock:
             return list(self.receive)
+
+    def get_received_parties(self) -> set[str]:
+        """Returns a set of all parties that have received messages."""
+        with self.receive_lock:
+            return {sender for sender, _, _ in self.receive}
 
     def clear_received_msg(self, idx: int) -> None:
         """Clears a specific received message by its index."""
@@ -889,6 +994,9 @@ class FandangoIO(object):
         if sender in self.parties.keys():
             self.parties[sender].send(message, recipient)
 
+    def register_party(self, party: FandangoParty) -> None:
+        self.parties[party.party_name] = party
+
 
 class ProcessManager(object):
     """
@@ -905,7 +1013,8 @@ class ProcessManager(object):
         """
         self._command: Optional[str | list[str]] = None
         self.lock = threading.Lock()
-        self.proc: Optional[subprocess.Popen[str]] = None
+        self.proc: Optional[subprocess.Popen[bytes]] = None
+        self.stdout: IO[bytes] | IO[str] | None = None
         self.text = True
 
     @classmethod
@@ -916,17 +1025,17 @@ class ProcessManager(object):
         try:
             assert CURRENT_ENV_KEY.contextVar is not None
             env_key = CURRENT_ENV_KEY.contextVar.get()
-        except LookupError:
+        except LookupError as err:
             raise RuntimeError(
                 "ProcessManager.instance() called without an active environment"
-            )
+            ) from err
 
         with cls._lock:
             if env_key not in cls._instances:
                 cls._instances[env_key] = cls()
             return cls._instances[env_key]
 
-    def get_process(self) -> subprocess.Popen[str]:
+    def get_process(self) -> subprocess.Popen[bytes]:
         """
         Returns the current process if it exists, otherwise starts a new one based on the command set.
         """
@@ -946,9 +1055,9 @@ class ProcessManager(object):
 
     def set_command(self, value: str | list[str], text: bool = True) -> None:
         """Sets the command to be executed to start the process."""
-        assert isinstance(
-            value, (str, list)
-        ), "Command must be a string or a list of strings"
+        assert isinstance(value, (str, list)), (
+            "Command must be a string or a list of strings"
+        )
         with self.lock:
             if self._command == value:
                 return
@@ -961,13 +1070,40 @@ class ProcessManager(object):
             return
 
         LOGGER.info(f"Starting subprocess with command {command}")
-        self.proc = subprocess.Popen(
-            command,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=self.text,
-        )
+
+        if sys.platform != "win32":
+            import pty
+            import tty
+
+            master_fd, slave_fd = pty.openpty()
+            tty.setraw(master_fd)
+
+            self.proc = subprocess.Popen(
+                command,
+                stdin=subprocess.PIPE,
+                stdout=slave_fd,
+                stderr=subprocess.PIPE,
+                bufsize=0,
+                text=False,
+            )
+            os.close(slave_fd)
+            raw_stdout = os.fdopen(master_fd, "rb")
+        else:
+            self.proc = subprocess.Popen(
+                command,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                bufsize=0,
+                text=False,  # always binary; we wrap manually below
+            )
+            raw_stdout = self.proc.stdout
+            assert raw_stdout is not None
+
+        if self.text:
+            self.stdout = io.TextIOWrapper(raw_stdout, newline="\n")
+        else:
+            self.stdout = raw_stdout
 
 
 def set_program_command(command: str | list[str], text: bool = True) -> None:

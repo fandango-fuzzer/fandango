@@ -1,11 +1,14 @@
 import os
-from fandango.beartype import activate_beartype
+
 import pytest
+
+from fandango.beartype import activate_beartype
 
 
 def pytest_configure(config: pytest.Config):
     # fail fast in exceptions, don't just print them
     os.environ["FANDANGO_RAISE_ALL_EXCEPTIONS"] = "1"
+    os.environ["FANDANGO_DISABLE_UPDATE_CHECK"] = "1"
 
     if not os.environ.get("FANDANGO_FORCE_SKIP_BEARTYPE", False):
         # ensure beartype activation if a subprocess is invoked from a unit test
@@ -23,6 +26,7 @@ def pytest_collection_modifyitems(items: list[pytest.Item]):
         "evaluation",
         "cli",
         "softconstraint",
+        "execution_feedback",
         "optimizer",
         "fan_parsers",
     ]

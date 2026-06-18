@@ -1,13 +1,12 @@
-from itertools import permutations
 import random
-from typing import TYPE_CHECKING, Any
 from collections.abc import Iterator, Sequence
+from itertools import permutations
+from typing import TYPE_CHECKING, Any
 
-from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node, NodeType
-from fandango.language.grammar.nodes.terminal import TerminalNode
+from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree
 
 if TYPE_CHECKING:
@@ -20,10 +19,12 @@ class Alternative(Node):
         alternatives: list[Node],
         grammar_settings: Sequence[HasSettings],
         id: str = "",
+        is_permutation: bool = False,
     ):
         assert len(alternatives) > 0, "alternatives must be non-empty"
         self.id = id
         self.alternatives = alternatives
+        self.is_permutation = is_permutation
         super().__init__(NodeType.ALTERNATIVE, grammar_settings)
 
     def to_symbol(self) -> Symbol:

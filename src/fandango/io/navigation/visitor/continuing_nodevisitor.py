@@ -1,13 +1,13 @@
-from typing import Optional, Generic, TypeVar
+from typing import Optional
 
-from fandango.language.tree import DerivationTree
 from fandango.language import Grammar, NonTerminal
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
-from fandango.language.grammar.nodes.repetition import Repetition, Option, Plus, Star
+from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
+from fandango.language.tree import DerivationTree
 
 
 class GrammarKeyError(KeyError):
@@ -34,15 +34,18 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
         self.current_tree = [None]
         if self.tree is not None:
             self.current_path.append((self.tree.nonterminal, False))
+            self.current_path_collapsed.append((self.tree.nonterminal, False))
             if len(self.tree.children) != 0:
                 self.current_tree = [[self.tree.children[0]]]
             self.visit(self.grammar.rules[self.current_path[-1][0]])
         else:
             self.current_path.append((NonTerminal("<start>"), True))
+            self.current_path_collapsed.append((NonTerminal("<start>"), True))
             self.visit(NonTerminalNode(NonTerminal("<start>"), []))
 
         self.current_tree.pop()
         self.current_path.pop()
+        self.current_path_collapsed.pop()
 
     def on_enter_controlflow(self, expected_nt: str) -> None:
         tree = self.current_tree[-1]
@@ -138,7 +141,8 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
                 try:
                     continue_exploring = self.visit(alt)
                     found = True
-                    break
+                    # if not node.is_permutation:
+                    #    break
                 except GrammarKeyError:
                     self.current_tree = fallback_tree
                     self.current_path = fallback_path

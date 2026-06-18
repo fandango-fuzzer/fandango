@@ -3,7 +3,7 @@ from io import StringIO
 
 from docutils.core import publish_doctree
 
-from fandango.evolution.algorithm import Fandango, LoggerLevel
+from fandango.evolution.algorithm import LoggerLevel, SimpleGeneticAlgorithm
 from fandango.language.parse.parse import parse
 
 
@@ -13,9 +13,7 @@ def is_syntactically_valid_rest(rst_string):
 
     try:
         # Parse the reST string into a document tree, capturing system messages
-        doctree = publish_doctree(
-            rst_string, settings_overrides={"warning_stream": error_stream}
-        )
+        publish_doctree(rst_string, settings_overrides={"warning_stream": error_stream})
 
         # Check if any errors or warnings were captured in the error stream
         errors_warnings = error_stream.getvalue().strip()
@@ -40,7 +38,9 @@ def evaluate_rest(
 
     time_in_an_hour = time.time() + seconds
 
-    fandango = Fandango(grammar, constraints, logger_level=LoggerLevel.ERROR)
+    fandango = SimpleGeneticAlgorithm(
+        grammar, constraints, logger_level=LoggerLevel.ERROR
+    )
     fan_gen = fandango.generate()
     for solution in fan_gen:
         solutions.append(solution)

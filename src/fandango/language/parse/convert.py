@@ -5,18 +5,18 @@ from collections.abc import Sequence
 from io import UnsupportedOperation
 from typing import Any, Optional, cast
 
-from fandango.constraints.soft import SoftValue
-from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
-from fandango.errors import FandangoValueError
-from fandango.constraints.constraint import Constraint
 from fandango.constraints.comparison import ComparisonConstraint
 from fandango.constraints.conjunction import ConjunctionConstraint
+from fandango.constraints.constraint import Constraint
 from fandango.constraints.disjunct import DisjunctionConstraint
 from fandango.constraints.exists import ExistsConstraint
 from fandango.constraints.expression import ExpressionConstraint
-from fandango.constraints.forall import ForallConstraint
 from fandango.constraints.failing_tree import Comparison
-from fandango.language import NonTerminalSearch, NodeType
+from fandango.constraints.forall import ForallConstraint
+from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
+from fandango.constraints.soft import SoftValue
+from fandango.errors import FandangoValueError
+from fandango.language import NodeType, NonTerminalSearch
 from fandango.language.grammar import FuzzingMode
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.grammar_settings import GrammarSetting
@@ -122,8 +122,10 @@ class GrammarProcessor(FandangoParserVisitor):
         }
         return GrammarSetting(selector, rules)
 
-    def visitAlternative(self, ctx: FandangoParser.AlternativeContext):
-        nodes = [self.visitConcatenation(child) for child in ctx.concatenation()]
+    def visitAlternative(self, ctx: FandangoParser.AlternativeContext) -> Node:
+        nodes: list[Node] = [
+            self.visitConcatenation(child) for child in ctx.concatenation()
+        ]
         if len(nodes) == 1:
             return nodes[0]
         self.seenAlternatives += 1
@@ -269,7 +271,37 @@ class GrammarProcessor(FandangoParserVisitor):
 
             return rep_node
 
-    def visitSymbol(self, ctx: FandangoParser.SymbolContext):
+    def visitPermutation(self, ctx: FandangoParser.PermutationContext):
+        nodes = [self.visitSymbol(c) for c in ctx.symbol()]
+        return self._node_permutation_tree(nodes)
+
+    def _concat_two_nodes(self, first: Node, second: Node) -> Node:
+        self.seenConcatenations += 1
+        nid = self.seenConcatenations
+        return Concatenation(
+            [first, second],
+            self._grammar_settings,
+            f"{NodeType.CONCATENATION}:{nid}_{self.id_prefix}",
+        )
+
+    def _node_permutation_tree(self, nodes: list[Node]) -> Node:
+        if len(nodes) == 1:
+            return nodes[0]
+        branches: list[Node] = []
+        for i, first in enumerate(nodes):
+            remaining = nodes[:i] + nodes[i + 1 :]
+            tail = self._node_permutation_tree(remaining)
+            branches.append(self._concat_two_nodes(first, tail))
+        self.seenAlternatives += 1
+        nid = self.seenAlternatives
+        return Alternative(
+            branches,
+            self._grammar_settings,
+            f"{NodeType.ALTERNATIVE}:{nid}_{self.id_prefix}",
+            is_permutation=True,
+        )
+
+    def visitSymbol(self, ctx: FandangoParser.SymbolContext) -> Node:
         if ctx.nonterminal_right():
             return self.visitNonterminal_right(ctx.nonterminal_right())
         elif ctx.string():
@@ -286,7 +318,9 @@ class GrammarProcessor(FandangoParserVisitor):
         else:
             raise FandangoValueError(f"Unknown symbol: {ctx.getText()}")
 
-    def visitNonterminal_right(self, ctx: FandangoParser.Nonterminal_rightContext):
+    def visitNonterminal_right(
+        self, ctx: FandangoParser.Nonterminal_rightContext
+    ) -> Node:
         if ctx.identifier(1) is None:
             return NonTerminalNode(
                 NonTerminal("<" + ctx.identifier(0).getText() + ">"),
@@ -1206,7 +1240,7 @@ class SearchProcessor(FandangoParserVisitor):
             kvpairs, searches, search_map = self.visitDouble_starred_kvpairs(
                 ctx.double_starred_kvpairs()
             )
-            keys_, values_ = zip(*kvpairs)
+            keys_, values_ = zip(*kvpairs, strict=True)
             keys.extend(keys_)
             values.extend(values_)
         else:

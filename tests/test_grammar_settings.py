@@ -1,8 +1,9 @@
 import random
 from typing import Any, Callable, Optional
+
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.grammar_settings import GrammarSetting
-from fandango.language.grammar.nodes.node import Node, NODE_SETTINGS_DEFAULTS
+from fandango.language.grammar.nodes.node import NODE_SETTINGS_DEFAULTS, Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.parse.parse import parse
@@ -18,7 +19,7 @@ INT_KEY = next(
 def get_grammar(
     selector_probability_pairs: list[tuple[str, dict[str, Any]]],
 ) -> Grammar:
-    raw_spec = f"""
+    raw_spec = """
 <start> ::= "a" | <b>*
 <b> ::= "b"
 """

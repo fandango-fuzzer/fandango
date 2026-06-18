@@ -2,6 +2,7 @@
 
 # needs to be before any other imports
 import os
+
 from fandango.beartype import activate_beartype
 
 if os.environ.get("FANDANGO_RUN_BEARTYPE", False):
@@ -11,6 +12,8 @@ import importlib.metadata
 import logging
 import sys
 
+import fandango.language.parse
+import fandango.language.tree
 from fandango.api import Fandango
 from fandango.errors import (
     FandangoError,
@@ -18,11 +21,11 @@ from fandango.errors import (
     FandangoSyntaxError,
     FandangoValueError,
 )
-import fandango.language.tree
-import fandango.language.parse
+from fandango.experimental import ExperimentalWarning
 
 __all__ = [
     "FandangoError",
+    "ExperimentalWarning",
     "FandangoParseError",
     "FandangoSyntaxError",
     "FandangoValueError",
