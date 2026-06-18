@@ -29,7 +29,7 @@ def main():
         coverage_goal=CoverageGoal.STATE_INPUTS_OUTPUTS,
     )
 
-    for solution in fandango.generate(mode=FuzzingMode.IO, max_generations=3):
+    for _solution in fandango.generate(mode=FuzzingMode.IO, max_generations=3):
         pass
 
 
