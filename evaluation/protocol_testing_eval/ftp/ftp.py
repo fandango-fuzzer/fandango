@@ -1,6 +1,11 @@
 import sys
 
-from fandango.evolution.algorithm import LoggerLevel, SimpleGeneticAlgorithm
+from fandango.evolution.algorithm import (
+    LoggerLevel,
+    ProtocolAlgorithm,
+    SimpleGeneticAlgorithm,
+)
+from fandango.io.navigation.coverage_goal import CoverageGoal
 from fandango.language.grammar import FuzzingMode
 from fandango.language.parse.parse import parse
 
@@ -14,7 +19,11 @@ def main():
     fandango = SimpleGeneticAlgorithm(
         grammar=grammar,
         constraints=constraints,
-        logger_level=LoggerLevel.INFO,
+        logger_level=LoggerLevel.DEBUG,
+    )
+    fandango = ProtocolAlgorithm(
+        packet_algorithm=fandango,
+        coverage_goal=CoverageGoal.STATE_INPUTS_OUTPUTS,
     )
 
     list(fandango.generate(mode=FuzzingMode.IO))  # force evaluation of generator
