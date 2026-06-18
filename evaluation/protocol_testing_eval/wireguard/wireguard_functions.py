@@ -1,14 +1,14 @@
 import struct
 import time
+from hashlib import blake2s
 from typing import Optional
 
+from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.hazmat.primitives.asymmetric import x25519
+from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
+
 from fandango.io import ConnectionMode, NetworkParty
 from fandango.language import DerivationTree, NonTerminal
-from hashlib import blake2s
-from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
-from cryptography.hazmat.primitives import hmac
-from cryptography.hazmat.primitives import hashes
 
 CONSTRUCTION = b"Noise_IKpsk2_25519_ChaChaPoly_BLAKE2s"
 IDENTIFIER = b"WireGuard v1 zx2c4 Jason@zx2c4.com"

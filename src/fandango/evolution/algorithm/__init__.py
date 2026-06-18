@@ -1,6 +1,6 @@
 from .base import GeneticAlgorithm, LoggerLevel
-from .simple import SimpleGeneticAlgorithm
 from .protocol import ProtocolAlgorithm
+from .simple import SimpleGeneticAlgorithm
 
 DefaultAlgorithm = SimpleGeneticAlgorithm
 

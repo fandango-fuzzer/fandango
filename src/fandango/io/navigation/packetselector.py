@@ -2,13 +2,6 @@ from typing import Optional
 
 from fandango.io import FandangoIO
 from fandango.io.navigation.coverage_goal import CoverageGoal
-from fandango.io.navigation.powerschedule import (
-    PowerScheduleCoverage,
-    PowerScheduleKPath,
-)
-from fandango.language.grammar.nodes.alternative import Alternative
-from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
-from fandango.language.grammar.nodes.node import Node
 from fandango.io.navigation.packetforecaster import (
     ForecastingPacket,
     ForecastingResult,
@@ -16,8 +9,15 @@ from fandango.io.navigation.packetforecaster import (
 )
 from fandango.io.navigation.packetnavigator import PacketNavigator
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
+from fandango.io.navigation.powerschedule import (
+    PowerScheduleCoverage,
+    PowerScheduleKPath,
+)
 from fandango.io.navigation.stategrammarconverter import StateGrammarConverter
 from fandango.language.grammar.grammar import Grammar, KPath
+from fandango.language.grammar.nodes.alternative import Alternative
+from fandango.language.grammar.nodes.node import Node
+from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree
 from fandango.logger import log_guidance_hint
