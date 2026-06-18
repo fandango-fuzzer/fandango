@@ -144,7 +144,7 @@ class TestGrammarGraph(unittest.TestCase):
             mode=ParsingMode.INCOMPLETE,
             include_controlflow=True,
         )
-        k_path: KPath = (
+        k_path = (
             NonTerminal("<start>"),
             NonTerminal("<test>"),
             NonTerminal("<state_4>"),
@@ -155,7 +155,7 @@ class TestGrammarGraph(unittest.TestCase):
         self.assertFalse(result_1.path_reachable)
         self.assertFalse(result_1.completable_by_extension)
 
-        k_path: KPath = (
+        k_path = (
             NonTerminal("<start>"),
             NonTerminal("<test>"),
             NonTerminal("<H>"),
@@ -166,7 +166,7 @@ class TestGrammarGraph(unittest.TestCase):
         self.assertTrue(result_1.path_reachable)
         self.assertTrue(result_1.completable_by_extension)
 
-        k_path: KPath = (
+        k_path = (
             NonTerminal("<start>"),
             NonTerminal("<test>"),
             NonTerminal("<G>"),
@@ -182,7 +182,7 @@ class TestGrammarGraph(unittest.TestCase):
             mode=ParsingMode.INCOMPLETE,
             include_controlflow=True,
         )
-        k_path: KPath = (
+        k_path = (
             NonTerminal("<start>"),
             NonTerminal("<test>"),
             NonTerminal("<state_4>"),
@@ -193,7 +193,7 @@ class TestGrammarGraph(unittest.TestCase):
         self.assertTrue(result_1.path_reachable)
         self.assertTrue(result_1.completable_by_extension)
 
-        k_path: KPath = (
+        k_path = (
             NonTerminal("<start>"),
             NonTerminal("<test>"),
             NonTerminal("<G>"),
@@ -239,6 +239,7 @@ class Server(FandangoParty):
                 [f, client_def],
                 use_stdlib=False,
             )
+        assert grammar is not None
         reduced_rules = StateGrammarConverter(grammar.grammar_settings).process(
             grammar.rules, NonTerminal("<start>")
         )
@@ -253,6 +254,7 @@ class Server(FandangoParty):
         hist_tree = state_grammar.parse(
             word=packet_history, mode=ParsingMode.INCOMPLETE, include_controlflow=True
         )
+        assert hist_tree is not None
 
         result = checker.find_reachability(k_path_to_reach=dest_k_path, tree=hist_tree)
         self.assertTrue(result.path_reachable)

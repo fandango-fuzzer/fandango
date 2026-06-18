@@ -16,13 +16,13 @@ def main():
     with open("ftp_client.fan") as f:
         grammar, constraints = parse(f, use_stdlib=True)
     assert grammar is not None
-    fandango = SimpleGeneticAlgorithm(
+    packet_algorithm = SimpleGeneticAlgorithm(
         grammar=grammar,
         constraints=constraints,
         logger_level=LoggerLevel.DEBUG,
     )
     fandango = ProtocolAlgorithm(
-        packet_algorithm=fandango,
+        packet_algorithm=packet_algorithm,
         coverage_goal=CoverageGoal.STATE_INPUTS_OUTPUTS,
     )
 
