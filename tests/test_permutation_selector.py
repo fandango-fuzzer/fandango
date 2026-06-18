@@ -8,18 +8,19 @@ Tests for permutation-aware handling in PacketSelector:
 import unittest
 
 from fandango.api import Fandango
-from fandango.io import FandangoIO, FandangoParty, ConnectionMode
+from fandango.io import ConnectionMode, FandangoIO, FandangoParty
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.packetselector import PacketSelector
-from fandango.language import NonTerminal, DerivationTree
+from fandango.language import DerivationTree, NonTerminal
 from fandango.language.grammar import ParsingMode
+from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from tests.utils import RESOURCES_ROOT
 
 
-def _load_grammar():
+def _load_grammar() -> Grammar:
     with open(RESOURCES_ROOT / "permutation_io.fan") as f:
         spec = f.read()
     return Fandango(spec, use_stdlib=True, use_cache=False).grammar
@@ -65,6 +66,8 @@ class _StubSelector(PacketSelector):
 
 class TestPermutationGroupBuilding(unittest.TestCase):
     """Unit tests for _build_permutation_groups and its helpers."""
+
+    grammar: Grammar
 
     @classmethod
     def setUpClass(cls):
@@ -127,6 +130,8 @@ class TestPermutationGroupBuilding(unittest.TestCase):
 class TestPermutationGuidePathAdjustment(unittest.TestCase):
     """Integration tests verifying guide-path behaviour when permutation
     peers arrive out of order."""
+
+    grammar: Grammar
 
     @classmethod
     def setUpClass(cls):

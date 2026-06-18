@@ -1,6 +1,6 @@
+from fandango.evolution.algorithm.base import GeneticAlgorithm
 from fandango.language import Grammar
 from fandango.language.grammar import FuzzingMode
-from fandango.evolution.algorithm.base import GeneticAlgorithm
 
 
 class AlgorithmSelector:

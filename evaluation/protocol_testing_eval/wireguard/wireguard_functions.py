@@ -1,14 +1,14 @@
 import struct
 import time
+from hashlib import blake2s
 from typing import Optional
 
+from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.hazmat.primitives.asymmetric import x25519
-from fandango.io import ConnectionMode, NetworkParty
-from fandango.language import DerivationTree, NonTerminal
-from hashlib import blake2s
 from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
-from cryptography.hazmat.primitives import hmac
-from cryptography.hazmat.primitives import hashes
+
+from fandango.io import ConnectionMode, NetworkParty
+from fandango.language import DerivationTree
 
 CONSTRUCTION = b"Noise_IKpsk2_25519_ChaChaPoly_BLAKE2s"
 IDENTIFIER = b"WireGuard v1 zx2c4 Jason@zx2c4.com"
@@ -23,19 +23,8 @@ responder_ephemeral_public: bytes = (
     .public_bytes_raw()
 )
 tai_64n = b""
-# The responder's sender index, taken from the most recent handshake response.
-# Transport data packets address their receiver_index to this value. Stored as a
-# global (and fed to <data_receiver_index> via a generator) so it always refers to
-# the CURRENT session — a `where ... == <msg_responder>.<sender_index>` constraint
-# became unsatisfiable once rekeying produced several <msg_responder>s in the tree.
 responder_sender_index: bytes = b"\x00" * 4
 
-# Must be 32 bytes: ChaCha20Poly1305 rejects any other length. During the
-# speculative generation of <transport_data> the data_encrypted_payload generator
-# calls encrypt_transport() with this key before derive_session_keys() has run, so
-# a 1-byte placeholder made every transport_data candidate throw ("ChaCha20Poly1305
-# key must be 32 bytes") and the packet could never be generated. The real session
-# keys overwrite these in derive_session_keys().
 session_sending_key = b"\x00" * 32
 session_receiving_key = b"\x00" * 32
 sending_key_counter = 0
@@ -81,14 +70,6 @@ def get_session_sending_key() -> bytes:
     return session_sending_key
 
 
-def get_session_receiving_key() -> bytes:
-    return session_receiving_key
-
-
-def get_unencrypted_ephemeral() -> bytes:
-    return unencrypted_ephemeral
-
-
 def get_responder_ephemeral() -> bytes:
     return responder_ephemeral_public
 
@@ -107,20 +88,8 @@ def set_responder_sender_index(data: bytes) -> None:
     responder_sender_index = data
 
 
-def get_sending_key_counter() -> int:
-    return sending_key_counter
-
-
 def get_sending_key_counter_as_bytes() -> bytes:
     return struct.pack("<Q", sending_key_counter)
-
-
-def get_receiving_key_counter() -> int:
-    return receiving_key_counter
-
-
-def get_receiving_key_counter_as_bytes() -> bytes:
-    return struct.pack("<Q", receiving_key_counter)
 
 
 def increment_sending_key_counter() -> None:
@@ -168,12 +137,6 @@ def HMAC_blake2s(key: bytes, data: bytes) -> bytes:
     h = hmac.HMAC(key, hashes.BLAKE2s(32))
     h.update(data)
     return h.finalize()
-
-
-def AEAD_decrypt(key: bytes, nonce: int | bytes, ciphertext: bytes, ad: bytes) -> bytes:
-    if isinstance(nonce, int):
-        nonce = b"\x00" * 4 + struct.pack("<Q", nonce)
-    return ChaCha20Poly1305(key).decrypt(nonce, ciphertext, ad)
 
 
 def create_handshake_initiation_full(
@@ -326,65 +289,3 @@ def encrypt_transport(
     padded = plaintext + b"\x00" * pad_len
     counter = struct.unpack("<Q", counter_bytes)[0]
     return AEAD(sending_key, counter, padded, b"")
-
-
-def decrypt_transport(key, counter_bytes, ciphertext):
-    counter = struct.unpack("<Q", counter_bytes)[0]
-    padded = AEAD_decrypt(key, counter, ciphertext, b"")
-    return padded.rstrip(b"\x00")
-
-
-def count_data_packets(packet_nt):
-    return len(
-        packet_nt.prefix()
-        .get_root()
-        .find_all_nodes(NonTerminal("<data_counter>"), exclude_read_only=False)
-    )
-
-
-def generate_udp_checksum(udp_packet_tree: DerivationTree):
-    data = bytes(udp_packet_tree)
-    data = bytearray(data)
-    data[6] = 0
-    data[7] = 0
-
-    if len(data) % 2 == 1:
-        data.append(0)
-    checksum = 0
-    for i in range(0, len(data), 2):
-        word = (data[i] << 8) + data[i + 1]
-        checksum += word
-        checksum = (checksum & 0xFFFF) + (checksum >> 16)
-    checksum = (checksum & 0xFFFF) + (checksum >> 16)
-    checksum = ~checksum & 0xFFFF
-    if checksum == 0:
-        checksum = 0xFFFF
-    return checksum.to_bytes(2, byteorder="big")
-
-
-def encrypt_cookie(
-    nonce: DerivationTree, unencrypted_cookie: DerivationTree, responder_static_public
-) -> bytes:
-    tau = HASH(LABEL_COOKIE + responder_static_public.public_bytes_raw())
-    encrypted_cookie = AEAD(
-        tau, bytes(nonce), bytes(unencrypted_cookie), b"LAST_RECEIVED_MSG__MAC_1"
-    )
-    return encrypted_cookie
-
-
-def decrypt_cookie(cookie_reply: DerivationTree, responder_static_public) -> bytes:
-    nonce = bytes(cookie_reply)[:24]
-    ciphertext = bytes(cookie_reply)[24:]
-    tau = HASH(LABEL_COOKIE + responder_static_public.public_bytes_raw())
-    AEAD_decrypt(tau, nonce, ciphertext, b"LAST_RECEIVED_MSG__MAC_1")
-    pass
-
-
-def extract_cookie_nonce(cookie_reply: DerivationTree) -> bytes:
-    return bytes(cookie_reply)[:24]
-
-
-def generate_cookie() -> bytes:
-    initiator_ip = Client.instance().protocol_impl.ip
-    responder_changing_secret_every_two_minutes = b"CHANGE_ME"  # TODO
-    return MAC(responder_changing_secret_every_two_minutes, initiator_ip)

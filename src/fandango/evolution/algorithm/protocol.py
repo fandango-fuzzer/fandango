@@ -1,12 +1,12 @@
 import random
 import time
-from typing import Optional
 from collections.abc import Generator
+from typing import Optional
 
 from fandango.errors import FandangoFailedError, FandangoParseError
 from fandango.evolution import GeneratorWithReturn
-from fandango.evolution.algorithm.simple import SimpleGeneticAlgorithm
 from fandango.evolution.algorithm.base import GeneticAlgorithm
+from fandango.evolution.algorithm.simple import SimpleGeneticAlgorithm
 from fandango.evolution.population import IoPopulationManager
 from fandango.io import FandangoIO
 from fandango.io.coverage_filter import PacketCoverageFilter
@@ -176,7 +176,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             )
             raise FandangoFailedError(
                 f"Couldn't find solution for any packet: {nonterminals_str}"
-            )
+            ) from None
 
     def _is_failed_forecast(self) -> bool:
         return (

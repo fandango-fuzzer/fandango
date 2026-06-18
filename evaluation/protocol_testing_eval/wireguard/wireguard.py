@@ -17,7 +17,7 @@ def main():
         )
     assert grammar is not None
 
-    fandango = SimpleGeneticAlgorithm(
+    packet_algorithm = SimpleGeneticAlgorithm(
         grammar=grammar,
         constraints=constraints,
         population_size=10,
@@ -25,11 +25,11 @@ def main():
         coverage_goal=CoverageGoal.STATE_INPUTS_OUTPUTS,
     )
     fandango = ProtocolAlgorithm(
-        packet_algorithm=fandango,
+        packet_algorithm=packet_algorithm,
         coverage_goal=CoverageGoal.STATE_INPUTS_OUTPUTS,
     )
 
-    for solution in fandango.generate(mode=FuzzingMode.IO, max_generations=3):
+    for _solution in fandango.generate(mode=FuzzingMode.IO, max_generations=3):
         pass
 
 
