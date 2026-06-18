@@ -343,8 +343,7 @@ def count_data_packets(packet_nt):
 
 
 def generate_udp_checksum(udp_packet_tree: DerivationTree):
-    data = bytes(udp_packet_tree)
-    data = bytearray(data)
+    data = bytearray(bytes(udp_packet_tree))
     data[6] = 0
     data[7] = 0
 
@@ -376,8 +375,7 @@ def decrypt_cookie(cookie_reply: DerivationTree, responder_static_public) -> byt
     nonce = bytes(cookie_reply)[:24]
     ciphertext = bytes(cookie_reply)[24:]
     tau = HASH(LABEL_COOKIE + responder_static_public.public_bytes_raw())
-    AEAD_decrypt(tau, nonce, ciphertext, b"LAST_RECEIVED_MSG__MAC_1")
-    pass
+    return AEAD_decrypt(tau, nonce, ciphertext, b"LAST_RECEIVED_MSG__MAC_1")
 
 
 def extract_cookie_nonce(cookie_reply: DerivationTree) -> bytes:
@@ -385,6 +383,9 @@ def extract_cookie_nonce(cookie_reply: DerivationTree) -> bytes:
 
 
 def generate_cookie() -> bytes:
-    initiator_ip = Client.instance().protocol_impl.ip
+    client = Client.instance()
+    assert isinstance(client, NetworkParty)
+    initiator_ip = client.ip
+    assert initiator_ip is not None
     responder_changing_secret_every_two_minutes = b"CHANGE_ME"  # TODO
-    return MAC(responder_changing_secret_every_two_minutes, initiator_ip)
+    return MAC(responder_changing_secret_every_two_minutes, initiator_ip.encode())

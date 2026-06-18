@@ -381,6 +381,7 @@ class Fandango(FandangoBase):
         """
         assert self.fandango is not None
         if desired_solutions is not None and len(solutions) < desired_solutions:
+            assert isinstance(self.fandango, SimpleGeneticAlgorithm)
             warnings_are_errors = settings.get("warnings_are_errors", False)
             best_effort = settings.get("best_effort", False)
             if (

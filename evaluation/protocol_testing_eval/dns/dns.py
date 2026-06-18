@@ -13,7 +13,7 @@ def main():
     with open("dns.fan") as f:
         grammar, constraints = parse(f, use_stdlib=False)
     assert grammar is not None
-    fandango = SimpleGeneticAlgorithm(
+    packet_algorithm = SimpleGeneticAlgorithm(
         grammar=grammar,
         constraints=constraints,
         population_size=10,
@@ -23,7 +23,7 @@ def main():
         coverage_goal=CoverageGoal.STATE_INPUTS,
     )
     fandango = ProtocolAlgorithm(
-        packet_algorithm=fandango,
+        packet_algorithm=packet_algorithm,
         coverage_goal=CoverageGoal.STATE_INPUTS,
     )
 

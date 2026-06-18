@@ -349,7 +349,9 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
                 max_generations, desired_solutions, solution_callback
             )
         elif self.grammar.fuzzing_mode == FuzzingMode.IO:
-            return self._evolve_io(max_generations)
+            raise FandangoValueError(
+                "IO mode is not supported by SimpleGeneticAlgorithm; use ProtocolAlgorithm instead"
+            )
         else:
             raise FandangoValueError(f"Invalid mode: {self.grammar.fuzzing_mode}")
 

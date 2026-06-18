@@ -46,6 +46,7 @@ class TestParseNextRemotePacketAmbiguity(unittest.TestCase):
         # Build a history tree that represents the state after <query> was sent.
         history_tree = grammar.parse("hello", mode=ParsingMode.INCOMPLETE)
         self.assertIsNotNone(history_tree)
+        assert history_tree is not None
 
         forecast = PacketForecaster(grammar).predict(history_tree)
         self.assertIn("Extern", forecast.get_msg_parties())
@@ -85,6 +86,7 @@ class TestParseNextRemotePacketAmbiguity(unittest.TestCase):
         grammar = f.grammar
 
         history_tree = grammar.parse("hello", mode=ParsingMode.INCOMPLETE)
+        assert history_tree is not None
         forecast = PacketForecaster(grammar).predict(history_tree)
 
         io = FandangoIO.instance()
