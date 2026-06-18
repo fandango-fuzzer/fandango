@@ -1,4 +1,8 @@
-from fandango.evolution.algorithm import LoggerLevel, SimpleGeneticAlgorithm
+from fandango.evolution.algorithm import (
+    LoggerLevel,
+    ProtocolAlgorithm,
+    SimpleGeneticAlgorithm,
+)
 from fandango.io.navigation.coverage_goal import CoverageGoal
 from fandango.language.grammar import FuzzingMode
 from fandango.language.parse.parse import parse
@@ -16,6 +20,10 @@ def main():
         # elitism_rate=1.0,
         max_nodes=600 * 8,
         logger_level=LoggerLevel.INFO,
+        coverage_goal=CoverageGoal.STATE_INPUTS,
+    )
+    fandango = ProtocolAlgorithm(
+        packet_algorithm=fandango,
         coverage_goal=CoverageGoal.STATE_INPUTS,
     )
 
