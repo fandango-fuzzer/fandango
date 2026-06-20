@@ -85,8 +85,8 @@ if [ "${NO_MESSAGES:-0}" = "1" ]; then
   echo "[run_fandango] NO_MESSAGES=1: baseline run, NOT sending any DNS messages"
   sleep "${BASELINE_IDLE:-3}"
 else
-  echo "[run_fandango] running Fandango (driver=${FANDANGO_DRIVER:-dns.py}) for up to ${FANDANGO_DURATION}s"
-  timeout "${FANDANGO_DURATION}" python3.11 "${FANDANGO_DRIVER:-dns.py}" || true
+  echo "[run_fandango] running Fandango dns.py (grammar=${FANDANGO_FAN:-dns.fan}) for up to ${FANDANGO_DURATION}s"
+  timeout "${FANDANGO_DURATION}" python3.11 dns.py ${FANDANGO_FAN:+"$FANDANGO_FAN"} || true
   echo "[run_fandango] Fandango run finished"
 fi
 
