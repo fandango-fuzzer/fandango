@@ -6,9 +6,7 @@ This folder contains scripts and targets for running evaluation experiments. The
 
 The following protocol targets are included:
 
-* chatgpt (OpenAI API)
 * dns
-* dune (Dune API)
 * ftp
 * smtp
 * wireguard
@@ -30,11 +28,9 @@ Both scripts define a list of protocols in the following form:
 
 ```
 protocols = [
-    ("dune", "dune.fan"),
     ("smtp", "smtp_client.fan"),
     ("dns", "dns.fan"),
     ("ftp", "ftp_client.fan"),
-    ("chatgpt", "chatgpt.fan"),
     ("wireguard", "wireguard.fan")
 ]
 ```
@@ -46,6 +42,7 @@ You can modify this list to include or exclude specific targets.
 ## Guidance Evaluation
 
 Run the guidance evaluation with:
+
 ```
 python run_guidance_eval.py
 ```
