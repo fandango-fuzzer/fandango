@@ -1,5 +1,5 @@
 #!/bin/bash
-# In-container entry point for the second LightFTP (FTP) Fandango coverage
+# In-container entry point for the LightFTP (FTP) Fandango coverage
 
 set -u
 
