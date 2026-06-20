@@ -1,0 +1,78 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get -y update && \
+    apt-get -y install sudo \
+    apt-utils \
+    build-essential \
+    openssl \
+    git \
+    autoconf \
+    libgnutls28-dev \
+    libssl-dev \
+    python3.11 python3.11-dev python3-pip \
+    net-tools \
+    netcat \
+    ca-certificates \
+    wget
+
+RUN groupadd ubuntu && \
+    useradd -rm -d /home/ubuntu -s /bin/bash -g ubuntu -G sudo -u 1000 ubuntu -p "$(openssl passwd -1 ubuntu)"
+
+RUN chmod 777 /tmp
+
+RUN python3 -m pip install --upgrade pip==20.3.4 && \
+    pip3 install --trusted-host pypi.org --trusted-host files.pythonhosted.org gcovr==4.2
+
+RUN python3.11 -m pip install -U pip setuptools wheel
+
+RUN git clone https://github.com/fandango-fuzzer/fandango.git && \
+    cd fandango && \
+    git checkout io_replication && \
+    python3.11 -m pip install --no-cache-dir -e ".[test]"
+
+ENV WORKDIR="/home/ubuntu"
+ENV LIGHTFTP_SRC="/home/ubuntu/LightFTP-fandango"
+
+COPY --chown=ubuntu:ubuntu gcov-fandango.patch ${WORKDIR}/gcov-fandango.patch
+
+# Build LightFTP with gcov instrumentation
+RUN cd ${WORKDIR} && \
+    git clone https://github.com/hfiref0x/LightFTP.git LightFTP-fandango && \
+    cd LightFTP-fandango && \
+    git checkout 5980ea1 && \
+    patch -p1 < ${WORKDIR}/gcov-fandango.patch && \
+    cd Source/Release && \
+    make CC=gcc CXX=g++ \
+        CFLAGS="-fprofile-arcs -ftest-coverage -O0 -g" \
+        CPPFLAGS="-fprofile-arcs -ftest-coverage" \
+        CXXFLAGS="-fprofile-arcs -ftest-coverage" \
+        LDFLAGS="-fprofile-arcs -ftest-coverage" clean all
+
+# Server config + share. fftp.conf points the webadmin/ubuntu account at
+# /home/ubuntu/ftpshare and reads the listen port from argv[2].
+COPY --chown=ubuntu:ubuntu fftp.conf ${LIGHTFTP_SRC}/Source/Release/fftp.conf
+
+RUN mkdir -p /home/ubuntu/ftpshare/dir_1/dir_2 && \
+    echo "I'm a file" > /home/ubuntu/ftpshare/exist_append.txt && \
+    echo "I'm a file" > /home/ubuntu/ftpshare/dir_1/dir_2/rn_1.txt && \
+    echo "I'm a file" > /home/ubuntu/ftpshare/dir_1/dir_2/rn_2.txt
+
+# TLS certificate for the AUTH TLS path (fftp.conf KeyfilePassword=ubuntu).
+RUN mkdir -p /home/ubuntu/certificate && \
+    openssl req -x509 -newkey rsa:2048 \
+        -keyout /home/ubuntu/certificate/my.key \
+        -out /home/ubuntu/certificate/my.crt \
+        -days 3650 -subj "/CN=localhost" -passout pass:ubuntu
+
+# Fandango grammar + driver + entry point.
+COPY --chown=ubuntu:ubuntu fandango-scripts/ /home/ubuntu/fandango/
+
+RUN chown -R ubuntu:ubuntu ${LIGHTFTP_SRC} /home/ubuntu/ftpshare /home/ubuntu/certificate /home/ubuntu/fandango && \
+    chmod -R u+rwX ${LIGHTFTP_SRC} && \
+    mkdir -p /home/ubuntu/cov_out && \
+    chown -R ubuntu:ubuntu /home/ubuntu/cov_out && \
+    chmod +x /home/ubuntu/fandango/run_fandango.sh
+
+USER ubuntu
+WORKDIR /home/ubuntu
