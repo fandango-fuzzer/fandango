@@ -27,7 +27,7 @@ RUN_FANDANGO_TIMEOUT="${RUN_FANDANGO_TIMEOUT:-600}"
 SELF_PGID=$$
 (
   sleep "$RUN_FANDANGO_TIMEOUT"
-  echo "[run_fandango] watchdog: RUN_FANDANGO_TIMEOUT (${RUN_FANDANGO_TIMEOUT}s) reached, killing process group" >&2
+  echo "watchdog: RUN_FANDANGO_TIMEOUT (${RUN_FANDANGO_TIMEOUT}s) reached, killing process group" >&2
   kill -TERM -"$SELF_PGID" 2>/dev/null || true
   sleep 5
   kill -KILL -"$SELF_PGID" 2>/dev/null || true
@@ -40,13 +40,13 @@ cleanup_watchdog() {
 }
 
 # Reset stale coverage counters in the instrumented build tree.
-echo "[run_fandango] resetting gcov counters in ${BIND_SRC}"
+echo "resetting gcov counters in ${BIND_SRC}"
 gcovr -r "$BIND_SRC" -d >/dev/null 2>&1 || true
 find "$BIND_SRC" -name '*.gcda' -delete 2>/dev/null || true
 
 # 3. Start instrumented named in the foreground, backgrounded by the shell.
 # -f : foreground, -g : log to stderr, -c : config, -n 1 : single worker.
-echo "[run_fandango] starting named: ${NAMED} -f -g -c ${NAMED_CONF} -n 1"
+echo "starting named: ${NAMED} -f -g -c ${NAMED_CONF} -n 1"
 "$NAMED" -f -g -c "$NAMED_CONF" -n 1 > "${COV_OUT_DIR}named.log" 2>&1 &
 SERVER_PID=$!
 
@@ -54,7 +54,7 @@ SERVER_PID=$!
 READY=0
 for i in $(seq 1 20); do
   if ! kill -0 "$SERVER_PID" 2>/dev/null; then
-    echo "[run_fandango] named exited early; see ${COV_OUT_DIR}named.log" >&2
+    echo "named exited early; see ${COV_OUT_DIR}named.log" >&2
     break
   fi
   # UDP listener shows as a local address in `ss`/`netstat`.
@@ -74,25 +74,25 @@ for i in $(seq 1 20); do
 done
 
 if [ "$READY" -eq 1 ]; then
-  echo "[run_fandango] named is listening on ${PORT}/udp"
+  echo "named is listening on ${PORT}/udp"
 else
-  echo "[run_fandango] WARNING: named not confirmed ready on ${PORT}/udp; proceeding anyway" >&2
+  echo "WARNING: named not confirmed ready on ${PORT}/udp; proceeding anyway" >&2
 fi
 
 # Run the Fandango client, time-bounded.
 cd "${WORKDIR}/fandango"
 if [ "${NO_MESSAGES:-0}" = "1" ]; then
-  echo "[run_fandango] NO_MESSAGES=1: baseline run, NOT sending any DNS messages"
+  echo "NO_MESSAGES=1: baseline run, NOT sending any DNS messages"
   sleep "${BASELINE_IDLE:-3}"
 else
-  echo "[run_fandango] running Fandango dns.py (grammar=${FANDANGO_FAN:-dns.fan}) for up to ${FANDANGO_DURATION}s"
+  echo "running Fandango dns.py (grammar=${FANDANGO_FAN:-dns.fan}) for up to ${FANDANGO_DURATION}s"
   timeout "${FANDANGO_DURATION}" python3.11 dns.py ${FANDANGO_FAN:+"$FANDANGO_FAN"} || true
-  echo "[run_fandango] Fandango run finished"
+  echo "Fandango run finished"
 fi
 
 # Stop named so gcov data is flushed. Bounded wait, then SIGKILL.
 if kill -0 "$SERVER_PID" 2>/dev/null; then
-  echo "[run_fandango] sending SIGTERM to named (pid ${SERVER_PID})"
+  echo "sending SIGTERM to named (pid ${SERVER_PID})"
   kill -TERM "$SERVER_PID" 2>/dev/null || true
   for i in $(seq 1 "$SHUTDOWN_WAIT"); do
     if ! kill -0 "$SERVER_PID" 2>/dev/null; then
@@ -101,7 +101,7 @@ if kill -0 "$SERVER_PID" 2>/dev/null; then
     sleep 1
   done
   if kill -0 "$SERVER_PID" 2>/dev/null; then
-    echo "[run_fandango] named still alive after ${SHUTDOWN_WAIT}s; escalating to SIGKILL" >&2
+    echo "named still alive after ${SHUTDOWN_WAIT}s; escalating to SIGKILL" >&2
     kill -KILL "$SERVER_PID" 2>/dev/null || true
   fi
 fi
@@ -110,18 +110,18 @@ wait "$SERVER_PID" 2>/dev/null || true
 # Give the gcov runtime a moment to finish writing .gcda files.
 sleep 1
 GCDA_COUNT=$(find "$BIND_SRC" -name '*.gcda' 2>/dev/null | wc -l | tr -d ' ')
-echo "[run_fandango] .gcda files after shutdown: ${GCDA_COUNT}"
+echo ".gcda files after shutdown: ${GCDA_COUNT}"
 if [ "$GCDA_COUNT" -eq 0 ]; then
-  echo "[run_fandango] WARNING: no .gcda files were produced; coverage will be 0" >&2
+  echo "WARNING: no .gcda files were produced; coverage will be 0" >&2
 fi
 
 # Produce the report artifacts into COV_OUT_DIR.
-echo "[run_fandango] generating coverage report in ${COV_OUT_DIR}"
+echo "generating coverage report in ${COV_OUT_DIR}"
 
 gcovr -r "$BIND_SRC" \
   --html --html-details \
   -o "${COV_OUT_DIR}index.html" 2>/dev/null || \
-  echo "[run_fandango] WARNING: gcovr HTML generation failed" >&2
+  echo "gcovr HTML generation failed" >&2
 
 gcovr -r "$BIND_SRC" -s > "${COV_OUT_DIR}coverage.txt" 2>/dev/null || \
   echo "lines: 0% branches: 0%" > "${COV_OUT_DIR}coverage.txt"
@@ -177,8 +177,8 @@ print("summary.csv: lines=%.2f%% (%d/%d) branches=%.2f%% (%d/%d)" % (
     lines[0], lines[1], lines[2], branches[0], branches[1], branches[2]))
 PYEOF
 
-echo "[run_fandango] coverage artifacts:"
+echo "coverage artifacts:"
 ls -la "${COV_OUT_DIR}" || true
 
 cleanup_watchdog
-echo "[run_fandango] done"
+echo "done"

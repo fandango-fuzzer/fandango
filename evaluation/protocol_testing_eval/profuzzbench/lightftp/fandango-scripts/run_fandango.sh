@@ -25,7 +25,7 @@ RUN_FANDANGO_TIMEOUT="${RUN_FANDANGO_TIMEOUT:-600}"
 SELF_PGID=$$
 (
   sleep "$RUN_FANDANGO_TIMEOUT"
-  echo "[run_fandango] watchdog: RUN_FANDANGO_TIMEOUT (${RUN_FANDANGO_TIMEOUT}s) reached, killing process group" >&2
+  echo "watchdog: RUN_FANDANGO_TIMEOUT (${RUN_FANDANGO_TIMEOUT}s) reached, killing process group" >&2
   kill -TERM -"$SELF_PGID" 2>/dev/null || true
   sleep 5
   kill -KILL -"$SELF_PGID" 2>/dev/null || true
@@ -38,20 +38,20 @@ cleanup_watchdog() {
 }
 
 # Reset stale coverage counters in the instrumented build tree.
-echo "[run_fandango] resetting gcov counters in ${LIGHTFTP_SRC}"
+echo "resetting gcov counters in ${LIGHTFTP_SRC}"
 gcovr -r "${LIGHTFTP_SRC}/Source" -d >/dev/null 2>&1 || true
 find "$LIGHTFTP_SRC" -name '*.gcda' -delete 2>/dev/null || true
 
 # Start the instrumented fftp server (reads the listen port from argv[2]).
-cd "$RELEASE_DIR" || { echo "[run_fandango] missing ${RELEASE_DIR}" >&2; cleanup_watchdog; exit 1; }
-echo "[run_fandango] starting fftp: ./fftp fftp.conf ${PORT}"
+cd "$RELEASE_DIR" || { echo "missing ${RELEASE_DIR}" >&2; cleanup_watchdog; exit 1; }
+echo "starting fftp: ./fftp fftp.conf ${PORT}"
 ./fftp fftp.conf "${PORT}" > "${COV_OUT_DIR}fftp.log" 2>&1 &
 SERVER_PID=$!
 
 READY=0
 for i in $(seq 1 20); do
   if ! kill -0 "$SERVER_PID" 2>/dev/null; then
-    echo "[run_fandango] fftp exited early; see ${COV_OUT_DIR}fftp.log" >&2
+    echo "fftp exited early; see ${COV_OUT_DIR}fftp.log" >&2
     break
   fi
   if netstat -ltn 2>/dev/null | grep -q ":${PORT} " || \
@@ -62,25 +62,25 @@ for i in $(seq 1 20); do
   sleep 0.5
 done
 if [ "$READY" -eq 1 ]; then
-  echo "[run_fandango] fftp is listening on ${PORT}/tcp"
+  echo "fftp is listening on ${PORT}/tcp"
 else
-  echo "[run_fandango] WARNING: fftp not confirmed ready on ${PORT}/tcp; proceeding anyway" >&2
+  echo "WARNING: fftp not confirmed ready on ${PORT}/tcp; proceeding anyway" >&2
 fi
 
 # Run the Fandango client, time-bounded. NO_MESSAGES=1 => baseline (server
 cd "${WORKDIR}/fandango"
 if [ "${NO_MESSAGES:-0}" = "1" ]; then
-  echo "[run_fandango] NO_MESSAGES=1: baseline run, NOT sending any FTP messages"
+  echo "NO_MESSAGES=1: baseline run, NOT sending any FTP messages"
   sleep "${BASELINE_IDLE:-3}"
 else
-  echo "[run_fandango] running Fandango ftp.py (grammar=${FANDANGO_FAN:-ftp_client.fan}) for up to ${FANDANGO_DURATION}s"
+  echo "running Fandango ftp.py (grammar=${FANDANGO_FAN:-ftp_client.fan}) for up to ${FANDANGO_DURATION}s"
   timeout "${FANDANGO_DURATION}" python3.11 ftp.py ${FANDANGO_FAN:+"$FANDANGO_FAN"} || true
-  echo "[run_fandango] Fandango run finished"
+  echo "Fandango run finished"
 fi
 
 # Stop fftp via SIGUSR1 so gcov data is flushed. Bounded wait, then SIGKILL.
 if kill -0 "$SERVER_PID" 2>/dev/null; then
-  echo "[run_fandango] sending SIGUSR1 to fftp (pid ${SERVER_PID}) to flush gcov"
+  echo "sending SIGUSR1 to fftp (pid ${SERVER_PID}) to flush gcov"
   kill -SIGUSR1 "$SERVER_PID" 2>/dev/null || true
   for i in $(seq 1 "$SHUTDOWN_WAIT"); do
     if ! kill -0 "$SERVER_PID" 2>/dev/null; then
@@ -89,7 +89,7 @@ if kill -0 "$SERVER_PID" 2>/dev/null; then
     sleep 1
   done
   if kill -0 "$SERVER_PID" 2>/dev/null; then
-    echo "[run_fandango] fftp still alive after ${SHUTDOWN_WAIT}s; escalating to SIGKILL" >&2
+    echo "fftp still alive after ${SHUTDOWN_WAIT}s; escalating to SIGKILL" >&2
     kill -KILL "$SERVER_PID" 2>/dev/null || true
   fi
 fi
@@ -97,19 +97,19 @@ wait "$SERVER_PID" 2>/dev/null || true
 
 sleep 1
 GCDA_COUNT=$(find "$LIGHTFTP_SRC" -name '*.gcda' 2>/dev/null | wc -l | tr -d ' ')
-echo "[run_fandango] .gcda files after shutdown: ${GCDA_COUNT}"
+echo ".gcda files after shutdown: ${GCDA_COUNT}"
 if [ "$GCDA_COUNT" -eq 0 ]; then
-  echo "[run_fandango] WARNING: no .gcda files were produced; coverage will be 0" >&2
+  echo "no .gcda files were produced; coverage will be 0" >&2
 fi
 
 # Produce the report artifacts into COV_OUT_DIR.
-echo "[run_fandango] generating coverage report in ${COV_OUT_DIR}"
+echo "generating coverage report in ${COV_OUT_DIR}"
 GCOVR_ROOT="${LIGHTFTP_SRC}/Source"
 
 gcovr -r "$GCOVR_ROOT" \
   --html --html-details \
   -o "${COV_OUT_DIR}index.html" 2>/dev/null || \
-  echo "[run_fandango] WARNING: gcovr HTML generation failed" >&2
+  echo "gcovr HTML generation failed" >&2
 
 gcovr -r "$GCOVR_ROOT" -s > "${COV_OUT_DIR}coverage.txt" 2>/dev/null || \
   echo "lines: 0% branches: 0%" > "${COV_OUT_DIR}coverage.txt"
@@ -164,8 +164,8 @@ print("summary.csv: lines=%.2f%% (%d/%d) branches=%.2f%% (%d/%d)" % (
     lines[0], lines[1], lines[2], branches[0], branches[1], branches[2]))
 PYEOF
 
-echo "[run_fandango] coverage artifacts:"
+echo "coverage artifacts:"
 ls -la "${COV_OUT_DIR}" || true
 
 cleanup_watchdog
-echo "[run_fandango] done"
+echo "done"

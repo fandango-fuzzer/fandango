@@ -18,7 +18,7 @@ mkdir -p "${COV_OUT_DIR}"
 SELF_PGID=$$
 (
   sleep "${RUN_FANDANGO_TIMEOUT}"
-  echo "[!] RUN_FANDANGO_TIMEOUT (${RUN_FANDANGO_TIMEOUT}s) reached - killing process group" >&2
+  echo "RUN_FANDANGO_TIMEOUT (${RUN_FANDANGO_TIMEOUT}s) reached - killing process group" >&2
   kill -TERM -- "-${SELF_PGID}" 2>/dev/null || true
   sleep 5
   kill -KILL -- "-${SELF_PGID}" 2>/dev/null || true
@@ -29,22 +29,22 @@ cleanup_watchdog() { kill "${WATCHDOG_PID}" 2>/dev/null || true; }
 trap cleanup_watchdog EXIT
 
 # Reset stale coverage counters in the build tree.
-echo "[*] Resetting stale .gcda counters under ${BUILD_DIR}"
+echo "Resetting stale .gcda counters under ${BUILD_DIR}"
 find "${BUILD_DIR}" -name '*.gcda' -delete 2>/dev/null || true
 
 # Start stunnel (TLS front, 8025 -> 8026) and smtpd
-echo "[*] Starting stunnel (8025 -> 127.0.0.1:8026)"
+echo "Starting stunnel (8025 -> 127.0.0.1:8026)"
 sudo stunnel /etc/stunnel/stunnel.conf >/tmp/stunnel.log 2>&1 &
 STUNNEL_PID=$!
 
-echo "[*] Starting smtpd (-d -v -f ${SMTPD_CONF}, listens on 8026)"
+echo "Starting smtpd (-d -v -f ${SMTPD_CONF}, listens on 8026)"
 sudo smtpd -d -v -f "${SMTPD_CONF}" >/tmp/smtpd.log 2>&1 &
 SMTPD_PID=$!
 
 # Wait until 8026 and 8025 are ready.
 port_open() { (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null && { exec 3>&- 3<&-; return 0; }; return 1; }
 
-echo "[*] Waiting for smtpd (8026) and stunnel (8025) to accept connections"
+echo "Waiting for smtpd (8026) and stunnel (8025) to accept connections"
 READY=0
 for i in $(seq 1 40); do
   if port_open 8026 && port_open 8025; then
@@ -54,22 +54,22 @@ for i in $(seq 1 40); do
   sleep 0.5
 done
 if [ "${READY}" -ne 1 ]; then
-  echo "[!] Ports not ready (8026 open: $(port_open 8026 && echo yes || echo no), 8025 open: $(port_open 8025 && echo yes || echo no)); continuing to attempt report" >&2
+  echo "Ports not ready (8026 open: $(port_open 8026 && echo yes || echo no), 8025 open: $(port_open 8025 && echo yes || echo no)); continuing to attempt report" >&2
   echo "---- smtpd.log ----" >&2; tail -n 40 /tmp/smtpd.log >&2 || true
   echo "---- stunnel.log ----" >&2; tail -n 40 /tmp/stunnel.log >&2 || true
 else
-  echo "[*] Ports 8026 and 8025 are ready"
+  echo "Ports 8026 and 8025 are ready"
 fi
 
 # Run the Fandango, time-bounded so it always returns.
 cd "${FANDANGO_DIR}"
 if [ "${NO_MESSAGES:-0}" = "1" ]; then
-  echo "[*] NO_MESSAGES=1: baseline run, NOT sending any SMTP messages"
+  echo "NO_MESSAGES=1: baseline run, NOT sending any SMTP messages"
   sleep "${BASELINE_IDLE:-3}"
 else
-  echo "[*] Running Fandango smtp.py (grammar=${FANDANGO_FAN:-smtp_client.fan}) for up to ${FANDANGO_DURATION}s"
+  echo "Running Fandango smtp.py (grammar=${FANDANGO_FAN:-smtp_client.fan}) for up to ${FANDANGO_DURATION}s"
   timeout "${FANDANGO_DURATION}" python3.11 smtp.py ${FANDANGO_FAN:+"$FANDANGO_FAN"} || true
-  echo "[*] Fandango run finished"
+  echo "Fandango run finished"
 fi
 
 # Flush coverage from ALL privsep processes.
@@ -78,7 +78,7 @@ COV_RAW="/cov_raw"
 sudo rm -rf "$COV_RAW" 2>/dev/null || true
 sudo mkdir -p "$COV_RAW"; sudo chmod 1777 "$COV_RAW"
 
-echo "[*] Flushing coverage: SIGUSR1 to ALL smtpd processes (per-pid GCOV_PREFIX)"
+echo "Flushing coverage: SIGUSR1 to ALL smtpd processes (per-pid GCOV_PREFIX)"
 sudo pkill -USR1 -x smtpd 2>/dev/null || true
 
 # Wait for everything to dump and exit.
@@ -87,7 +87,7 @@ for i in $(seq 1 30); do
   sleep 0.5
 done
 if sudo pgrep -x smtpd >/dev/null 2>&1; then
-  echo "[!] smtpd still alive after SIGUSR1; sending SIGTERM"
+  echo "smtpd still alive after SIGUSR1; sending SIGTERM"
   sudo pkill -TERM -x smtpd 2>/dev/null || true
   for i in $(seq 1 10); do
     sudo pgrep -x smtpd >/dev/null 2>&1 || break
@@ -95,7 +95,7 @@ if sudo pgrep -x smtpd >/dev/null 2>&1; then
   done
 fi
 if sudo pgrep -x smtpd >/dev/null 2>&1; then
-  echo "[!] smtpd still alive after SIGTERM; sending SIGKILL"
+  echo "smtpd still alive after SIGTERM; sending SIGKILL"
   sudo pkill -KILL -x smtpd 2>/dev/null || true
 fi
 
@@ -108,7 +108,7 @@ sudo chown -R "$(id -u):$(id -g)" "$COV_RAW" "${BUILD_DIR}" 2>/dev/null || true
 
 # Merge coverage for each pid from before together
 GCOV_TOOL="$(command -v gcov-tool || command -v gcov-tool-12 || command -v gcov-tool-11 || true)"
-echo "[*] gcov-tool: ${GCOV_TOOL:-not found}"
+echo "gcov-tool: ${GCOV_TOOL:-not found}"
 ACC="/home/ubuntu/cov_acc"
 sudo rm -rf "$ACC" 2>/dev/null || true
 PID_TREES=""
@@ -119,7 +119,7 @@ for d in "$COV_RAW"/*; do
   [ -d "$sub" ] || continue
   PID_TREES="$PID_TREES $sub"
 done
-echo "[*] per-pid gcda trees found:$(echo "$PID_TREES" | wc -w | tr -d ' ')"
+echo "per-pid gcda trees found:$(echo "$PID_TREES" | wc -w | tr -d ' ')"
 
 if [ -n "$GCOV_TOOL" ] && [ -n "$PID_TREES" ]; then
   for tree in $PID_TREES; do
@@ -135,17 +135,17 @@ if [ -n "$GCOV_TOOL" ] && [ -n "$PID_TREES" ]; then
     ( cd "$ACC" && find . -name '*.gcda' | while IFS= read -r f; do
         cp -f "$f" "${BUILD_DIR}/$f" 2>/dev/null || true
       done )
-    echo "[*] Merged per-pid coverage into build tree"
+    echo "Merged per-pid coverage into build tree"
   fi
 else
-  echo "[!] gcov-tool/per-pid trees unavailable; falling back to whatever is in build tree"
+  echo "gcov-tool/per-pid trees unavailable; falling back to whatever is in build tree"
 fi
 
 GCDA_COUNT="$(find "${BUILD_DIR}/${GCOV_SUBDIR}" -name '*.gcda' 2>/dev/null | wc -l | tr -d ' ')"
-echo "[*] .gcda files in build tree under ${GCOV_SUBDIR}: ${GCDA_COUNT}"
+echo ".gcda files in build tree under ${GCOV_SUBDIR}: ${GCDA_COUNT}"
 
 # Produce the report
-echo "[*] Generating coverage report into ${COV_OUT_DIR}"
+echo "Generating coverage report into ${COV_OUT_DIR}"
 cd "${BUILD_DIR}"
 
 # Human-readable summary -> coverage.txt
@@ -213,7 +213,7 @@ PYEOF
 echo "---- summary.csv ----"
 cat "${COV_OUT_DIR}/summary.csv" 2>/dev/null || true
 
-echo "[*] Coverage report written to ${COV_OUT_DIR}"
+echo "Coverage report written to ${COV_OUT_DIR}"
 ls -la "${COV_OUT_DIR}" || true
 
 exit 0

@@ -22,16 +22,16 @@ export LLVM_PROFILE_FILE="${PROFRAW_DIR}/cov-%p-%m.profraw"
 FANDANGO_DURATION="${FANDANGO_DURATION:-120}"
 SHUTDOWN_WAIT="${SHUTDOWN_WAIT:-15}"
 
-echo "[run_fandango] COV_OUT_DIR=$COV_OUT_DIR"
-echo "[run_fandango] BORINGTUN_BIN=$BORINGTUN_BIN"
-echo "[run_fandango] LLVM_PROFILE_FILE=$LLVM_PROFILE_FILE"
+echo "COV_OUT_DIR=$COV_OUT_DIR"
+echo "BORINGTUN_BIN=$BORINGTUN_BIN"
+echo "LLVM_PROFILE_FILE=$LLVM_PROFILE_FILE"
 
 # Overall watchdog: never let the container hang forever.
 RUN_FANDANGO_TIMEOUT="${RUN_FANDANGO_TIMEOUT:-600}"
 SELF_PGID=$$
 (
   sleep "$RUN_FANDANGO_TIMEOUT"
-  echo "[run_fandango][watchdog] RUN_FANDANGO_TIMEOUT(${RUN_FANDANGO_TIMEOUT}s) reached - killing process group" >&2
+  echo "RUN_FANDANGO_TIMEOUT(${RUN_FANDANGO_TIMEOUT}s) reached - killing process group" >&2
   kill -TERM -"$SELF_PGID" 2>/dev/null || true
   sleep 5
   kill -KILL -"$SELF_PGID" 2>/dev/null || true
@@ -56,11 +56,11 @@ start_boringtun() {
 
   # boringtun-cli runs the userspace WG device. --foreground keeps it attached so
   # the LLVM profiling runtime can flush on a graceful SIGTERM/SIGINT (atexit).
-  echo "[run_fandango] starting boringtun on ${WG_IF} ..."
+  echo "starting boringtun on ${WG_IF} ..."
   "$BORINGTUN_BIN" --foreground --disable-drop-privileges --verbosity debug "$WG_IF" \
       > "${PROFRAW_DIR}/boringtun.log" 2>&1 &
   BORINGTUN_PID=$!
-  echo "[run_fandango] boringtun pid=$BORINGTUN_PID"
+  echo "boringtun pid=$BORINGTUN_PID"
 
   # Wait for the wg0 interface to appear.
   local i
@@ -70,7 +70,7 @@ start_boringtun() {
       break
     fi
     if ! kill -0 "$BORINGTUN_PID" 2>/dev/null; then
-      echo "[run_fandango][warn] boringtun exited early; log:" >&2
+      echo "boringtun exited early; log:" >&2
       cat "${PROFRAW_DIR}/boringtun.log" >&2 || true
       return 1
     fi
@@ -78,24 +78,24 @@ start_boringtun() {
   done
 
   if [ "$TUN_OK" -ne 1 ]; then
-    echo "[run_fandango][warn] wg0 interface did not appear (TUN unavailable?)." >&2
+    echo "wg0 interface did not appear (TUN unavailable?)." >&2
     cat "${PROFRAW_DIR}/boringtun.log" >&2 || true
     return 1
   fi
-  echo "[run_fandango] wg0 is up."
+  echo "wg0 is up."
   return 0
 }
 
 configure_wg() {
   # peer config.
   if ! wg setconf "$WG_IF" "${WG_CONFIG_DIR}/wg0.conf"; then
-    echo "[run_fandango][warn] wg setconf failed" >&2
+    echo "wg setconf failed" >&2
     return 1
   fi
   # Interface address + link up so the container kernel answers ICMP to 10.13.13.1.
   ip addr add "$WG_ADDR" dev "$WG_IF" 2>/dev/null || true
   ip link set "$WG_IF" up 2>/dev/null || true
-  echo "[run_fandango] wg0 configured:"
+  echo "wg0 configured:"
   wg show "$WG_IF" 2>/dev/null || true
   ip addr show "$WG_IF" 2>/dev/null || true
   return 0
@@ -107,12 +107,12 @@ wait_for_udp_port() {
   for i in $(seq 1 40); do
     if ss -lun 2>/dev/null | grep -q ":${WG_PORT}\b" || \
        netstat -lun 2>/dev/null | grep -q ":${WG_PORT} "; then
-      echo "[run_fandango] udp/${WG_PORT} is bound."
+      echo "udp/${WG_PORT} is bound."
       return 0
     fi
     sleep 0.25
   done
-  echo "[run_fandango][warn] udp/${WG_PORT} not observed bound (continuing anyway)." >&2
+  echo "udp/${WG_PORT} not observed bound (continuing anyway)." >&2
   return 1
 }
 
@@ -120,30 +120,30 @@ if start_boringtun; then
   configure_wg || true
   wait_for_udp_port || true
 else
-  echo "[run_fandango][warn] boringtun/TUN setup failed - Fandango run may exercise little/no code." >&2
+  echo "boringtun/TUN setup failed - Fandango run may exercise little/no code." >&2
 fi
 
 # Run Fandango
 cd "$FANDANGO_DIR"
 if [ "${NO_MESSAGES:-0}" = "1" ]; then
-  echo "[run_fandango] NO_MESSAGES=1: baseline run, NOT sending any WireGuard messages"
+  echo "NO_MESSAGES=1: baseline run, NOT sending any WireGuard messages"
   sleep "${BASELINE_IDLE:-3}"
 else
-  echo "[run_fandango] running Fandango wireguard.py (grammar=${FANDANGO_FAN:-wireguard.fan}) for up to ${FANDANGO_DURATION}s ..."
+  echo "running Fandango wireguard.py (grammar=${FANDANGO_FAN:-wireguard.fan}) for up to ${FANDANGO_DURATION}s ..."
   timeout "$FANDANGO_DURATION" python3.11 wireguard.py ${FANDANGO_FAN:+"$FANDANGO_FAN"} || true
-  echo "[run_fandango] Fandango run finished."
+  echo "Fandango run finished."
 fi
 
 # Graceful (bounded) shutdown so LLVM flushes profraw files on exit
 if [ -n "$BORINGTUN_PID" ] && kill -0 "$BORINGTUN_PID" 2>/dev/null; then
-  echo "[run_fandango] stopping boringtun (pid=$BORINGTUN_PID) gracefully ..."
+  echo "stopping boringtun (pid=$BORINGTUN_PID) gracefully ..."
   kill -TERM "$BORINGTUN_PID" 2>/dev/null || true
   for i in $(seq 1 "$SHUTDOWN_WAIT"); do
     kill -0 "$BORINGTUN_PID" 2>/dev/null || break
     sleep 1
   done
   if kill -0 "$BORINGTUN_PID" 2>/dev/null; then
-    echo "[run_fandango][warn] boringtun still alive after ${SHUTDOWN_WAIT}s; sending SIGINT then SIGKILL" >&2
+    echo "boringtun still alive after ${SHUTDOWN_WAIT}s; sending SIGINT then SIGKILL" >&2
     kill -INT "$BORINGTUN_PID" 2>/dev/null || true
     sleep 2
     kill -KILL "$BORINGTUN_PID" 2>/dev/null || true
@@ -152,16 +152,16 @@ if [ -n "$BORINGTUN_PID" ] && kill -0 "$BORINGTUN_PID" 2>/dev/null; then
 fi
 
 # Coverage report
-echo "[run_fandango] generating coverage report ..."
+echo "generating coverage report ..."
 shopt -s nullglob
 PROFRAWS=( "${PROFRAW_DIR}"/*.profraw )
-echo "[run_fandango] found ${#PROFRAWS[@]} profraw file(s) in ${PROFRAW_DIR}"
+echo "found ${#PROFRAWS[@]} profraw file(s) in ${PROFRAW_DIR}"
 
 PROFDATA="${PROFRAW_DIR}/cov.profdata"
 
 emit_empty_report() {
   local msg="$1"
-  echo "[run_fandango][warn] ${msg}" >&2
+  echo "${msg}" >&2
   echo "$msg" > "${COV_OUT_DIR}/coverage.txt"
   printf 'metric,percent,covered,total\nlines,0.00,0,0\nbranches,0.00,0,0\n' \
       > "${COV_OUT_DIR}/summary.csv"
@@ -228,7 +228,7 @@ with open(dst, "w") as f:
     f.write(row("branches", branch_t))
 PY
 
-    echo "[run_fandango] ---- summary.csv ----"
+    echo "---- summary.csv ----"
     cat "${COV_OUT_DIR}/summary.csv" || true
   fi
 fi
@@ -236,6 +236,6 @@ fi
 # Make outputs readable on the host.
 chmod -R a+rX "$COV_OUT_DIR" 2>/dev/null || true
 
-echo "[run_fandango] done. Report in ${COV_OUT_DIR}"
+echo "done. Report in ${COV_OUT_DIR}"
 ls -la "$COV_OUT_DIR" || true
 exit 0
