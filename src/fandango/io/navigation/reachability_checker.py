@@ -106,15 +106,16 @@ class ReachabilityChecker(ContinuingNodeVisitor):
         for parent_path, child in continuation.extension_points:
             if not isinstance(child, NonTerminal):
                 continue
-            match_len = len(self.find_longest_suffix(parent_path, k_path))
-            if not 0 < match_len < len(k_path):
-                continue
-            if child != k_path[match_len]:
-                continue
-            if self.test_reachability_from_node(
-                NonTerminalNode(child, []), k_path[match_len:]
-            ):
-                return True
+            for j in range(len(parent_path), 0, -1):
+                match_len = len(self.find_longest_suffix(parent_path[:j], k_path))
+                if not 0 < match_len < len(k_path):
+                    continue
+                if child != k_path[match_len]:
+                    continue
+                if self.test_reachability_from_node(
+                    NonTerminalNode(child, []), k_path[match_len:]
+                ):
+                    return True
         return False
 
     def test_reachability_from_node(
