@@ -382,24 +382,22 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
     def stop(self) -> None:
         """Stops the current party."""
         self._running = False
+        for sock in (self._connection, self._sock):
+            if sock is not None:
+                try:
+                    sock.shutdown(socket.SHUT_RDWR)
+                except OSError:
+                    pass
         if self._send_thread is not None:
             self._send_thread.join()
             self._send_thread = None
         if self._connection is not None:
-            try:
-                self._connection.shutdown(socket.SHUT_RDWR)
-            except OSError:
-                pass
             try:
                 self._connection.close()
             except OSError:
                 pass
             self._connection = None
         if self._sock is not None:
-            try:
-                self._sock.shutdown(socket.SHUT_RDWR)
-            except OSError:
-                pass
             try:
                 self._sock.close()
             except OSError:
