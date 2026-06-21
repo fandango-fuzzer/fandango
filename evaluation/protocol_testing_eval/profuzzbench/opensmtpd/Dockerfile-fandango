@@ -1,0 +1,163 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get -y update && \
+    apt-get -y install \
+    sudo \
+    apt-utils \
+    build-essential \
+    gcc g++ make \
+    autoconf automake libtool bison \
+    pkg-config \
+    libssl-dev \
+    libevent-dev \
+    zlib1g-dev \
+    openssl \
+    stunnel4 \
+    ca-certificates \
+    git \
+    wget \
+    unzip \
+    cpio \
+    nano vim \
+    net-tools \
+    netcat \
+    python3.11 python3.11-dev python3-pip \
+    locales && \
+    locale-gen en_US.UTF-8 && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN groupadd ubuntu && \
+    useradd -rm -d /home/ubuntu -s /bin/bash -g ubuntu -G sudo -u 1000 ubuntu \
+        -p "$(openssl passwd -1 ubuntu)" && \
+    echo "ubuntu ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/ubuntu && \
+    chmod 0440 /etc/sudoers.d/ubuntu
+
+RUN chmod 777 /tmp
+
+RUN python3 -m pip install --upgrade pip==20.3.4 && \
+    pip3 install --trusted-host pypi.org --trusted-host files.pythonhosted.org gcovr==4.2
+
+RUN python3.11 -m pip install -U pip setuptools wheel
+
+RUN git clone https://github.com/fandango-fuzzer/fandango.git /home/ubuntu/fandango-src && \
+    cd /home/ubuntu/fandango-src && \
+    git checkout io_replication && \
+    python3.11 -m pip install --no-cache-dir -e ".[test]"
+
+ENV CFLAGS="-fprofile-arcs --coverage -ftest-coverage -O0"
+ENV CXXFLAGS="-fprofile-arcs --coverage -ftest-coverage -O0"
+ENV LDFLAGS="--coverage"
+
+WORKDIR /home/ubuntu
+
+RUN wget -q https://github.com/OpenSMTPD/OpenSMTPD/archive/refs/tags/7.7.0p0.zip && \
+    unzip -q 7.7.0p0.zip && \
+    rm 7.7.0p0.zip
+
+# Inject gcov flush handler
+COPY gcov-flush-snippet.c /home/ubuntu/gcov-flush-snippet.c
+RUN cd /home/ubuntu/OpenSMTPD-7.7.0p0 && \
+    python3 - <<'PY'
+src = "usr.sbin/smtpd/smtpd.c"
+anchor = "extern char *__progname;\n"
+with open(src) as f:
+    text = f.read()
+with open("/home/ubuntu/gcov-flush-snippet.c") as f:
+    snippet = f.read()
+assert anchor in text, "anchor not found in smtpd.c"
+text = text.replace(anchor, anchor + "\n" + snippet + "\n", 1)
+with open(src, "w") as f:
+    f.write(text)
+print("Injected gcov flush handler into smtpd.c")
+PY
+
+# Neuter chroot() and pledge() in the privsep children for the COVERAGE build
+# only. The dispatcher  chroot to
+# /var/empty and pledge away wpath/cpath, after which gcov can not
+# create its .gcda files. Replacing chroot()/pledge() with success makes /cov_raw
+# writable so every process can dump.
+RUN cd /home/ubuntu/OpenSMTPD-7.7.0p0 && python3 - <<'PY'
+import re, glob
+# chroot("...") / chroot(PATH_x)  ->  (0)   (so "if (chroot(...) == -1)" never fires)
+# pledge("...", ...)              ->  (0)
+chroot_re = re.compile(r'chroot\s*\(\s*[^;]*?\)')
+pledge_re = re.compile(r'pledge\s*\(\s*[^;]*?\)')
+for path in glob.glob("usr.sbin/smtpd/*.c"):
+    with open(path) as f:
+        src = f.read()
+    new = chroot_re.sub('(0)', src)
+    new = pledge_re.sub('(0)', new)
+    if new != src:
+        with open(path, "w") as f:
+            f.write(new)
+        print("neutered chroot/pledge in", path)
+PY
+
+RUN cd /home/ubuntu/OpenSMTPD-7.7.0p0 && \
+    ./bootstrap && \
+    ./configure --disable-portable --enable-plaintext-auth && \
+    make && make install
+
+RUN mkdir -p /etc/smtpd
+COPY smtpd.conf /etc/smtpd.conf
+COPY credentials /etc/smtpd/credentials
+COPY stunnel.conf /etc/stunnel/stunnel.conf
+
+# Self-signed cert for the TLS listener / stunnel.
+RUN mkdir -p /etc/ssl/private && \
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+        -keyout /etc/ssl/private/server.key \
+        -out /etc/ssl/certs/server.crt \
+        -subj "/CN=localhost"
+
+# Privsep system users + spool/run directory layout (from the existing build).
+RUN mkdir -p /var/empty && \
+    useradd -c "SMTP Daemon" -d /var/empty -s /usr/sbin/nologin _smtpd && \
+    useradd -c "SMTPD Queue" -d /var/empty -s /usr/sbin/nologin _smtpq
+
+RUN mkdir -p /var/spool/smtpd/data && \
+    chown 0:0 /var/spool/smtpd && chmod 711 /var/spool/smtpd && \
+    mkdir -p /var/spool/smtpd/queue && \
+    chown _smtpq:0 /var/spool/smtpd/queue && chmod 700 /var/spool/smtpd/queue && \
+    mkdir -p /var/spool/smtpd/control && \
+    chown _smtpd:_smtpd /var/spool/smtpd/control && chmod 711 /var/spool/smtpd/control
+
+RUN mkdir -p /var/run/smtpd && chown _smtpd /var/run/smtpd && \
+    mkdir -p /var/run/smtpd/ca /var/run/smtpd/dispatcher /var/run/smtpd/scheduler \
+             /var/run/smtpd/control /var/run/smtpd/queue && \
+    chown _smtpd:_smtpd /var/run/smtpd/* && chmod 755 /var/run/smtpd/*
+
+RUN mkdir -p /var/lib/ssl/certs && cp -r /etc/ssl/certs/* /var/lib/ssl/certs
+
+RUN cp /etc/ssl/certs/ca-certificates.crt /usr/lib/ssl/cert.pem && \
+    cp /etc/ssl/certs/ca-certificates.crt /etc/ssl/cert.pem && \
+    mkdir -p /var/empty/usr/lib/ssl /var/empty/etc/ssl && \
+    cp /etc/ssl/certs/ca-certificates.crt /var/empty/usr/lib/ssl/cert.pem && \
+    cp /etc/ssl/certs/ca-certificates.crt /var/empty/etc/ssl/cert.pem
+
+# Local mailbox account.
+RUN useradd -ms /bin/bash the_user && echo "the_user:the_password" | chpasswd && \
+    mkdir -p /var/mail && \
+    touch /var/mail/the_user && \
+    chown the_user:the_user /var/mail/the_user
+
+RUN mkdir -p /etc/mail && touch /etc/mail/aliases
+
+COPY --chown=ubuntu:ubuntu fandango-scripts/ /home/ubuntu/fandango/
+RUN chmod +x /home/ubuntu/fandango/run_fandango.sh
+
+# Coverage output mount point.
+RUN mkdir -p /home/ubuntu/cov_out && chown -R ubuntu:ubuntu /home/ubuntu/cov_out
+
+RUN mkdir -p /cov_raw && chmod 1777 /cov_raw
+
+# The instrumented build tree must be writable by ubuntu for gcovr.
+RUN chown -R ubuntu:ubuntu /home/ubuntu/OpenSMTPD-7.7.0p0
+
+USER ubuntu
+WORKDIR /home/ubuntu
+ENV COV_OUT_DIR=/home/ubuntu/cov_out
+
+CMD ["/home/ubuntu/fandango/run_fandango.sh"]

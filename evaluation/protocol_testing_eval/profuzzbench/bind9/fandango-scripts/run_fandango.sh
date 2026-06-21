@@ -148,7 +148,6 @@ except Exception:
 
 def parse(metric_label):
     """Return (percent, covered, total) for a gcovr -s summary metric."""
-    # Format A: "label: 12.3% (456 out of 3700)"
     m = re.search(
         rf"{metric_label}[.\s]*:\s*([0-9.]+)%\s*\((\d+)\s+out of\s+(\d+)\)",
         out, re.IGNORECASE,
