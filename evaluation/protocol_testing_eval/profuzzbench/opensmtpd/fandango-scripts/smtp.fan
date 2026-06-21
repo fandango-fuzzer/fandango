@@ -102,7 +102,7 @@ def plain64(user, password):
 <request_auth_pass_incorrect> ::= <pass_incorrect_64> '\r\n'
 
 <request_auth_plain> ::= 'AUTH PLAIN\r\n'
-<response_auth_continue> ::= '334 \r\n' | '334 ' r'[a-zA-Z0-9\+/\\\=]+' '\r\n'
+<response_auth_continue> ::= r'334 [A-Za-z0-9+/=\\]*\r\n'
 <request_auth_plain_correct> ::= <plain_correct_64> '\r\n'
 <request_auth_plain_incorrect> ::= <plain_incorrect_64> '\r\n'
 
@@ -150,7 +150,7 @@ def plain64(user, password):
 <request_expn> ::= 'EXPN ' r'[a-zA-Z0-9_\-]+' '\r\n'
 # VRFY/EXPN are commonly refused; accept any reply code.
 <response_vrfy_expn> ::= r'[2-5]\d\d' ' ' r'[a-zA-Z0-9\-\.:@<>\(\) ]+' '\r\n'
-<response_help> ::= (r'2\d\d' '-' (r'[^\r\n\x80-\xFF]*')? '\r\n')* r'2\d\d' ' ' r'[^\r\n\x80-\xFF]*' '\r\n'
+<response_help> ::= (r'2\d\d' '-' r'[^\r\n\x80-\xFF]+' '\r\n')+ r'2\d\d' ' ' r'[^\r\n\x80-\xFF]+' '\r\n'
 
 <request_bad_command> ::= ('XYZZY' | 'FOOBAR' | 'WTF') (' ' r'[^\r\n]*')? '\r\n'
 <response_command_error> ::= r'5\d\d' ' ' r'[a-zA-Z0-9\-\.:\(\) ]+' '\r\n'
