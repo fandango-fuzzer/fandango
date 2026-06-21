@@ -32,6 +32,11 @@ trap cleanup_watchdog EXIT
 echo "Resetting stale .gcda counters under ${BUILD_DIR}"
 find "${BUILD_DIR}" -name '*.gcda' -delete 2>/dev/null || true
 
+# symlink subdirs
+for d in queue incoming purge temporary offline corrupt; do
+  sudo ln -sfn "/var/spool/smtpd/$d" "/$d"
+done
+
 # Start stunnel (TLS front, 8025 -> 8026) and smtpd
 echo "Starting stunnel (8025 -> 127.0.0.1:8026)"
 sudo stunnel /etc/stunnel/stunnel.conf >/tmp/stunnel.log 2>&1 &

@@ -102,7 +102,7 @@ def plain64(user, password):
 <request_auth_pass_incorrect> ::= <pass_incorrect_64> '\r\n'
 
 <request_auth_plain> ::= 'AUTH PLAIN\r\n'
-<response_auth_continue> ::= '334 ' r'[a-zA-Z0-9\+/\\\=]*' '\r\n'
+<response_auth_continue> ::= '334 \r\n' | '334 ' r'[a-zA-Z0-9\+/\\\=]+' '\r\n'
 <request_auth_plain_correct> ::= <plain_correct_64> '\r\n'
 <request_auth_plain_incorrect> ::= <plain_incorrect_64> '\r\n'
 
@@ -144,7 +144,7 @@ def plain64(user, password):
 <request_quit> ::= r'(?i:QUIT)' '\r\n'
 <response_quit> ::= '221 ' r'[a-zA-Z0-9\-\. ]+' '\r\n'
 <request_noop> ::= 'NOOP' (' ' r'[^ \r\n]*')? '\r\n'
-<request_help> ::= 'HELP' (' ' r'[^ \r\n]*')? '\r\n'
+<request_help> ::= 'HELP\r\n'
 <request_rset> ::= 'RSET\r\n'
 <request_vrfy> ::= 'VRFY ' <email_address> '\r\n'
 <request_expn> ::= 'EXPN ' r'[a-zA-Z0-9_\-]+' '\r\n'
