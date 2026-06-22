@@ -48,6 +48,10 @@ docker build "${TARGET_DIR}" -f "${TARGET_DIR}/Dockerfile-fandango" -t "${IMAGE}
 # container after OVERALL_TIMEOUT seconds.
 CONTAINER="${TARGET}-fandango-run-$$"
 OVERALL_TIMEOUT="${OVERALL_TIMEOUT:-1800}"
+
+# In-container watchdog (run_fandango.sh) for every target. It must outlast the Fandango run itself
+FANDANGO_DURATION="${FANDANGO_DURATION:-120}"
+RUN_FANDANGO_TIMEOUT="${RUN_FANDANGO_TIMEOUT:-$((FANDANGO_DURATION + 120))}"
 (
   sleep "$OVERALL_TIMEOUT"
   if [ -n "$(docker ps -q -f "name=^${CONTAINER}$")" ]; then
@@ -64,7 +68,8 @@ docker run --rm --name "$CONTAINER" \
   -v "${RESULTS_DIR}:/home/ubuntu/cov_out" \
   -e COV_OUT_DIR=/home/ubuntu/cov_out \
   -e "NO_MESSAGES=${NO_MESSAGES:-0}" \
-  -e "FANDANGO_DURATION=${FANDANGO_DURATION:-120}" \
+  -e "FANDANGO_DURATION=${FANDANGO_DURATION}" \
+  -e "RUN_FANDANGO_TIMEOUT=${RUN_FANDANGO_TIMEOUT}" \
   -e "BASELINE_IDLE=${BASELINE_IDLE:-3}" \
   -e "FANDANGO_FAN=${FANDANGO_FAN:-}" \
   ${EXTRA_ARGS} \

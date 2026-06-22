@@ -5,7 +5,7 @@ set -u
 
 WORKDIR="${WORKDIR:-/home/ubuntu}"
 LIGHTFTP_SRC="${LIGHTFTP_SRC:-/home/ubuntu/LightFTP-fandango}"
-RELEASE_DIR="${LIGHTFTP_SRC}/Source/Release"
+RELEASE_DIR="${LIGHTFTP_SRC}/src/Release"
 PORT="${PORT:-2200}"
 export FTP_PORT="${PORT}"
 
@@ -39,7 +39,7 @@ cleanup_watchdog() {
 
 # Reset stale coverage counters in the instrumented build tree.
 echo "resetting gcov counters in ${LIGHTFTP_SRC}"
-gcovr -r "${LIGHTFTP_SRC}/Source" -d >/dev/null 2>&1 || true
+gcovr -r "${LIGHTFTP_SRC}/src" -d >/dev/null 2>&1 || true
 find "$LIGHTFTP_SRC" -name '*.gcda' -delete 2>/dev/null || true
 
 # Start the instrumented fftp server (reads the listen port from argv[2]).
@@ -104,12 +104,18 @@ fi
 
 # Produce the report artifacts into COV_OUT_DIR.
 echo "generating coverage report in ${COV_OUT_DIR}"
-GCOVR_ROOT="${LIGHTFTP_SRC}/Source"
+GCOVR_ROOT="${LIGHTFTP_SRC}/src"
 
-gcovr -r "$GCOVR_ROOT" \
-  --html --html-details \
+gcovr -r "$GCOVR_ROOT" --html \
   -o "${COV_OUT_DIR}index.html" 2>/dev/null || \
-  echo "gcovr HTML generation failed" >&2
+  echo "gcovr HTML overview generation failed" >&2
+
+# Emit full coverage report
+HTML_DETAIL_DIR="${COV_OUT_DIR}html"
+mkdir -p "$HTML_DETAIL_DIR"
+gcovr -r "$GCOVR_ROOT" --html-details \
+  -o "${HTML_DETAIL_DIR}/index.html" 2>/dev/null || \
+  echo "gcovr HTML detail generation failed" >&2
 
 gcovr -r "$GCOVR_ROOT" -s > "${COV_OUT_DIR}coverage.txt" 2>/dev/null || \
   echo "lines: 0% branches: 0%" > "${COV_OUT_DIR}coverage.txt"
