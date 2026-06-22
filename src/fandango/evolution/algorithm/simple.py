@@ -380,6 +380,10 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
 
         if len(self.population) < self.population_size:
             yield from self.generate_initial_population()
+        elif not self.evaluation:
+            self.evaluation = yield from self.evaluator.evaluate_population(
+                self.population
+            )
 
         prev_best_fitness = 0.0
         generation = 0
@@ -524,5 +528,6 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
         self.evaluator._solution_set.clear()
         self.evaluator._fitness_cache.clear()
         self.population.clear()
+        self.evaluation.clear()
         self._initial_solutions.clear()
         self.adaptive_tuner.reset_parameters()
