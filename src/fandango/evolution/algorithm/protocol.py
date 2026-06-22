@@ -48,6 +48,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._packet_coverage_filter = PacketCoverageFilter(
             self._packet_algorithm.diversity_k, self.grammar
         )
+        self.violations = []
+        self.throw_on_violation = False
 
     def _is_protocol_run_complete(self) -> bool:
         return (
@@ -243,7 +245,19 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     )
                 self._protocol_tree = next_history_tree
             else:
-                self._protocol_tree = self._handle_remote_response()
+                try:
+                    self._protocol_tree = self._handle_remote_response()
+                except (FandangoFailedError, FandangoParseError) as exc:
+                    self.violations.append((self._protocol_tree, exc))
+                    if self.throw_on_violation:
+                        raise exc
+                    LOGGER.warning(
+                        f"Discarding remote response that could not be handled. "
+                        f"Recording violation and starting a new protocol run: {exc}"
+                    )
+                    self._io_instance.reset_parties()
+                    self._protocol_tree = DerivationTree(self._start_symbol, [])
+                    continue
             self._protocol_tree.set_all_read_only(True)
 
     def _configure_fuzzable_packets(self) -> None:
