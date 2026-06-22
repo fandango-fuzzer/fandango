@@ -248,6 +248,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 try:
                     self._protocol_tree = self._handle_remote_response()
                 except (FandangoFailedError, FandangoParseError) as exc:
+                    self._past_interactions.append(self._protocol_tree)
                     self.violations.append((self._protocol_tree, exc))
                     if self.throw_on_violation:
                         raise exc
