@@ -1,5 +1,9 @@
 from struct import unpack, pack
+from faker import Faker
+from fandango.language.symbols import NonTerminal
 from random import randint, choice
+
+fake = Faker()
 
 fandango_is_client = False
 # If used as a client interact with a command like this:
@@ -29,6 +33,22 @@ SINGLE_NAME_PREFIX = {
 }
 
 
+# This function gets a question and the response section of a DNS response and verifies if the response does answer the question.
+# This also handles responses that are transitive. For example if the question is for a type A record for "example.com" and the response contains
+# a CNAME record pointing "example.com" to "alias.com" and then an A record for "alias.com", this function will verify that the response correctly
+# answers the original question through the CNAME redirection.
+def verify_transitive(question, response):
+    type_byte = bytes(question.find_direct_trees(NonTerminal("<q_type>"))[0])
+    allowed_names = [bytes(question.find_direct_trees(NonTerminal("<q_name>"))[0])]
+    for ans in response.find_subtrees("<answer_an>"):
+        if bytes(ans.children[1])[0:2] == pack('>H', TYPE_CNAME) and bytes(ans.find_direct_trees(NonTerminal("<q_name_optional>"))[0]) in allowed_names:
+            allowed_names.append(bytes(ans.children[1].children[0].children[4])) # <type_cname>.<q_name>
+    for ans in response.find_subtrees("<answer_an>"):
+        if bytes(ans.children[1])[0:2] == type_byte and bytes(ans.find_direct_trees(NonTerminal("<q_name_optional>"))[0]) in allowed_names:
+            return True
+    return False
+
+
 # Generate a domain name to query. We mix names the local server is authoritative for with public
 # domains it must recurse for; some of them CNAME elsewhere, exercising the client's CNAME-chain parsing.
 def gen_q_name():
@@ -49,13 +69,15 @@ def gen_q_name():
     return result
 
 
+# Generate a length-prefixed character-string for use inside TXT RDATA.
+def gen_txt_string():
+    s = fake.sentence(nb_words=randint(1, 4)).encode('iso8859-1')[:255]
+    return len(s).to_bytes(1, 'big') + s
+
+
 # Convert a 2-byte byte array to an integer
 def byte_to_int(byte_val):
     return int(unpack('>H', bytes(byte_val))[0])
-
-# RDATA byte length for a generated answer of the given query type (A=4, AAAA=16, else 4).
-def answer_rdlen(q_type):
-    return 16 if byte_to_int(q_type) == TYPE_AAAA else 4
 
 # Generates a list of tuples, for a DNS name containing an entry for each zone present in it including the offset to that zone within the DNS name.
 # Example msg_suffix(b'\x08fandango\x02io\x00') would result in [(0, b'\x08fandango\x02io\x00'), (9, b'\x02io\x00')]
@@ -103,11 +125,28 @@ def compress_name(uncompressed: bytes, curr_idx: int,
             return b_name, name_len, len_reduction
 
 
-# Emits a resource record's RDATA. The messages we send carry an opaque RDATA blob with no embedded
-# compressible name, so RDATA is copied verbatim. Owner names are still compressed by compress_msg.
+# Compresses a resource record's RDATA, compressing the embedded name(s) of name-bearing types.
 def compress_rdata(uncompressed: bytes, rr_type: int, curr_idx: int,
                    r_data_len: int, len_reduction: int,
                    suffix_dict: dict[bytes, int]) -> tuple[bytes, int, int]:
+    if rr_type in SINGLE_NAME_PREFIX:
+        prefix = SINGLE_NAME_PREFIX[rr_type]
+        out = uncompressed[curr_idx:curr_idx + prefix]
+        name, name_len, len_reduction = compress_name(
+            uncompressed, curr_idx + prefix, len_reduction, suffix_dict)
+        out += name
+        return out, prefix + name_len, len_reduction
+
+    if rr_type == TYPE_SOA:
+        # MNAME, RNAME, then 20 bytes of serial/refresh/retry/expire/minimum.
+        mname, mlen, len_reduction = compress_name(
+            uncompressed, curr_idx, len_reduction, suffix_dict)
+        rname, rlen, len_reduction = compress_name(
+            uncompressed, curr_idx + mlen, len_reduction, suffix_dict)
+        tail = uncompressed[curr_idx + mlen + rlen:curr_idx + mlen + rlen + 20]
+        return mname + rname + tail, mlen + rlen + 20, len_reduction
+
+    # Default: verbatim RDATA (A, AAAA, TXT, OPT, ...).
     return uncompressed[curr_idx:curr_idx + r_data_len], r_data_len, len_reduction
 
 
@@ -263,7 +302,7 @@ def decompress_msg(compressed: bytes) -> bytes:
 <answer_au_section> ::= <answer_au>{byte_to_int(<resp_ns_count>)}
 <answer_opt_section> ::= <answer_opt>{byte_to_int(<resp_ar_count>)}
 
-#                       qr      opcode  aa tc rd   ra z         rcode            qdcount ancount nscount arcount
+#                       qr      opcode       aa tc rd  ra  z      rcode   qdcount  ancount nscount arcount
 <header_req> ::= <h_id> 0 <h_opcode_req> 0 0 <h_rd> 0 0 <bit> 0 <h_rcode_noerror> <req_qd_count> 0{16} 0{16} <req_ar_count>
 <header_resp> ::= <h_id> 1 <h_opcode_req> <h_tc> 0 <h_resp_rd> <resp_flags_lo> <resp_qd_count> <resp_an_count> <resp_ns_count> <resp_ar_count>
 # Low byte of the response flags: RA, Z, AA, a reserved 0, then the 4-bit RCODE. The generator forces
@@ -327,13 +366,9 @@ where forall <ex> in <start>.<exchange>:
 <q_type> ::= <type_id_a> | <type_id_a> | <type_id_a> | <type_id_cname> | <type_id_cname> | <type_id_ns> | <type_id_ns> | <type_id_soa> | <type_id_ptr> | <type_id_mx> | <type_id_txt> | <type_id_aaaa> | <type_id_srv>
 <rr_class> ::= 0{15} 1 # Equals class IN (Internet)
 
-# Each answer RR carries the owner name, RR type and a length-prefixed RDATA blob. Owner name and type
-# are raw <q_name>/<q_type> subtrees the server wrapper copies from the query; the wrapper also fixes
-# the RDATA length per type (A/AAAA get a valid, fresh address). On receive the blob is sized by the
-# reply's own RDLENGTH, so any real answer RR parses.
-<answer_an> ::= <q_name> <q_type> <rr_class> <a_ttl> <answer_rd_length> <answer_rdata>
-<answer_rd_length> ::= <byte>{2} := pack(">H", 4)
-<answer_rdata> ::= <byte>{byte_to_int(<answer_rd_length>)}
+# Each answer RR is one of the RR-type bodies below, each carrying its own type-correct RDATA.
+<answer_an> ::= <q_name_optional> <answer_an_type>
+<answer_an_type> ::= <type_a> | <type_aaaa> | <type_ns> | <type_cname> | <type_soa> | <type_mx> | <type_txt> | <type_ptr> | <type_srv>
 # Authority section: NS records or the zone SOA.
 <answer_au> ::= <q_name_optional> (<type_soa> | <type_ns>)
 # Additional section: glue (A/AAAA) or an EDNS0 OPT pseudo-record.
@@ -361,12 +396,26 @@ where forall <ex> in <start>.<exchange>:
 <ip_address> ::= <byte>{4}
 <ip_address_v6> ::= <byte>{16}
 
-# NS: RDATA is a single domain name (authority section).
-<type_ns> ::= <type_id_ns> <rr_class> <a_ttl> <a_rd_length> <q_name>
+# NS / PTR / CNAME: RDATA is a single domain name.
+<type_ns>    ::= <type_id_ns>    <rr_class> <a_ttl> <a_rd_length> <q_name>
+<type_ptr>   ::= <type_id_ptr>   <rr_class> <a_ttl> <a_rd_length> <q_name>
+<type_cname> ::= <type_id_cname> <rr_class> <a_ttl> <a_rd_length> <q_name>
 
 # SOA: MNAME RNAME serial refresh retry expire minimum.
 <type_soa> ::= <type_id_soa> <rr_class> <a_ttl> <a_rd_length> <soa_rdata>
 <soa_rdata> ::= <q_name> <q_name> <byte>{4} <byte>{4} <byte>{4} <byte>{4} <byte>{4}
+
+# MX: 2-byte preference + exchange name.
+<type_mx> ::= <type_id_mx> <rr_class> <a_ttl> <a_rd_length> <mx_rdata>
+<mx_rdata> ::= <byte>{2} <q_name>
+
+# SRV: priority + weight + port + target name.
+<type_srv> ::= <type_id_srv> <rr_class> <a_ttl> <a_rd_length> <srv_rdata>
+<srv_rdata> ::= <byte>{2} <byte>{2} <byte>{2} <q_name>
+
+# TXT: a length-prefixed character string.
+<type_txt> ::= <type_id_txt> <rr_class> <a_ttl> <a_rd_length> <txt_rdata>
+<txt_rdata> ::= <label_len_octet> <byte>{byte_to_int(b'\x00' + bytes(<label_len_octet>))} := gen_txt_string()
 
 # OPT (EDNS0): CLASS carries the UDP payload size, TTL the extended rcode/version/flags. An empty
 # option list (RDLENGTH 0) is the common, valid case.
@@ -376,15 +425,29 @@ where forall <ex> in <start>.<exchange>:
 <opt_option> ::= <byte>{2} <opt_opt_len> <byte>{byte_to_int(<opt_opt_len>)}
 <opt_opt_len> ::= <byte>{2} := pack(">H", randint(0, 4))
 
-# Every name-bearing or variable-length RDATA must declare its uncompressed byte length in the
+# Every name-bearing or variable-length RDATA declares its uncompressed byte length in the
 # RDLENGTH (<a_rd_length>) field, which corresponds to the RDATA that follows.
-
+# Counted as one constraint
+where forall <t> in <type_cname>:
+    bytes(<t>.<a_rd_length>) == pack('>H', len(bytes(<t>.<q_name>)))
 # Counted as one constraint
 where forall <t> in <type_ns>:
     bytes(<t>.<a_rd_length>) == pack('>H', len(bytes(<t>.<q_name>)))
 # Counted as one constraint
+where forall <t> in <type_ptr>:
+    bytes(<t>.<a_rd_length>) == pack('>H', len(bytes(<t>.<q_name>)))
+# Counted as one constraint
 where forall <t> in <type_soa>:
     bytes(<t>.<a_rd_length>) == pack('>H', len(bytes(<t>.<soa_rdata>)))
+# Counted as one constraint
+where forall <t> in <type_mx>:
+    bytes(<t>.<a_rd_length>) == pack('>H', len(bytes(<t>.<mx_rdata>)))
+# Counted as one constraint
+where forall <t> in <type_srv>:
+    bytes(<t>.<a_rd_length>) == pack('>H', len(bytes(<t>.<srv_rdata>)))
+# Counted as one constraint
+where forall <t> in <type_txt>:
+    bytes(<t>.<a_rd_length>) == pack('>H', len(bytes(<t>.<txt_rdata>)))
 # Counted as one constraint
 where forall <t> in <type_opt>:
     bytes(<t>.<a_rd_length>) == pack('>H', len(bytes(<t>.<opt_rdata>)))

@@ -9,7 +9,7 @@ from fandango.io.navigation.coverage_goal import CoverageGoal
 from fandango.language.grammar import FuzzingMode
 from fandango.language.parse.parse import parse
 
-GRAMMAR = sys.argv[1] if len(sys.argv) > 1 else "dns.fan"
+GRAMMAR = sys.argv[1] if len(sys.argv) > 1 else "dns_client.fan"
 
 
 def main():
@@ -19,7 +19,7 @@ def main():
     packet_algorithm = SimpleGeneticAlgorithm(
         grammar=grammar,
         constraints=constraints,
-        population_size=10,
+        population_size=20,
         max_nodes=600 * 8,
         logger_level=LoggerLevel.INFO,
         coverage_goal=CoverageGoal.STATE_INPUTS_OUTPUTS,
