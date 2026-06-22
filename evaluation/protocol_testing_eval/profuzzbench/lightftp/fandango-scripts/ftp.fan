@@ -207,12 +207,15 @@ where forall <port_req> in <PORT>:
 
 _last_data_port = [None]
 def _reconfigure_data_parties(port) -> None:
-    if _last_data_port[0] == port:
-        return
     try:
         client_data = ClientData.instance()
         server_data = ServerData.instance()
     except KeyError:
+        return
+    fuzzer_data = server_data if server_data.is_fuzzer_controlled() else client_data
+    impl = fuzzer_data.protocol_impl
+    already_live = _last_data_port[0] == port and impl is not None and impl._running
+    if already_live:
         return
     _last_data_port[0] = port
     for party in (client_data, server_data):
