@@ -184,7 +184,7 @@ def help_response() -> str:
 <port_nr_1> ::= r'[0-9]+' := str(randint(1, 255))
 <port_nr_2> ::= r'[0-9]+' := str(randint(1, 255))
 <dir_file> ::= (<directory> '/')? <file>
-<directory> ::= <filesystem_name> ("/" <filesystem_name>)*
+<directory> ::= "/" | "/"? <filesystem_name> ("/" <filesystem_name>)* "/"?
 <file> ::= <filesystem_name> ('.' <filesystem_name>)?
 <filesystem_name> ::= r'[a-zA-Z0-9\_]+'
 <marker> ::= r"[a-zA-Z0-9\-\.]+"
