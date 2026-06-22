@@ -1,14 +1,20 @@
+#include <signal.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+
 extern void __gcov_dump(void) __attribute__((weak));
 
 static void
-smtpd_gcov_set_prefix(void)
+fandango_gcov_set_prefix(void)
 {
 	char prefix[256];
 	char tmp[32];
 	int n, t, p, i;
 	pid_t pid;
 
-	/* Build "/home/ubuntu/cov_raw/<pid>" */
+	/* Build "/cov_raw/<pid>" */
 	pid = getpid();
 	t = 0;
 	if (pid <= 0) {
@@ -34,22 +40,22 @@ smtpd_gcov_set_prefix(void)
 }
 
 static void
-smtpd_gcov_flush_handler(int sig)
+fandango_gcov_dump_handler(int signum)
 {
-	(void)sig;
-	if (__gcov_dump)
+	(void)signum;
+	if (__gcov_dump != 0)
 		__gcov_dump();
 	_exit(0);
 }
 
 static void __attribute__((constructor(101)))
-smtpd_gcov_install(void)
+fandango_gcov_install(void)
 {
 	struct sigaction sa;
 
-	smtpd_gcov_set_prefix();
+	fandango_gcov_set_prefix();
 
 	memset(&sa, 0, sizeof(sa));
-	sa.sa_handler = smtpd_gcov_flush_handler;
+	sa.sa_handler = fandango_gcov_dump_handler;
 	sigaction(SIGUSR1, &sa, NULL);
 }

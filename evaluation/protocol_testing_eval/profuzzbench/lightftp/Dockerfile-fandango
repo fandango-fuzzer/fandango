@@ -21,10 +21,9 @@ RUN groupadd ubuntu && \
 
 RUN chmod 777 /tmp
 
-RUN python3 -m pip install --upgrade pip==20.3.4 && \
-    pip3 install --trusted-host pypi.org --trusted-host files.pythonhosted.org gcovr==4.2
-
 RUN python3.11 -m pip install -U pip setuptools wheel
+
+RUN python3.11 -m pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org gcovr==8.6
 
 RUN git clone https://github.com/fandango-fuzzer/fandango.git && \
     cd fandango && \
@@ -34,15 +33,20 @@ RUN git clone https://github.com/fandango-fuzzer/fandango.git && \
 ENV WORKDIR="/home/ubuntu"
 ENV LIGHTFTP_SRC="/home/ubuntu/LightFTP-fandango"
 
-COPY --chown=ubuntu:ubuntu gcov-fandango.patch ${WORKDIR}/gcov-fandango.patch
+COPY --chown=ubuntu:ubuntu gcov-flush-snippet.c ${WORKDIR}/gcov-flush-snippet.c
 
-# Build LightFTP with gcov instrumentation
+# Build LightFTP with gcov instrumentation. Pinned to c1732ef.
 RUN cd ${WORKDIR} && \
     git clone https://github.com/hfiref0x/LightFTP.git LightFTP-fandango && \
     cd LightFTP-fandango && \
-    git checkout 5980ea1 && \
-    patch -p1 < ${WORKDIR}/gcov-fandango.patch && \
-    cd Source/Release && \
+    git checkout c1732efe14884bfc3eb0736d19fe685318cc681f && \
+    LAST_INC=$(grep -n '^#include' src/main.c | tail -1 | cut -d: -f1) && \
+    head -n "$LAST_INC" src/main.c > src/main.c.new && \
+    cat ${WORKDIR}/gcov-flush-snippet.c >> src/main.c.new && \
+    tail -n +"$((LAST_INC + 1))" src/main.c >> src/main.c.new && \
+    mv src/main.c.new src/main.c && \
+    grep -q "fandango_gcov_dump_handler" src/main.c || (echo "ERROR: gcov hook injection failed" && exit 1) && \
+    cd src/Release && \
     make CC=gcc CXX=g++ \
         CFLAGS="-fprofile-arcs -ftest-coverage -O0 -g" \
         CPPFLAGS="-fprofile-arcs -ftest-coverage" \
@@ -50,8 +54,8 @@ RUN cd ${WORKDIR} && \
         LDFLAGS="-fprofile-arcs -ftest-coverage" clean all
 
 # Server config + share. fftp.conf points the webadmin/ubuntu account at
-# /home/ubuntu/ftpshare and reads the listen port from argv[2].
-COPY --chown=ubuntu:ubuntu fftp.conf ${LIGHTFTP_SRC}/Source/Release/fftp.conf
+# /home/ubuntu/ftpshare;
+COPY --chown=ubuntu:ubuntu fftp.conf ${LIGHTFTP_SRC}/src/Release/fftp.conf
 
 RUN mkdir -p /home/ubuntu/ftpshare/dir_1/dir_2 && \
     echo "I'm a file" > /home/ubuntu/ftpshare/exist_append.txt && \
