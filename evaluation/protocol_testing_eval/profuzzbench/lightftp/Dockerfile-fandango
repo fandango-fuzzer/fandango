@@ -45,7 +45,7 @@ RUN cd ${WORKDIR} && \
     cat ${WORKDIR}/gcov-flush-snippet.c >> src/main.c.new && \
     tail -n +"$((LAST_INC + 1))" src/main.c >> src/main.c.new && \
     mv src/main.c.new src/main.c && \
-    grep -q "fandango_gcov_dump_handler" src/main.c || (echo "ERROR: gcov hook injection failed" && exit 1) && \
+    grep -q "_fandango_gcov_setup" src/main.c || (echo "ERROR: gcov hook injection failed" && exit 1) && \
     cd src/Release && \
     make CC=gcc CXX=g++ \
         CFLAGS="-fprofile-arcs -ftest-coverage -O0 -g" \
