@@ -47,6 +47,10 @@ class Node(abc.ABC):
         for setting in grammar_settings:
             self._settings.update(setting.settings_for(self))
 
+    def __deepcopy__(self, memo: dict[int, Any]) -> "Node":
+        memo[id(self)] = self
+        return self
+
     @property
     def node_type(self) -> NodeType:
         return self._node_type
