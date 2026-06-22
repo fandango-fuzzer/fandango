@@ -97,9 +97,10 @@ class ClientData(NetworkParty):
                                 self._connection = ctx.wrap_socket(
                                     self._connection,
                                     server_hostname="localhost",
-                                    do_handshake_on_connect=True,
+                                    do_handshake_on_connect=False,
                                 )
-                            except ConnectionResetError:
+                                self._connection.do_handshake()
+                            except OSError:
                                 self._running = False
                         break
 
