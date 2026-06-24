@@ -82,9 +82,10 @@ def write_log(path, start, log):
         for timestamp, coverage in log:
             if symbols is None:
                 symbols = sorted(coverage, key=str)
-                f.write("time," + ",".join(f"covered_{s},total_{s}" for s in symbols) + "\n")
+                f.write("time," + ",".join(f"covered_{s},total_{s},percent_{s}" for s in symbols) + "\n")
             cells = [f"{timestamp - start:.1f}"]
             for s in symbols:
                 covered, total = coverage[s]
-                cells.append(f"{covered},{total}")
+                percent = covered / total if total else 0
+                cells.append(f"{covered},{total},{percent}")
             f.write(",".join(cells) + "\n")
