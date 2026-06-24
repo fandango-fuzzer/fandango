@@ -767,7 +767,7 @@ class TimerControl(FandangoParty):
                 time.sleep(0.1)
             self._on_timer_expire(name)
 
-        timer_thread = threading.Thread(target=timer_sleep)
+        timer_thread = threading.Thread(target=timer_sleep, daemon=True)
         with self.lock:
             self.timers[name] = (time.time_ns(), True, timer_thread)
             timer_thread.start()
