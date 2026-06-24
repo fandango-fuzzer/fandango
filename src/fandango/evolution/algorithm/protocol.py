@@ -24,7 +24,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self,
         packet_algorithm: SimpleGeneticAlgorithm,
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS,
-        remote_response_timeout: float = 15.0,
+        remote_response_timeout: int = 15,
     ):
         self._start_symbol = NonTerminal("<start>")
         self._packet_algorithm = packet_algorithm
@@ -67,7 +67,11 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         return True
 
     def _handle_remote_response(self) -> DerivationTree:
-        if not self._wait_for_remote_message(self._remote_response_timeout):
+        timeout = self._remote_response_timeout
+        for packet in self._packet_selector.next_packets:
+            if packet.node.sender == "TimerEvent":
+                timeout = -1
+        if not self._wait_for_remote_message(timeout):
             external_parties = self._packet_selector.next_external_parties()
             raise FandangoFailedError(
                 f"Timed out while waiting for message from remote party. Expected message from party: {', '.join(external_parties)}"
@@ -280,6 +284,10 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         LOGGER.debug(f"Trying to generate: {', '.join(preferred_symbols)}")
 
     def _should_generate_next_packet(self) -> bool:
+        if len(self._packet_selector.next_packets) == 1:
+            for packet in self._packet_selector.next_packets:
+                if packet.node.sender == "TimerEvent":
+                    return False
         return (
             len(self._packet_selector.next_fuzzer_parties()) != 0
             and not self._io_instance.received_msg()
