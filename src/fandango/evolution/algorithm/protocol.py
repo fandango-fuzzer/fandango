@@ -1,3 +1,5 @@
+
+
 import random
 import time
 from collections.abc import Generator
@@ -24,7 +26,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self,
         packet_algorithm: SimpleGeneticAlgorithm,
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS,
-        remote_response_timeout: float = 15.0,
+        remote_response_timeout: int = 15,
     ):
         self._start_symbol = NonTerminal("<start>")
         self._packet_algorithm = packet_algorithm
@@ -48,6 +50,14 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._packet_coverage_filter = PacketCoverageFilter(
             self._packet_algorithm.diversity_k, self.grammar
         )
+        self._time_in_measurements = 0
+        self.coverage_log_interval = -1
+        self.stop_on_full_coverage = True
+        self._is_enable_guidance = True
+        self.coverage_log: list[tuple[float, dict[NonTerminal, tuple[int, int]]]] = []
+        self.coverage_log_overlap: list[
+            tuple[float, dict[NonTerminal, tuple[int, int]]]
+        ] = []
         self.violations = []
         self.throw_on_violation = False
 
@@ -58,16 +68,20 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             or self._coverage_goal == CoverageGoal.SINGLE_DERIVATION
         ) and self._packet_selector.is_complete()
 
-    def _wait_for_remote_message(self, timeout: float) -> bool:
+    def _wait_for_remote_message(self, timeout: int) -> bool:
         wait_start = time.time()
         while not self._io_instance.received_msg():
-            if time.time() - wait_start > timeout:
+            if time.time() - wait_start > timeout and timeout >= 0:
                 return False
             time.sleep(0.025)
         return True
 
     def _handle_remote_response(self) -> DerivationTree:
-        if not self._wait_for_remote_message(self._remote_response_timeout):
+        timeout = self._remote_response_timeout
+        for packet in self._packet_selector.next_packets:
+            if packet.node.sender == "TimerEvent":
+                timeout = -1
+        if not self._wait_for_remote_message(timeout):
             external_parties = self._packet_selector.next_external_parties()
             raise FandangoFailedError(
                 f"Timed out while waiting for message from remote party. Expected message from party: {', '.join(external_parties)}"
@@ -191,11 +205,32 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         max_generations: Optional[int] = None,
         mode: FuzzingMode = FuzzingMode.COMPLETE,
     ) -> Generator[DerivationTree, None, None]:
+        iteration = 0
         while True:
             self._packet_selector.compute(self._protocol_tree, self._past_interactions)
-            LOGGER.info(
-                f"Current coverage: {self._packet_selector.coverage_percent() * 100:.2f}%"
-            )
+            start_measuring = time.time()
+            iteration += 1
+            if (
+                self.coverage_log_interval > 0
+                and iteration % self.coverage_log_interval == 0
+            ):
+                current_cov = (
+                    self._packet_selector.coverage_percent(alt_cache=True) * 100
+                )
+                LOGGER.info(f"Current coverage: {current_cov:.2f}%")
+                self.coverage_log.append(
+                    (
+                        start_measuring - self._time_in_measurements,
+                        self._packet_selector._compute_coverage_trees(False),
+                    )
+                )
+                self.coverage_log_overlap.append(
+                    (
+                        start_measuring - self._time_in_measurements,
+                        self._packet_selector._compute_coverage_trees(True),
+                    )
+                )
+            self._time_in_measurements += time.time() - start_measuring
 
             if self._is_failed_forecast():
                 raise FandangoFailedError("Could not forecast next packet")
@@ -209,8 +244,10 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 if self._coverage_goal == CoverageGoal.SINGLE_DERIVATION:
                     return None
                 if self._packet_selector.coverage_percent() == 1.0:
-                    log_guidance_hint("Full coverage reached, stopping evolution.")
-                    return None
+                    if self.stop_on_full_coverage:
+                        log_guidance_hint("Full coverage reached, stopping evolution.")
+                        return None
+                    self.enable_guidance(False)
                 log_guidance_hint("Starting new protocol run.")
                 self._io_instance.reset_parties()
                 self._protocol_tree = DerivationTree(self._start_symbol, [])
@@ -280,6 +317,10 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         LOGGER.debug(f"Trying to generate: {', '.join(preferred_symbols)}")
 
     def _should_generate_next_packet(self) -> bool:
+        if len(self._packet_selector.next_packets) == 1:
+            for packet in self._packet_selector.next_packets:
+                if packet.node.sender == "TimerEvent":
+                    return False
         return (
             len(self._packet_selector.next_fuzzer_parties()) != 0
             and not self._io_instance.received_msg()
@@ -289,3 +330,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._packet_algorithm.reset()
         self._past_interactions.clear()
         self._protocol_tree = DerivationTree(self._start_symbol)
+
+    def enable_guidance(self, value: bool) -> None:
+        self._is_enable_guidance = value
+        self._packet_coverage_filter.disable_filtering = not value
+        self._packet_selector.enable_guidance(value)

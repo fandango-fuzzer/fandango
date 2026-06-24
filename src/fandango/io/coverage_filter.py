@@ -14,6 +14,7 @@ class PacketCoverageFilter:
         self.hold_back_solutions: set[DerivationTree] = set()
         self._solution_set: set[int] = set()
         self._past_trees: list[DerivationTree] = []
+        self.disable_filtering = False
 
     def get_past_msgs(
         self, packet_type: Optional[PacketNonTerminal] = None
@@ -51,6 +52,8 @@ class PacketCoverageFilter:
         return 0
 
     def filter(self, individual: DerivationTree) -> Optional[DerivationTree]:
+        if self.disable_filtering:
+            return individual
 
         if len(individual.protocol_msgs()) != 0:
             msg = individual.protocol_msgs()[-1].msg
