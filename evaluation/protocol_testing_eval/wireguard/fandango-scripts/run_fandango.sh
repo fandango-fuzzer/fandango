@@ -33,7 +33,7 @@ RUN_FANDANGO_TIMEOUT="${RUN_FANDANGO_TIMEOUT:-600}"
   sleep "$RUN_FANDANGO_TIMEOUT"
   echo "watchdog timeout reached, killing process group" >&2
   kill -TERM -$$ 2>/dev/null || true
-  sleep 5
+  sleep 30
   kill -KILL -$$ 2>/dev/null || true
 ) &
 watchdog=$!

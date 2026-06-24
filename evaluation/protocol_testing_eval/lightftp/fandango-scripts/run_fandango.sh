@@ -22,7 +22,7 @@ mkdir -p "$COV_OUT_DIR"
   sleep "${RUN_FANDANGO_TIMEOUT:-600}"
   echo "watchdog timeout reached, killing process group" >&2
   kill -TERM -$$ 2>/dev/null || true
-  sleep 5
+  sleep 30
   kill -KILL -$$ 2>/dev/null || true
 ) &
 watchdog=$!

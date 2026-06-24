@@ -51,6 +51,7 @@ def run(fandango, args, max_generations=None):
     start = time.time()
     if args.experiment:
         signal.signal(signal.SIGALRM, _deadline)
+        signal.signal(signal.SIGTERM, _deadline)
         signal.alarm(int(args.duration))
     try:
         for _ in fandango.generate(mode=FuzzingMode.IO, max_generations=max_generations):
