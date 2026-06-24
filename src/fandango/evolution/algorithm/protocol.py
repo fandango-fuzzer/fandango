@@ -199,6 +199,24 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             len(self._packet_selector.get_next_parties()) == 0
             and not self._packet_selector.is_complete()
         )
+    
+    def _record_coverage_log(self):
+        start_measuring = time.time()
+        current_cov = self._packet_selector.coverage_percent(alt_cache=True) * 100
+        LOGGER.info(f"Current coverage: {current_cov:.2f}%")
+        self.coverage_log.append(
+            (
+                start_measuring - self._time_in_measurements,
+                self._packet_selector._compute_coverage_trees(False),
+            )
+        )
+        self.coverage_log_overlap.append(
+            (
+                start_measuring - self._time_in_measurements,
+                self._packet_selector._compute_coverage_trees(True),
+            )
+        )
+        self._time_in_measurements += time.time() - start_measuring
 
     def generate(
         self,
@@ -208,29 +226,13 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         iteration = 0
         while True:
             self._packet_selector.compute(self._protocol_tree, self._past_interactions)
-            start_measuring = time.time()
+
             iteration += 1
             if (
-                self.coverage_log_interval > 0
-                and iteration % self.coverage_log_interval == 0
+                    self.coverage_log_interval > 0
+                    and iteration % self.coverage_log_interval == 0
             ):
-                current_cov = (
-                    self._packet_selector.coverage_percent(alt_cache=True) * 100
-                )
-                LOGGER.info(f"Current coverage: {current_cov:.2f}%")
-                self.coverage_log.append(
-                    (
-                        start_measuring - self._time_in_measurements,
-                        self._packet_selector._compute_coverage_trees(False),
-                    )
-                )
-                self.coverage_log_overlap.append(
-                    (
-                        start_measuring - self._time_in_measurements,
-                        self._packet_selector._compute_coverage_trees(True),
-                    )
-                )
-            self._time_in_measurements += time.time() - start_measuring
+                self._record_coverage_log()
 
             if self._is_failed_forecast():
                 raise FandangoFailedError("Could not forecast next packet")
@@ -245,6 +247,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     return None
                 if self._packet_selector.coverage_percent() == 1.0:
                     if self.stop_on_full_coverage:
+                        self._record_coverage_log()
                         log_guidance_hint("Full coverage reached, stopping evolution.")
                         return None
                     self.enable_guidance(False)
