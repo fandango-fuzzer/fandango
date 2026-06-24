@@ -57,10 +57,10 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         self._tree_k_path_cache: LRUCache[int, set[tuple[Symbol, ...]]] = LRUCache(
             maxsize=cache_size()
         )
-        self._alt_k_path_cache: dict[
+        self._alt_k_path_cache: LRUCache[
             tuple[NonTerminal, bool, CoverageGoal], list[set[tuple[Symbol, ...]]]
-        ] = dict()
-        self._alt_tree_k_path_cache: dict[int, set[tuple[Symbol, ...]]] = dict()
+        ] = LRUCache(maxsize=cache_size())
+        self._alt_tree_k_path_cache: LRUCache[int, set[tuple[Symbol, ...]]] = LRUCache(maxsize=cache_size())
 
     @property
     def grammar_settings(self) -> Sequence[HasSettings]:
