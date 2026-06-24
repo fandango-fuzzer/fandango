@@ -5,6 +5,7 @@ import time
 from collections.abc import Generator
 from typing import Optional
 
+from fandango import FandangoValueError
 from fandango.errors import FandangoFailedError, FandangoParseError
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.algorithm.base import GeneticAlgorithm
@@ -284,7 +285,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             else:
                 try:
                     self._protocol_tree = self._handle_remote_response()
-                except (FandangoFailedError, FandangoParseError) as exc:
+                except (FandangoFailedError, FandangoParseError, FandangoValueError) as exc:
                     self._past_interactions.append(self._protocol_tree)
                     self.violations.append((self._protocol_tree, exc))
                     if self.throw_on_violation:
