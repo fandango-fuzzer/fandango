@@ -172,11 +172,12 @@ stdlib += numbers
 
 
 timers = make_rule("timer_number", ["r'[0-9]+'"])
-numbers += make_rule("timer_timeout", ["<timer_number>"])
-numbers += make_rule("timer_timeout", ["<timer_id>"])
-numbers += make_rule("timer_expired", ["'expired: ' <timer_id> '\n'"])
-numbers += make_rule("timer_cancel", ["'cancel: ' <timer_id> '\n'"])
-numbers += make_rule("timer_start", ["'start: ' <timer_id> ' (' <timer_timeout> ')\n'"])
+timers += make_rule("timer_timeout", ["<timer_number>"])
+timers += make_rule("timer_id", ["<timer_number>"])
+timers += make_rule("timer_expired", ["'expired: ' <timer_id> '\\n'"])
+timers += make_rule("timer_cancel", ["'cancel: ' <timer_id> '\\n'"])
+timers += make_rule("timer_start", ["'start: ' <timer_id> ' (' <timer_timeout> ')\\n'"])
+stdlib += timers
 
 
 # These should go into a separate file
