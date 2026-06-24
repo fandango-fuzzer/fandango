@@ -758,8 +758,8 @@ class TimerControl(FandangoParty):
 
     def start_timer(self, name: str, time_s: int) -> None:
         def timer_sleep() -> None:
-            time_elapsed = 0
-            while time_elapsed < time_s:
+            timer_start_time = time.time()
+            while (time.time() - timer_start_time) < time_s:
                 with self.lock:
                     entry = self.timers.get(name)
                     if entry is None or not entry[1]:
