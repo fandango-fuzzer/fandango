@@ -1,4 +1,6 @@
 #!/usr/bin/env pytest
+import time
+
 from fandango.api import Fandango
 from fandango.language.grammar import FuzzingMode
 from fandango.language.tree import DerivationTree
@@ -28,3 +30,11 @@ def test_msg_exchange():
     assert messages[3].sender == "Extern"
     assert messages[3].recipient == "Fuzzer"
     assert str(messages[3].msg) == "paff\n"
+
+def test_timer():
+    with open(RESOURCES_ROOT / "timer.fan") as f:
+        spec = f.read()
+    fandango = Fandango(spec, use_stdlib=True, use_cache=False)
+    start_time = time.time()
+    result_list = fandango.fuzz(mode=FuzzingMode.IO, population_size=1)
+    assert time.time() - start_time >= 5

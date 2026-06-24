@@ -799,7 +799,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                     for idx in range(len(k_path) - 1, k):
                         symbol_work[idx].add(k_path)
 
-        [cache_key] = symbol_work
+        cache[cache_key] = symbol_work
 
         return symbol_work[k - 1]
 
