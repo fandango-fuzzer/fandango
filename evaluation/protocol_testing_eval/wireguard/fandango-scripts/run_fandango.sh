@@ -218,6 +218,8 @@ else
         cp "$ALT" "${COV_OUT_DIR}/index.html"
       fi
     fi
+    # Drop the per-source-file HTML tree (mirrors /opt/boringtun absolute paths); keep index.html.
+    rm -rf "${COV_OUT_DIR}/coverage"
 
     # Human-readable text report (line + branch).
     llvm-cov report "$BORINGTUN_BIN" \

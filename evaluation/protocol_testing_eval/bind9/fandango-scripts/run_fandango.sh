@@ -77,9 +77,8 @@ gcda=$(find "$BIND_SRC" -name '*.gcda' 2>/dev/null | wc -l | tr -d ' ')
 echo ".gcda files written: $gcda"
 [ "$gcda" = 0 ] && echo "no .gcda files produced; coverage will be 0" >&2
 
-# Report: HTML, text summary, per-file list, and a small CSV.
+# Report: text summary, per-file list, and a small CSV.
 echo "writing coverage report to $COV_OUT_DIR"
-gcovr -r "$BIND_SRC" --html --html-details -o "${COV_OUT_DIR}index.html" 2>/dev/null || echo "gcovr HTML failed" >&2
 gcovr -r "$BIND_SRC" -s > "${COV_OUT_DIR}coverage.txt" 2>/dev/null || echo "lines: 0% branches: 0%" > "${COV_OUT_DIR}coverage.txt"
 gcovr -r "$BIND_SRC" > "${COV_OUT_DIR}coverage_files.txt" 2>/dev/null || true
 

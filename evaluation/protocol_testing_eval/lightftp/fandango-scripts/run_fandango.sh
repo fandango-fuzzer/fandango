@@ -77,9 +77,6 @@ echo ".gcda files written: $gcda"
 
 # Report: HTML overview + details, text summary, per-file list, and a small CSV.
 echo "writing coverage report to $COV_OUT_DIR"
-gcovr -r "$GCOVR_ROOT" --html -o "${COV_OUT_DIR}index.html" 2>/dev/null || echo "gcovr HTML failed" >&2
-mkdir -p "${COV_OUT_DIR}html"
-gcovr -r "$GCOVR_ROOT" --html-details -o "${COV_OUT_DIR}html/index.html" 2>/dev/null || echo "gcovr HTML details failed" >&2
 gcovr -r "$GCOVR_ROOT" -s > "${COV_OUT_DIR}coverage.txt" 2>/dev/null || echo "lines: 0% branches: 0%" > "${COV_OUT_DIR}coverage.txt"
 gcovr -r "$GCOVR_ROOT" > "${COV_OUT_DIR}coverage_files.txt" 2>/dev/null || true
 

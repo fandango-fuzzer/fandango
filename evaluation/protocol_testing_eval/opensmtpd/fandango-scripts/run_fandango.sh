@@ -153,11 +153,6 @@ cd "${BUILD_DIR}"
 gcovr -r "${BUILD_DIR}" --filter "${GCOV_SUBDIR}/" -s \
   > "${COV_OUT_DIR}/coverage.txt" 2>/dev/null || true
 
-# HTML report
-gcovr -r "${BUILD_DIR}" --filter "${GCOV_SUBDIR}/" \
-  --html --html-details \
-  -o "${COV_OUT_DIR}/index.html" 2>/dev/null || true
-
 # Per-file table
 gcovr -r "${BUILD_DIR}" --filter "${GCOV_SUBDIR}/" \
   > "${COV_OUT_DIR}/coverage_files.txt" 2>/dev/null || true

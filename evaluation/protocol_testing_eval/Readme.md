@@ -1,139 +1,42 @@
-# Evaluation
+# Protocol testing evaluation
 
-This folder contains scripts and targets for running evaluation experiments. The evaluations measure both grammar guidance effects and protocol throughput across several targets.
+Coverage and throughput experiments for Fandango against real protocol servers.
+Each target is a self-contained Docker image that builds the instrumented server,
+runs Fandango against it, and collects code coverage.
 
-## Evaluation Targets
+The targets are derived from ProFuzzBench
+(https://github.com/profuzzbench/profuzzbench), adjusted to our needs:
 
-The following protocol targets are included:
+| dir | protocol | server |
+|-----|----------|--------|
+| `bind9`     | DNS       | BIND 9 (`named`)  |
+| `opensmtpd` | SMTP      | OpenSMTPD         |
+| `lightftp`  | FTP       | LightFTP (`fftp`) |
+| `wireguard` | WireGuard | boringtun         |
 
-* dns
-* ftp
-* smtp
-* wireguard
-
-
-Each target contains its own configuration and output directories where evaluation results are stored.
-
-## Provided Scripts
-
-Two Python scripts are available:
-
-* `run_guidance_eval.py`
-  Runs coverage and guidance related experiments.
-
-* `run_throughput_eval.py`
-  Measures throughput performance for each protocol target.
-
-Both scripts define a list of protocols in the following form:
+## Single coverage run
 
 ```
-protocols = [
-    ("smtp", "smtp_client.fan"),
-    ("dns", "dns.fan"),
-    ("ftp", "ftp_client.fan"),
-    ("wireguard", "wireguard.fan")
-]
+./run_coverage.sh <target> [results_dir] [--experiment ... --duration ...]
 ```
 
-You can modify this list to include or exclude specific targets.
+Builds the image, runs Fandango against the server, and writes the coverage
+report (`index.html`, `coverage.txt`, `summary.csv`) to `results_dir`.
 
----
-
-## Guidance Evaluation
-
-Run the guidance evaluation with:
+## Experiments
 
 ```
-python run_guidance_eval.py
+./run_experiments.sh <target|all> <throughput|coverage> \
+    [--runs N] [--concurrency C] [--duration S] [--interval I]
 ```
 
-The script executes each protocol target 10 times with guidance enabled and 10 times without guidance.
+One container per run, up to `--concurrency` in parallel; results land under
+`experiments/<target>/<condition>/run_<n>/`. See `EXPERIMENTS.md`. Merge the
+per-run coverage logs of a condition into a median curve with
+`experiments/merge_coverage.py`.
 
-### Output Locations
+## Other
 
-Results are written to:
-
-```
-./%protocol%/coverage_w_guidance
-./%protocol%/coverage_wo_guidance
-```
-
-* `coverage_w_guidance` contains runs using the guidance system.
-* `coverage_wo_guidance` contains runs without guidance.
-
-### Merging Results
-
-After completing the guidance evaluation runs, merge the collected data into a single CSV file per protocol by executing:
-
-```
-./merge_grammar_coverage.sh
-```
-
----
-
-## Throughput Evaluation
-
-Run throughput experiments with:
-
-```
-python3 run_throughput_eval.py
-```
-
-Results are written to:
-
-```
-./%protocol%/throughput_test
-```
-
-The protocol list inside the script can be adjusted in the same way as for the guidance evaluation.
-
----
-
-## Target Setup Requirements
-
-Before running any evaluation, ensure that the corresponding targets are reachable.
-
-### SMTP, FTP, DNS
-
-Each of these targets provides a Docker setup. Start the services from their respective directories:
-
-```
-docker-compose up
-```
-
-### Dune API
-
-Before running the dune evaluation, visit the API once to initialize it:
-
-```
-https://dune-api-a4iq.onrender.com
-```
-
-### ChatGPT
-
-Insert your OpenAI API key into the grammar file:
-
-```
-chatgpt/chatgpt.fan
-```
-
-Replace:
-
-```
-YOUR_OPENAI_API_KEY
-```
-
-with your actual API token.
-
----
-
-## Comparison against AflNet
-The folder `profuzzbench/LightFTP` contains the scripts to reproduce the experiments from the paper and a readme with further instructions.
-
----
-
-## Notes
-
-* Make sure all required services are running before starting evaluations.
-* Adjust the `protocols` array in the scripts if you only want to evaluate a subset of targets.
-* Output directories are created automatically during execution.
+- `validate_messages.sh <target>` — baseline (no messages) vs. Fandango run, to
+  show which server code only the messages exercise.
+- `CONTRACT.md` / `REPLICATION.md` — shared target structure and how to reproduce.

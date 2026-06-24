@@ -9,12 +9,21 @@ the --experiment argument decides what happens:
                             --interval steps, stop at 100% coverage or --duration.
 """
 import argparse
+import signal
 import time
 
 from fandango.language.grammar import FuzzingMode
 
 # Transport/timer parties, not protocol messages.
 PLUMBING = {"SocketControlServer", "SocketControlClient", "TimerControl", "TimerEvent", "StdOut"}
+
+
+class _Deadline(BaseException):
+    pass
+
+
+def _deadline(signum, frame):
+    raise _Deadline
 
 
 def parse_args():
@@ -40,11 +49,18 @@ def run(fandango, args, max_generations=None):
         fandango.enable_guidance(bool(args.guidance))
 
     start = time.time()
+    if args.experiment:
+        signal.signal(signal.SIGALRM, _deadline)
+        signal.alarm(int(args.duration))
     try:
         for _ in fandango.generate(mode=FuzzingMode.IO, max_generations=max_generations):
             if args.experiment and time.time() - start >= args.duration:
                 break
+    except _Deadline:
+        pass
     finally:
+        if args.experiment:
+            signal.alarm(0)
         if args.experiment == "throughput":
             write_throughput(fandango, args, start)
         elif args.experiment == "coverage":
