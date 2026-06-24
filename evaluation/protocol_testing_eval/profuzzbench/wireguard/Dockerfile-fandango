@@ -63,6 +63,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
 # Build boringtun-cli with instrumentation and branch coverage.
 RUN git clone https://github.com/cloudflare/boringtun.git /opt/boringtun && \
     cd /opt/boringtun && \
+    git checkout boringtun-cli-0.7.1 && \
     RUSTFLAGS="-C instrument-coverage -Z coverage-options=branch" \
         cargo +nightly build --release -p boringtun-cli && \
     ls -l /opt/boringtun/target/release/boringtun-cli
