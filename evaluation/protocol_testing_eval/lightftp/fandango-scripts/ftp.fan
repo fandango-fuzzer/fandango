@@ -117,37 +117,36 @@ where str(<MLSD>.<directory>) == "dir_1" or str(<MLSD>.<directory>) == "dir_1/di
 # LightFTP's SITE only implements the "HELP" sub-command.
 where str(<SITE>.<text>) == "HELP"
 
-<resp_code> ::= r'\d\d\d'
-<USER_response> ::= <resp_code> <response_tail> := '331 User webadmin OK. Password required\r\n'
-<PASS_response> ::= <resp_code> <response_tail> := '230 User logged in, proceed.\r\n'
-<QUIT_response> ::= <resp_code> <response_tail> := '221 Goodbye!\r\n'
-<PORT_response> ::= <resp_code> <response_tail> := '200 Command okay.\r\n'
-<DELE_response> ::= <resp_code> <response_tail> := '250 Requested file action okay, completed.\r\n'
-<RNFR_response> ::= <resp_code> <response_tail> := '350 File exists. Ready to rename.\r\n'
-<RNTO_response> ::= <resp_code> <response_tail> := '250 Requested file action okay, completed.\r\n'
-<CWD_response> ::= <resp_code> <response_tail> := '250 Requested file action okay, completed.\r\n'
-<CDUP_response> ::= <resp_code> <response_tail> := '250 Requested file action okay, completed.\r\n'
-<PWD_response> ::= <resp_code> <response_tail> := '257 "/" is a current directory.\r\n'
-<MKD_response> ::= <resp_code> <response_tail> := '257 Directory created.\r\n'
-<RMD_response> ::= <resp_code> <response_tail> := '250 Requested file action okay, completed.\r\n'
-<SYST_response> ::= <resp_code> <response_tail> := '215 UNIX Type: L8\r\n'
-<NOOP_response> ::= <resp_code> <response_tail> := '200 Command okay.\r\n'
-<SITE_response> ::= <resp_code> <response_tail> := '200 chmod\r\n'
-<TYPE_response> ::= <resp_code> <response_tail> := '200 Type set to I.\r\n'
-<ABOR_response> ::= <resp_code> <response_tail> := '226 Transfer complete. Closing data connection.\r\n'
-<REST_response> ::= <resp_code> <response_tail> := '350 REST supported. Ready to resume at byte offset  0\r\n'
-<SIZE_response> ::= <resp_code> <response_tail> := '213 10\r\n'
-<PBSZ_response> ::= <resp_code> <response_tail> := '200 Command okay.\r\n'
-<PROT_response> ::= <resp_code> <response_tail> := '200 Command okay.\r\n'
-<OPTS_response> ::= <resp_code> <response_tail> := '200 Always in UTF8 mode.\r\n'
-<AUTH_TLS_response> ::= <resp_code> <response_tail> := '234 AUTH command OK. Initializing TLS connection.\r\n'
+<USER_response> ::= '331' <response_tail> := '331 User webadmin OK. Password required\r\n'
+<PASS_response> ::= '230' <response_tail> := '230 User logged in, proceed.\r\n'
+<QUIT_response> ::= '221' <response_tail> := '221 Goodbye!\r\n'
+<CDUP_response> ::= r'(200|250)' <response_tail> := '250 Requested file action okay, completed.\r\n'
+<PWD_response> ::= '257' <response_tail> := '257 "/" is a current directory.\r\n'
+<SYST_response> ::= '215' <response_tail> := '215 UNIX Type: L8\r\n'
+<NOOP_response> ::= '200' <response_tail> := '200 Command okay.\r\n'
+<SITE_response> ::= '200' <response_tail> := '200 chmod\r\n'
+<TYPE_response> ::= '200' <response_tail> := '200 Type set to I.\r\n'
+<ABOR_response> ::= r'(225|226)' <response_tail> := '226 Transfer complete. Closing data connection.\r\n'
+<AUTH_TLS_response> ::= '234' <response_tail> := '234 AUTH command OK. Initializing TLS connection.\r\n'
 
-<Response_150> ::= '150' <response_tail> := '150 File status okay; about to open data connection.\r\n'
-<Response_226> ::= '226' <response_tail> := '226 Transfer complete. Closing data connection.\r\n'
+<PBSZ_response> ::= r'(200|500|501|503|421|530)' <response_tail> := '200 Command okay.\r\n'
+<RNFR_response> ::= r'(350|450|550|500|501|502|421|530)' <response_tail> := '350 File exists. Ready to rename.\r\n'
+<RNTO_response> ::= r'(250|532|553|500|501|502|503|421|530)' <response_tail> := '250 Requested file action okay, completed.\r\n'
+<DELE_response> ::= r'(250|450|550|500|501|502|421|530)' <response_tail> := '250 Requested file action okay, completed.\r\n'
+<CWD_response> ::= r'(250|500|501|502|421|530|550)' <response_tail> := '250 Requested file action okay, completed.\r\n'
+<MKD_response> ::= r'(257|500|501|502|421|530|550)' <response_tail> := '257 Directory created.\r\n'
+<RMD_response> ::= r'(250|500|501|502|421|530|550)' <response_tail> := '250 Requested file action okay, completed.\r\n'
+<SIZE_response> ::= r'(213|550|500|501|421|530)' <response_tail> := '213 10\r\n'
+<OPTS_response> ::= r'(200|451|500|501|502|421)' <response_tail> := '200 Always in UTF8 mode.\r\n'
+<PORT_response> ::= r'(200|500|501|421|530)' <response_tail> := '200 Command okay.\r\n'
+<PROT_response> ::= r'(200|536|534|504|503|431|500|501|421|530)' <response_tail> := '200 Command okay.\r\n'
+<REST_response> ::= r'(350|500|501|502|421|530)' <response_tail> := '350 REST supported. Ready to resume at byte offset  0\r\n'
 
-<FEAT_response> ::= <multiline_response> := feat_response()
-<HELP_response> ::= <multiline_response> := help_response()
-<multiline_response> ::= r"[\s\S]*"
+<Response_150> ::= r'(125|150)' <response_tail> := '150 File status okay; about to open data connection.\r\n'
+<Response_226> ::= r'(226|250)' <response_tail> := '226 Transfer complete. Closing data connection.\r\n'
+
+<FEAT_response> ::= r"211[\s\S]*" := feat_response()
+<HELP_response> ::= r"(211|214)[\s\S]*" := help_response()
 
 def feat_response() -> str:
     return ("211-Extensions supported:\r\n PASV\r\n UTF8\r\n TVFS\r\n REST STREAM\r\n "
