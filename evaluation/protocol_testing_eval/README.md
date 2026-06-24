@@ -6,11 +6,11 @@ This folder contains scripts and targets for running evaluation experiments. The
 
 The following protocol targets are included:
 
+* chatgpt (OpenAI API)
 * dns
+* dune (Dune API)
 * ftp
 * smtp
-* wireguard
-
 
 Each target contains its own configuration and output directories where evaluation results are stored.
 
@@ -28,10 +28,11 @@ Both scripts define a list of protocols in the following form:
 
 ```
 protocols = [
+    ("dune", "dune.fan"),
     ("smtp", "smtp_client.fan"),
     ("dns", "dns.fan"),
     ("ftp", "ftp_client.fan"),
-    ("wireguard", "wireguard.fan")
+    ("chatgpt", "chatgpt.fan")
 ]
 ```
 

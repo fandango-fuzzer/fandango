@@ -1,0 +1,114 @@
+FROM ubuntu:22.04
+
+# Install common dependencies
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get -y update && \
+    apt-get -y install sudo \
+    apt-utils \
+    build-essential \
+    openssl \
+    clang \
+    graphviz-dev \
+    git \
+    autoconf \
+    libtool \
+    pkg-config \
+    libssl-dev \
+    libuv1-dev \
+    libcap-dev \
+    libnghttp2-dev \
+    liburcu-dev \
+    libjemalloc-dev \
+    python3.11 python3-pip \
+    nano \
+    net-tools \
+    vim \
+    gdb \
+    netcat \
+    dnsutils \
+    strace \
+    wget \
+    xz-utils
+
+RUN apt-get -y install python3.11 python3.11-dev
+
+# Add a new user ubuntu, pass: ubuntu
+RUN groupadd ubuntu && \
+    useradd -rm -d /home/ubuntu -s /bin/bash -g ubuntu -G sudo -u 1000 ubuntu -p "$(openssl passwd -1 ubuntu)"
+
+RUN chmod 777 /tmp
+
+# ---- Fandango install recipe (copied from ../LightFTP/Dockerfile-fandango) ----
+RUN python3 -m pip install --upgrade pip==20.3.4 && \
+    pip3 install --trusted-host pypi.org --trusted-host files.pythonhosted.org gcovr==4.2
+
+RUN python3.11 -m pip install -U pip setuptools wheel
+
+RUN git clone https://github.com/fandango-fuzzer/fandango.git && \
+    cd fandango && \
+    git checkout io_replication && \
+    python3.11 -m pip install --no-cache-dir -e ".[test]"
+
+# The DNS grammar imports faker.
+RUN python3.11 -m pip install --no-cache-dir faker
+
+# ---- Build BIND 9 (named) from source with gcov instrumentation ----
+ENV BIND_VERSION=9.18.33
+ENV BIND_SRC=/home/ubuntu/bind9-src
+ENV BIND_PREFIX=/home/ubuntu/bind9-install
+
+# Coverage instrumentation flags. -O0 keeps line/branch mapping faithful.
+ENV BIND_CFLAGS="-fprofile-arcs -ftest-coverage -O0 -g"
+
+RUN mkdir -p ${BIND_SRC} && \
+    cd /home/ubuntu && \
+    wget -q "https://downloads.isc.org/isc/bind9/${BIND_VERSION}/bind-${BIND_VERSION}.tar.xz" -O bind.tar.xz && \
+    tar -xf bind.tar.xz -C ${BIND_SRC} --strip-components=1 && \
+    rm bind.tar.xz
+
+# Inject fandango_gcov_dump_handler into main.c
+COPY gcov-flush-snippet.c ${BIND_SRC}/gcov-flush-snippet.c
+RUN cd ${BIND_SRC} && \
+    MAIN=bin/named/main.c && \
+    if ! grep -q "fandango_gcov_dump_handler" "$MAIN"; then \
+        LAST_INC=$(grep -n '^#include' "$MAIN" | tail -1 | cut -d: -f1) && \
+        head -n "$LAST_INC" "$MAIN" > "$MAIN.new" && \
+        cat gcov-flush-snippet.c >> "$MAIN.new" && \
+        tail -n +"$((LAST_INC + 1))" "$MAIN" >> "$MAIN.new" && \
+        mv "$MAIN.new" "$MAIN" && \
+        echo "Injected gcov shutdown handler into $MAIN"; \
+    fi && \
+    grep -q "fandango_gcov_dump_handler" "$MAIN" || (echo "ERROR: failed to inject gcov handler" && exit 1)
+
+RUN cd ${BIND_SRC} && \
+    CFLAGS="${BIND_CFLAGS}" \
+    LDFLAGS="-fprofile-arcs -ftest-coverage" \
+    ./configure \
+        --prefix=${BIND_PREFIX} \
+        --disable-doh \
+        --without-gssapi \
+        --disable-linux-caps \
+        --without-libidn2 && \
+    make -j"$(nproc)" && \
+    make install
+
+# Server configuration: local cispa.de zone + listen on 127.0.0.1:25566.
+RUN mkdir -p /home/ubuntu/bind-conf /var/cache/bind
+COPY config/named.conf /home/ubuntu/bind-conf/named.conf
+COPY cache/cispa.de /var/cache/bind/cispa.de
+COPY cache/0.0.127.in-addr.arpa /var/cache/bind/0.0.127.in-addr.arpa
+
+# Fandango driver + grammar + in-container entry point.
+COPY fandango-scripts/ /home/ubuntu/fandango/
+
+ENV WORKDIR="/home/ubuntu"
+
+# Make the instrumented build tree and conf/cache writable so .gcda files
+RUN chown -R ubuntu:ubuntu ${BIND_SRC} ${BIND_PREFIX} /home/ubuntu/bind-conf /home/ubuntu/fandango /var/cache/bind && \
+    chmod -R u+rwX ${BIND_SRC} && \
+    mkdir -p /home/ubuntu/cov_out && \
+    chown -R ubuntu:ubuntu /home/ubuntu/cov_out && \
+    chmod +x /home/ubuntu/fandango/run_fandango.sh
+
+USER ubuntu
+WORKDIR /home/ubuntu

@@ -1,0 +1,90 @@
+FROM ubuntu:22.04
+# WireGuard (boringtun) coverage target for Fandango.
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get -y update && \
+    apt-get -y install sudo \
+    apt-utils \
+    build-essential \
+    openssl \
+    clang \
+    graphviz-dev \
+    git \
+    autoconf \
+    libssl-dev \
+    python3.11 python3-pip \
+    nano \
+    net-tools \
+    vim \
+    gdb \
+    netcat \
+    curl \
+    ca-certificates \
+    wget \
+    iproute2 \
+    iputils-ping \
+    wireguard-tools
+
+RUN apt-get -y install python3.11 python3.11-dev
+
+RUN groupadd ubuntu && \
+    useradd -rm -d /home/ubuntu -s /bin/bash -g ubuntu -G sudo -u 1000 ubuntu -p "$(openssl passwd -1 ubuntu)"
+
+RUN chmod 777 /tmp
+
+RUN python3 -m pip install --upgrade pip==20.3.4 && \
+    pip3 install --trusted-host pypi.org --trusted-host files.pythonhosted.org gcovr==4.2
+
+RUN python3.11 -m pip install -U pip setuptools wheel
+
+RUN git clone https://github.com/fandango-fuzzer/fandango.git && \
+    cd fandango && \
+    git checkout io_replication && \
+    python3.11 -m pip install --no-cache-dir -e ".[test]"
+
+RUN python3.11 -m pip install --no-cache-dir cryptography
+
+ENV RUSTUP_HOME=/opt/rust/rustup
+ENV CARGO_HOME=/opt/rust/cargo
+ENV PATH=/opt/rust/cargo/bin:${PATH}
+
+# Branch coverage for Rust is a nightly-only feature (`-Z coverage-options=branch`),
+# so we install a nightly toolchain. Stable `-C instrument-coverage` only emits
+# line/region counters (branches come out as 0/0).
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
+        sh -s -- -y --default-toolchain nightly --profile minimal && \
+    rustup component add llvm-tools-preview --toolchain nightly
+
+# Build boringtun-cli with instrumentation and branch coverage.
+RUN git clone https://github.com/cloudflare/boringtun.git /opt/boringtun && \
+    cd /opt/boringtun && \
+    RUSTFLAGS="-C instrument-coverage -Z coverage-options=branch" \
+        cargo +nightly build --release -p boringtun-cli && \
+    ls -l /opt/boringtun/target/release/boringtun-cli
+
+# Locate the llvm-tools binaries (llvm-profdata, llvm-cov) shipped by rustup.
+RUN set -e; \
+    LLVM_DIR="$(dirname "$(find /opt/rust/rustup/toolchains -name llvm-profdata | head -n1)")"; \
+    echo "LLVM_DIR=$LLVM_DIR"; \
+    ln -sf "$LLVM_DIR/llvm-profdata" /usr/local/bin/llvm-profdata; \
+    ln -sf "$LLVM_DIR/llvm-cov" /usr/local/bin/llvm-cov; \
+    llvm-profdata --version; llvm-cov --version
+
+ENV WORKDIR=/home/ubuntu/experiments
+RUN mkdir -p ${WORKDIR}
+
+COPY --chown=ubuntu:ubuntu fandango-scripts/ /home/ubuntu/fandango/
+RUN chmod +x /home/ubuntu/fandango/run_fandango.sh
+
+COPY --chown=ubuntu:ubuntu config/ /home/ubuntu/wg-config/
+
+RUN mkdir -p ${WORKDIR}/cov_out && chmod -R 777 ${WORKDIR}/cov_out
+RUN mkdir -p /home/ubuntu/cov_out && chmod -R 777 /home/ubuntu/cov_out
+
+ENV BORINGTUN_BIN=/opt/boringtun/target/release/boringtun-cli
+ENV WG_CONFIG_DIR=/home/ubuntu/wg-config
+
+# Target runs as root so we get CAP_NET_ADMIN
+USER root
+WORKDIR /home/ubuntu
