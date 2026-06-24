@@ -96,10 +96,10 @@ RUN cd ${BIND_SRC} && \
     make -j"$(nproc)" && \
     make install
 
-# Server configuration: local cispa.de zone + listen on 127.0.0.1:25566.
+# Server configuration: local example.com zone + listen on 127.0.0.1:25566.
 RUN mkdir -p /home/ubuntu/bind-conf /var/cache/bind
 COPY config/named.conf /home/ubuntu/bind-conf/named.conf
-COPY cache/cispa.de /var/cache/bind/cispa.de
+COPY cache/example.com /var/cache/bind/example.com
 COPY cache/0.0.127.in-addr.arpa /var/cache/bind/0.0.127.in-addr.arpa
 
 # Fandango driver + grammar + in-container entry point.

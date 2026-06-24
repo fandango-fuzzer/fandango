@@ -45,7 +45,7 @@ for _ in $(seq 1 20); do
   if ss -lun 2>/dev/null | grep -q ":${PORT}\b" || netstat -lun 2>/dev/null | grep -q ":${PORT} "; then
     ready=1; break
   fi
-  if command -v dig >/dev/null 2>&1 && dig @127.0.0.1 -p "$PORT" +time=1 +tries=1 cispa.de A >/dev/null 2>&1; then
+  if command -v dig >/dev/null 2>&1 && dig @127.0.0.1 -p "$PORT" +time=1 +tries=1 example.com A >/dev/null 2>&1; then
     ready=1; break
   fi
   sleep 0.5

@@ -54,9 +54,9 @@ def verify_transitive(question, response):
 def gen_q_name():
     result = b''
     domain_name = choice([
-        'cispa.de', 'mail.cispa.de', 'www.cispa.de', '_sip._tcp.cispa.de',
-        '1.0.0.127.in-addr.arpa', 'doesnotexist.cispa.de',
-        'test.cispa.de', 'www.github.com', 'www.wikipedia.org',
+        'example.com', 'mail.example.com', 'www.example.com', '_sip._tcp.example.com',
+        '1.0.0.127.in-addr.arpa', 'doesnotexist.example.com',
+        'test.example.com', 'www.github.com', 'www.wikipedia.org',
         'github.com', 'google.com', 'example.com', 'cloudflare.com',
         'wikipedia.org', 'amazon.com',
     ])
