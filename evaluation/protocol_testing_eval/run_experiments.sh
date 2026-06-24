@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Run an experiment over the ProFuzzBench targets, one container per run.
-# The image is built once per target; runs go up to --concurrency at a time and
+# Run an experiment over the targets, one container per run.
+# The image is built once per target. Runs go up to --concurrency at a time and
 # write to experiments/<target>/<condition>/run_<n>/ (logs + code coverage).
 #
 #   ./run_experiments.sh <target|all> <throughput|coverage> \

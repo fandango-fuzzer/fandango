@@ -93,15 +93,13 @@ def write_coverage(fandango, args, start):
 
 
 def write_log(path, start, log):
+    symbols = sorted({s for _, coverage in log for s in coverage}, key=str)
     with open(path, "w") as f:
-        symbols = None
+        f.write("time," + ",".join(f"covered_{s},total_{s},percent_{s}" for s in symbols) + "\n")
         for timestamp, coverage in log:
-            if symbols is None:
-                symbols = sorted(coverage, key=str)
-                f.write("time," + ",".join(f"covered_{s},total_{s},percent_{s}" for s in symbols) + "\n")
             cells = [f"{timestamp - start:.1f}"]
             for s in symbols:
-                covered, total = coverage[s]
+                covered, total = coverage.get(s, (0, 0))
                 percent = covered / total if total else 0
                 cells.append(f"{covered},{total},{percent}")
             f.write(",".join(cells) + "\n")
