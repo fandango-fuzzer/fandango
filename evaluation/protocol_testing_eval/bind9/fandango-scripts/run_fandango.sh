@@ -82,7 +82,6 @@ echo "writing coverage report to $COV_OUT_DIR"
 gcovr -r "$BIND_SRC" --html --html-details -o "${COV_OUT_DIR}index.html" 2>/dev/null || echo "gcovr HTML failed" >&2
 gcovr -r "$BIND_SRC" -s > "${COV_OUT_DIR}coverage.txt" 2>/dev/null || echo "lines: 0% branches: 0%" > "${COV_OUT_DIR}coverage.txt"
 gcovr -r "$BIND_SRC" > "${COV_OUT_DIR}coverage_files.txt" 2>/dev/null || true
-cat "${COV_OUT_DIR}coverage.txt" || true
 
 python3.11 - "$BIND_SRC" "${COV_OUT_DIR}summary.csv" <<'PYEOF'
 import re
