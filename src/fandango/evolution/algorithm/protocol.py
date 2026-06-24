@@ -5,8 +5,7 @@ import time
 from collections.abc import Generator
 from typing import Optional
 
-from fandango import FandangoValueError
-from fandango.errors import FandangoFailedError, FandangoParseError
+from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.algorithm.base import GeneticAlgorithm
 from fandango.evolution.algorithm.simple import SimpleGeneticAlgorithm
