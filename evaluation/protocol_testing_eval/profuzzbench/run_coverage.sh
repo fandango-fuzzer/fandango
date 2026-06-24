@@ -1,89 +1,104 @@
 #!/usr/bin/env bash
-# Usage:
-#   ./run_coverage.sh <target> [results_dir]
+# Build a target's instrumented-server image, run Fandango against it in a
+# container, and collect the code-coverage report.
 #
-#   <target>: bind9 | opensmtpd | wireguard | lightftp
-#   [results_dir]: host directory the coverage report is written to (default: ./results-<target>)
+#   ./run_coverage.sh <target> [results_dir] [driver flags]
 #
-# Optional environment overrides:
-#   FANDANGO_DURATION: seconds Fandango drives the server (default 120)
-#   OVERALL_TIMEOUT: host watchdog: hard-kill the container (default 1800)
-#   NO_MESSAGES=1: baseline run: start server, send nothing (default 0)
-#   BASELINE_IDLE: idle seconds for a baseline run (default 3)
-#   FANDANGO_FAN: override the grammar the driver loads from the container's
-#                 fandango-scripts folder, e.g.
-#                 FANDANGO_FAN=other.fan ./run_coverage.sh bind9
+# target       bind9 | opensmtpd | wireguard | lightftp
+# results_dir  where the report lands (default: ./results-<target>)
+# driver flags --experiment X --duration S --guidance G --interval I --run-id N
+#              passed straight through to the in-container driver (see run_experiments.sh)
+#
+# Env knobs: FANDANGO_DURATION, OVERALL_TIMEOUT, NO_MESSAGES, BASELINE_IDLE,
+#            FANDANGO_FAN (grammar override), SKIP_BUILD=1 (reuse the image).
 
 set -eo pipefail
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-TARGET="${1:-}"
-if [ -z "$TARGET" ]; then
-  echo "usage: $0 <bind9|opensmtpd|wireguard|lightftp> [results_dir]" >&2
+target="${1:-}"
+if [ -z "$target" ]; then
+  echo "usage: $0 <bind9|opensmtpd|wireguard|lightftp> [results_dir] [--experiment X --duration S ...]" >&2
   exit 2
 fi
+shift
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TARGET_DIR="${SCRIPT_DIR}/${TARGET}"
-if [ ! -f "${TARGET_DIR}/Dockerfile-fandango" ]; then
-  echo "Unknown target '${TARGET}' (no ${TARGET_DIR}/Dockerfile-fandango)" >&2
-  exit 1
+target_dir="$here/$target"
+[ -f "$target_dir/Dockerfile-fandango" ] || { echo "unknown target: $target" >&2; exit 1; }
+
+# A leading non-flag argument is the results dir; everything after it goes to the driver.
+results_dir="$here/results-$target"
+if [ $# -gt 0 ] && [ "${1#--}" = "$1" ]; then results_dir="$1"; shift; fi
+
+driver_flags=()
+meas_duration=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --duration) meas_duration="$2"; driver_flags+=("$1" "$2"); shift 2;;
+    --experiment|--guidance|--interval|--run-id) driver_flags+=("$1" "$2"); shift 2;;
+    --skip-build) SKIP_BUILD=1; shift;;
+    *) echo "unknown option: $1" >&2; exit 2;;
+  esac
+done
+[ ${#driver_flags[@]} -gt 0 ] && driver_flags+=(--out-dir /home/ubuntu/cov_out)
+
+mkdir -p "$results_dir"
+results_dir="$(cd "$results_dir" && pwd)"
+image="$target-fandango"
+
+# Build the image, re-cloning Fandango when its HEAD moved (CACHEBUST). Skip with SKIP_BUILD=1.
+if [ "${SKIP_BUILD:-0}" = "1" ]; then
+  echo "reusing image $image:latest"
+else
+  echo "building $image from $target_dir"
+  cachebust="${CACHEBUST:-$(git -C "$here" rev-parse HEAD 2>/dev/null || echo 0)}"
+  docker build "$target_dir" -f "$target_dir/Dockerfile-fandango" \
+    --build-arg "CACHEBUST=$cachebust" -t "$image:latest"
 fi
 
-RESULTS_DIR="${2:-${SCRIPT_DIR}/results-${TARGET}}"
-mkdir -p "$RESULTS_DIR"
-RESULTS_DIR="$(cd "$RESULTS_DIR" && pwd)"
-
-IMAGE="${TARGET}-fandango"
-
-# Optional per-target extra `docker run` flags (one flag per line).
-EXTRA_ARGS=""
-if [ -f "${TARGET_DIR}/docker-args" ]; then
-  EXTRA_ARGS="$(grep -v '^[[:space:]]*#' "${TARGET_DIR}/docker-args" | tr '\n' ' ')"
+# Watchdog budgets: derive from --duration when measuring, otherwise use the defaults.
+if [ -n "$meas_duration" ]; then
+  FANDANGO_DURATION="${FANDANGO_DURATION:-$((meas_duration + 180))}"
+  OVERALL_TIMEOUT="${OVERALL_TIMEOUT:-$((meas_duration + 480))}"
 fi
-
-echo "Building image ${IMAGE} from ${TARGET_DIR} ..."
-docker build "${TARGET_DIR}" -f "${TARGET_DIR}/Dockerfile-fandango" -t "${IMAGE}:latest"
-
-# Overall watchdog: never let the run hang forever. Kill the
-# container after OVERALL_TIMEOUT seconds.
-CONTAINER="${TARGET}-fandango-run-$$"
-OVERALL_TIMEOUT="${OVERALL_TIMEOUT:-1800}"
-
-# In-container watchdog (run_fandango.sh) for every target. It must outlast the Fandango run itself
 FANDANGO_DURATION="${FANDANGO_DURATION:-120}"
+OVERALL_TIMEOUT="${OVERALL_TIMEOUT:-1800}"
 RUN_FANDANGO_TIMEOUT="${RUN_FANDANGO_TIMEOUT:-$((FANDANGO_DURATION + 120))}"
+
+# Per-target extra docker flags (e.g. wireguard's --cap-add / --device).
+extra_args=""
+[ -f "$target_dir/docker-args" ] && extra_args="$(grep -v '^[[:space:]]*#' "$target_dir/docker-args" | tr '\n' ' ')"
+
+# Host watchdog: hard-kill the container if it outlives OVERALL_TIMEOUT.
+container="$target-fandango-run-$$"
 (
   sleep "$OVERALL_TIMEOUT"
-  if [ -n "$(docker ps -q -f "name=^${CONTAINER}$")" ]; then
-    echo "OVERALL_TIMEOUT (${OVERALL_TIMEOUT}s) reached - killing ${CONTAINER}" >&2
-    docker kill "$CONTAINER" >/dev/null 2>&1 || true
+  if [ -n "$(docker ps -q -f "name=^${container}$")" ]; then
+    echo "timeout ${OVERALL_TIMEOUT}s reached, killing $container" >&2
+    docker kill "$container" >/dev/null 2>&1 || true
   fi
 ) &
-WATCHDOG=$!
+watchdog=$!
 
-echo "Running ${TARGET} coverage (timeout ${OVERALL_TIMEOUT}s); report -> ${RESULTS_DIR}"
-RUN_RC=0
+echo "running $target (timeout ${OVERALL_TIMEOUT}s); report -> $results_dir"
+rc=0
 # shellcheck disable=SC2086
-docker run --rm --name "$CONTAINER" \
-  -v "${RESULTS_DIR}:/home/ubuntu/cov_out" \
+docker run --rm --name "$container" \
+  -v "$results_dir:/home/ubuntu/cov_out" \
   -e COV_OUT_DIR=/home/ubuntu/cov_out \
   -e "NO_MESSAGES=${NO_MESSAGES:-0}" \
-  -e "FANDANGO_DURATION=${FANDANGO_DURATION}" \
-  -e "RUN_FANDANGO_TIMEOUT=${RUN_FANDANGO_TIMEOUT}" \
+  -e "FANDANGO_DURATION=$FANDANGO_DURATION" \
+  -e "RUN_FANDANGO_TIMEOUT=$RUN_FANDANGO_TIMEOUT" \
   -e "BASELINE_IDLE=${BASELINE_IDLE:-3}" \
   -e "FANDANGO_FAN=${FANDANGO_FAN:-}" \
-  ${EXTRA_ARGS} \
-  "${IMAGE}:latest" \
-  /home/ubuntu/fandango/run_fandango.sh || RUN_RC=$?
+  $extra_args \
+  "$image:latest" \
+  /home/ubuntu/fandango/run_fandango.sh "${driver_flags[@]}" || rc=$?
 
-kill "$WATCHDOG" 2>/dev/null || true
-wait "$WATCHDOG" 2>/dev/null || true
-[ "$RUN_RC" -eq 0 ] || echo "container exited with code ${RUN_RC} (collecting any coverage produced)"
+kill "$watchdog" 2>/dev/null || true
+wait "$watchdog" 2>/dev/null || true
+[ "$rc" -eq 0 ] || echo "container exited with code $rc (collecting whatever coverage was produced)"
 
 echo
-echo "Coverage report for ${TARGET} written to ${RESULTS_DIR}:"
-ls -la "${RESULTS_DIR}"
-if [ -f "${RESULTS_DIR}/coverage.txt" ]; then
-  echo "---- coverage.txt ----"
-  cat "${RESULTS_DIR}/coverage.txt"
-fi
+echo "report for $target in $results_dir:"
+ls -la "$results_dir"
+[ -f "$results_dir/coverage.txt" ] && { echo "---- coverage.txt ----"; cat "$results_dir/coverage.txt"; }

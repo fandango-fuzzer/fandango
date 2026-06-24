@@ -38,7 +38,11 @@ RUN python3 -m pip install --upgrade pip==20.3.4 && \
 
 RUN python3.11 -m pip install -U pip setuptools wheel
 
-RUN git clone https://github.com/fandango-fuzzer/fandango.git && \
+# CACHEBUST (set to the local fandango HEAD by the build scripts) busts this layer
+# whenever fandango moves, so the image re-clones the latest io_replication.
+ARG CACHEBUST=0
+RUN echo "fandango build ref: ${CACHEBUST}" && \
+    git clone https://github.com/fandango-fuzzer/fandango.git && \
     cd fandango && \
     git checkout io_replication && \
     python3.11 -m pip install --no-cache-dir -e ".[test]"

@@ -13,20 +13,17 @@ FANDANGO_DIR="/home/ubuntu/fandango"
 
 mkdir -p "${COV_OUT_DIR}"
 
-# Overall watchdog: never let the container hang forever.
-# Kill our whole process group after RUN_FANDANGO_TIMEOUT seconds.
-SELF_PGID=$$
+# Watchdog: kill the whole process group if the run wedges, so the container
+# always exits and the host can still collect coverage.
 (
   sleep "${RUN_FANDANGO_TIMEOUT}"
-  echo "RUN_FANDANGO_TIMEOUT (${RUN_FANDANGO_TIMEOUT}s) reached - killing process group" >&2
-  kill -TERM -- "-${SELF_PGID}" 2>/dev/null || true
+  echo "watchdog timeout reached, killing process group" >&2
+  kill -TERM -- "-$$" 2>/dev/null || true
   sleep 5
-  kill -KILL -- "-${SELF_PGID}" 2>/dev/null || true
+  kill -KILL -- "-$$" 2>/dev/null || true
 ) &
-WATCHDOG_PID=$!
-
-cleanup_watchdog() { kill "${WATCHDOG_PID}" 2>/dev/null || true; }
-trap cleanup_watchdog EXIT
+watchdog=$!
+trap 'kill "$watchdog" 2>/dev/null || true' EXIT
 
 # Reset stale coverage counters in the build tree.
 echo "Resetting stale .gcda counters under ${BUILD_DIR}"
@@ -73,12 +70,11 @@ if [ "${NO_MESSAGES:-0}" = "1" ]; then
   sleep "${BASELINE_IDLE:-3}"
 else
   echo "Running Fandango smtp.py (grammar=${FANDANGO_FAN:-smtp_client.fan}) for up to ${FANDANGO_DURATION}s"
-  timeout "${FANDANGO_DURATION}" python3.11 smtp.py ${FANDANGO_FAN:+"$FANDANGO_FAN"} || true
+  timeout "${FANDANGO_DURATION}" python3.11 smtp.py ${FANDANGO_FAN:+"$FANDANGO_FAN"} "$@" || true
   echo "Fandango run finished"
 fi
 
-# Flush coverage from ALL privsep processes.
-# Do this on a unique folder per pid under /home/ubuntu/cov_raw/<pid>.
+# Flush gcov from every privsep process; each dumps into a per-pid GCOV_PREFIX tree.
 COV_RAW="/cov_raw"
 sudo rm -rf "$COV_RAW" 2>/dev/null || true
 sudo mkdir -p "$COV_RAW"; sudo chmod 1777 "$COV_RAW"
@@ -111,7 +107,7 @@ kill "${STUNNEL_PID}" "${SMTPD_PID}" 2>/dev/null || true
 # Make sure all dumped files are readable/owned by the ubuntu user.
 sudo chown -R "$(id -u):$(id -g)" "$COV_RAW" "${BUILD_DIR}" 2>/dev/null || true
 
-# Merge coverage for each pid from before together
+# Merge the per-pid gcda trees with gcov-tool.
 GCOV_TOOL="$(command -v gcov-tool || command -v gcov-tool-12 || command -v gcov-tool-11 || true)"
 echo "gcov-tool: ${GCOV_TOOL:-not found}"
 ACC="/home/ubuntu/cov_acc"

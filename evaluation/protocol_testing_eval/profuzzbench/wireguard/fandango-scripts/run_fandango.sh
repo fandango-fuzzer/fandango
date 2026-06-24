@@ -26,18 +26,18 @@ echo "COV_OUT_DIR=$COV_OUT_DIR"
 echo "BORINGTUN_BIN=$BORINGTUN_BIN"
 echo "LLVM_PROFILE_FILE=$LLVM_PROFILE_FILE"
 
-# Overall watchdog: never let the container hang forever.
+# Watchdog: kill the whole process group if the run wedges, so the container
+# always exits and the host can still collect coverage.
 RUN_FANDANGO_TIMEOUT="${RUN_FANDANGO_TIMEOUT:-600}"
-SELF_PGID=$$
 (
   sleep "$RUN_FANDANGO_TIMEOUT"
-  echo "RUN_FANDANGO_TIMEOUT(${RUN_FANDANGO_TIMEOUT}s) reached - killing process group" >&2
-  kill -TERM -"$SELF_PGID" 2>/dev/null || true
+  echo "watchdog timeout reached, killing process group" >&2
+  kill -TERM -$$ 2>/dev/null || true
   sleep 5
-  kill -KILL -"$SELF_PGID" 2>/dev/null || true
+  kill -KILL -$$ 2>/dev/null || true
 ) &
-WATCHDOG_PID=$!
-trap 'kill "$WATCHDOG_PID" 2>/dev/null || true' EXIT
+watchdog=$!
+trap 'kill "$watchdog" 2>/dev/null || true' EXIT
 
 # Bring up boringtun wg0
 BORINGTUN_PID=""
@@ -156,7 +156,7 @@ if [ "${NO_MESSAGES:-0}" = "1" ]; then
   sleep "${BASELINE_IDLE:-3}"
 else
   echo "running Fandango wireguard.py (grammar=${FANDANGO_FAN:-wireguard.fan}) for up to ${FANDANGO_DURATION}s ..."
-  timeout "$FANDANGO_DURATION" python3.11 wireguard.py ${FANDANGO_FAN:+"$FANDANGO_FAN"} || true
+  timeout "$FANDANGO_DURATION" python3.11 wireguard.py ${FANDANGO_FAN:+"$FANDANGO_FAN"} "$@" || true
   echo "Fandango run finished."
 fi
 

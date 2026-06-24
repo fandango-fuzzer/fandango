@@ -1,22 +1,18 @@
-import sys
-
+import measure
 from fandango.evolution.algorithm import (
     LoggerLevel,
     ProtocolAlgorithm,
     SimpleGeneticAlgorithm,
 )
 from fandango.io.navigation.coverage_goal import CoverageGoal
-from fandango.language.grammar import FuzzingMode
 from fandango.language.parse.parse import parse
-
-GRAMMAR = sys.argv[1] if len(sys.argv) > 1 else "wireguard.fan"
 
 
 def main():
-    with open(GRAMMAR) as f:
+    args = measure.parse_args()
+    with open(args.grammar or "wireguard.fan") as f:
         grammar, constraints = parse(f, use_stdlib=False)
     assert grammar is not None
-
     packet_algorithm = SimpleGeneticAlgorithm(
         grammar=grammar,
         constraints=constraints,
@@ -28,9 +24,7 @@ def main():
         packet_algorithm=packet_algorithm,
         coverage_goal=CoverageGoal.STATE_INPUTS_OUTPUTS,
     )
-
-    for _solution in fandango.generate(mode=FuzzingMode.IO, max_generations=3):
-        pass
+    measure.run(fandango, args, max_generations=3)
 
 
 if __name__ == "__main__":
