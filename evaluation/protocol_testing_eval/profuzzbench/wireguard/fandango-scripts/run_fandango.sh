@@ -52,6 +52,7 @@ ensure_tun_node() {
 }
 
 start_boringtun() {
+  TUN_OK=0
   ensure_tun_node
 
   # boringtun-cli runs the userspace WG device. --foreground keeps it attached so
@@ -87,18 +88,30 @@ start_boringtun() {
 }
 
 configure_wg() {
-  # peer config.
-  if ! wg setconf "$WG_IF" "${WG_CONFIG_DIR}/wg0.conf"; then
-    echo "wg setconf failed" >&2
-    return 1
-  fi
-  # Interface address + link up so the container kernel answers ICMP to 10.13.13.1.
-  ip addr add "$WG_ADDR" dev "$WG_IF" 2>/dev/null || true
-  ip link set "$WG_IF" up 2>/dev/null || true
-  echo "wg0 configured:"
-  wg show "$WG_IF" 2>/dev/null || true
-  ip addr show "$WG_IF" 2>/dev/null || true
-  return 0
+  # Retry until 'wg show' confirms BOTH the listen port and the peer are configured.
+  local i
+  for i in $(seq 1 60); do
+    wg setconf "$WG_IF" "${WG_CONFIG_DIR}/wg0.conf" 2>/dev/null
+    if wg show "$WG_IF" 2>/dev/null | grep -q "listening port: ${WG_PORT}" \
+       && wg show "$WG_IF" 2>/dev/null | grep -q "^peer:"; then
+      # Interface address + link up so the container kernel answers ICMP to 10.13.13.1.
+      ip addr add "$WG_ADDR" dev "$WG_IF" 2>/dev/null || true
+      ip link set "$WG_IF" up 2>/dev/null || true
+      echo "wg0 configured:"
+      wg show "$WG_IF" 2>/dev/null || true
+      ip addr show "$WG_IF" 2>/dev/null || true
+      return 0
+    fi
+    if ! kill -0 "$BORINGTUN_PID" 2>/dev/null; then
+      echo "boringtun exited during config; log:" >&2
+      cat "${PROFRAW_DIR}/boringtun.log" >&2 || true
+      return 1
+    fi
+    sleep 0.5
+  done
+  echo "wg setconf did not take after retries (no 'listening port: ${WG_PORT}'); wg show:" >&2
+  wg show "$WG_IF" >&2 2>/dev/null || true
+  return 1
 }
 
 wait_for_udp_port() {
@@ -116,11 +129,24 @@ wait_for_udp_port() {
   return 1
 }
 
-if start_boringtun; then
-  configure_wg || true
-  wait_for_udp_port || true
-else
-  echo "boringtun/TUN setup failed - Fandango run may exercise little/no code." >&2
+BOOT_OK=0
+for attempt in 1 2 3; do
+  if start_boringtun && configure_wg; then
+    BOOT_OK=1
+    wait_for_udp_port || true   # informational: wg show already confirmed the port
+    break
+  fi
+  echo "boringtun bring-up attempt ${attempt} failed; restarting boringtun ..." >&2
+  if [ -n "$BORINGTUN_PID" ] && kill -0 "$BORINGTUN_PID" 2>/dev/null; then
+    kill -TERM "$BORINGTUN_PID" 2>/dev/null || true
+    wait "$BORINGTUN_PID" 2>/dev/null || true
+  fi
+  ip link del "$WG_IF" 2>/dev/null || true   # drop a lingering wg0 so the next start is clean
+  BORINGTUN_PID=""
+  sleep 1
+done
+if [ "$BOOT_OK" -ne 1 ]; then
+  echo "boringtun never came up cleanly after retries - Fandango run may exercise little/no code." >&2
 fi
 
 # Run Fandango
