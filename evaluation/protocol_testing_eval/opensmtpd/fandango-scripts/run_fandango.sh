@@ -7,6 +7,7 @@ BUILD_DIR="${BUILD_DIR:-/home/ubuntu/OpenSMTPD-7.7.0p0}"
 SMTPD_CONF="${SMTPD_CONF:-/etc/smtpd.conf}"
 GCOV_SUBDIR="usr.sbin/smtpd"           # sources we care about, relative to BUILD_DIR
 COV_OUT_DIR="${COV_OUT_DIR:-/home/ubuntu/cov_out}"
+COV_OUT_DIR="${COV_OUT_DIR%/}/"
 FANDANGO_DURATION="${FANDANGO_DURATION:-120}"
 RUN_FANDANGO_TIMEOUT="${RUN_FANDANGO_TIMEOUT:-600}"
 FANDANGO_DIR="/home/ubuntu/fandango"
@@ -145,68 +146,21 @@ fi
 GCDA_COUNT="$(find "${BUILD_DIR}/${GCOV_SUBDIR}" -name '*.gcda' 2>/dev/null | wc -l | tr -d ' ')"
 echo ".gcda files in build tree under ${GCOV_SUBDIR}: ${GCDA_COUNT}"
 
-# Produce the report
-echo "Generating coverage report into ${COV_OUT_DIR}"
+# Run gcovr from the build root so --filter (matched relative to --root) scopes
+# the report to usr.sbin/smtpd/.
+echo "writing coverage report to $COV_OUT_DIR"
 cd "${BUILD_DIR}"
 
-# Human-readable summary -> coverage.txt
-gcovr -r "${BUILD_DIR}" --filter "${GCOV_SUBDIR}/" -s \
-  > "${COV_OUT_DIR}/coverage.txt" 2>/dev/null || true
+# Remove coverage artifacts gcov cannot read, which would otherwise abort the
+# report: everything outside usr.sbin/smtpd/ (openbsd-compat, conftest.*, ...),
+# and never-executed helpers (mail.lmtp, makemap, ...) whose .gcda is missing.
+find "${BUILD_DIR}" \( -name '*.gcda' -o -name '*.gcno' \) -not -path "*/${GCOV_SUBDIR}/*" -delete 2>/dev/null || true
+find "${BUILD_DIR}/${GCOV_SUBDIR}" -name '*.gcno' 2>/dev/null | while read -r gcno; do
+  [ -s "${gcno%.gcno}.gcda" ] || rm -f "$gcno"
+done
 
-# Per-file table
-gcovr -r "${BUILD_DIR}" --filter "${GCOV_SUBDIR}/" \
-  > "${COV_OUT_DIR}/coverage_files.txt" 2>/dev/null || true
+gcovr -r "${BUILD_DIR}" --filter "${GCOV_SUBDIR}/" --txt -o "${COV_OUT_DIR}coverage.txt" || echo "lines: 0% branches: 0%" > "${COV_OUT_DIR}coverage.txt"
+gcovr -r "${BUILD_DIR}" --filter "${GCOV_SUBDIR}/" --csv -o "${COV_OUT_DIR}coverage_branches.csv" || true  # per-file line+branch
 
-python3.11 - "${BUILD_DIR}" "${GCOV_SUBDIR}/" "${COV_OUT_DIR}/summary.csv" <<'PYEOF'
-import re
-import subprocess
-import sys
-
-build_dir, filt, out_csv = sys.argv[1], sys.argv[2], sys.argv[3]
-
-try:
-    out = subprocess.run(
-        ["gcovr", "-r", build_dir, "--filter", filt, "-s"],
-        capture_output=True, text=True, timeout=600,
-    ).stdout
-except Exception:
-    out = ""
-
-
-def parse(metric_label):
-    m = re.search(
-        rf"{metric_label}[.\s]*:\s*([0-9.]+)%\s*\((\d+)\s+out of\s+(\d+)\)",
-        out, re.IGNORECASE,
-    )
-    if m:
-        return (float(m.group(1)), int(m.group(2)), int(m.group(3)))
-    m = re.search(
-        rf"{metric_label}[.\s]*:\s*([0-9.]+)%\s+(\d+)\s*/\s*(\d+)",
-        out, re.IGNORECASE,
-    )
-    if m:
-        return (float(m.group(1)), int(m.group(2)), int(m.group(3)))
-    m = re.search(rf"{metric_label}[.\s]*:\s*([0-9.]+)%", out, re.IGNORECASE)
-    if m:
-        return (float(m.group(1)), 0, 0)
-    return (0.0, 0, 0)
-
-lines = parse("lines")
-branches = parse("branches")
-
-with open(out_csv, "w") as f:
-    f.write("metric,percent,covered,total\n")
-    f.write("lines,%s,%d,%d\n" % (lines[0], lines[1], lines[2]))
-    f.write("branches,%s,%d,%d\n" % (branches[0], branches[1], branches[2]))
-
-print("summary.csv: lines=%.2f%% (%d/%d) branches=%.2f%% (%d/%d)" % (
-    lines[0], lines[1], lines[2], branches[0], branches[1], branches[2]))
-PYEOF
-
-echo "---- summary.csv ----"
-cat "${COV_OUT_DIR}/summary.csv" 2>/dev/null || true
-
-echo "Coverage report written to ${COV_OUT_DIR}"
-ls -la "${COV_OUT_DIR}" || true
-
-exit 0
+echo "artifacts:"; ls -la "$COV_OUT_DIR" || true
+echo "done"

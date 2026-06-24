@@ -36,10 +36,9 @@ RUN groupadd ubuntu && \
 
 RUN chmod 777 /tmp
 
-RUN python3 -m pip install --upgrade pip==20.3.4 && \
-    pip3 install --trusted-host pypi.org --trusted-host files.pythonhosted.org gcovr==4.2
-
 RUN python3.11 -m pip install -U pip setuptools wheel
+
+RUN python3.11 -m pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org gcovr==8.6
 
 # CACHEBUST (set to the local fandango HEAD by the build scripts) busts this layer
 # whenever fandango moves, so the image re-clones the latest io_replication.

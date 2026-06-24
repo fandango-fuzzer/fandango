@@ -15,7 +15,7 @@ import time
 from fandango.language.grammar import FuzzingMode
 
 # Transport/timer parties, not protocol messages.
-PLUMBING = {"SocketControlServer", "SocketControlClient", "TimerControl", "TimerEvent", "StdOut"}
+PLUMBING = {"SocketControlServer", "SocketControlClient", "StdOut"}
 
 
 class _Deadline(BaseException):
