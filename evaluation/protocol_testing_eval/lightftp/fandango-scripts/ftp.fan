@@ -59,13 +59,10 @@ DATA_PORT = 50100
 
 <APPE_data> ::= r"[\s\S]*" := 'appended by fandango\r\n'
 
-<data_line> ::= r"[^\r\n]*" r"\r?\n"
-<data_tail> ::= r"[^\r\n]+"
-<data_lines> ::= <data_line>+ <data_tail>? | <data_tail>
-<LIST_data> ::= <data_lines> := '-rw-r--r-- 1 0 0 10 Jan 01 00:00 exist_append.txt\r\n'
-<RETR_data> ::= <data_lines> := "I'm a file\n"
+<LIST_data> ::= r"[\s\S]*" := '-rw-r--r-- 1 0 0 10 Jan 01 00:00 exist_append.txt\r\n'
+<RETR_data> ::= r"[\s\S]*" := "I'm a file\n"
 <STOR_data> ::= r"[\s\S]*" := 'stored by fandango\r\n'
-<MLSD_data> ::= <data_lines> := 'type=file;size=10;modify=20240101000000; exist_append.txt\r\n'
+<MLSD_data> ::= r"[\s\S]*" := 'type=file;size=10;modify=20240101000000; exist_append.txt\r\n'
 
 <close_data> ::= <close_data_inner>
 <close_data_inner> ::= '999 Data socket closed.' <crlf>

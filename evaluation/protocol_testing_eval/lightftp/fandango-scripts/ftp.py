@@ -2,6 +2,7 @@
 import sys
 
 import measure
+
 from fandango.evolution.algorithm import (
     LoggerLevel,
     ProtocolAlgorithm,
@@ -24,7 +25,7 @@ def main():
     )
     fandango = ProtocolAlgorithm(
         packet_algorithm=packet_algorithm,
-        coverage_goal=CoverageGoal.STATE_INPUTS,
+        coverage_goal=CoverageGoal.STATE_INPUTS_OUTPUTS,
     )
     measure.run(fandango, args)
 
