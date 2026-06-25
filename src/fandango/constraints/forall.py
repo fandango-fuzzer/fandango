@@ -121,6 +121,10 @@ class ForallConstraint(Constraint):
         if visitor.do_continue(self):
             self.statement.accept(visitor)
 
+    def clear_cache(self) -> None:
+        super().clear_cache()
+        self.statement.clear_cache()
+
     def invert(self) -> "Constraint":
         """
         Return an inverted version of this forall constraint.

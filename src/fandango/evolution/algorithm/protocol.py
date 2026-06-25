@@ -20,12 +20,14 @@ from fandango.logger import LOGGER, log_guidance_hint, log_message_transfer
 
 
 class ProtocolAlgorithm(GeneticAlgorithm):
+
     def __init__(
         self,
         packet_algorithm: SimpleGeneticAlgorithm,
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS,
         remote_response_timeout: int = 15,
     ):
+        self.CLEAR_CONSTRAINT_CACHE_INTERVAL = 100
         self._start_symbol = NonTerminal("<start>")
         self._packet_algorithm = packet_algorithm
         self.grammar = packet_algorithm.grammar
@@ -189,12 +191,22 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             and not self._packet_selector.is_complete()
         )
 
+    def _clear_constraint_caches(self) -> None:
+        self._packet_algorithm.evaluator.clear_constraint_caches()
+
     def generate(
         self,
         max_generations: Optional[int] = None,
         mode: FuzzingMode = FuzzingMode.COMPLETE,
     ) -> Generator[DerivationTree, None, None]:
+        iteration = 0
         while True:
+            iteration += 1
+            if (
+                self.CLEAR_CONSTRAINT_CACHE_INTERVAL > 0
+                and iteration % self.CLEAR_CONSTRAINT_CACHE_INTERVAL == 0
+            ):
+                self._clear_constraint_caches()
             self._packet_selector.compute(self._protocol_tree)
             LOGGER.info(
                 f"Current coverage: {self._packet_selector.coverage_percent() * 100:.2f}%"
