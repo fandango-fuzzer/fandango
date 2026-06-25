@@ -116,6 +116,17 @@ class Evaluator:
         if len(self._soft_constraints) > 0:
             self._fitness_cache.clear()
 
+    def clear_constraint_caches(self) -> None:
+        """Empty every (nested) constraint and soft-value fitness cache to free
+        memory; the evaluator's own fitness cache is cleared as well."""
+        self._fitness_cache.clear()
+        for constraint in self._hard_constraints:
+            constraint.clear_cache()
+        for constraint in self._repetition_bounds_constraints:
+            constraint.clear_cache()
+        for soft in self._soft_constraints:
+            soft.clear_cache()
+
     def compute_diversity_bonus(
         self,
         individuals: list[DerivationTree],
