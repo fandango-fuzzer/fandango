@@ -80,6 +80,11 @@ class ImplicationConstraint(Constraint):
             self.antecedent.accept(visitor)
             self.consequent.accept(visitor)
 
+    def clear_cache(self) -> None:
+        super().clear_cache()
+        self.antecedent.clear_cache()
+        self.consequent.clear_cache()
+
     def invert(self) -> "Constraint":
         """
         Return an inverted version of this implication constraint.
