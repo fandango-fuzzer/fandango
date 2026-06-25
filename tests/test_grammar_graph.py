@@ -2,11 +2,11 @@ import unittest
 from typing import TypeGuard
 
 from fandango.api import Fandango
-from fandango.io.navigation.grammarnavigator import GrammarNavigator
-from fandango.io.navigation.packetnavigator import PacketNavigator
+from fandango.io.navigation.graph.grammarnavigator import GrammarNavigator
+from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.io.navigation.reachability_checker import ReachabilityChecker
-from fandango.io.navigation.stategrammarconverter import StateGrammarConverter
+from fandango.io.navigation.graph.reachability_checker import ReachabilityChecker
+from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConverter
 from fandango.language import DerivationTree, NonTerminal
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.grammar import Grammar, KPath

@@ -1,9 +1,9 @@
 from collections.abc import Callable
 from typing import Optional
 
-from fandango.io.navigation.coverage_goal import CoverageGoal
-from fandango.io.navigation.kpath_coverage import KPathCoverage
-from fandango.io.navigation.protocol_model import ProtocolModel
+from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
+from fandango.io.navigation.coverage.kpath_coverage import KPathCoverage
+from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree

@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fandango.io.navigation.stategrammarconverter import StateGrammarConverter
+from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConverter
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.node import Node

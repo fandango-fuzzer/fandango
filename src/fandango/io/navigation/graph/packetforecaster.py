@@ -4,9 +4,9 @@ from copy import deepcopy
 from typing import Any, Optional
 
 from fandango.errors import FandangoValueError
-from fandango.io.navigation.packetiterativeparser import PacketIterativeParser
-from fandango.io.navigation.stategrammarconverter import StateGrammarConverter
-from fandango.io.navigation.visitor.continuing_nodevisitor import ContinuingNodeVisitor
+from fandango.io.navigation.graph.packetiterativeparser import PacketIterativeParser
+from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConverter
+from fandango.io.navigation.graph.visitor.continuing_nodevisitor import ContinuingNodeVisitor
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode

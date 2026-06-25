@@ -1,8 +1,8 @@
-from fandango.io.navigation.powerschedule import (
+from fandango.io.navigation.coverage.powerschedule import (
     PowerScheduleCoverage,
     PowerScheduleKPath,
 )
-from fandango.io.navigation.protocol_model import ProtocolModel
+from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.language.grammar.grammar import Grammar, KPath
 from fandango.language.symbols import NonTerminal, Symbol
 

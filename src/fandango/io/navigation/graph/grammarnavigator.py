@@ -5,7 +5,7 @@ from typing import Optional, Union
 from astar import AStar
 
 from fandango.errors import FandangoError
-from fandango.io.navigation.reachability_checker import (
+from fandango.io.navigation.graph.reachability_checker import (
     ReachabilityChecker,
     ReachabilityResult,
 )
