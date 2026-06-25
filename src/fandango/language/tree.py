@@ -156,7 +156,7 @@ class DerivationTree:
             origin_repetitions = []
         self.origin_repetitions: list[tuple[str, int, int]] = origin_repetitions
         self.read_only = read_only
-        self._size: Optional[int] = None  # lazily (re)computed by size(), invalidated incrementally
+        self._size: Optional[int] = None
         self.set_children(children or [])
 
     def __len__(self) -> int:
@@ -224,7 +224,7 @@ class DerivationTree:
     def invalidate_hash(self, update_size: bool = True) -> None:
         self.hash_cache = None
         if update_size:
-            self._size = None  # recomputed lazily by size(); avoids O(width) re-sum per mutation
+            self._size = None
         if self._parent is not None:
             self._parent.invalidate_hash(update_size=update_size)
 
