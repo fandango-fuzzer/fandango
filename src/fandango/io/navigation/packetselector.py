@@ -2,11 +2,11 @@ from typing import Optional
 
 from fandango.io import FandangoIO
 from fandango.io.navigation.coverage_goal import CoverageGoal
+from fandango.io.navigation.forecast_view import ForecastView
 from fandango.io.navigation.kpath_coverage import KPathCoverage
 from fandango.io.navigation.packetforecaster import (
     ForecastingPacket,
     ForecastingResult,
-    PacketForecaster,
 )
 from fandango.io.navigation.packetnavigator import PacketNavigator
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
@@ -37,14 +37,13 @@ class PacketSelector:
         self.msg_power_schedule = PowerScheduleCoverage()
         self.state_path_power_schedule = PowerScheduleKPath()
         self.navigator = PacketNavigator(grammar, self.start_symbol)
-        self.forecaster = PacketForecaster(self.grammar)
+        self._forecast = ForecastView(grammar, io_instance, lambda: self.history_tree)
         self.diversity_k = diversity_k
         self._coverage = KPathCoverage(grammar, diversity_k)
         self.parst_derivations: list[DerivationTree] = []
         self.prev_past_derivations_len = 0
         self.history_tree: DerivationTree = DerivationTree(NonTerminal("<start>"))
         self.max_messages_per_tree = 200
-        self._forecasting_result: Optional[ForecastingResult] = None
         self._next_packets: Optional[list[ForecastingPacket]] = None
         self._coverage_scores: Optional[list[tuple[NonTerminal, float]]] = None
         self._prev_session_msgs: list[DerivationTree] = []
@@ -120,15 +119,12 @@ class PacketSelector:
     ) -> None:
         self.history_tree = history_tree
         self.parst_derivations = parst_derivations
-        self._forecasting_result = None
         self._coverage_scores = None
         self._next_packets = None
 
     @property
     def forecasting_result(self) -> ForecastingResult:
-        if self._forecasting_result is None:
-            self._forecasting_result = self.forecaster.predict(self.history_tree)
-        return self._forecasting_result
+        return self._forecast.result
 
     @property
     def coverage_scores(
@@ -150,52 +146,25 @@ class PacketSelector:
         return self._guide_to_end
 
     def is_complete(self) -> bool:
-        assert self.forecasting_result is not None
-        return len(self.forecasting_result.complete_trees) != 0
+        return self._forecast.is_complete()
 
     def next_fuzzer_parties(
         self,
         show_fuzzer_controlled: bool = True,
         show_external_controlled: bool = False,
     ) -> list[str]:
-        assert self.forecasting_result is not None
-        return list(
-            filter(
-                lambda x: (
-                    (
-                        self.io_instance.parties[x].is_fuzzer_controlled()
-                        and show_fuzzer_controlled
-                    )
-                    or (
-                        not self.io_instance.parties[x].is_fuzzer_controlled()
-                        and show_external_controlled
-                    )
-                ),
-                self.forecasting_result.get_msg_parties(),
-            )
+        return self._forecast.next_fuzzer_parties(
+            show_fuzzer_controlled, show_external_controlled
         )
 
     def get_fuzzer_packets(self) -> list[ForecastingPacket]:
-        assert self.forecasting_result is not None
-        return [
-            packet
-            for sender in self.next_fuzzer_parties()
-            for packet in self.forecasting_result.parties_to_packets[
-                sender
-            ].nt_to_packet.values()
-        ]
+        return self._forecast.get_fuzzer_packets()
 
     def next_external_parties(self) -> list[str]:
-        assert self.forecasting_result is not None
-        return list(
-            filter(
-                lambda x: not self.io_instance.parties[x].is_fuzzer_controlled(),
-                self.forecasting_result.get_msg_parties(),
-            )
-        )
+        return self._forecast.next_external_parties()
 
     def get_next_parties(self) -> list[str]:
-        return list(self.forecasting_result.get_msg_parties())
+        return self._forecast.get_next_parties()
 
     def _all_derivation_trees(self) -> list[DerivationTree]:
         all_derivation_trees = list(self.parst_derivations)

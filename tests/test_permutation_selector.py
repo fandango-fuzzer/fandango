@@ -166,7 +166,6 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
         sel.history_tree = self.grammar.parse(
             "b", mode=ParsingMode.INCOMPLETE, include_controlflow=True
         )
-        sel._forecasting_result = None
 
         sel._select_next_packet()
 
@@ -211,7 +210,6 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
         sel.history_tree = self.grammar.parse(
             "a", mode=ParsingMode.INCOMPLETE, include_controlflow=True
         )
-        sel._forecasting_result = None
 
         sel._select_next_packet()
 
@@ -237,7 +235,6 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
         sel.history_tree = self.grammar.parse(
             "b", mode=ParsingMode.INCOMPLETE, include_controlflow=True
         )
-        sel._forecasting_result = None
         sel._select_next_packet()
 
         # pnt_b consumed out-of-order; pnt_a still pending
@@ -251,7 +248,6 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
         sel.history_tree = self.grammar.parse(
             "ba", mode=ParsingMode.INCOMPLETE, include_controlflow=True
         )
-        sel._forecasting_result = None
         sel._select_next_packet()
 
         self.assertNotIn(pnt_a, sel._guide_path, "pnt_a arrived – should be consumed")
