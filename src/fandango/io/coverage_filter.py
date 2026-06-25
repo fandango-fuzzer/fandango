@@ -13,7 +13,6 @@ class PacketCoverageFilter:
         self._submitted_solutions: set[int] = set()
         self.hold_back_solutions: set[DerivationTree] = set()
         self._solution_set: set[int] = set()
-        # Deduplicated past message payloads instead of the whole past trees.
         self._past_msgs: set[DerivationTree] = set()
         self._current_msgs: set[DerivationTree] = set()
 
