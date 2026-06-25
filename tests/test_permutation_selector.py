@@ -11,6 +11,7 @@ from fandango.api import Fandango
 from fandango.io import ConnectionMode, FandangoIO, FandangoParty
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.packetselector import PacketSelector
+from fandango.io.navigation.protocol_model import ProtocolModel
 from fandango.language import DerivationTree, NonTerminal
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.grammar import Grammar
@@ -73,14 +74,14 @@ class TestPermutationGroupBuilding(unittest.TestCase):
     def setUpClass(cls):
         cls.grammar = _load_grammar()
 
-    def _bare_selector(self):
-        """Return a PacketSelector instance with only .grammar set (no full __init__)."""
-        sel = object.__new__(PacketSelector)
-        sel.grammar = self.grammar
-        return sel
+    def _bare_model(self):
+        """Return a ProtocolModel instance with only ._grammar set (no full __init__)."""
+        model = object.__new__(ProtocolModel)
+        model._grammar = self.grammar
+        return model
 
     def test_permutation_peers_share_group(self):
-        groups = self._bare_selector()._build_permutation_groups()
+        groups = self._bare_model()._build_permutation_groups()
         msg_a = NonTerminal("<msg_a>")
         msg_b = NonTerminal("<msg_b>")
         self.assertIn(msg_a, groups)
@@ -89,7 +90,7 @@ class TestPermutationGroupBuilding(unittest.TestCase):
         self.assertEqual(groups[msg_b], frozenset({msg_a, msg_b}))
 
     def test_non_permutation_symbol_has_no_group(self):
-        groups = self._bare_selector()._build_permutation_groups()
+        groups = self._bare_model()._build_permutation_groups()
         self.assertNotIn(NonTerminal("<msg_c>"), groups)
 
     def test_collect_packet_symbols_from_permutation_node(self):
@@ -109,7 +110,7 @@ class TestPermutationGroupBuilding(unittest.TestCase):
             is_permutation=True,
         )
         result: set[NonTerminal] = set()
-        PacketSelector._collect_packet_symbols_from_node(alt, result)
+        ProtocolModel._collect_packet_symbols_from_node(alt, result)
         self.assertEqual(result, {NonTerminal("<msg_a>"), NonTerminal("<msg_b>")})
 
     def test_non_permutation_alternative_yields_no_group(self):
@@ -122,8 +123,8 @@ class TestPermutationGroupBuilding(unittest.TestCase):
         )
         alt = Alternative([nt_a, nt_b], settings, is_permutation=False)
         groups: dict[NonTerminal, frozenset[NonTerminal]] = {}
-        sel = self._bare_selector()
-        sel._collect_permutation_groups(alt, groups)
+        model = self._bare_model()
+        model._collect_permutation_groups(alt, groups)
         self.assertEqual(groups, {})
 
 
