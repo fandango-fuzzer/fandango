@@ -48,13 +48,16 @@ def run(fandango, args, max_generations=None):
         fandango.stop_on_full_coverage = True
         fandango.enable_guidance(bool(args.guidance))
 
+    tally = {"inputs": 0, "outputs": 0, "trees": 0}
+
     start = time.time()
     if args.experiment:
         signal.signal(signal.SIGALRM, _deadline)
         signal.signal(signal.SIGTERM, _deadline)
         signal.alarm(int(args.duration))
     try:
-        for _ in fandango.generate(mode=FuzzingMode.IO, max_generations=max_generations):
+        for tree in fandango.generate(mode=FuzzingMode.IO, max_generations=max_generations):
+            _tally_messages(fandango, tree, tally)
             if args.experiment and time.time() - start >= args.duration:
                 break
     except _Deadline:
@@ -63,27 +66,30 @@ def run(fandango, args, max_generations=None):
         if args.experiment:
             signal.alarm(0)
         if args.experiment == "throughput":
-            write_throughput(fandango, args, start)
+            _tally_messages(fandango, fandango._protocol_tree, tally)  # in-progress run
+            write_throughput(fandango, args, start, tally)
         elif args.experiment == "coverage":
             write_coverage(fandango, args, start)
 
 
-def write_throughput(fandango, args, start):
-    trees = fandango._packet_selector._all_derivation_trees()
-    inputs = outputs = 0
-    for tree in trees:
-        for msg in tree.protocol_msgs():
-            if msg.sender in PLUMBING:
-                continue
-            if fandango._io_instance.parties[msg.sender].is_fuzzer_controlled():
-                inputs += 1
-            else:
-                outputs += 1
+def _tally_messages(fandango, tree, tally):
+    """Add a derivation tree's protocol messages to the running input/output tally."""
+    tally["trees"] += 1
+    for msg in tree.protocol_msgs():
+        if msg.sender in PLUMBING:
+            continue
+        if fandango._io_instance.parties[msg.sender].is_fuzzer_controlled():
+            tally["inputs"] += 1
+        else:
+            tally["outputs"] += 1
+
+
+def write_throughput(fandango, args, start, tally):
     grammar_coverage = fandango._packet_selector.coverage_percent(alt_cache=True) * 100
     with open(f"{args.out_dir}/throughput_{args.run_id}.txt", "w") as f:
-        f.write(f"input messages:   {inputs}\n")
-        f.write(f"output messages:  {outputs}\n")
-        f.write(f"derivation trees: {len(trees)}\n")
+        f.write(f"input messages:   {tally['inputs']}\n")
+        f.write(f"output messages:  {tally['outputs']}\n")
+        f.write(f"derivation trees: {tally['trees']}\n")
         f.write(f"time:             {time.time() - start:.1f}s\n")
         f.write(f"grammar coverage: {grammar_coverage:.2f}%\n")
 
