@@ -1,4 +1,7 @@
+import sys
+
 import measure
+
 from fandango.evolution.algorithm import (
     LoggerLevel,
     ProtocolAlgorithm,
@@ -10,6 +13,7 @@ from fandango.language.parse.parse import parse
 
 def main():
     args = measure.parse_args()
+    sys.setrecursionlimit(10**6)
     with open(args.grammar or "smtp_client.fan") as f:
         grammar, constraints = parse(f, use_stdlib=False)
     assert grammar is not None
