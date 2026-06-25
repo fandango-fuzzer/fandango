@@ -58,7 +58,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             or self._coverage_goal == CoverageGoal.SINGLE_DERIVATION
         ) and self._packet_selector.is_complete()
 
-    def _wait_for_remote_message(self, timeout: float) -> bool:
+    def _wait_for_remote_message(self, timeout: int) -> bool:
         wait_start = time.time()
         while not self._io_instance.received_msg():
             if time.time() - wait_start > timeout:
