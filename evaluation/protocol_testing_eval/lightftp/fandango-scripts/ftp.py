@@ -8,7 +8,7 @@ from fandango.evolution.algorithm import (
     ProtocolAlgorithm,
     SimpleGeneticAlgorithm,
 )
-from fandango.io.navigation.coverage_goal import CoverageGoal
+from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.language.parse.parse import parse
 
 

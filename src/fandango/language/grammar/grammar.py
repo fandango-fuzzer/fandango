@@ -9,7 +9,7 @@ from cachetools import LRUCache
 
 import fandango.language.grammar.nodes as nodes
 from fandango.errors import FandangoParseError, FandangoValueError
-from fandango.io.navigation.coverage_goal import CoverageGoal
+from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.language.grammar import FuzzingMode, ParsingMode, closest_match
 from fandango.language.grammar.has_settings import HasSettings

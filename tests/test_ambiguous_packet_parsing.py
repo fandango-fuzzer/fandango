@@ -17,7 +17,7 @@ import unittest
 
 from fandango.api import Fandango
 from fandango.io import FandangoIO
-from fandango.io.navigation.packetforecaster import PacketForecaster
+from fandango.io.navigation.graph.packetforecaster import PacketForecaster
 from fandango.io.packetparser import parse_next_remote_packet
 from fandango.language.grammar import FuzzingMode, ParsingMode
 from fandango.language.symbols import NonTerminal

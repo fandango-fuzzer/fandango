@@ -13,16 +13,40 @@ class PacketCoverageFilter:
         self._submitted_solutions: set[int] = set()
         self.hold_back_solutions: set[DerivationTree] = set()
         self._solution_set: set[int] = set()
-        self._past_trees: list[DerivationTree] = []
+        self._past_msgs: set[DerivationTree] = set()
+        self._current_msgs: set[DerivationTree] = set()
         self.disable_filtering = False
+
+    def add_completed_tree(self, tree: DerivationTree) -> None:
+        """Fold a finished run's messages into the past-message set."""
+        for record in tree.protocol_msgs():
+            self._past_msgs.add(record.msg)
+            self._submitted_solutions.add(
+                hash((record.sender, record.recipient, record.msg))
+            )
+
+    def set_current_tree(self, current_tree: DerivationTree) -> None:
+        """Register the in-progress tree's messages for the next generation."""
+        self.hold_back_solutions.clear()
+        self._solution_set.clear()
+        self._current_msgs = set()
+        for record in current_tree.protocol_msgs():
+            self._current_msgs.add(record.msg)
+            self._submitted_solutions.add(
+                hash((record.sender, record.recipient, record.msg))
+            )
+
+    def reset(self) -> None:
+        self._submitted_solutions.clear()
+        self.hold_back_solutions.clear()
+        self._solution_set.clear()
+        self._past_msgs.clear()
+        self._current_msgs.clear()
 
     def get_past_msgs(
         self, packet_type: Optional[PacketNonTerminal] = None
     ) -> set[DerivationTree]:
-        msgs = []
-        for tree in self._past_trees:
-            msgs.extend(tree.protocol_msgs())
-        msg_trees = set(map(lambda x: x.msg, msgs))
+        msg_trees = self._past_msgs | self._current_msgs
         if packet_type is None:
             return msg_trees
         return {
@@ -31,16 +55,6 @@ class PacketCoverageFilter:
             if isinstance(msg.symbol, NonTerminal)
             and PacketNonTerminal(msg.sender, msg.recipient, msg.symbol) == packet_type
         }
-
-    def set_existing_derivations(self, past_trees: list[DerivationTree]) -> None:
-        self._past_trees = past_trees
-        self.hold_back_solutions.clear()
-        self._solution_set.clear()
-        for tree in past_trees:
-            for msg in tree.protocol_msgs():
-                tree = msg.msg
-                key = (msg.sender, msg.recipient, tree)
-                self._submitted_solutions.add(hash(key))
 
     def _is_path_start_with(self, state_path: KPath, path: KPath) -> int:
         n = len(state_path)
@@ -80,7 +94,7 @@ class PacketCoverageFilter:
             list(self.get_past_msgs(msg_key)),
             self._diversity_k,
             symbol,
-            True,
+            overlap_to_root=True,
         )
 
         overlap_to_root = any(

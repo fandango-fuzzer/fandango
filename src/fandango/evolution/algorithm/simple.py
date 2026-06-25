@@ -22,7 +22,7 @@ from fandango.evolution.evaluation import Evaluator
 from fandango.evolution.mutation import MutationOperator
 from fandango.evolution.population import PopulationManager
 from fandango.evolution.profiler import Profiler
-from fandango.io.navigation.coverage_goal import CoverageGoal
+from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.language.grammar import FuzzingMode
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.tree import DerivationTree
