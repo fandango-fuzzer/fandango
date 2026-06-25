@@ -14,11 +14,8 @@ from fandango.io.navigation.powerschedule import (
     PowerScheduleCoverage,
     PowerScheduleKPath,
 )
-from fandango.io.navigation.stategrammarconverter import StateGrammarConverter
+from fandango.io.navigation.protocol_model import ProtocolModel
 from fandango.language.grammar.grammar import Grammar, KPath
-from fandango.language.grammar.nodes.alternative import Alternative
-from fandango.language.grammar.nodes.node import Node
-from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree
 from fandango.logger import log_guidance_hint
@@ -35,7 +32,7 @@ class PacketSelector:
         self.start_symbol = NonTerminal("<start>")
         self.coverage_goal = CoverageGoal.STATE_INPUTS
         self.grammar = grammar
-        self.state_grammar_symbols = self._get_state_grammar_symbols(self.start_symbol)
+        self._model = ProtocolModel(grammar, self.start_symbol)
         self.io_instance = io_instance
         self.msg_power_schedule = PowerScheduleCoverage()
         self.state_path_power_schedule = PowerScheduleKPath()
@@ -56,9 +53,6 @@ class PacketSelector:
         self._guide_path: list[PacketNonTerminal | NonTerminal | None] = []
         self._current_covered_k_paths: set[KPath] = set()
         self._all_past_covered_k_paths: set[KPath] = set()
-        self._permutation_groups: dict[NonTerminal, frozenset[NonTerminal]] = (
-            self._build_permutation_groups()
-        )
         self.compute(history_tree, self.parst_derivations)
 
     def _input_parties(self) -> set[str]:
@@ -67,64 +61,6 @@ class PacketSelector:
             if party.is_fuzzer_controlled():
                 parties.add(party.party_name)
         return parties
-
-    def _build_permutation_groups(self) -> dict[NonTerminal, frozenset[NonTerminal]]:
-        groups: dict[NonTerminal, frozenset[NonTerminal]] = {}
-        for rule in self.grammar.rules.values():
-            self._collect_permutation_groups(rule, groups)
-        return groups
-
-    def _collect_permutation_groups(
-        self, node: Node, groups: dict[NonTerminal, frozenset[NonTerminal]]
-    ) -> None:
-        if isinstance(node, Alternative) and node.is_permutation:
-            symbols: set[NonTerminal] = set()
-            self._collect_packet_symbols_from_node(node, symbols)
-            if len(symbols) > 1:
-                group = frozenset(symbols)
-                for sym in symbols:
-                    groups[sym] = group
-        for child in node.children():
-            self._collect_permutation_groups(child, groups)
-
-    @staticmethod
-    def _collect_packet_symbols_from_node(node: Node, result: set[NonTerminal]) -> None:
-        if isinstance(node, NonTerminalNode) and node.sender is not None:
-            result.add(node.symbol)
-        else:
-            for child in node.children():
-                PacketSelector._collect_packet_symbols_from_node(child, result)
-
-    def _get_state_grammar_symbols(
-        self, starting_symbol: NonTerminal
-    ) -> set[NonTerminal]:
-        state_grammar = StateGrammarConverter(self.grammar.grammar_settings).process(
-            self.grammar.rules, starting_symbol
-        )
-        symbols = set(state_grammar.keys())
-        symbols.update(
-            map(lambda x: x.symbol, self.grammar.get_protocol_messages(starting_symbol))
-        )
-        symbols = set(filter(lambda x: x in self.grammar.rules, symbols))
-        return symbols
-
-    def _group_messages_by_nt(
-        self,
-        trees: list[DerivationTree],
-        non_terminals: Optional[set[NonTerminal]] = None,
-    ) -> dict[NonTerminal, list[DerivationTree]]:
-        if non_terminals is None:
-            non_terminals = self.state_grammar_symbols
-        messages: list[DerivationTree] = []
-        for tree in trees:
-            for subtree in tree.flatten():
-                if subtree.symbol in non_terminals:
-                    messages.append(subtree)
-        messages_by_nt: dict[NonTerminal, list[DerivationTree]] = {}
-        for msg in messages:
-            assert isinstance(msg.symbol, NonTerminal)
-            messages_by_nt.setdefault(msg.symbol, []).append(msg)
-        return messages_by_nt
 
     @staticmethod
     def _tuple_contains(sub: tuple[Symbol, ...], full: tuple[Symbol, ...]) -> bool:
@@ -147,9 +83,9 @@ class PacketSelector:
         :param k: The k-path length for coverage computation.
         :return: Dictionary mapping NonTerminals to their coverage scores.
         """
-        messages_by_nt = self._group_messages_by_nt(self._all_derivation_trees())
+        messages_by_nt = self._model.group_messages_by_nt(self._all_derivation_trees())
         nt_coverage = {}
-        for symbol in self.state_grammar_symbols:
+        for symbol in self._model.state_grammar_symbols:
             if symbol not in messages_by_nt:
                 nt_coverage[symbol] = 0.0
                 continue
@@ -279,7 +215,7 @@ class PacketSelector:
         for list_idx, path in enumerate(list(uncovered_paths)):
             remaining_path = path
             for path_idx, symbol in enumerate(path[::-1]):
-                if symbol in self.state_grammar_symbols:
+                if symbol in self._model.state_grammar_symbols:
                     break
                 last_idx = len(path) - path_idx - 1
                 remaining_path = remaining_path[:last_idx]
@@ -385,9 +321,9 @@ class PacketSelector:
                     assert isinstance(msg.symbol, NonTerminal)
                     if (
                         old_next_packet is not None
-                        and old_next_packet.symbol in self._permutation_groups
+                        and old_next_packet.symbol in self._model.permutation_groups
                         and msg.symbol
-                        in self._permutation_groups[old_next_packet.symbol]
+                        in self._model.permutation_groups[old_next_packet.symbol]
                     ):
                         msg_pnt = PacketNonTerminal(
                             msg.sender, msg.recipient, msg.symbol
