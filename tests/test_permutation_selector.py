@@ -2,10 +2,10 @@ import unittest
 
 from fandango.api import Fandango
 from fandango.io import ConnectionMode, FandangoIO, FandangoParty
-from fandango.io.navigation.selection.forecast_view import ForecastView
-from fandango.io.navigation.selection.packet_guide import PacketGuide
 from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
+from fandango.io.navigation.selection.forecast_view import ForecastView
+from fandango.io.navigation.selection.packet_guide import PacketGuide
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.target_selector import TargetSelector
 from fandango.language import DerivationTree, NonTerminal
@@ -146,7 +146,7 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
     def _select(self, guide: PacketGuide) -> None:
         # a non-empty uncovered list keeps the guide off the "guide to end" path
         guide.select_next_packet(
-            self.history, [], lambda: [(NonTerminal("<msg_c>"),)], lambda: []
+            self.history, None, 0, lambda: [(NonTerminal("<msg_c>"),)], lambda: []
         )
 
     def _parse(self, text: str) -> DerivationTree:
