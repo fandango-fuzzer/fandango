@@ -45,14 +45,19 @@ mkdir -p "$results_dir"
 results_dir="$(cd "$results_dir" && pwd)"
 image="$target-fandango"
 
-# Build the image, re-cloning Fandango when its HEAD moved (CACHEBUST). Skip with SKIP_BUILD=1.
+# Build the image from the local fandango checkout (CACHEBUST busts the layer
+# when HEAD moved). Skip with SKIP_BUILD=1.
 if [ "${SKIP_BUILD:-0}" = "1" ]; then
   echo "reusing image $image:latest"
 else
-  echo "building $image from $target_dir"
+  echo "building $image from $target_dir (local fandango checkout)"
   cachebust="${CACHEBUST:-$(git -C "$here" rev-parse HEAD 2>/dev/null || echo 0)}"
+  "$here/_stage_fandango.sh" "$target_dir"
   docker build "$target_dir" -f "$target_dir/Dockerfile-fandango" \
     --build-arg "CACHEBUST=$cachebust" -t "$image:latest"
+  build_rc=$?
+  rm -rf "$target_dir/_fandango_src"
+  [ $build_rc -eq 0 ] || exit $build_rc
 fi
 
 # Watchdog budgets: derive from --duration when measuring, otherwise use the defaults.

@@ -44,9 +44,13 @@ esac
 for t in $targets; do
   [ -f "$t/Dockerfile-fandango" ] || { echo "no such target: $t" >&2; continue; }
 
-  echo "building $t"
+  echo "building $t (from local fandango checkout)"
+  ./_stage_fandango.sh "$t" || { echo "failed to stage local fandango for $t" >&2; continue; }
   docker build "$t" -f "$t/Dockerfile-fandango" \
-    --build-arg CACHEBUST="$(git rev-parse HEAD 2>/dev/null)" -t "$t-fandango:latest" || continue
+    --build-arg CACHEBUST="$(git rev-parse HEAD 2>/dev/null)" -t "$t-fandango:latest"
+  build_rc=$?
+  rm -rf "$t/_fandango_src"
+  [ $build_rc -eq 0 ] || continue
 
   for c in $conditions; do
     guidance=${c%%:*}

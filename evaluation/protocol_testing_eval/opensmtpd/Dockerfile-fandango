@@ -40,13 +40,10 @@ RUN python3.11 -m pip install -U pip setuptools wheel
 
 RUN python3.11 -m pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org gcovr==8.6
 
-# CACHEBUST (set to the local fandango HEAD by the build scripts) busts this layer
-# whenever fandango moves, so the image re-clones the latest io_replication.
 ARG CACHEBUST=0
-RUN echo "fandango build ref: ${CACHEBUST}" && \
-    git clone https://github.com/fandango-fuzzer/fandango.git /home/ubuntu/fandango-src && \
-    cd /home/ubuntu/fandango-src && \
-    git checkout io_replication && \
+RUN echo "fandango build ref: ${CACHEBUST}"
+COPY _fandango_src /home/ubuntu/fandango-src
+RUN cd /home/ubuntu/fandango-src && \
     python3.11 -m pip install --no-cache-dir -e ".[test]"
 
 ENV CFLAGS="-fprofile-arcs --coverage -ftest-coverage -O0"
