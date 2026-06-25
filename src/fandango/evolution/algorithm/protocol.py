@@ -29,7 +29,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS,
         remote_response_timeout: int = 15,
     ):
-        self.CLEAR_CONSTRAINT_CACHE_INTERVAL = 100
+        self.CLEAR_CONSTRAINT_CACHE_INTERVAL = 10
         self._start_symbol = NonTerminal("<start>")
         self._packet_algorithm = packet_algorithm
         self.grammar = packet_algorithm.grammar
@@ -200,7 +200,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             len(self._packet_selector.get_next_parties()) == 0
             and not self._packet_selector.is_complete()
         )
-    
+
     def _record_coverage_log(self):
         start_measuring = time.time()
         current_cov = self._packet_selector.coverage_percent(alt_cache=True) * 100
@@ -246,6 +246,15 @@ class ProtocolAlgorithm(GeneticAlgorithm):
 
             if self._is_failed_forecast():
                 raise FandangoFailedError("Could not forecast next packet")
+
+            if (
+                not self.stop_on_full_coverage
+                and self._is_enable_guidance
+                and self._packet_selector.is_guide_to_end()
+                and self._packet_selector.coverage_percent() == 1.0
+            ):
+                self.enable_guidance(False)
+                continue
 
             if self._is_protocol_run_complete():
                 final_tree = random.choice(
