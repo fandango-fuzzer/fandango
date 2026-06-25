@@ -1,6 +1,5 @@
 from typing import Optional
 
-from fandango.io.navigation.coverage.kpath_coverage import KPathCoverage
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.language.grammar.grammar import Grammar, KPath
 from fandango.language.symbols.non_terminal import NonTerminal
@@ -11,19 +10,43 @@ class PacketCoverageFilter:
     def __init__(self, diversity_k: int, grammar: Grammar):
         self._diversity_k = diversity_k
         self._grammar = grammar
-        self._coverage = KPathCoverage(grammar, diversity_k)
         self._submitted_solutions: set[int] = set()
         self.hold_back_solutions: set[DerivationTree] = set()
         self._solution_set: set[int] = set()
-        self._past_trees: list[DerivationTree] = []
+        # Deduplicated past message payloads instead of the whole past trees.
+        self._past_msgs: set[DerivationTree] = set()
+        self._current_msgs: set[DerivationTree] = set()
+
+    def add_completed_tree(self, tree: DerivationTree) -> None:
+        """Fold a finished run's messages into the past-message set."""
+        for record in tree.protocol_msgs():
+            self._past_msgs.add(record.msg)
+            self._submitted_solutions.add(
+                hash((record.sender, record.recipient, record.msg))
+            )
+
+    def set_current_tree(self, current_tree: DerivationTree) -> None:
+        """Register the in-progress tree's messages for the next generation."""
+        self.hold_back_solutions.clear()
+        self._solution_set.clear()
+        self._current_msgs = set()
+        for record in current_tree.protocol_msgs():
+            self._current_msgs.add(record.msg)
+            self._submitted_solutions.add(
+                hash((record.sender, record.recipient, record.msg))
+            )
+
+    def reset(self) -> None:
+        self._submitted_solutions.clear()
+        self.hold_back_solutions.clear()
+        self._solution_set.clear()
+        self._past_msgs.clear()
+        self._current_msgs.clear()
 
     def get_past_msgs(
         self, packet_type: Optional[PacketNonTerminal] = None
     ) -> set[DerivationTree]:
-        msgs = []
-        for tree in self._past_trees:
-            msgs.extend(tree.protocol_msgs())
-        msg_trees = set(map(lambda x: x.msg, msgs))
+        msg_trees = self._past_msgs | self._current_msgs
         if packet_type is None:
             return msg_trees
         return {
@@ -32,16 +55,6 @@ class PacketCoverageFilter:
             if isinstance(msg.symbol, NonTerminal)
             and PacketNonTerminal(msg.sender, msg.recipient, msg.symbol) == packet_type
         }
-
-    def set_existing_derivations(self, past_trees: list[DerivationTree]) -> None:
-        self._past_trees = past_trees
-        self.hold_back_solutions.clear()
-        self._solution_set.clear()
-        for tree in past_trees:
-            for msg in tree.protocol_msgs():
-                tree = msg.msg
-                key = (msg.sender, msg.recipient, tree)
-                self._submitted_solutions.add(hash(key))
 
     def _is_path_start_with(self, state_path: KPath, path: KPath) -> int:
         n = len(state_path)
@@ -53,7 +66,6 @@ class PacketCoverageFilter:
         return 0
 
     def filter(self, individual: DerivationTree) -> Optional[DerivationTree]:
-
         if len(individual.protocol_msgs()) != 0:
             msg = individual.protocol_msgs()[-1].msg
             symbol = msg.symbol
@@ -75,8 +87,9 @@ class PacketCoverageFilter:
             state_path_tree = state_path_tree[-self._diversity_k :]
         state_path = tuple(map(lambda x: x.symbol, state_path_tree))
         assert isinstance(symbol, NonTerminal)
-        uncovered_paths = self._coverage.uncovered(
+        uncovered_paths = self._grammar.get_uncovered_k_paths(
             list(self.get_past_msgs(msg_key)),
+            self._diversity_k,
             symbol,
             overlap_to_root=True,
         )
@@ -86,13 +99,15 @@ class PacketCoverageFilter:
             for path in uncovered_paths
         )
 
-        old_coverage = self._coverage.ratio(
+        old_coverage = self._grammar.compute_kpath_coverage(
             list(self.get_past_msgs(msg_key)),
+            self._diversity_k,
             symbol,
             overlap_to_root=overlap_to_root,
         )
-        new_coverage = self._coverage.ratio(
+        new_coverage = self._grammar.compute_kpath_coverage(
             list(self.get_past_msgs(msg_key)) + [msg],
+            self._diversity_k,
             symbol,
             overlap_to_root=overlap_to_root,
         )

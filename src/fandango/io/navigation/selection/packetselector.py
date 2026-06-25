@@ -2,15 +2,14 @@ from typing import Optional
 
 from fandango.io import FandangoIO
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
-from fandango.io.navigation.selection.coverage_tracker import CoverageTracker
-from fandango.io.navigation.selection.forecast_view import ForecastView
-from fandango.io.navigation.coverage.kpath_coverage import KPathCoverage
-from fandango.io.navigation.selection.packet_guide import PacketGuide
 from fandango.io.navigation.graph.packetforecaster import (
     ForecastingPacket,
     ForecastingResult,
 )
 from fandango.io.navigation.graph.packetnavigator import PacketNavigator
+from fandango.io.navigation.selection.coverage_tracker import CoverageTracker
+from fandango.io.navigation.selection.forecast_view import ForecastView
+from fandango.io.navigation.selection.packet_guide import PacketGuide
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.target_selector import TargetSelector
 from fandango.language.grammar.grammar import Grammar
@@ -31,7 +30,6 @@ class PacketSelector:
         self.io_instance = io_instance
         self._model = ProtocolModel(grammar, self.start_symbol)
         self._forecast = ForecastView(grammar, io_instance, lambda: self.history_tree)
-        self._coverage = KPathCoverage(grammar, diversity_k)
         self._target_selector = TargetSelector(grammar, self.start_symbol, self._model)
         self._guide = PacketGuide(
             self._model,
@@ -40,19 +38,20 @@ class PacketSelector:
             self._target_selector,
             max_messages_per_tree=200,
         )
-        self.parst_derivations: list[DerivationTree] = []
         self.history_tree: DerivationTree = DerivationTree(NonTerminal("<start>"))
+        self._last_completed_tree: Optional[DerivationTree] = None
+        self._completed_count = 0
         self._coverage_tracker = CoverageTracker(
-            self._coverage,
+            grammar,
+            diversity_k,
             self._model,
             self.start_symbol,
             self._input_parties,
             lambda: self.history_tree,
-            lambda: self.parst_derivations,
             CoverageGoal.STATE_INPUTS,
         )
         self._next_packets: Optional[list[ForecastingPacket]] = None
-        self.compute(history_tree, self.parst_derivations)
+        self.compute(history_tree)
 
     def _input_parties(self) -> set[str]:
         parties: set[str] = set()
@@ -61,13 +60,21 @@ class PacketSelector:
                 parties.add(party.party_name)
         return parties
 
-    def compute(
-        self, history_tree: DerivationTree, parst_derivations: list[DerivationTree]
-    ) -> None:
+    def compute(self, history_tree: DerivationTree) -> None:
         self.history_tree = history_tree
-        self.parst_derivations = parst_derivations
         self._coverage_tracker.invalidate()
         self._next_packets = None
+
+    def add_completed_tree(self, tree: DerivationTree) -> None:
+        """Fold a finished protocol run into the coverage basis."""
+        self._coverage_tracker.add_completed_tree(tree)
+        self._last_completed_tree = tree
+        self._completed_count += 1
+
+    def reset_coverage(self) -> None:
+        self._coverage_tracker.reset()
+        self._last_completed_tree = None
+        self._completed_count = 0
 
     @property
     def forecasting_result(self) -> ForecastingResult:
@@ -77,7 +84,8 @@ class PacketSelector:
         if self._next_packets is None:
             self._next_packets = self._guide.select_next_packet(
                 self.history_tree,
-                self.parst_derivations,
+                self._last_completed_tree,
+                self._completed_count,
                 self._coverage_tracker.uncovered_paths,
                 self._coverage_tracker.coverage_scores,
             )

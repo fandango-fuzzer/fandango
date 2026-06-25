@@ -34,7 +34,6 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         )
         self._packet_algorithm.population_manager = self._population_manager
         self._protocol_tree: DerivationTree = DerivationTree(self._start_symbol)
-        self._past_interactions: list[DerivationTree] = []
         self._coverage_goal = coverage_goal
         self._remote_response_timeout = remote_response_timeout
         self._io_instance: FandangoIO = FandangoIO.instance()
@@ -196,7 +195,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         mode: FuzzingMode = FuzzingMode.COMPLETE,
     ) -> Generator[DerivationTree, None, None]:
         while True:
-            self._packet_selector.compute(self._protocol_tree, self._past_interactions)
+            self._packet_selector.compute(self._protocol_tree)
             LOGGER.info(
                 f"Current coverage: {self._packet_selector.coverage_percent() * 100:.2f}%"
             )
@@ -208,7 +207,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 final_tree = random.choice(
                     list(self._packet_selector.forecasting_result.complete_trees)
                 )
-                self._past_interactions.append(final_tree)
+                self._packet_selector.add_completed_tree(final_tree)
+                self._packet_coverage_filter.add_completed_tree(final_tree)
                 yield final_tree
                 if self._coverage_goal == CoverageGoal.SINGLE_DERIVATION:
                     return None
@@ -223,9 +223,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             if self._should_generate_next_packet():
                 self._packet_algorithm.reset()
                 self._configure_fuzzable_packets()
-                self._packet_coverage_filter.set_existing_derivations(
-                    [self._protocol_tree] + self._past_interactions
-                )
+                self._packet_coverage_filter.set_current_tree(self._protocol_tree)
                 next_history_tree = self._generate_packet(
                     max_generations=max_generations
                 )
@@ -252,7 +250,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 try:
                     self._protocol_tree = self._handle_remote_response()
                 except (FandangoFailedError, FandangoParseError) as exc:
-                    self._past_interactions.append(self._protocol_tree)
+                    self._packet_selector.add_completed_tree(self._protocol_tree)
+                    self._packet_coverage_filter.add_completed_tree(self._protocol_tree)
                     self.violations.append((self._protocol_tree, exc))
                     if self.throw_on_violation:
                         raise exc
@@ -295,5 +294,6 @@ class ProtocolAlgorithm(GeneticAlgorithm):
 
     def reset(self) -> None:
         self._packet_algorithm.reset()
-        self._past_interactions.clear()
+        self._packet_selector.reset_coverage()
+        self._packet_coverage_filter.reset()
         self._protocol_tree = DerivationTree(self._start_symbol)
