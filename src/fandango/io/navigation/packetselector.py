@@ -10,11 +10,8 @@ from fandango.io.navigation.packetforecaster import (
 )
 from fandango.io.navigation.packetnavigator import PacketNavigator
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.io.navigation.powerschedule import (
-    PowerScheduleCoverage,
-    PowerScheduleKPath,
-)
 from fandango.io.navigation.protocol_model import ProtocolModel
+from fandango.io.navigation.target_selector import TargetSelector
 from fandango.language.grammar.grammar import Grammar, KPath
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree
@@ -34,12 +31,11 @@ class PacketSelector:
         self.grammar = grammar
         self._model = ProtocolModel(grammar, self.start_symbol)
         self.io_instance = io_instance
-        self.msg_power_schedule = PowerScheduleCoverage()
-        self.state_path_power_schedule = PowerScheduleKPath()
         self.navigator = PacketNavigator(grammar, self.start_symbol)
         self._forecast = ForecastView(grammar, io_instance, lambda: self.history_tree)
         self.diversity_k = diversity_k
         self._coverage = KPathCoverage(grammar, diversity_k)
+        self._target_selector = TargetSelector(grammar, self.start_symbol, self._model)
         self.parst_derivations: list[DerivationTree] = []
         self.prev_past_derivations_len = 0
         self.history_tree: DerivationTree = DerivationTree(NonTerminal("<start>"))
@@ -180,32 +176,9 @@ class PacketSelector:
         )
 
     def _select_next_target(self) -> KPath:
-        uncovered_paths = self._uncovered_paths()
-        for list_idx, path in enumerate(list(uncovered_paths)):
-            remaining_path = path
-            for path_idx, symbol in enumerate(path[::-1]):
-                if symbol in self._model.state_grammar_symbols:
-                    break
-                last_idx = len(path) - path_idx - 1
-                remaining_path = remaining_path[:last_idx]
-            uncovered_paths[list_idx] = remaining_path
-        uncovered_paths = list(filter(lambda x: len(x) > 0, uncovered_paths))
-        if len(uncovered_paths) == 0:
-            protocol_msgs = self.grammar.get_protocol_messages(self.start_symbol)
-            message_nts = set(map(lambda x: x.symbol, protocol_msgs))
-            message_coverage: dict[Symbol, float] = dict(
-                filter(lambda x: x[0] in message_nts, self.coverage_scores)
-            )
-            m_ps = self.msg_power_schedule
-            m_ps.assign_energy_coverage(message_coverage)
-            target = m_ps.choose()
-            m_ps.add_past_target(target)
-            return (target,)
-        s_ps = self.state_path_power_schedule
-        s_ps.assign_energy_k_path(uncovered_paths)
-        selected_path = s_ps.choose()
-        s_ps.add_past_target(selected_path)
-        return selected_path
+        return self._target_selector.select(
+            self._uncovered_paths(), self.coverage_scores
+        )
 
     def _is_tree_contains_paths(
         self, paths: set[tuple[Symbol, ...]], tree: DerivationTree
