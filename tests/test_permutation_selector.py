@@ -1,17 +1,13 @@
-"""
-Tests for permutation-aware handling in PacketSelector:
-  - _build_permutation_groups correctly identifies permutation peer sets
-  - When a permutation peer arrives out of order, it is removed from the
-    guide path in-place rather than triggering a full re-plan
-"""
-
 import unittest
 
 from fandango.api import Fandango
 from fandango.io import ConnectionMode, FandangoIO, FandangoParty
+from fandango.io.navigation.forecast_view import ForecastView
+from fandango.io.navigation.packet_guide import PacketGuide
+from fandango.io.navigation.packetnavigator import PacketNavigator
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.io.navigation.packetselector import PacketSelector
 from fandango.io.navigation.protocol_model import ProtocolModel
+from fandango.io.navigation.target_selector import TargetSelector
 from fandango.language import DerivationTree, NonTerminal
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.grammar import Grammar
@@ -52,9 +48,8 @@ def _make_test_io() -> FandangoIO:
     return io
 
 
-class _StubSelector(PacketSelector):
-    """PacketSelector with forecasting/party stubs so guide-path tests
-    don't depend on a live IO instance or full coverage computation."""
+class _StubForecast(ForecastView):
+    """ForecastView with fixed party/packet stubs, keeping the real prediction."""
 
     def next_fuzzer_parties(
         self, show_fuzzer_controlled=True, show_external_controlled=False
@@ -129,8 +124,7 @@ class TestPermutationGroupBuilding(unittest.TestCase):
 
 
 class TestPermutationGuidePathAdjustment(unittest.TestCase):
-    """Integration tests verifying guide-path behaviour when permutation
-    peers arrive out of order."""
+    """Guide-path adjustment when permutation peers arrive out of order."""
 
     grammar: Grammar
 
@@ -138,121 +132,83 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
     def setUpClass(cls):
         cls.grammar = _load_grammar()
 
-    def _make_selector(self):
-        return _StubSelector(
-            self.grammar,
-            _make_test_io(),
-            DerivationTree(NonTerminal("<start>")),
-            diversity_k=1,
+    def _make_guide(self) -> PacketGuide:
+        start = NonTerminal("<start>")
+        self.history = DerivationTree(start)
+        model = ProtocolModel(self.grammar, start)
+        forecast = _StubForecast(self.grammar, _make_test_io(), lambda: self.history)
+        navigator = PacketNavigator(self.grammar, start)
+        target_selector = TargetSelector(self.grammar, start, model)
+        return PacketGuide(
+            model, forecast, navigator, target_selector, max_messages_per_tree=200
+        )
+
+    def _select(self, guide: PacketGuide) -> None:
+        # a non-empty uncovered list keeps the guide off the "guide to end" path
+        guide.select_next_packet(
+            self.history, [], lambda: [(NonTerminal("<msg_c>"),)], lambda: []
+        )
+
+    def _parse(self, text: str) -> DerivationTree:
+        return self.grammar.parse(
+            text, mode=ParsingMode.INCOMPLETE, include_controlflow=True
         )
 
     def test_out_of_order_permutation_peer_removed_from_guide_path(self):
-        """msg_b arrives when the guide expects msg_a first.  Because they are
-        permutation peers, msg_b should be silently consumed from the guide path
-        rather than triggering a re-plan."""
-        sel = self._make_selector()
+        guide = self._make_guide()
+        pnt_a = PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>"))
+        pnt_b = PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>"))
+        pnt_c = PacketNonTerminal("StdOut", None, NonTerminal("<msg_c>"))
 
-        msg_a = NonTerminal("<msg_a>")
-        msg_b = NonTerminal("<msg_b>")
-        msg_c = NonTerminal("<msg_c>")
-        pnt_a = PacketNonTerminal("StdOut", None, msg_a)
-        pnt_b = PacketNonTerminal("StdOut", None, msg_b)
-        pnt_c = PacketNonTerminal("StdOut", None, msg_c)
+        guide._guide_path = [pnt_a, pnt_b, pnt_c]
+        guide._guide_target = (NonTerminal("<msg_c>"),)
+        guide._prev_session_msgs = []
+        self.history = self._parse("b")
+        self._select(guide)
 
-        sel._guide_path = [pnt_a, pnt_b, pnt_c]
-        sel._guide_target = (msg_c,)
-        sel._prev_session_msgs = []
-
-        sel.history_tree = self.grammar.parse(
-            "b", mode=ParsingMode.INCOMPLETE, include_controlflow=True
-        )
-
-        sel._select_next_packet()
-
-        self.assertIn(pnt_a, sel._guide_path, "pnt_a should still be pending")
-        self.assertNotIn(
-            pnt_b, sel._guide_path, "pnt_b arrived – should be gone from path"
-        )
-        self.assertIn(pnt_c, sel._guide_path, "pnt_c should still be pending")
+        self.assertEqual(guide._guide_path, [pnt_a, pnt_c])
 
     def test_guide_path_unchanged_when_no_new_messages(self):
-        """With an empty history and no previously seen messages, the guide
-        path should remain intact after _select_next_packet."""
-        sel = self._make_selector()
+        guide = self._make_guide()
+        pnt_a = PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>"))
+        pnt_b = PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>"))
 
-        msg_a = NonTerminal("<msg_a>")
-        msg_b = NonTerminal("<msg_b>")
-        pnt_a = PacketNonTerminal("StdOut", None, msg_a)
-        pnt_b = PacketNonTerminal("StdOut", None, msg_b)
+        guide._guide_path = [pnt_a, pnt_b]
+        guide._guide_target = (NonTerminal("<msg_b>"),)
+        guide._prev_session_msgs = []
+        self._select(guide)
 
-        sel._guide_path = [pnt_a, pnt_b]
-        sel._guide_target = (msg_b,)
-        sel._prev_session_msgs = []
-
-        sel._select_next_packet()
-
-        self.assertEqual(sel._guide_path, [pnt_a, pnt_b])
+        self.assertEqual(guide._guide_path, [pnt_a, pnt_b])
 
     def test_expected_message_advances_guide_path(self):
-        """When the in-order message (msg_a) arrives as expected, pnt_a is
-        consumed and the guide path advances to pnt_b."""
-        sel = self._make_selector()
+        guide = self._make_guide()
+        pnt_a = PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>"))
+        pnt_b = PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>"))
 
-        msg_a = NonTerminal("<msg_a>")
-        msg_b = NonTerminal("<msg_b>")
-        pnt_a = PacketNonTerminal("StdOut", None, msg_a)
-        pnt_b = PacketNonTerminal("StdOut", None, msg_b)
+        guide._guide_path = [pnt_a, pnt_b]
+        guide._guide_target = (NonTerminal("<msg_b>"),)
+        guide._prev_session_msgs = []
+        self.history = self._parse("a")
+        self._select(guide)
 
-        sel._guide_path = [pnt_a, pnt_b]
-        sel._guide_target = (msg_b,)
-        sel._prev_session_msgs = []
-
-        sel.history_tree = self.grammar.parse(
-            "a", mode=ParsingMode.INCOMPLETE, include_controlflow=True
-        )
-
-        sel._select_next_packet()
-
-        self.assertNotIn(pnt_a, sel._guide_path, "pnt_a arrived – should be consumed")
-        self.assertIn(pnt_b, sel._guide_path, "pnt_b should still be pending")
+        self.assertEqual(guide._guide_path, [pnt_b])
 
     def test_both_permutation_peers_out_of_order_both_consumed(self):
-        """Two sequential calls simulate b arriving first, then a.
-        After both calls the only remaining guide-path entry should be pnt_c."""
-        sel = self._make_selector()
+        guide = self._make_guide()
+        pnt_a = PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>"))
+        pnt_b = PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>"))
+        pnt_c = PacketNonTerminal("StdOut", None, NonTerminal("<msg_c>"))
 
-        msg_a = NonTerminal("<msg_a>")
-        msg_b = NonTerminal("<msg_b>")
-        msg_c = NonTerminal("<msg_c>")
-        pnt_a = PacketNonTerminal("StdOut", None, msg_a)
-        pnt_b = PacketNonTerminal("StdOut", None, msg_b)
-        pnt_c = PacketNonTerminal("StdOut", None, msg_c)
+        guide._guide_path = [pnt_a, pnt_b, pnt_c]
+        guide._guide_target = (NonTerminal("<msg_c>"),)
+        guide._prev_session_msgs = []
+        self.history = self._parse("b")
+        self._select(guide)
+        self.assertEqual(guide._guide_path, [pnt_a, pnt_c])
 
-        # --- call 1: msg_b arrives out of order ---
-        sel._guide_path = [pnt_a, pnt_b, pnt_c]
-        sel._guide_target = (msg_c,)
-        sel._prev_session_msgs = []
-        sel.history_tree = self.grammar.parse(
-            "b", mode=ParsingMode.INCOMPLETE, include_controlflow=True
-        )
-        sel._select_next_packet()
-
-        # pnt_b consumed out-of-order; pnt_a still pending
-        self.assertIn(pnt_a, sel._guide_path)
-        self.assertNotIn(pnt_b, sel._guide_path)
-
-        # _remember_messages() was called inside _select_next_packet; do not
-        # reset _prev_session_msgs — let the selector see only the incremental delta.
-
-        # --- call 2: msg_a arrives next ---
-        sel.history_tree = self.grammar.parse(
-            "ba", mode=ParsingMode.INCOMPLETE, include_controlflow=True
-        )
-        sel._select_next_packet()
-
-        self.assertNotIn(pnt_a, sel._guide_path, "pnt_a arrived – should be consumed")
-        self.assertNotIn(pnt_b, sel._guide_path, "pnt_b was consumed in call 1")
-        self.assertIn(pnt_c, sel._guide_path, "pnt_c should still be pending")
+        self.history = self._parse("ba")
+        self._select(guide)
+        self.assertEqual(guide._guide_path, [pnt_c])
 
 
 if __name__ == "__main__":
