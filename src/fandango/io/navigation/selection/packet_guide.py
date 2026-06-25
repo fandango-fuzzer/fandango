@@ -1,10 +1,10 @@
 from collections.abc import Callable
 from typing import Optional
 
-from fandango.io.navigation.selection.forecast_view import ForecastView
 from fandango.io.navigation.graph.packetforecaster import ForecastingPacket
 from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
+from fandango.io.navigation.selection.forecast_view import ForecastView
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.target_selector import TargetSelector
 from fandango.language.grammar.grammar import KPath
@@ -36,8 +36,8 @@ class PacketGuide:
         self._max_messages_per_tree = max_messages_per_tree
 
         self._history_tree: DerivationTree = DerivationTree(NonTerminal("<start>"))
-        self._parst_derivations: list[DerivationTree] = []
-        self._prev_past_derivations_len = 0
+        self._last_completed_tree: Optional[DerivationTree] = None
+        self._prev_completed_count = 0
         self._guide_to_end = False
         self._guide_target: Optional[KPath] = None
         self._guide_path: list[PacketNonTerminal | NonTerminal | None] = []
@@ -51,22 +51,23 @@ class PacketGuide:
     def select_next_packet(
         self,
         history_tree: DerivationTree,
-        parst_derivations: list[DerivationTree],
+        last_completed_tree: Optional[DerivationTree],
+        completed_count: int,
         get_uncovered_paths: Callable[[], list[KPath]],
         get_coverage_scores: Callable[[], list[tuple[NonTerminal, float]]],
     ) -> list[ForecastingPacket]:
         self._history_tree = history_tree
-        self._parst_derivations = parst_derivations
+        self._last_completed_tree = last_completed_tree
 
         if len(self._forecast.next_fuzzer_parties()) == 0:
             current_external_parties = set(self._forecast.next_fuzzer_parties(False, True))
             if "TimerEvent" not in current_external_parties:
                 return []
 
-        is_new_tree = len(parst_derivations) > self._prev_past_derivations_len
+        is_new_tree = completed_count > self._prev_completed_count
         if is_new_tree:
             self._session_covered_k_paths.clear()
-        self._prev_past_derivations_len = len(parst_derivations)
+        self._prev_completed_count = completed_count
 
         uncovered_paths = get_uncovered_paths()
         self._guide_to_end = False
@@ -260,8 +261,9 @@ class PacketGuide:
     def _new_msgs(self, is_new_tree: bool) -> list[DerivationTree]:
         prev_msgs = []
         if is_new_tree:
+            assert self._last_completed_tree is not None
             prev_msgs = list(
-                map(lambda x: x.msg, self._parst_derivations[-1].protocol_msgs())
+                map(lambda x: x.msg, self._last_completed_tree.protocol_msgs())
             )
         current_session_msgs = list(
             map(lambda x: x.msg, self._history_tree.protocol_msgs())
