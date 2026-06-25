@@ -2,6 +2,7 @@ from typing import Optional
 
 from fandango.io import FandangoIO
 from fandango.io.navigation.coverage_goal import CoverageGoal
+from fandango.io.navigation.kpath_coverage import KPathCoverage
 from fandango.io.navigation.packetforecaster import (
     ForecastingPacket,
     ForecastingResult,
@@ -41,6 +42,7 @@ class PacketSelector:
         self.navigator = PacketNavigator(grammar, self.start_symbol)
         self.forecaster = PacketForecaster(self.grammar)
         self.diversity_k = diversity_k
+        self._coverage = KPathCoverage(grammar, diversity_k)
         self.parst_derivations: list[DerivationTree] = []
         self.prev_past_derivations_len = 0
         self.history_tree: DerivationTree = DerivationTree(NonTerminal("<start>"))
@@ -151,8 +153,8 @@ class PacketSelector:
             if symbol not in messages_by_nt:
                 nt_coverage[symbol] = 0.0
                 continue
-            nt_coverage[symbol] = self.grammar.compute_kpath_coverage(
-                messages_by_nt[symbol], k, symbol, overlap_to_root
+            nt_coverage[symbol] = self._coverage.ratio(
+                messages_by_nt[symbol], symbol, overlap_to_root=overlap_to_root
             )
         nt_coverage_list = list(
             sorted(nt_coverage.items(), key=lambda x: (x[1], x[0].name()))
@@ -265,9 +267,8 @@ class PacketSelector:
         return all_derivation_trees
 
     def _uncovered_paths(self) -> list[KPath]:
-        return self.grammar.get_uncovered_k_paths(
+        return self._coverage.uncovered(
             self._all_derivation_trees(),
-            self.diversity_k,
             self.start_symbol,
             coverage_goal=self.coverage_goal,
             input_parties=self._input_parties(),
@@ -506,8 +507,7 @@ class PacketSelector:
         u_paths = self._uncovered_paths()
         if len(u_paths) == 0:
             return 1.0
-        all_paths = self.grammar.generate_all_k_paths(
-            k=self.diversity_k,
+        all_paths = self._coverage.all_k_paths(
             coverage_goal=self.coverage_goal,
             input_parties=self._input_parties(),
         )

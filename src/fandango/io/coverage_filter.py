@@ -1,5 +1,6 @@
 from typing import Optional
 
+from fandango.io.navigation.kpath_coverage import KPathCoverage
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.language.grammar.grammar import Grammar, KPath
 from fandango.language.symbols.non_terminal import NonTerminal
@@ -10,6 +11,7 @@ class PacketCoverageFilter:
     def __init__(self, diversity_k: int, grammar: Grammar):
         self._diversity_k = diversity_k
         self._grammar = grammar
+        self._coverage = KPathCoverage(grammar, diversity_k)
         self._submitted_solutions: set[int] = set()
         self.hold_back_solutions: set[DerivationTree] = set()
         self._solution_set: set[int] = set()
@@ -73,11 +75,10 @@ class PacketCoverageFilter:
             state_path_tree = state_path_tree[-self._diversity_k :]
         state_path = tuple(map(lambda x: x.symbol, state_path_tree))
         assert isinstance(symbol, NonTerminal)
-        uncovered_paths = self._grammar.get_uncovered_k_paths(
+        uncovered_paths = self._coverage.uncovered(
             list(self.get_past_msgs(msg_key)),
-            self._diversity_k,
             symbol,
-            True,
+            overlap_to_root=True,
         )
 
         overlap_to_root = any(
@@ -85,15 +86,13 @@ class PacketCoverageFilter:
             for path in uncovered_paths
         )
 
-        old_coverage = self._grammar.compute_kpath_coverage(
+        old_coverage = self._coverage.ratio(
             list(self.get_past_msgs(msg_key)),
-            self._diversity_k,
             symbol,
             overlap_to_root=overlap_to_root,
         )
-        new_coverage = self._grammar.compute_kpath_coverage(
+        new_coverage = self._coverage.ratio(
             list(self.get_past_msgs(msg_key)) + [msg],
-            self._diversity_k,
             symbol,
             overlap_to_root=overlap_to_root,
         )
