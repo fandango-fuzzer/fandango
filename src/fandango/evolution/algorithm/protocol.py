@@ -10,8 +10,8 @@ from fandango.evolution.algorithm.simple import SimpleGeneticAlgorithm
 from fandango.evolution.population import IoPopulationManager
 from fandango.io import FandangoIO
 from fandango.io.coverage_filter import PacketCoverageFilter
-from fandango.io.navigation.coverage_goal import CoverageGoal
-from fandango.io.navigation.packetselector import PacketSelector
+from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
+from fandango.io.navigation.selection.packetselector import PacketSelector
 from fandango.io.packetparser import parse_next_remote_packet
 from fandango.language.grammar import FuzzingMode
 from fandango.language.symbols.non_terminal import NonTerminal

@@ -2,7 +2,7 @@ from collections.abc import Callable
 from typing import Optional
 
 from fandango.io import FandangoIO
-from fandango.io.navigation.packetforecaster import (
+from fandango.io.navigation.graph.packetforecaster import (
     ForecastingPacket,
     ForecastingResult,
     PacketForecaster,

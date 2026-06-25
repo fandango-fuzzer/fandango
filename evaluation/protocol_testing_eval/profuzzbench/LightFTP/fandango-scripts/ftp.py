@@ -1,9 +1,8 @@
-import os
 import sys
 import time
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
-from fandango.io.navigation.coverage_goal import CoverageGoal
+from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.language.grammar import FuzzingMode
 from fandango.language.parse.parse import parse
 

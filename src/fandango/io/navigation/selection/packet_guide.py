@@ -1,12 +1,12 @@
 from collections.abc import Callable
 from typing import Optional
 
-from fandango.io.navigation.forecast_view import ForecastView
-from fandango.io.navigation.packetforecaster import ForecastingPacket
-from fandango.io.navigation.packetnavigator import PacketNavigator
+from fandango.io.navigation.selection.forecast_view import ForecastView
+from fandango.io.navigation.graph.packetforecaster import ForecastingPacket
+from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.io.navigation.protocol_model import ProtocolModel
-from fandango.io.navigation.target_selector import TargetSelector
+from fandango.io.navigation.selection.protocol_model import ProtocolModel
+from fandango.io.navigation.selection.target_selector import TargetSelector
 from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree

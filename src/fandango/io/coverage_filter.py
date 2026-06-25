@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fandango.io.navigation.kpath_coverage import KPathCoverage
+from fandango.io.navigation.coverage.kpath_coverage import KPathCoverage
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.language.grammar.grammar import Grammar, KPath
 from fandango.language.symbols.non_terminal import NonTerminal

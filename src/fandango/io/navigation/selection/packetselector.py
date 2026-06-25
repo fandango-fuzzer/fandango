@@ -1,18 +1,18 @@
 from typing import Optional
 
 from fandango.io import FandangoIO
-from fandango.io.navigation.coverage_goal import CoverageGoal
-from fandango.io.navigation.coverage_tracker import CoverageTracker
-from fandango.io.navigation.forecast_view import ForecastView
-from fandango.io.navigation.kpath_coverage import KPathCoverage
-from fandango.io.navigation.packet_guide import PacketGuide
-from fandango.io.navigation.packetforecaster import (
+from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
+from fandango.io.navigation.selection.coverage_tracker import CoverageTracker
+from fandango.io.navigation.selection.forecast_view import ForecastView
+from fandango.io.navigation.coverage.kpath_coverage import KPathCoverage
+from fandango.io.navigation.selection.packet_guide import PacketGuide
+from fandango.io.navigation.graph.packetforecaster import (
     ForecastingPacket,
     ForecastingResult,
 )
-from fandango.io.navigation.packetnavigator import PacketNavigator
-from fandango.io.navigation.protocol_model import ProtocolModel
-from fandango.io.navigation.target_selector import TargetSelector
+from fandango.io.navigation.graph.packetnavigator import PacketNavigator
+from fandango.io.navigation.selection.protocol_model import ProtocolModel
+from fandango.io.navigation.selection.target_selector import TargetSelector
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree

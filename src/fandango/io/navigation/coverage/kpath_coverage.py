@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fandango.io.navigation.coverage_goal import CoverageGoal
+from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.language.grammar.grammar import Grammar, KPath
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
