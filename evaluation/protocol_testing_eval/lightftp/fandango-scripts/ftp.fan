@@ -43,11 +43,11 @@ DATA_PORT = 50100
 <close_data_either> ::= <SocketControlClient:close_data> | <SocketControlServer:close_data>
 
 <ABOR_exchange> ::= <ClientControl:ABOR> (<ServerControl:ABOR_response> <close_data_either> | <close_data_either> <ServerControl:ABOR_response>)
-<APPE_exchange> ::= <ClientControl:APPE> <ServerControl:Response_150> (<ClientData:APPE_data>* <close_data_either>)? <ServerControl:Response_226>
+<APPE_exchange> ::= <ClientControl:APPE> <ServerControl:Response_150> <ClientData:APPE_data>* (<close_data_either> <ServerControl:Response_226> | <ServerControl:Response_226> <ClientData:APPE_data>* <close_data_either>)
 <LIST_exchange> ::= <ClientControl:LIST> <ServerControl:Response_150> <ServerData:LIST_data>? (<SocketControlServer:close_data> <ServerControl:Response_226> | <ServerControl:Response_226> <ServerData:LIST_data>? <SocketControlServer:close_data>)
 <REST_exchange> ::= <ClientControl:REST> <ServerControl:REST_response>
 <RETR_exchange> ::= <ClientControl:RETR> <ServerControl:Response_150> <ServerData:RETR_data>? (<SocketControlServer:close_data> <ServerControl:Response_226> | <ServerControl:Response_226> <ServerData:RETR_data>? <SocketControlServer:close_data>)
-<STOR_exchange> ::= <ClientControl:STOR> <ServerControl:Response_150> (<ClientData:STOR_data>* <close_data_either>)? <ServerControl:Response_226>
+<STOR_exchange> ::= <ClientControl:STOR> <ServerControl:Response_150> <ClientData:STOR_data>* (<close_data_either> <ServerControl:Response_226> | <ServerControl:Response_226> <ClientData:STOR_data>* <close_data_either>)
 <FEAT_exchange> ::= <ClientControl:FEAT> <ServerControl:FEAT_response>
 <SIZE_exchange> ::= <ClientControl:SIZE> <ServerControl:SIZE_response>
 <OPTS_exchange> ::= <ClientControl:OPTS> <ServerControl:OPTS_response>
