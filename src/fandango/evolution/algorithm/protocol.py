@@ -52,8 +52,10 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             self._packet_algorithm.diversity_k, self.grammar
         )
         self._time_in_measurements = 0
+        self._time_in_measurements_since_coverage_gain = 0
         self.coverage_log_interval = -1
         self.stop_on_full_coverage = True
+        self.coverage_plateau_timeout = 0.0
         self._is_enable_guidance = True
         self.coverage_log: list[tuple[float, dict[NonTerminal, tuple[int, int]]]] = []
         self.coverage_log_overlap: list[
@@ -201,10 +203,10 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             and not self._packet_selector.is_complete()
         )
 
-    def _record_coverage_log(self):
+    def _record_coverage_log(self) -> float:
         start_measuring = time.time()
-        current_cov = self._packet_selector.coverage_percent(alt_cache=True) * 100
-        LOGGER.info(f"Current coverage: {current_cov:.2f}%")
+        current_cov = self._packet_selector.coverage_percent(alt_cache=True)
+        LOGGER.info(f"Current coverage: {current_cov * 100:.2f}%")
         self.coverage_log.append(
             (
                 start_measuring - self._time_in_measurements,
@@ -218,6 +220,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             )
         )
         self._time_in_measurements += time.time() - start_measuring
+        self._time_in_measurements_since_coverage_gain += time.time() - start_measuring
+        return current_cov
 
     def _clear_constraint_caches(self) -> None:
         self._packet_algorithm.evaluator.clear_constraint_caches()
@@ -228,6 +232,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         mode: FuzzingMode = FuzzingMode.COMPLETE,
     ) -> Generator[DerivationTree, None, None]:
         iteration = 0
+        plateau_best_coverage = -1.0
+        plateau_last_gain = time.time()
         while True:
             iteration += 1
             if (
@@ -242,7 +248,20 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 self.coverage_log_interval > 0
                 and iteration % self.coverage_log_interval == 0
             ):
-                self._record_coverage_log()
+                coverage = self._record_coverage_log()
+                # Plateau early-stop
+                if self.coverage_plateau_timeout > 0:
+                    now = time.time()
+                    if coverage > plateau_best_coverage:
+                        plateau_best_coverage = coverage
+                        plateau_last_gain = now
+                        self._time_in_measurements_since_coverage_gain = 0
+                    elif now - (plateau_last_gain + self._time_in_measurements_since_coverage_gain) >= self.coverage_plateau_timeout:
+                        log_guidance_hint(
+                            f"Coverage plateaued at {plateau_best_coverage * 100:.2f}% "
+                            f"for {self.coverage_plateau_timeout:g}s, stopping evolution."
+                        )
+                        return None
 
             if self._is_failed_forecast():
                 raise FandangoFailedError("Could not forecast next packet")

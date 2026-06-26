@@ -92,9 +92,14 @@ def generate_icmp_checksum(icmp_packet_tree) -> bytes:
     <Client:transport_data> [[ <TimerControl:keepalive_cancel> <TimerControl:new_handshake_start> <Server:server_transport_data> ]] <session_loop> \
   | <Server:server_transport_data> <TimerControl:new_handshake_cancel> <TimerControl:keepalive_cancel> <TimerControl:keepalive_start> <session_loop> \
   | <TimerEvent:keepalive_expired> <Client:keepalive_data> <session_loop> \
-  | <TimerEvent:rekey_after_time_expired> <TimerControl:reject_after_time_cancel> <TimerControl:new_handshake_cancel> <TimerControl:keepalive_cancel> <handshake_with_retransmit> \
-  | <TimerEvent:new_handshake_expired> <TimerControl:reject_after_time_cancel> <TimerControl:rekey_after_time_cancel> <TimerControl:keepalive_cancel> <handshake_with_retransmit> \
+  | <TimerEvent:rekey_after_time_expired> [[ <reject_after_time_drain> <new_handshake_drain> <keepalive_drain> ]] <handshake_with_retransmit> \
+  | <TimerEvent:new_handshake_expired> [[ <reject_after_time_drain> <rekey_after_time_drain> <keepalive_drain> ]] <handshake_with_retransmit> \
   | <TimerEvent:reject_after_time_expired>
+
+<keepalive_drain>         ::= <TimerControl:keepalive_cancel>         | <TimerEvent:keepalive_expired>
+<rekey_after_time_drain>  ::= <TimerControl:rekey_after_time_cancel>  | <TimerEvent:rekey_after_time_expired>
+<reject_after_time_drain> ::= <TimerControl:reject_after_time_cancel> | <TimerEvent:reject_after_time_expired>
+<new_handshake_drain>     ::= <TimerControl:new_handshake_cancel>     | <TimerEvent:new_handshake_expired>
 
 <session_loop> ::= <session_established> | ""
 

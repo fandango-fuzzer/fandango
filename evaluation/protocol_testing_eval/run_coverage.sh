@@ -34,7 +34,7 @@ meas_duration=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --duration) meas_duration="$2"; driver_flags+=("$1" "$2"); shift 2;;
-    --experiment|--guidance|--interval|--run-id) driver_flags+=("$1" "$2"); shift 2;;
+    --experiment|--guidance|--interval|--run-id|--plateau-timeout) driver_flags+=("$1" "$2"); shift 2;;
     --skip-build) SKIP_BUILD=1; shift;;
     *) echo "unknown option: $1" >&2; exit 2;;
   esac

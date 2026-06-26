@@ -6,7 +6,9 @@ the --experiment argument decides what happens:
   --experiment throughput   same, but never stop early -- keep generating for the
                             whole --duration, then dump input/output/tree counts.
   --experiment coverage     guidance per --guidance, log grammar coverage every
-                            --interval steps, stop at 100% coverage or --duration.
+                            --interval steps, stop at 100% coverage, --duration,
+                            or (if --plateau-timeout > 0) once start-symbol
+                            coverage stops rising for that many seconds.
 """
 import argparse
 import signal
@@ -35,6 +37,7 @@ def parse_args():
     p.add_argument("--interval", type=int, default=20)
     p.add_argument("--out-dir", default=".")
     p.add_argument("--run-id", default="1")
+    p.add_argument("--plateau-timeout", type=float, default=0.0)
     return p.parse_args()
 
 
@@ -47,6 +50,7 @@ def run(fandango, args, max_generations=None):
         fandango.coverage_log_interval = args.interval
         fandango.stop_on_full_coverage = True
         fandango.enable_guidance(bool(args.guidance))
+        fandango.coverage_plateau_timeout = args.plateau_timeout
 
     tally = {"inputs": 0, "outputs": 0, "trees": 0}
 

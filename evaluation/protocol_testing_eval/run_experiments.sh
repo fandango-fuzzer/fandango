@@ -4,12 +4,12 @@
 # write to experiments/<target>/<condition>/run_<n>/ (logs + code coverage).
 #
 #   ./run_experiments.sh <target|all> <throughput|coverage> \
-#       [--runs N] [--concurrency C] [--duration S] [--interval I]
+#       [--runs N] [--concurrency C] [--duration S] [--interval I] [--plateau S]
 set -uo pipefail
 cd "$(dirname "$0")"
 
 usage() {
-  echo "usage: $0 <target|all> <throughput|coverage> [--runs N] [--concurrency C] [--duration S] [--interval I]"
+  echo "usage: $0 <target|all> <throughput|coverage> [--runs N] [--concurrency C] [--duration S] [--interval I] [--plateau S]"
   exit 2
 }
 
@@ -22,16 +22,21 @@ runs=10
 concurrency=2
 duration=3600
 interval=20
+plateau=""
 while [ $# -gt 0 ]; do
   case $1 in
     --runs)        runs=$2 ;;
     --concurrency) concurrency=$2 ;;
     --duration)    duration=$2 ;;
     --interval)    interval=$2 ;;
+    --plateau)     plateau=$2 ;;
     *) usage ;;
   esac
   shift 2
 done
+
+plateau_opt=""
+[ -n "$plateau" ] && plateau_opt="--plateau-timeout $plateau"
 
 case $experiment in
   throughput) conditions="1:throughput" ;;
@@ -63,6 +68,7 @@ for t in $targets; do
       ./run_coverage.sh "$t" "$dir" --skip-build \
         --experiment "$experiment" --duration "$duration" \
         --guidance "$guidance" --interval "$interval" --run-id "$n" \
+        $plateau_opt \
         > "$dir/run.log" 2>&1 &
     done
   done
