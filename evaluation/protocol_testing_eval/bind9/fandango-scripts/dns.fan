@@ -49,6 +49,9 @@ def verify_transitive(question, response):
     return False
 
 
+def response_not_answering(response) -> bool:
+    return not any(True for _ in response.find_subtrees("<h_rcode_noerror>"))
+
 # Generate a domain name to query. We mix names the local server is authoritative for with public
 # domains it must recurse for; some of them CNAME elsewhere, exercising the client's CNAME-chain parsing.
 def gen_q_name():
@@ -315,7 +318,20 @@ def decompress_msg(compressed: bytes) -> bytes:
 where forall <ex> in <start>.<exchange>:
     <ex>.<dns_resp>.<header_resp>.<h_id> == <ex>.<dns_req>.<header_req>.<h_id>
 
-# The question, QDCOUNT and opcode echo couplings are mode-specific and live in the wrappers, not here.
+# Response/request coupling constraints. They live in the shared grammar and apply UNCONDITIONALLY
+# in both modes: in server mode they shape the response Fandango generates; in client mode they act
+# as an oracle on the real server's reply (a reply that violates them is recorded as a violation).
+
+# QDCOUNT + opcode + full question echo (the response copies the request's values).
+where forall <ex> in <start>.<exchange>:
+    bytes(<ex>.<dns_resp>.<header_resp>.<resp_qd_count>) == bytes(<ex>.<dns_req>.<header_req>.<req_qd_count>) and <ex>.<dns_resp>.<header_resp>.<h_opcode_req> == <ex>.<dns_req>.<header_req>.<h_opcode_req> and <ex>.<dns_resp>.<question_section>.<question> == <ex>.<dns_req>.<question>
+
+# Each answer RR answers a question. But only when the server actually answers (RCODE == NOERROR).
+# Counted as 2 constraints
+where forall <ex> in <start>.<exchange>:
+    forall <a> in <ex>.<dns_resp>.<answer_an_section>.<answer_an>:
+        exists <q> in <ex>.<dns_req>.<question>:
+            response_not_answering(<ex>.<dns_resp>) or verify_transitive(<q>, <ex>.<dns_resp>) or bytes(<a>.<answer_an_type>)[0:2] == bytes(<q>.<q_type>) and bytes(<a>.<q_name_optional>) == bytes(<q>.<q_name>)
 
 
 # Mostly single-question requests; two-question packets still occur to exercise multi-question handling.
