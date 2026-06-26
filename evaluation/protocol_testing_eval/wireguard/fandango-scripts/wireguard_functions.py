@@ -1,3 +1,4 @@
+# 9 LOC
 import struct
 import time
 from hashlib import blake2s
@@ -10,6 +11,7 @@ from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
 from fandango.io import ConnectionMode, NetworkParty
 from fandango.language import DerivationTree
 
+# 16 LOC
 CONSTRUCTION = b"Noise_IKpsk2_25519_ChaChaPoly_BLAKE2s"
 IDENTIFIER = b"WireGuard v1 zx2c4 Jason@zx2c4.com"
 LABEL_MAC1 = b"mac1----"
@@ -30,7 +32,7 @@ session_receiving_key = b"\x00" * 32
 sending_key_counter = 0
 receiving_key_counter = 0
 
-
+# 15 LOC
 class Client(NetworkParty):
     def __init__(self):
         super().__init__(
@@ -49,7 +51,7 @@ class Client(NetworkParty):
         increment_sending_key_counter()
         super().send(message, recipient)
 
-
+# 12 LOC
 class Server(NetworkParty):
     def __init__(self):
         super().__init__(
@@ -65,47 +67,47 @@ class Server(NetworkParty):
             set_responder_ephemeral(message[12:44])
         super().receive(message, sender)
 
-
+# 2 LOC
 def get_session_sending_key() -> bytes:
     return session_sending_key
 
-
+# 2 LOC
 def get_responder_ephemeral() -> bytes:
     return responder_ephemeral_public
 
-
+# 3 LOC
 def set_responder_ephemeral(data: bytes) -> None:
     global responder_ephemeral_public
     responder_ephemeral_public = data
 
-
+# 2 LOC
 def get_responder_sender_index() -> bytes:
     return responder_sender_index
 
-
+# 3 LOC
 def set_responder_sender_index(data: bytes) -> None:
     global responder_sender_index
     responder_sender_index = data
 
-
+# 2 LOC
 def get_sending_key_counter_as_bytes() -> bytes:
     return struct.pack("<Q", sending_key_counter)
 
-
+# 3 LOC
 def increment_sending_key_counter() -> None:
     global sending_key_counter
     sending_key_counter += 1
 
-
+# 3 LOC
 def increment_receiving_key_counter() -> None:
     global receiving_key_counter
     receiving_key_counter += 1
 
-
+# 2 LOC
 def get_tai_64n() -> bytes:
     return tai_64n
 
-
+# 7 LOC
 def TAI64N() -> bytes:
     t = time.time()
     secs = int(t) + 0x400000000000000A
@@ -114,31 +116,31 @@ def TAI64N() -> bytes:
     tai_64n = struct.pack(">Q", secs) + struct.pack(">I", nanos)
     return tai_64n
 
-
+# 2 LOC
 def MAC(key: bytes, data: bytes) -> bytes:
     return blake2s(data, key=key, digest_size=16).digest()
 
-
+# 2 LOC
 def DH(private: x25519.X25519PrivateKey, public: x25519.X25519PublicKey) -> bytes:
     return private.exchange(public)
 
-
+# 4 LOC
 def AEAD(key: bytes, nonce: int | bytes, plaintext: bytes, ad: bytes) -> bytes:
     if isinstance(nonce, int):
         nonce = b"\x00" * 4 + struct.pack("<Q", nonce)
     return ChaCha20Poly1305(key).encrypt(nonce, plaintext, ad)
 
-
+# 2 LOC
 def HASH(data: bytes) -> bytes:
     return blake2s(data, digest_size=32).digest()
 
-
+# 4 LOC
 def HMAC_blake2s(key: bytes, data: bytes) -> bytes:
     h = hmac.HMAC(key, hashes.BLAKE2s(32))
     h.update(data)
     return h.finalize()
 
-
+# 34 LOC
 def create_handshake_initiation_full(
     initiator_static_private,
     initiator_ephemeral_private,
@@ -186,7 +188,7 @@ def create_handshake_initiation_full(
 
     return msg, chaining_key, hash_
 
-
+# 13 LOC
 def create_handshake_initiation(
     initiator_static_private,
     initiator_ephemeral_private,
@@ -202,7 +204,7 @@ def create_handshake_initiation(
     )
     return msg
 
-
+# 6 LOC
 def initiator_mac_1(
     msg: bytes, responder_static_public: x25519.X25519PublicKey
 ) -> bytes:
@@ -210,7 +212,7 @@ def initiator_mac_1(
     mac1 = MAC(mac1_key, msg)
     return mac1
 
-
+# 40 LOC
 def derive_session_keys(
     initiator_static_private,
     initiator_ephemeral_private,
@@ -271,7 +273,7 @@ def derive_session_keys(
 
     return sending_key, receiving_key
 
-
+# 7 LOC
 def encrypt_transport(
     sending_key: bytes, counter_bytes: bytes, plaintext: bytes = b""
 ) -> bytes:
