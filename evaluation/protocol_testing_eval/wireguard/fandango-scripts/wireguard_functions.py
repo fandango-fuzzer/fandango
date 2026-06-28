@@ -147,10 +147,6 @@ def create_handshake_initiation_full(
     responder_static_public,
     timestamp64n,
 ):
-    """
-    Pure function. Returns (msg_bytes, final_chaining_key, final_hash).
-    No side effects — safe to call multiple times with the same inputs.
-    """
     chaining_key = HASH(CONSTRUCTION)
     hash_ = HASH(
         HASH(chaining_key + IDENTIFIER) + responder_static_public.public_bytes_raw()
@@ -195,7 +191,6 @@ def create_handshake_initiation(
     responder_static_public,
     timestamp64n,
 ):
-    """Thin wrapper for the grammar constraint — returns only the message bytes."""
     msg, _, _ = create_handshake_initiation_full(
         initiator_static_private,
         initiator_ephemeral_private,
@@ -221,10 +216,7 @@ def derive_session_keys(
     resp_ephemeral_bytes: bytes,
     psk: bytes = b"\x00" * 32,
 ):
-    """
-    Derives WireGuard session keys following Noise_IKpsk2 (WireGuard paper §5.4.4).
-    """
-    # Reproduce chaining key and hash at end of the initiation message
+    """Derive WireGuard session keys per Noise_IKpsk2 (WireGuard paper section 5.4.4)."""
     _, ck, h = create_handshake_initiation_full(
         initiator_static_private,
         initiator_ephemeral_private,
@@ -234,29 +226,23 @@ def derive_session_keys(
 
     resp_eph_pub = x25519.X25519PublicKey.from_public_bytes(resp_ephemeral_bytes)
 
-    # KDF1(C, e_r_pub): mix responder's ephemeral into chaining key and hash
     h = HASH(h + resp_ephemeral_bytes)
     temp = HMAC_blake2s(ck, resp_ephemeral_bytes)
     ck = HMAC_blake2s(temp, b"\x01")
 
-    # KDF1(C, DH(e_i, e_r))
     dh1 = DH(initiator_ephemeral_private, resp_eph_pub)
     temp = HMAC_blake2s(ck, dh1)
     ck = HMAC_blake2s(temp, b"\x01")
 
-    # KDF1(C, DH(s_i, e_r))
     dh2 = DH(initiator_static_private, resp_eph_pub)
     temp = HMAC_blake2s(ck, dh2)
     ck = HMAC_blake2s(temp, b"\x01")
 
-    # KDF3(C, PSK) → (new_C, tau, k_psk)  — the "psk2" step of Noise_IKpsk2
     temp = HMAC_blake2s(ck, psk)
     ck = HMAC_blake2s(temp, b"\x01")
     tau = HMAC_blake2s(temp, ck + b"\x02")
-    # k_psk = HMAC_blake2s(temp, tau + b'\x03')  # used by responder for AEAD, not needed here
     h = HASH(h + tau)
 
-    # KDF2(C, ε) → (T_send, T_recv)
     temp1 = HMAC_blake2s(ck, b"")
     temp2 = HMAC_blake2s(temp1, b"\x01")
     temp3 = HMAC_blake2s(temp1, temp2 + b"\x02")
@@ -277,10 +263,6 @@ def derive_session_keys(
 def encrypt_transport(
     sending_key: bytes, counter_bytes: bytes, plaintext: bytes = b""
 ) -> bytes:
-    """
-    Pure function. Encrypts a transport payload (default: empty = keepalive).
-    Plaintext is zero-padded to a multiple of 16 before encryption.
-    """
     # plaintext = b''
     pad_len = (16 - len(plaintext) % 16) % 16
     padded = plaintext + b"\x00" * pad_len
