@@ -30,35 +30,36 @@ SCOPE = {
     # FTP command handling, the path helpers it uses while serving commands,
     # and the accept loop.
     "lightftp": [
-        "ftpserv.c", # dispatches commands, tracks connection state
-        "fspathtools.c", # path handling
-        "main.c", # the listen and accept loop
+        "ftpserv.c",  # dispatches commands, tracks connection state
+        "fspathtools.c",  # path handling
+        "main.c",  # the listen and accept loop
     ],
-    # The inbound receive path, nothing more.
-    # Everything else stays out.
+    # We keep the server-side SMTP session. This includes
+    # request parsing through reply, up to message acceptance.
+    # Everything after (queue, scheduler, delivery) and the outbound client (mta) stay out.
     "opensmtpd": [
-        "/smtp.c", # the smtp listener and service, not smtpc.c
-        "/smtp_session.c", # the session and command state machine
-        "/rfc5322.c", # parses messages and headers
-        "/mailaddr.c", # parses MAIL FROM and RCPT TO addresses
-        "/esc.c", # the enhanced reply codes
-        "/envelope.c", # the envelope built while accepting a message
+        "/smtp.c",  # the smtp listener and service, not smtpc.c
+        "/smtp_session.c",  # the session and command state machine
+        "/rfc5322.c",  # parses messages and headers
+        "/mailaddr.c",  # parses MAIL FROM and RCPT TO addresses
+        "/esc.c",  # the enhanced reply codes
+        "/envelope.c",  # the envelope built while accepting a message
     ],
     # The DNS query and response path.
     # We take all of lib/dns and lib/ns, then strip the separable subsystems (see EXCLUDE_DNS).
     "bind9": [
-        "lib/dns/", # the DNS protocol code
-        "lib/ns/", # named's request handling code
+        "lib/dns/",  # the DNS protocol code
+        "lib/ns/",  # named's request handling code
     ],
     # The WireGuard protocol modules.
     # Remove the CLI, config interface (api.rs) and OS stuff (tun, epoll, drop_privileges, ...).
     # The time helper (sleepyinstant) and the Cargo dependencies go too.
     "wireguard": [
-        "boringtun/src/noise/", # handshake, sessions, timers, cookies
-        "boringtun/src/serialization.rs", # the wire format
-        "boringtun/src/device/mod.rs", # the receive and routing loop
-        "boringtun/src/device/peer.rs", # per peer session state
-        "boringtun/src/device/allowed_ips.rs", # the cryptokey routing table
+        "boringtun/src/noise/",  # handshake, sessions, timers, cookies
+        "boringtun/src/serialization.rs",  # the wire format
+        "boringtun/src/device/mod.rs",  # the receive and routing loop
+        "boringtun/src/device/peer.rs",  # per peer session state
+        "boringtun/src/device/allowed_ips.rs",  # the cryptokey routing table
     ],
 }
 
