@@ -4,12 +4,12 @@
 # write to experiments/<target>/<condition>/run_<n>/ (logs + code coverage).
 #
 #   ./run_experiments.sh <target|all> <throughput|coverage> \
-#       [--runs N] [--concurrency C] [--duration S] [--interval I] [--plateau S]
+#       [--runs N] [--concurrency C] [--duration S] [--interval I] [--plateau S] [--start-run N]
 set -uo pipefail
 cd "$(dirname "$0")"
 
 usage() {
-  echo "usage: $0 <target|all> <throughput|coverage> [--runs N] [--concurrency C] [--duration S] [--interval I] [--plateau S]"
+  echo "usage: $0 <target|all> <throughput|coverage> [--runs N] [--concurrency C] [--duration S] [--interval I] [--plateau S] [--start-run N]"
   exit 2
 }
 
@@ -23,6 +23,7 @@ concurrency=2
 duration=3600
 interval=20
 plateau=""
+start_run=""
 while [ $# -gt 0 ]; do
   case $1 in
     --runs)        runs=$2 ;;
@@ -30,6 +31,7 @@ while [ $# -gt 0 ]; do
     --duration)    duration=$2 ;;
     --interval)    interval=$2 ;;
     --plateau)     plateau=$2 ;;
+    --start-run)   start_run=$2 ;;
     *) usage ;;
   esac
   shift 2
@@ -57,10 +59,27 @@ for t in $targets; do
   rm -rf "$t/_fandango_src"
   [ $build_rc -eq 0 ] || continue
 
+  if [ -n "$start_run" ]; then
+    first=$start_run
+  else
+    first=1
+    for c in $conditions; do
+      condition=${c#*:}
+      for d in "experiments/$t/$condition"/run_*; do
+        [ -d "$d" ] || continue
+        num=${d##*/run_}
+        case $num in *[!0-9]*) continue ;; esac
+        [ "$num" -ge "$first" ] && first=$((num + 1))
+      done
+    done
+  fi
+  last=$((first + runs - 1))
+  echo "  runs $first..$last"
+
   for c in $conditions; do
     guidance=${c%%:*}
     condition=${c#*:}
-    for n in $(seq 1 "$runs"); do
+    for n in $(seq "$first" "$last"); do
       while [ "$(jobs -r | wc -l)" -ge "$concurrency" ]; do sleep 1; done
       dir="experiments/$t/$condition/run_$n"
       mkdir -p "$dir"
