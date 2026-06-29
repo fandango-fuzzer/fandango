@@ -339,7 +339,10 @@ class RepetitionBoundsConstraint(Constraint):
                 f"Couldn't find search target ({search.format_as_spec()}) in prefixed DerivationTree for computed repetition"
             )
 
-        target = nodes[-1]
+        def _doc_order_key(node: DerivationTree) -> tuple[int, ...]:
+            return tuple(step.index for step in node.get_choices_path())
+
+        target = max(nodes, key=_doc_order_key)
         local_cpy[search_name] = target
         return self.eval(expr, self.global_variables, local_cpy), target
 
