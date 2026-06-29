@@ -149,11 +149,10 @@ def compress_rdata(uncompressed: bytes, rr_type: int, curr_idx: int,
         tail = uncompressed[curr_idx + mlen + rlen:curr_idx + mlen + rlen + 20]
         return mname + rname + tail, mlen + rlen + 20, len_reduction
 
-    # Default: verbatim RDATA (A, AAAA, TXT, OPT, ...).
     return uncompressed[curr_idx:curr_idx + r_data_len], r_data_len, len_reduction
 
 
-# Compresses a full DNS message applying the DNS name compression algorithm to all names present in the message.
+# Compresses a full DNS message.
 def compress_msg(uncompressed: bytes) -> bytes:
     """
     Compress a single DNS message.
@@ -242,7 +241,7 @@ def decompress_rdata(compressed: bytes, rr_type: int, curr_idx: int,
     return compressed[curr_idx:curr_idx + r_data_len], r_data_len
 
 
-# Decompresses a full DNS message applying the DNS name decompression algorithm to all names present in the message.
+# Decompresses a full DNS message
 def decompress_msg(compressed: bytes) -> bytes:
     """
     Decompress the DNS message `compressed`.
@@ -293,13 +292,12 @@ def decompress_msg(compressed: bytes) -> bytes:
 # Each exchange consists of a request made by the client and a response from the server.
 <exchange> ::= <Client:dns_req> <Server:dns_resp>
 
-# A request consists of a header, QDCOUNT questions and an optional EDNS0 OPT record in the additional section.
-# A response consists of a header, the echoed question section, an answer, an authority and an additional section.
+# A request consists of a header and a number of questions and answers as specified in the header
 <dns_req> ::= <header_req> <question>{byte_to_int(<req_qd_count>)} <req_additional_section>
 <dns_resp> ::= <header_resp> <question_section> <answer_an_section> <answer_au_section> <answer_opt_section>
 
 <req_additional_section> ::= <answer_opt>{byte_to_int(<header_req>.<req_ar_count>)}
-# Sized by the response's own QDCOUNT, so replies that echo no question still parse.
+
 <question_section> ::= <question>{byte_to_int(<header_resp>.<resp_qd_count>)}
 <answer_an_section> ::= <answer_an>{byte_to_int(<resp_an_count>)}
 <answer_au_section> ::= <answer_au>{byte_to_int(<resp_ns_count>)}
@@ -314,20 +312,16 @@ def decompress_msg(compressed: bytes) -> bytes:
 # aa=1 if server has authority over domain
 
 # For each request/response pair the DNS message identifier (ID) matches.
-# Counted as 1 constraint
 where forall <ex> in <start>.<exchange>:
     <ex>.<dns_resp>.<header_resp>.<h_id> == <ex>.<dns_req>.<header_req>.<h_id>
 
-# Response/request coupling constraints. They live in the shared grammar and apply UNCONDITIONALLY
-# in both modes: in server mode they shape the response Fandango generates; in client mode they act
-# as an oracle on the real server's reply (a reply that violates them is recorded as a violation).
 
-# QDCOUNT + opcode + full question echo (the response copies the request's values).
+# The number of questions in the request and response match.
+# The opcodes must match and the question must be the same.
 where forall <ex> in <start>.<exchange>:
     bytes(<ex>.<dns_resp>.<header_resp>.<resp_qd_count>) == bytes(<ex>.<dns_req>.<header_req>.<req_qd_count>) and <ex>.<dns_resp>.<header_resp>.<h_opcode_req> == <ex>.<dns_req>.<header_req>.<h_opcode_req> and <ex>.<dns_resp>.<question_section>.<question> == <ex>.<dns_req>.<question>
 
 # Each answer RR answers a question. But only when the server actually answers (RCODE == NOERROR).
-# Counted as 2 constraints
 where forall <ex> in <start>.<exchange>:
     forall <a> in <ex>.<dns_resp>.<answer_an_section>.<answer_an>:
         exists <q> in <ex>.<dns_req>.<question>:
@@ -335,11 +329,8 @@ where forall <ex> in <start>.<exchange>:
 
 
 <req_qd_count> ::= <byte>{2} := pack(">H", 1)
-# 0 or 1 EDNS0 OPT record in the request's additional section.
 <req_ar_count> ::= <bit>{16} := pack(">H", choice([0, 0, 1]))
 
-# Server generation emits one question, one answer, no authority/additional records. When parsing a
-# real reply the counts are read from the wire, so this does not restrict validation.
 <resp_qd_count> ::= <bit>{16} := pack(">H", 1)
 <resp_an_count> ::= <bit>{16} := pack(">H", 1)
 <resp_ns_count> ::= <bit>{16} := pack(">H", 0)
@@ -347,17 +338,16 @@ where forall <ex> in <start>.<exchange>:
 
 <h_id> ::= <byte><byte>
 
-# QUERY is listed multiple times so generation favours it; STATUS/NOTIFY still occur to drive their handlers.
 <h_opcode_req> ::= <h_opcode_query>
 <h_opcode_query>  ::= 0 0 0 0   # QUERY (0)
 
-<h_rd> ::= 1 # 0 causes server failure with cname
-<h_resp_rd> ::= <bit>   # response RD: echoes request RD for QUERY, may be 0 otherwise
+<h_rd> ::= 1
+<h_resp_rd> ::= <bit>
 <h_aa> ::= <bit>
 <h_ra> ::= <bit>
-<h_tc> ::= <bit>   # truncation flag
+<h_tc> ::= <bit>
 
-# Full RCODE space, needed to parse real error replies; generation is forced to NOERROR by <resp_flags_lo>.
+# Full RCODE space, needed to parse real error replies. Generation is forced to NOERROR by <resp_flags_lo>.
 <h_rcode_resp> ::= <h_rcode_noerror> | <h_rcode_formerr> | <h_rcode_servfail> | <h_rcode_nxdomain> | <h_rcode_notimp> | <h_rcode_refused>
 <h_rcode_noerror>  ::= 0 0 0 0  # NOERROR - no error
 <h_rcode_formerr>  ::= 0 0 0 1  # FORMERR - format error
@@ -370,37 +360,36 @@ where forall <ex> in <start>.<exchange>:
 <label_len_octet> ::= <byte>
 
 
-# Questions may ask for any of the common RR types.
 <question> ::= <q_name> <q_type> <rr_class>
 <q_name_optional> ::= <q_name_written>? 0{8}
 <q_name> ::= <q_name_written> 0{8}
 <q_name_written> ::= (<label_len_octet> <byte>{byte_to_int(b'\x00' + bytes(<label_len_octet>))})+ := gen_q_name()
-# A/CNAME/NS are weighted up to keep the resolver/answer paths busy; the rest still drive their decoders.
+# A/CNAME/NS are weighted up to keep the resolver/answer paths busy.
 <q_type> ::= <type_id_a> | <type_id_a> | <type_id_a> | <type_id_cname> | <type_id_cname> | <type_id_ns> | <type_id_ns> | <type_id_soa> | <type_id_ptr> | <type_id_mx> | <type_id_txt> | <type_id_aaaa> | <type_id_srv>
-<rr_class> ::= 0{15} 1 # Equals class IN (Internet)
+<rr_class> ::= 0{15} 1 # Equals class IN
 
-# Each answer RR is one of the RR-type bodies below, each carrying its own type-correct RDATA.
+# Each answer RR is one of the RR-type bodies below, each carrying its own RDATA type.
 <answer_an> ::= <q_name_optional> <answer_an_type>
 <answer_an_type> ::= <type_a> | <type_aaaa> | <type_ns> | <type_cname> | <type_soa> | <type_mx> | <type_txt> | <type_ptr> | <type_srv>
 # Authority section: NS records or the zone SOA.
 <answer_au> ::= <q_name_optional> (<type_soa> | <type_ns>)
-# Additional section: glue (A/AAAA) or an EDNS0 OPT pseudo-record.
+# Additional section
 <answer_opt> ::= <q_name_optional> (<type_opt> | <type_a> | <type_aaaa>)
 
 <a_ttl> ::= 0 <bit>{7} <byte>{3}
 <a_rd_length> ::= <byte>{2} := pack(">H", randint(0, 0))
 
-# RR type identifiers (16-bit, big endian)
-<type_id_a>     ::= 0{15} 1                # 1
-<type_id_ns>    ::= 0{14} 1 0              # 2
-<type_id_cname> ::= 0{13} 1 0 1            # 5
-<type_id_soa>   ::= 0{13} 1 1 0            # 6
-<type_id_ptr>   ::= 0{12} 1 1 0 0         # 12
-<type_id_mx>    ::= 0{12} 1 1 1 1         # 15
-<type_id_txt>   ::= 0{11} 1 0 0 0 0       # 16
-<type_id_aaaa>  ::= 0{11} 1 1 1 0 0       # 28
-<type_id_srv>   ::= 0{10} 1 0 0 0 0 1     # 33
-<type_id_opt>   ::= 0{10} 1 0 1 0 0 1     # 41
+# RR type identifiers
+<type_id_a>     ::= 0{15} 1
+<type_id_ns>    ::= 0{14} 1 0
+<type_id_cname> ::= 0{13} 1 0 1
+<type_id_soa>   ::= 0{13} 1 1 0
+<type_id_ptr>   ::= 0{12} 1 1 0 0
+<type_id_mx>    ::= 0{12} 1 1 1 1
+<type_id_txt>   ::= 0{11} 1 0 0 0 0
+<type_id_aaaa>  ::= 0{11} 1 1 1 0 0
+<type_id_srv>   ::= 0{10} 1 0 0 0 0 1
+<type_id_opt>   ::= 0{10} 1 0 1 0 0 1
 
 # A: 4-byte IPv4 address. RDLENGTH is fixed at 4.
 <type_a> ::= <type_id_a> <rr_class> <a_ttl> 0{13} 1 0 0 <ip_address>
@@ -410,58 +399,54 @@ where forall <ex> in <start>.<exchange>:
 <ip_address_v6> ::= <byte>{16}
 
 # NS / PTR / CNAME: RDATA is a single domain name.
-<type_ns>    ::= <type_id_ns>    <rr_class> <a_ttl> <a_rd_length> <q_name>
-<type_ptr>   ::= <type_id_ptr>   <rr_class> <a_ttl> <a_rd_length> <q_name>
+<type_ns> ::= <type_id_ns> <rr_class> <a_ttl> <a_rd_length> <q_name>
+<type_ptr> ::= <type_id_ptr> <rr_class> <a_ttl> <a_rd_length> <q_name>
 <type_cname> ::= <type_id_cname> <rr_class> <a_ttl> <a_rd_length> <q_name>
 
-# SOA: MNAME RNAME serial refresh retry expire minimum.
+# SOA
 <type_soa> ::= <type_id_soa> <rr_class> <a_ttl> <a_rd_length> <soa_rdata>
 <soa_rdata> ::= <q_name> <q_name> <byte>{4} <byte>{4} <byte>{4} <byte>{4} <byte>{4}
 
-# MX: 2-byte preference + exchange name.
+# MX.
 <type_mx> ::= <type_id_mx> <rr_class> <a_ttl> <a_rd_length> <mx_rdata>
 <mx_rdata> ::= <byte>{2} <q_name>
 
-# SRV: priority + weight + port + target name.
+# SRV.
 <type_srv> ::= <type_id_srv> <rr_class> <a_ttl> <a_rd_length> <srv_rdata>
 <srv_rdata> ::= <byte>{2} <byte>{2} <byte>{2} <q_name>
 
-# TXT: a length-prefixed character string.
+# TXT: A length-prefixed character string.
 <type_txt> ::= <type_id_txt> <rr_class> <a_ttl> <a_rd_length> <txt_rdata>
 <txt_rdata> ::= <label_len_octet> <byte>{byte_to_int(b'\x00' + bytes(<label_len_octet>))} := gen_txt_string()
 
-# OPT (EDNS0): CLASS carries the UDP payload size, TTL the extended rcode/version/flags. An empty
-# option list (RDLENGTH 0) is the common, valid case.
 <type_opt> ::= <type_id_opt> <udp_payload_size> <a_ttl> <a_rd_length> <opt_rdata>
 <udp_payload_size> ::= <bit>{16} := pack(">H", choice([512, 1232, 4096]))
 <opt_rdata> ::= <opt_option>?
 <opt_option> ::= <byte>{2} <opt_opt_len> <byte>{byte_to_int(<opt_opt_len>)}
 <opt_opt_len> ::= <byte>{2} := pack(">H", randint(0, 4))
 
-# Every name-bearing or variable-length RDATA declares its uncompressed byte length in the
-# RDLENGTH (<a_rd_length>) field, which corresponds to the RDATA that follows.
-# Counted as one constraint
+# Set rd length for all RRs
 where forall <t> in <type_cname>:
     bytes(<t>.<a_rd_length>) == pack('>H', len(bytes(<t>.<q_name>)))
-# Counted as one constraint
+
 where forall <t> in <type_ns>:
     bytes(<t>.<a_rd_length>) == pack('>H', len(bytes(<t>.<q_name>)))
-# Counted as one constraint
+
 where forall <t> in <type_ptr>:
     bytes(<t>.<a_rd_length>) == pack('>H', len(bytes(<t>.<q_name>)))
-# Counted as one constraint
+
 where forall <t> in <type_soa>:
     bytes(<t>.<a_rd_length>) == pack('>H', len(bytes(<t>.<soa_rdata>)))
-# Counted as one constraint
+
 where forall <t> in <type_mx>:
     bytes(<t>.<a_rd_length>) == pack('>H', len(bytes(<t>.<mx_rdata>)))
-# Counted as one constraint
+
 where forall <t> in <type_srv>:
     bytes(<t>.<a_rd_length>) == pack('>H', len(bytes(<t>.<srv_rdata>)))
-# Counted as one constraint
+
 where forall <t> in <type_txt>:
     bytes(<t>.<a_rd_length>) == pack('>H', len(bytes(<t>.<txt_rdata>)))
-# Counted as one constraint
+
 where forall <t> in <type_opt>:
     bytes(<t>.<a_rd_length>) == pack('>H', len(bytes(<t>.<opt_rdata>)))
 
