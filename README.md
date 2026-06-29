@@ -24,15 +24,6 @@ Fandango adapts to your workflow by supporting multiple operating modes:* **Blac
 ### 🧠 Under the Hood
 Fandango comes as a portable Python program, meaning it runs easily on a large variety of platforms. To produce its inputs, it leverages sophisticated **evolutionary algorithms**. It starts with a population of random inputs and systematically evolves them through mutations and cross-overs until they perfectly fulfill your given constraints.
 
-### 🗺️ Road to 2026
-Fandango is in active development! We are constantly expanding its capabilities. Features planned for 2026 include:
-* Coverage-guided testing
-* Code-directed testing
-* High-diversity input generation
-* ...and much more!
-
-📚 **Ready to dive deeper?** For complete documentation, including tutorials, references, and advanced usage guides, visit the [Fandango Documentation](https://fandango-fuzzer.github.io/).
-
 ## License
 
 Fandango is licensed under the European Union Public Licence V. 1.2. See the [LICENSE](https://github.com/fandango-fuzzer/fandango/blob/main/LICENSE.md) file for details.
