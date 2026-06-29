@@ -68,9 +68,12 @@ class PacketSelector:
 
     def add_completed_tree(self, tree: DerivationTree) -> None:
         """Fold a finished protocol run into the coverage basis."""
-        self._coverage_tracker.add_completed_tree(tree)
+        self.record_coverage(tree)
         self._last_completed_tree = tree
         self._completed_count += 1
+
+    def record_coverage(self, tree: DerivationTree) -> None:
+        self._coverage_tracker.add_completed_tree(tree)
 
     def reset_coverage(self) -> None:
         self._coverage_tracker.reset()
