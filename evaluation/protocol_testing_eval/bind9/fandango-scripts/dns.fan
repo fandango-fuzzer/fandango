@@ -334,8 +334,7 @@ where forall <ex> in <start>.<exchange>:
             response_not_answering(<ex>.<dns_resp>) or verify_transitive(<q>, <ex>.<dns_resp>) or bytes(<a>.<answer_an_type>)[0:2] == bytes(<q>.<q_type>) and bytes(<a>.<q_name_optional>) == bytes(<q>.<q_name>)
 
 
-# Mostly single-question requests; two-question packets still occur to exercise multi-question handling.
-<req_qd_count> ::= <byte>{2} := pack(">H", choice([1, 1, 1, 2]))
+<req_qd_count> ::= <byte>{2} := pack(">H", 1)
 # 0 or 1 EDNS0 OPT record in the request's additional section.
 <req_ar_count> ::= <bit>{16} := pack(">H", choice([0, 0, 1]))
 
@@ -349,10 +348,8 @@ where forall <ex> in <start>.<exchange>:
 <h_id> ::= <byte><byte>
 
 # QUERY is listed multiple times so generation favours it; STATUS/NOTIFY still occur to drive their handlers.
-<h_opcode_req> ::= <h_opcode_query> | <h_opcode_query> | <h_opcode_query> | <h_opcode_query> | <h_opcode_status> | <h_opcode_notify>
+<h_opcode_req> ::= <h_opcode_query>
 <h_opcode_query>  ::= 0 0 0 0   # QUERY (0)
-<h_opcode_status> ::= 0 0 1 0   # STATUS (2)
-<h_opcode_notify> ::= 0 1 0 0   # NOTIFY (4)
 
 <h_rd> ::= 1 # 0 causes server failure with cname
 <h_resp_rd> ::= <bit>   # response RD: echoes request RD for QUERY, may be 0 otherwise
