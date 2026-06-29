@@ -46,7 +46,7 @@ def verify_transitive(question, response):
     for ans in response.find_subtrees("<answer_an>"):
         if bytes(ans.children[1])[0:2] == type_byte and bytes(ans.find_direct_trees(NonTerminal("<q_name_optional>"))[0]) in allowed_names:
             return True
-    return False
+    return len(allowed_names) > 1
 
 
 def response_not_answering(response) -> bool:
