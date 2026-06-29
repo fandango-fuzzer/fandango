@@ -100,7 +100,6 @@ def write_throughput(fandango, args, start, tally):
 
 def write_coverage(fandango, args, start):
     write_log(f"{args.out_dir}/coverage_{args.run_id}.csv", start, fandango.coverage_log)
-    write_log(f"{args.out_dir}/coverage_overlap_{args.run_id}.csv", start, fandango.coverage_log_overlap)
 
 
 def write_log(path, start, log):

@@ -88,5 +88,7 @@ class SimpleMutation(MutationOperator):
             prefix_node=prefix_node,
             max_nodes=node_to_mutate.size() + (max_nodes - individual.size()),
         )
+        new_subtree.sender = node_to_mutate.sender
+        new_subtree.recipient = node_to_mutate.recipient
         mutated = individual.replace(grammar, node_to_mutate, new_subtree)
         return mutated

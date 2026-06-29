@@ -213,12 +213,6 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 self._packet_selector._compute_coverage_trees(False),
             )
         )
-        self.coverage_log_overlap.append(
-            (
-                start_measuring - self._time_in_measurements,
-                self._packet_selector._compute_coverage_trees(True),
-            )
-        )
         self._time_in_measurements += time.time() - start_measuring
         self._time_in_measurements_since_coverage_gain += time.time() - start_measuring
         return current_cov
