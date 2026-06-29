@@ -36,9 +36,12 @@ def median_curve(condition_dir):
             have = ", ".join(c for c in df.columns if c.startswith("percent_"))
             sys.exit(f"{column} not in {f}\navailable: {have}")
         # coverage is cumulative, but a run can dip when a k-path is parsed into a
-        # different state tree between snapshots. keep the running max per run.
+        # different state tree between snapshots (Non-Determinism). keep the running max per run.
         cov = np.maximum.accumulate(df[column].to_numpy())
-        runs.append(pd.Series(cov, index=df["time"].to_numpy()))
+        s = pd.Series(cov, index=df["time"].to_numpy())
+        if s.index.has_duplicates:
+            s = s.groupby(level=0).max()
+        runs.append(s)
     times = np.unique(np.concatenate([r.index.values for r in runs]))
     curves = []
     for r in runs:
