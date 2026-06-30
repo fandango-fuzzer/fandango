@@ -52,8 +52,7 @@ def verify_transitive(question, response):
 def response_not_answering(response) -> bool:
     return not any(True for _ in response.find_subtrees("<h_rcode_noerror>"))
 
-# Generate a domain name to query. We mix names the local server is authoritative for with public
-# domains it must recurse for; some of them CNAME elsewhere, exercising the client's CNAME-chain parsing.
+# Generate a domain name.
 def gen_q_name():
     result = b''
     domain_name = choice([
