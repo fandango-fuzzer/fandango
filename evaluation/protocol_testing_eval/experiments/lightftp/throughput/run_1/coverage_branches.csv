@@ -1,0 +1,7 @@
+filename,line_total,line_covered,line_percent,branch_total,branch_covered,branch_percent,function_total,function_covered,function_percent
+cfgparse.c,79,70,0.8859999999999999,70,46,0.657,3,3,1.0
+fcrypt.c,162,0,0.0,58,0,0.0,6,0,0.0
+fspathtools.c,84,64,0.762,54,32,0.593,3,2,0.667
+ftpserv.c,1138,845,0.743,657,336,0.511,64,58,0.9059999999999999
+inc/x_malloc.h,6,5,0.833,2,1,0.5,1,1,1.0
+main.c,174,91,0.523,100,31,0.31,7,4,0.5710000000000001

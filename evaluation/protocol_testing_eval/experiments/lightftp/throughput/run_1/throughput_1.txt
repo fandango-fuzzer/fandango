@@ -1,0 +1,5 @@
+input messages:   4994
+output messages:  5587
+derivation trees: 240
+time:             3600.3s
+grammar coverage: 100.00%
