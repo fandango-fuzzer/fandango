@@ -19,7 +19,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # substring. Out of scope:
 #  - standalone tools, CLI utilities, tests
 #  - third-party dependencies
-#  - generic plumbing: memory, event loops, time, shared data structures
+#  - memory management, event loops, time, shared data structures, ...
 #  - config parsers and management/control channels
 #  - optional TLS or crypto layers under a plaintext protocol
 #  - other subsystems of the same daemon (e.g. SMTP outbound, DNS zone transfer)

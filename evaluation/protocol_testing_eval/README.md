@@ -16,10 +16,10 @@ Targets: `opensmtpd` (SMTP), `bind9` (DNS), `lightftp` (FTP), `wireguard` (borin
 Full experiment (N repeated runs per condition, results under `experiments/`):
 ```bash
 ./run_experiments.sh <target|all> <throughput|coverage> [--runs N] [--concurrency C] [--duration S]
-# e.g. all targets, coverage, 10 runs each:
-./run_experiments.sh all coverage --runs 10
+# e.g. all targets, coverage, 10 runs each with 2 concurrent, for 3 hours:
+./run_experiments.sh all coverage --runs 10 --concurrency 2 --duration 10800
 ```
-- `coverage` runs two conditions (guided + unguided). `throughput` runs one.
+- `coverage` runs two conditions (guided + unguided). So the number of actual runs doubles here. `throughput` runs one.
 - Results go to `experiments/<target>/<condition>/run_<n>/`.
 
 ## Read the results
