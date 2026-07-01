@@ -9,13 +9,8 @@ from fandango.language.tree import DerivationTree
 
 
 class CoverageTracker:
-    """Measures reached k-path coverage of the current and past protocol runs.
-
-    Each completed run is folded once into bounded k-path sets (``add_completed_tree``)
-    instead of retaining the trees; queries combine that basis with the live history
-    tree. ``alt_cache`` only selects which grammar cache the live extraction warms
-    (the folded basis is cache-independent), keeping measurement from biasing the
-    guidance cache.
+    """
+    Measures reached k-path coverage of the current and past protocol runs.
     """
 
     def __init__(
@@ -36,7 +31,6 @@ class CoverageTracker:
         self._history = history
         self._coverage_goal = coverage_goal
         self._whole_covered: set[KPath] = set()
-        # per-NonTerminal covered k-paths, keyed by overlap_to_root
         self._message_covered: dict[bool, dict[NonTerminal, set[KPath]]] = {
             False: {},
             True: {},
