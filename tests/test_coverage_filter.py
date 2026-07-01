@@ -1,4 +1,5 @@
 from fandango.api import Fandango
+from fandango.evolution.algorithm.protocol import ProtocolAlgorithm
 from fandango.io.coverage_filter import PacketCoverageFilter
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.language.grammar import FuzzingMode
@@ -12,6 +13,7 @@ def filter_and_tree():
         spec = f.read()
     fandango = Fandango(spec, use_stdlib=False, use_cache=False)
     tree = fandango.fuzz(mode=FuzzingMode.IO, population_size=1)[0]
+    assert isinstance(fandango.fandango, ProtocolAlgorithm)
     diversity_k = fandango.fandango._packet_algorithm.diversity_k
     return PacketCoverageFilter(diversity_k, fandango.grammar), tree
 

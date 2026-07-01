@@ -1,6 +1,7 @@
 import pytest
 
 from fandango.api import Fandango
+from fandango.evolution.algorithm.protocol import ProtocolAlgorithm
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.io.navigation.selection.coverage_tracker import CoverageTracker
 from fandango.language.grammar import FuzzingMode
@@ -18,6 +19,7 @@ def packet_selector_and_tree(grammar_file):
         spec = f.read()
     fandango = Fandango(spec, use_stdlib=False, use_cache=False)
     tree = fandango.fuzz(mode=FuzzingMode.IO, population_size=1)[0]
+    assert isinstance(fandango.fandango, ProtocolAlgorithm)
     return fandango.fandango._packet_selector, tree
 
 
