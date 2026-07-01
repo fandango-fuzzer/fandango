@@ -77,9 +77,7 @@ class ProtocolModel:
             self._collect_permutation_groups(child, groups)
 
     @staticmethod
-    def _collect_packet_symbols_from_node(
-        node: Node, result: set[NonTerminal]
-    ) -> None:
+    def _collect_packet_symbols_from_node(node: Node, result: set[NonTerminal]) -> None:
         if isinstance(node, NonTerminalNode) and node.sender is not None:
             result.add(node.symbol)
         else:

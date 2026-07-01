@@ -60,7 +60,9 @@ class PacketGuide:
         self._last_completed_tree = last_completed_tree
 
         if len(self._forecast.next_fuzzer_parties()) == 0:
-            current_external_parties = set(self._forecast.next_fuzzer_parties(False, True))
+            current_external_parties = set(
+                self._forecast.next_fuzzer_parties(False, True)
+            )
             if "TimerEvent" not in current_external_parties:
                 return []
 

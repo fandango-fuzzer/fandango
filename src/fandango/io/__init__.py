@@ -931,7 +931,9 @@ class FandangoIO(object):
                 prev_sender != sender
                 or prev_recipient != recipient
                 or (
-                    type(fragments[-1][2]) is not type(msg_fragment) if fragments else False
+                    type(fragments[-1][2]) is not type(msg_fragment)
+                    if fragments
+                    else False
                 )
             ):
                 prev_sender = sender

@@ -2,9 +2,11 @@ from collections.abc import Generator
 from typing import Optional
 
 from fandango.io.navigation.graph.grammarnavigator import GrammarNavigator
-from fandango.io.navigation.graph.packetiterativeparser import NavigatorPacketIterativeParser
-from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
+from fandango.io.navigation.graph.packetiterativeparser import (
+    NavigatorPacketIterativeParser,
+)
 from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConverter
+from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.language import DerivationTree, Grammar
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.grammar import KPath

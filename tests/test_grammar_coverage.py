@@ -93,7 +93,9 @@ class Server(NetworkParty):
             )
         assert grammar is not None
         return ProtocolAlgorithm(
-            packet_algorithm=DefaultAlgorithm(grammar=grammar, constraints=constraints, logger_level=LoggerLevel.DEBUG),
+            packet_algorithm=DefaultAlgorithm(
+                grammar=grammar, constraints=constraints, logger_level=LoggerLevel.DEBUG
+            ),
             coverage_goal=coverage_goal,
         )
 

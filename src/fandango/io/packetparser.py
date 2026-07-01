@@ -5,7 +5,10 @@ from typing import Optional
 
 from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.io import FandangoIO
-from fandango.io.navigation.graph.packetforecaster import ForecastingPacket, ForecastingResult
+from fandango.io.navigation.graph.packetforecaster import (
+    ForecastingPacket,
+    ForecastingResult,
+)
 from fandango.language import DerivationTree, Grammar, NonTerminal
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.parser.iterative_parser import IterativeParser

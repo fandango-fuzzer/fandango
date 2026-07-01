@@ -1,6 +1,8 @@
 from typing import NamedTuple, Optional
 
-from fandango.io.navigation.graph.visitor.continuing_nodevisitor import ContinuingNodeVisitor
+from fandango.io.navigation.graph.visitor.continuing_nodevisitor import (
+    ContinuingNodeVisitor,
+)
 from fandango.language.grammar.grammar import Grammar, KPath
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode

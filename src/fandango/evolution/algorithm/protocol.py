@@ -20,7 +20,6 @@ from fandango.logger import LOGGER, log_guidance_hint, log_message_transfer
 
 
 class ProtocolAlgorithm(GeneticAlgorithm):
-
     def __init__(
         self,
         packet_algorithm: SimpleGeneticAlgorithm,

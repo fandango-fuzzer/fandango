@@ -53,9 +53,7 @@ def bruteforce_scores(selector, trees):
             scores[symbol] = 0.0
         else:
             scores[symbol] = selector.grammar.compute_kpath_coverage(
-                messages_by_nt[symbol],
-                selector._coverage_tracker._diversity_k,
-                symbol
+                messages_by_nt[symbol], selector._coverage_tracker._diversity_k, symbol
             )
     return list(sorted(scores.items(), key=lambda x: (x[1], x[0].name())))
 
