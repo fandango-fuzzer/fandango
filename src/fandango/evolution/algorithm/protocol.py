@@ -48,7 +48,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._packet_coverage_filter = PacketCoverageFilter(
             self._packet_algorithm.diversity_k, self.grammar
         )
-        self.violations = []
+        self.violations: list[tuple[DerivationTree, Exception]] = []
         self.throw_on_violation = False
 
     def _is_protocol_run_complete(self) -> bool:

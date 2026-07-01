@@ -1,4 +1,5 @@
 import unittest
+from typing import Optional
 
 from fandango.api import Fandango
 from fandango.io import ConnectionMode, FandangoIO, FandangoParty
@@ -149,7 +150,7 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
             self.history, None, 0, lambda: [(NonTerminal("<msg_c>"),)], lambda: []
         )
 
-    def _parse(self, text: str) -> DerivationTree:
+    def _parse(self, text: str) -> Optional[DerivationTree]:
         return self.grammar.parse(
             text, mode=ParsingMode.INCOMPLETE, include_controlflow=True
         )
