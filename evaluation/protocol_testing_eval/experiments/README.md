@@ -21,4 +21,4 @@ Conditions: `throughput`, `coverage_guided`, `coverage_unguided`.
   - the folder `./median_coverage/overall` contains the merged median coverage reports for the `full interaction coverage`.
 - `scoped_coverage.py` prints the code coverage for each target based on throughput run nr 1. It prints two numbers:
   - unscoped: The actual reached statement and branch coverage on each target including the entire code base (including dependencies, unit tests and unrelated extensions).
-  - scoped: Statement and branch coverage scoped to files, that handle the protocol path as defined in the grammar.
+  - scoped: Statement and branch coverage scoped to protocol handling files.
