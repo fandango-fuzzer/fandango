@@ -23,7 +23,7 @@ Full experiment (N repeated runs per condition, results under `experiments/`):
 - Results go to `experiments/<target>/<condition>/run_<n>/`.
 
 ## Read the results
-Go to the [experiments](./experiments) folder and read the Readme file there.
+Go to the [experiments/README.md](./experiments/README.md) folder and read the Readme file there.
 
 ## Layout
 - `<target>/`: `Dockerfile-fandango`, server config, and `fandango-scripts/` (the `.fan` grammar + driver).
