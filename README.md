@@ -16,11 +16,6 @@
 Fandango's specification language combines a **grammar** with **constraints written in Python**, making it incredibly expressive. 
 * **Custom Testing Goals:** Define exactly what you need. If you require your inputs to have particular values or follow specific distributions, you can express these testing goals directly in Fandango right out of the box.
 
-### 🚀 Versatile Modes of Operation
-Fandango adapts to your workflow by supporting multiple operating modes:* **Black-Box Testing (Default):** Generate inputs directly from a `.fan` Fandango specification file.
-* **Input Mutation:** Feed Fandango your sample inputs, and it will mutate them to obtain more complex and realistic test cases.
-* **Protocol Testing:** Generate dynamic interactions. Fandango can act as a client or server, producing and reacting to interactions according to your protocol specifications.
-
 ### 🧠 Under the Hood
 Fandango comes as a portable Python program, meaning it runs easily on a large variety of platforms. To produce its inputs, it leverages sophisticated **evolutionary algorithms**. It starts with a population of random inputs and systematically evolves them through mutations and cross-overs until they perfectly fulfill your given constraints.
 
