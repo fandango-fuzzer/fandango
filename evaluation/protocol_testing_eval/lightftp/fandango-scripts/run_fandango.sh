@@ -80,8 +80,8 @@ echo "writing coverage report to $COV_OUT_DIR"
 # be opened. gcov treats them as an error
 find "$GCOVR_ROOT" \( -name 'a-conftest.*' -o -name 'conftest.*' \) -delete 2>/dev/null || true
 
-gcovr -r "$GCOVR_ROOT" --txt -o "${COV_OUT_DIR}coverage.txt" || echo "lines: 0% branches: 0%" > "${COV_OUT_DIR}coverage.txt"
-gcovr -r "$GCOVR_ROOT" --csv -o "${COV_OUT_DIR}coverage_branches.csv" || true  # per-file line+branch
+# export coverage
+gcovr -r "$GCOVR_ROOT" --csv -o "${COV_OUT_DIR}coverage_branches.csv" || true
 
 echo "artifacts:"; ls -la "$COV_OUT_DIR" || true
 stop_watchdog

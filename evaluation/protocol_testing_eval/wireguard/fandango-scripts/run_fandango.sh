@@ -185,23 +185,11 @@ echo "found ${#PROFRAWS[@]} profraw file(s) in ${PROFRAW_DIR}"
 
 PROFDATA="${PROFRAW_DIR}/cov.profdata"
 
-emit_empty_report() {
-  local msg="$1"
-  echo "${msg}" >&2
-  echo "$msg" > "${COV_OUT_DIR}/coverage.txt"
-  printf 'metric,percent,covered,total\nlines,0.00,0,0\nbranches,0.00,0,0\n' \
-      > "${COV_OUT_DIR}/summary.csv"
-  cat > "${COV_OUT_DIR}/index.html" <<HTML
-<!DOCTYPE html><html><head><title>WireGuard coverage</title></head>
-<body><h1>WireGuard (boringtun) coverage</h1><p>${msg}</p></body></html>
-HTML
-}
-
 if [ "${#PROFRAWS[@]}" -eq 0 ]; then
-  emit_empty_report "No .profraw files were produced - boringtun did not flush coverage (TUN/handshake may have failed)."
+  echo "No .profraw files were produced - boringtun did not flush coverage (TUN/handshake may have failed)."
 else
   if ! llvm-profdata merge -sparse "${PROFRAWS[@]}" -o "$PROFDATA"; then
-    emit_empty_report "llvm-profdata merge failed."
+    echo "llvm-profdata merge failed."
   else
     # HTML report
     llvm-cov show "$BORINGTUN_BIN" \
@@ -228,36 +216,6 @@ else
         > "${COV_OUT_DIR}/coverage.txt" 2>/dev/null || \
       llvm-cov report "$BORINGTUN_BIN" -instr-profile="$PROFDATA" \
         > "${COV_OUT_DIR}/coverage.txt" 2>/dev/null || true
-
-    # summary.csv derived from llvm-cov export JSON totals (lines + branches).
-    llvm-cov export "$BORINGTUN_BIN" -instr-profile="$PROFDATA" -format=text \
-        > "${PROFRAW_DIR}/cov.json" 2>/dev/null || true
-
-    python3.11 - "$PROFRAW_DIR/cov.json" "$COV_OUT_DIR/summary.csv" <<'PY'
-import json, sys
-src, dst = sys.argv[1], sys.argv[2]
-def row(name, d):
-    cov = d.get("covered", 0); tot = d.get("count", 0)
-    pct = d.get("percent", (100.0*cov/tot if tot else 0.0))
-    return f"{name},{pct:.2f},{cov},{tot}\n"
-lines_t = {"covered":0,"count":0,"percent":0.0}
-branch_t = {"covered":0,"count":0,"percent":0.0}
-try:
-    with open(src) as f:
-        data = json.load(f)
-    tot = data["data"][0]["totals"]
-    lines_t = tot.get("lines", lines_t)
-    branch_t = tot.get("branches", branch_t)
-except Exception as e:
-    sys.stderr.write(f"[summary.csv] could not parse export json: {e}\n")
-with open(dst, "w") as f:
-    f.write("metric,percent,covered,total\n")
-    f.write(row("lines", lines_t))
-    f.write(row("branches", branch_t))
-PY
-
-    echo "---- summary.csv ----"
-    cat "${COV_OUT_DIR}/summary.csv" || true
   fi
 fi
 

@@ -159,8 +159,8 @@ find "${BUILD_DIR}/${GCOV_SUBDIR}" -name '*.gcno' 2>/dev/null | while read -r gc
   [ -s "${gcno%.gcno}.gcda" ] || rm -f "$gcno"
 done
 
-gcovr -r "${BUILD_DIR}" --filter "${GCOV_SUBDIR}/" --txt -o "${COV_OUT_DIR}coverage.txt" || echo "lines: 0% branches: 0%" > "${COV_OUT_DIR}coverage.txt"
-gcovr -r "${BUILD_DIR}" --filter "${GCOV_SUBDIR}/" --csv -o "${COV_OUT_DIR}coverage_branches.csv" || true  # per-file line+branch
+# export coverage
+gcovr -r "${BUILD_DIR}" --filter "${GCOV_SUBDIR}/" --csv -o "${COV_OUT_DIR}coverage_branches.csv" || true
 
 echo "artifacts:"; ls -la "$COV_OUT_DIR" || true
 echo "done"
