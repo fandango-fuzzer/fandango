@@ -13,18 +13,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # Scoped vs unscoped coverage.
 #
 # Scoped = coverage of the request/response path the grammar drives.
-# Unscoped = the whole report (tools, other subsystems, dependencies).
+# Unscoped = the raw coverage report of the entire codebase including all unit tests,
+# #          dependencies and other things
 #
-# A file is in scope when its path contains a SCOPE substring and no EXCLUDE
-# substring. Out of scope:
-#  - standalone tools, CLI utilities, tests
-#  - third-party dependencies
-#  - generic plumbing: memory, event loops, time, shared data structures
-#  - config parsers and management/control channels
-#  - optional TLS or crypto layers under a plaintext protocol
-#  - other subsystems of the same daemon (e.g. SMTP outbound, DNS zone transfer)
-#
-# Scope is by role, not by coverage: request-path files stay in even when uncovered.
+# Scope is by role and not selected by coverage. The Request-path files stay in even when uncovered.
 
 SCOPE = {
     # FTP command handling, the path helpers it uses while serving commands,
