@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY pyproject.toml uv.lock setup.py CMakeLists.txt README.md LICENSE.md SECURITY.md ./
+COPY pyproject.toml uv.lock CMakeLists.txt README.md LICENSE.md SECURITY.md ./
 COPY src/ src/
 
 ENV FANDANGO_REQUIRE_BINARY_BUILD=1
