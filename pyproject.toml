@@ -1,5 +1,5 @@
 [build-system]
-requires = ["scikit-build-core>=0.11.6", "setuptools>=73.0.1"]
+requires = ["scikit-build-core>=0.11.6,<1", "setuptools>=73.0.1"]
 build-backend = "scikit_build_core.setuptools.build_meta"
 
 [tool.scikit-build]
