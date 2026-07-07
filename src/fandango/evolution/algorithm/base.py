@@ -72,4 +72,5 @@ class GeneticAlgorithm(ABC):
 
     @abstractmethod
     def reset(self) -> None:
+        """Reset the algorithm to its initial state as after calling the constructor."""
         pass

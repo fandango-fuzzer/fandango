@@ -66,7 +66,7 @@ class ProtocolModel:
     def _collect_permutation_groups(
         self, node: Node, groups: dict[NonTerminal, frozenset[NonTerminal]]
     ) -> None:
-        if isinstance(node, Alternative) and node.is_permutation:
+        if isinstance(node, Alternative) and node._is_permutation:
             symbols: set[NonTerminal] = set()
             self._collect_packet_symbols_from_node(node, symbols)
             if len(symbols) > 1:

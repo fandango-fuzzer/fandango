@@ -272,6 +272,7 @@ class GrammarProcessor(FandangoParserVisitor):
             return rep_node
 
     def visitPermutation(self, ctx: FandangoParser.PermutationContext):
+        """All nodes in the permutation context. We generate all possible permutations of them using alternatives."""
         nodes = [self.visitSymbol(c) for c in ctx.symbol()]
         return self._node_permutation_tree(nodes)
 
@@ -285,6 +286,7 @@ class GrammarProcessor(FandangoParserVisitor):
         )
 
     def _node_permutation_tree(self, nodes: list[Node]) -> Node:
+        """Generate all possible permutations of the nodes in the list `nodes`."""
         if len(nodes) == 1:
             return nodes[0]
         branches: list[Node] = []

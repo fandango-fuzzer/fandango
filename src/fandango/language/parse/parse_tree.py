@@ -5,7 +5,6 @@ from antlr4.InputStream import InputStream
 from antlr4.tree.Tree import ParseTree
 
 import fandango
-from fandango.errors import FandangoSyntaxError
 from fandango.language.parse.parser_error_listeners import (
     PythonAntlrErrorListener,
     SpeedyAntlrErrorListener,
@@ -47,23 +46,7 @@ def parse_tree(filename: str, fan_contents: str) -> ParseTree:
         # Invoke the Speedy ANTLR parser
         LOGGER.debug(f"{filename}: parsing .fan content")
         start_time = time.time()
-        try:
-            tree = sa_fandango.parse(input_stream, "fandango", error_listener)
-        except FandangoSyntaxError:
-            if sa_fandango.USE_CPP_IMPLEMENTATION:
-                LOGGER.debug(
-                    f"{filename}: C++ parser failed with a syntax error; "
-                    "retrying with the Python ANTLR parser"
-                )
-                input_stream = InputStream(fan_contents)
-                saved = sa_fandango.USE_CPP_IMPLEMENTATION
-                sa_fandango.USE_CPP_IMPLEMENTATION = False
-                try:
-                    tree = sa_fandango.parse(input_stream, "fandango", error_listener)
-                finally:
-                    sa_fandango.USE_CPP_IMPLEMENTATION = saved
-            else:
-                raise
+        tree = sa_fandango.parse(input_stream, "fandango", error_listener)
         LOGGER.debug(f"{filename}: parsed in {time.time() - start_time:.2f} seconds")
 
     else:  # legacy parser

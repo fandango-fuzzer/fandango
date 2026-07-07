@@ -141,8 +141,6 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
                 try:
                     continue_exploring = self.visit(alt)
                     found = True
-                    # if not node.is_permutation:
-                    #    break
                 except GrammarKeyError:
                     self.current_tree = fallback_tree
                     self.current_path = fallback_path

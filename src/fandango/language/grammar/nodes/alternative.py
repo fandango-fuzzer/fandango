@@ -24,7 +24,7 @@ class Alternative(Node):
         assert len(alternatives) > 0, "alternatives must be non-empty"
         self.id = id
         self.alternatives = alternatives
-        self.is_permutation = is_permutation
+        self._is_permutation = is_permutation
         super().__init__(NodeType.ALTERNATIVE, grammar_settings)
 
     def to_symbol(self) -> Symbol:
