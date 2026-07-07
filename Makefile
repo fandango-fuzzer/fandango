@@ -17,15 +17,14 @@ SRC = src/fandango
 PYTHON_SOURCES = $(wildcard $(SRC)/*.py $(SRC)/*/*.py $(SRC)/*/*/*.py)
 
 # Default targets
-web: package-info html
-all: package-info parser html web pdf
+web: html
+all: dev-tools parser html web pdf
 
-.PHONY: web all parser install dev-tools docs html latex pdf
+.PHONY: web all parser install dev-tools docs html latex pdf package-info
 
 ## Package info
 EGG_INFO = src/fandango_fuzzer.egg-info
 
-.PHONY: package-info
 package-info: $(EGG_INFO)/PKG-INFO
 $(EGG_INFO)/PKG-INFO: pyproject.toml
 	$(UV) sync --locked
