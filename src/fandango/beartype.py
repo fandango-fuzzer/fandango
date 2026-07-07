@@ -13,6 +13,8 @@ def activate_beartype() -> None:
 
     # scikit-build-core's redirect editable finder loads modules in a way that
     # bypasses beartype.claw; drop ours so normal imports from src/ work (#556).
+    # The C++ parser extension is installed as a top-level module (see
+    # CMakeLists.txt) and does not rely on the redirect finder.
     sys.meta_path[:] = [
         finder
         for finder in sys.meta_path

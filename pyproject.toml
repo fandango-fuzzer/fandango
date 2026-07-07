@@ -6,7 +6,8 @@ build-backend = "scikit_build_core.build"
 wheel.packages = ["src/fandango"]
 build-dir = "build"
 # redirect mode (default) keeps CMake artifacts out of the source tree; see
-# fandango/beartype.py for the beartype.claw compatibility shim (beartype/beartype#556)
+# fandango/beartype.py for the beartype.claw compatibility shim (beartype/beartype#556).
+# The C++ parser extension installs as top-level sa_fandango_cpp_parser (CMakeLists.txt).
 
 [[tool.scikit-build.overrides]]
 if.env.FANDANGO_SKIP_CPP_PARSER = true
