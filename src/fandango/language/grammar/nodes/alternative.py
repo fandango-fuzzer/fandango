@@ -27,6 +27,10 @@ class Alternative(Node):
         self._is_permutation = is_permutation
         super().__init__(NodeType.ALTERNATIVE, grammar_settings)
 
+    @property
+    def is_permutation(self) -> bool:
+        return self._is_permutation
+
     def to_symbol(self) -> Symbol:
         return NonTerminal(f"<__{self.id}>")
 
