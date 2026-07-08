@@ -44,7 +44,8 @@ elseif(APPLE)
     target_compile_options(sa_fandango_cpp_parser PRIVATE -mmacosx-version-min=10.13)
 endif()
 
-# Install the module
+# Install at site-packages root so the extension is importable without
+# scikit-build-core's redirect finder (needed for beartype.claw; see beartype.py).
 install(TARGETS sa_fandango_cpp_parser
-    DESTINATION fandango/language/parser
+    DESTINATION .
 )

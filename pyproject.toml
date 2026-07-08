@@ -1,11 +1,22 @@
 [build-system]
-requires = ["scikit-build-core>=0.11.6,<1", "setuptools>=73.0.1"]
-build-backend = "scikit_build_core.setuptools.build_meta"
+requires = ["scikit-build-core>=0.11.6"]
+build-backend = "scikit_build_core.build"
 
 [tool.scikit-build]
 wheel.packages = ["src/fandango"]
+build-dir = "build"
+# redirect mode (default) keeps CMake artifacts out of the source tree; see
+# fandango/beartype.py for the beartype.claw compatibility shim (beartype/beartype#556).
+# The C++ parser extension installs as top-level sa_fandango_cpp_parser (CMakeLists.txt).
 
-# If you update this info, please also update the version in setup.py
+[[tool.scikit-build.overrides]]
+if.env.FANDANGO_SKIP_CPP_PARSER = true
+wheel.cmake = false
+
+[[tool.scikit-build.overrides]]
+if.env.FANDANGO_REQUIRE_BINARY_BUILD = true
+wheel.cmake = true
+
 [project]
 name = "fandango-fuzzer"
 version = "1.1.1"
@@ -77,7 +88,6 @@ development = [
     "ruff>=0.14.0",
     "scikit-build-core>=0.11.6",
     "speedy-antlr-tool>=1.4.3",
-    "types-setuptools>=73.0.1",  # enable mypy to check setup.py
     "types-cachetools>=5.5.2",   # enable mypy to check cachetools
 ]
 

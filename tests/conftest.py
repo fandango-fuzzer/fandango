@@ -2,8 +2,6 @@ import os
 
 import pytest
 
-from fandango.beartype import activate_beartype
-
 
 def pytest_configure(config: pytest.Config):
     # fail fast in exceptions, don't just print them
@@ -11,9 +9,10 @@ def pytest_configure(config: pytest.Config):
     os.environ["FANDANGO_DISABLE_UPDATE_CHECK"] = "1"
 
     if not os.environ.get("FANDANGO_FORCE_SKIP_BEARTYPE", False):
-        # ensure beartype activation if a subprocess is invoked from a unit test
         os.environ["FANDANGO_RUN_BEARTYPE"] = "1"
-        activate_beartype()
+        # Static code in the main __init__.py triggers beartype activation.
+        # This needs to happen after the environment variable is set.
+        import fandango  # noqa: F401 # by definition an unused import
     else:
         print("Skipping beartype because FANDANGO_FORCE_SKIP_BEARTYPE is set")
 
