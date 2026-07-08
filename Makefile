@@ -7,7 +7,7 @@ MAKEFLAGS=--warn-undefined-variables
 PYTHON = python
 PYTEST = pytest
 RUFF = ruff
-PIP = $(PYTHON) -m pip
+UV = uv
 SED = sed
 PAGELABELS = $(PYTHON) -m pagelabels
 ANTLR = antlr
@@ -17,18 +17,17 @@ SRC = src/fandango
 PYTHON_SOURCES = $(wildcard $(SRC)/*.py $(SRC)/*/*.py $(SRC)/*/*/*.py)
 
 # Default targets
-web: package-info html
-all: package-info parser html web pdf
+web: html
+all: dev-tools parser html web pdf
 
-.PHONY: web all parser install dev-tools docs html latex pdf
+.PHONY: web all parser install dev-tools docs html latex pdf package-info
 
 ## Package info
 EGG_INFO = src/fandango_fuzzer.egg-info
 
-.PHONY: package-info
 package-info: $(EGG_INFO)/PKG-INFO
 $(EGG_INFO)/PKG-INFO: pyproject.toml
-	$(PIP) install -e .
+	$(UV) sync --locked
 
 # Install tools for development
 UNAME_DETECTED := $(OS)
@@ -61,7 +60,7 @@ endif
 
 
 dev-tools: system-dev-tools
-	$(PIP) install -e ".[development]"
+	$(UV) sync --locked --all-extras
 
 system-dev-tools:
 	$(SYSTEM_DEV_INSTALL) $(SYSTEM_DEV_TOOLS) $(TEST_TOOLS)
@@ -114,7 +113,7 @@ $(CPP_PARSER)/FandangoParser.cpp: $(LEXER_G4) $(PARSER_G4) $(SRC)/language/gener
 		-visitor -no-listener $(PARSER_G4)
 	cd $(SRC)/language && $(PYTHON) generate-parser.py
 	$(RUFF) format $(SRC)/language
-	@echo 'Now run "pip install -e ." to compile C++ files'
+	@echo 'Now run "uv sync --locked" to compile C++ files'
 
 .PHONY: format
 format:
@@ -302,12 +301,10 @@ run-all: $(TEST_MARKER) $(EVALUATION_MARKER)
 ## Installation
 .PHONY: install
 install:
-	rm -f src/fandango/language/parser/sa_fandango_cpp_parser*.so
-	rm -f src/fandango/language/parser/sa_fandango_cpp_parser*.pdy
-	$(PIP) install -e .
+	$(UV) sync --locked
 
 uninstall:
-	$(PIP) uninstall fandango-fuzzer -y
+	$(UV) pip uninstall fandango-fuzzer
 
 remove cache:
 	rm -rf ~/Library/Caches/Fandango
