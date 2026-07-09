@@ -3,9 +3,6 @@ use std::env;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-/// Matches `abi3-py311` in Cargo.toml.
-const PY_LIMITED_API: &str = "0x030B0000";
-
 fn run_python(code: &str) -> String {
     let python = env::var("PYO3_PYTHON")
         .or_else(|_| env::var("PYTHON_SYS_EXECUTABLE"))
@@ -38,15 +35,21 @@ fn main() {
 
     let mut build = cc::Build::new();
     build.cpp(true).std("c++17");
-    build.define("Py_LIMITED_API", Some(PY_LIMITED_API));
-    // ANTLR before Python includes: on 3.11 / case-insensitive FS, token.h shadows Token.h.
+    // C++ uses the CPython API (auto-generated speedy-antlr sources). Match PyO3's abi3.
+    build.define("Py_LIMITED_API", Some("0x030B0000"));
+    // ANTLR before Python headers: on case-insensitive FS, Python's token.h shadows Token.h.
     build.include(&cpp_parser_dir);
     build.include(cpp_parser_dir.join("antlr4-cpp-runtime"));
-    let python_include = run_python("import sysconfig; print(sysconfig.get_paths()['include'])");
-    build.include(&python_include);
+    build.include(run_python(
+        "import sysconfig; print(sysconfig.get_paths()['include'])",
+    ));
 
-    if cfg!(windows) {
+    // MSVC settings for the vendored ANTLR C++ runtime.
+    #[cfg(windows)]
+    {
+        // Statically link ANTLR into fandango_cpp_parser.lib (no separate antlr4 DLL).
         build.define("ANTLR4CPP_STATIC", None);
+        // Without this MSVC leaves __cplusplus at 199711L; ANTLR and our code use C++17.
         build.flag("/Zc:__cplusplus");
     }
 
@@ -56,14 +59,22 @@ fn main() {
     }
     build.compile("fandango_cpp_parser");
 
-    if cfg!(target_os = "macos") {
-        println!("cargo:rustc-cdylib-link-arg=-Wl,-undefined,dynamic_lookup");
-    }
+    // Extension loads into the running interpreter; resolve Python symbols at runtime.
+    #[cfg(target_os = "macos")]
+    println!("cargo:rustc-cdylib-link-arg=-Wl,-undefined,dynamic_lookup");
 
-    // C++ pulls in python3.lib via pyconfig.h (with Py_LIMITED_API); point MSVC at it.
+    // Import library for C++ code that #include <Python.h> (auto-generated speedy-antlr).
     #[cfg(windows)]
     {
-        let lib_dir = run_python("import sysconfig; print(sysconfig.get_config_var('LIBDIR'))");
-        println!("cargo:rustc-link-search=native={lib_dir}");
+        // pyconfig.h emits #pragma comment(lib, "python3.lib"); uv's Windows Python ships none.
+        let lib_dir = PathBuf::from(env::var("OUT_DIR").unwrap()).join("python3-lib");
+        std::fs::create_dir_all(&lib_dir).expect("failed to create python3-lib directory");
+        python3_dll_a::generate_implib_for_target(
+            &lib_dir,
+            &env::var("CARGO_CFG_TARGET_ARCH").expect("CARGO_CFG_TARGET_ARCH not set"),
+            &env::var("CARGO_CFG_TARGET_ENV").expect("CARGO_CFG_TARGET_ENV not set"),
+        )
+        .expect("failed to generate python3.lib");
+        println!("cargo:rustc-link-search=native={}", lib_dir.display());
     }
 }
