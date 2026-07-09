@@ -1,6 +1,9 @@
 def _is_fandango_editable_redirect_finder(finder: object) -> bool:
     """True for this package's scikit-build-core redirect editable finder only."""
-    if type(finder).__name__ != "ScikitBuildRedirectingFinder":
+    if type(finder).__name__ not in {
+        "ScikitBuildRedirectingFinder",
+        "ScikitBuildInplaceFinder",
+    }:
         return False
     return "fandango" in getattr(finder, "pkgs", ())
 
