@@ -7,31 +7,29 @@ use std::process::Command;
 const PY_LIMITED_API: &str = "0x030B0000";
 
 fn python_executable() -> String {
-    pyo3_build_config::get()
-        .executable()
-        .map(str::to_owned)
-        .or_else(|| env::var("PYO3_PYTHON").ok())
-        .or_else(|| env::var("PYTHON_SYS_EXECUTABLE").ok())
-        .unwrap_or_else(|| "python3".to_string())
+    env::var("PYO3_PYTHON")
+        .or_else(|_| env::var("PYTHON_SYS_EXECUTABLE"))
+        .unwrap_or_else(|_| "python3".to_string())
+}
+
+fn run_python(code: &str) -> String {
+    let output = Command::new(python_executable())
+        .arg("-c")
+        .arg(code)
+        .output()
+        .expect("failed to run Python");
+
+    assert!(output.status.success(), "failed to run Python: {code}");
+
+    String::from_utf8(output.stdout)
+        .expect("python output is not UTF-8")
+        .trim()
+        .to_owned()
 }
 
 /// The CPP parser links to `<Python.h>`, so we need to find the Python include directory.
 fn python_include_dir() -> String {
-    let output = Command::new(python_executable())
-        .arg("-c")
-        .arg("import sysconfig; print(sysconfig.get_paths()['include'])")
-        .output()
-        .expect("failed to run Python for include dir");
-
-    assert!(
-        output.status.success(),
-        "failed to get Python include dir from interpreter"
-    );
-
-    String::from_utf8(output.stdout)
-        .expect("python include output is not UTF-8")
-        .trim()
-        .to_owned()
+    run_python("import sysconfig; print(sysconfig.get_paths()['include'])")
 }
 
 /// Collect all C++ sources in the CPP parser directory.
@@ -46,8 +44,6 @@ fn cpp_sources(cpp_dir: &Path) -> Vec<PathBuf> {
 }
 
 fn main() {
-    let python = pyo3_build_config::get();
-
     let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .expect("rust crate has no parent directory")
@@ -86,13 +82,24 @@ fn main() {
 
     build.compile("fandango_cpp_parser");
 
-    // C++ calls the Python C API. PyO3 handles Rust-side linking; for C++ on macOS
-    // use dynamic_lookup, and on Windows add the import lib search path for the
-    // python3.lib pragma injected by pyconfig.h (with Py_LIMITED_API).
-    pyo3_build_config::add_extension_module_link_args();
-    if cfg!(target_os = "windows") {
-        if let Some(lib_dir) = python.lib_dir() {
-            println!("cargo:rustc-link-search=native={lib_dir}");
-        }
+    // C++ calls the Python C API; symbols resolve when the extension is loaded.
+    if cfg!(target_os = "macos") {
+        println!("cargo:rustc-cdylib-link-arg=-Wl,-undefined,dynamic_lookup");
     }
+    #[cfg(target_os = "windows")]
+    link_windows_cpp_python();
+}
+
+/// MSVC needs python3.lib for the pragma from pyconfig.h (with Py_LIMITED_API).
+/// Maturin's PYO3_CONFIG_FILE omits lib_dir, and uv's Python may not ship import
+/// libs, so generate a stable-ABI import library into OUT_DIR.
+#[cfg(target_os = "windows")]
+fn link_windows_cpp_python() {
+    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap()).join("python3-lib");
+    std::fs::create_dir_all(&out_dir).expect("failed to create python3-lib directory");
+    let arch = env::var("CARGO_CFG_TARGET_ARCH").expect("CARGO_CFG_TARGET_ARCH not set");
+    let env_name = env::var("CARGO_CFG_TARGET_ENV").expect("CARGO_CFG_TARGET_ENV not set");
+    python3_dll_a::generate_implib_for_target(&out_dir, &arch, &env_name)
+        .expect("failed to generate python3.lib");
+    println!("cargo:rustc-link-search=native={}", out_dir.display());
 }
