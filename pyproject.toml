@@ -150,7 +150,6 @@ exclude = [
     'src/fandango/language/parser/FandangoLexer\.py$',
     'src/fandango/language/parser/FandangoParser\.py$',
     'src/fandango/language/parser/FandangoParserVisitor\.py$',
-    # 'src/fandango/language/parser/sa_fandango\.py$',
     'src/fandango/converters/antlr/ANTLRv4[^.]*\.py$',
     'src/fandango/converters/antlr/LexerAdaptor[^.]*\.py$',
 ]
