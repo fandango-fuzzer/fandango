@@ -1,5 +1,5 @@
 [build-system]
-requires = ["scikit-build-core>=0.11.6"]
+requires = ["scikit-build-core>=1.0.2"]
 build-backend = "scikit_build_core.build"
 
 [tool.scikit-build]
@@ -83,11 +83,11 @@ development = [
     "matplotlib>=3.10.0",
     "mypy>=1.16.0",
     "pre-commit>=4.2.0",
-    "pygls>=2.0.0a4",            # language server
+    "pygls>=2.0.0a4",           # language server
     "ruff>=0.14.0",
-    "scikit-build-core>=0.11.6",
+    "scikit-build-core>=1.0.2",
     "speedy-antlr-tool>=1.4.3",
-    "types-cachetools>=5.5.2",   # enable mypy to check cachetools
+    "types-cachetools>=5.5.2",  # enable mypy to check cachetools
 ]
 
 book = [

@@ -2384,10 +2384,10 @@ wheels = [
 
 [[packages]]
 name = "scikit-build-core"
-version = "0.12.2"
+version = "1.0.2"
 index = "https://pypi.org/simple"
-sdist = { url = "https://files.pythonhosted.org/packages/28/cd/9ebb50029b6d8a3ee9e38cdce514ebd70190ec1edf28ab0a1f66d0b84670/scikit_build_core-0.12.2.tar.gz", upload-time = 2026-03-05T18:25:57Z, size = 303553, hashes = { sha256 = "562e0bbc9de1a354c87825ccf732080268d6582a0200f648e8c4a2dcb1e3736d" } }
-wheels = [{ url = "https://files.pythonhosted.org/packages/07/49/b2f0fbe3165d55c02e7f9eec6a10685d518af0ef6e919ff2f589c2d15c85/scikit_build_core-0.12.2-py3-none-any.whl", upload-time = 2026-03-05T18:25:56Z, size = 192625, hashes = { sha256 = "6ea4730da400f9a998ec3287bd3ebc1d751fe45ad0a93451bead8618adbc02b1" } }]
+sdist = { url = "https://files.pythonhosted.org/packages/86/24/127c8523aba8651e1ab6c93a6710cb4991224851529fc15c3e8770213e6d/scikit_build_core-1.0.2.tar.gz", upload-time = 2026-07-09T16:21:20Z, size = 469825, hashes = { sha256 = "ade206d443a6610870bc2e31c89a17f9e14068eb5215cd49d249c986655011c7" } }
+wheels = [{ url = "https://files.pythonhosted.org/packages/2d/e2/138d376fe4046afd94760f30ab7a684149bbe6300b25701f7f7ab99cd5a4/scikit_build_core-1.0.2-py3-none-any.whl", upload-time = 2026-07-09T16:21:19Z, size = 275968, hashes = { sha256 = "847d626591f7fdd0956e146f265f9bb108911fc76a6582d9c5be9c6dcfbc8d3c" } }]
 
 [[packages]]
 name = "setuptools"

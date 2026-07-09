@@ -131,7 +131,7 @@ resolution-markers = [
     "python_full_version < '3.12' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [
-    { name = "sortedcontainers", marker = "python_full_version < '3.12'" },
+    { name = "sortedcontainers" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b5/c9/4e7a3100197ce6658d0c287ab51061a709603f43ac7976e9f5740533aa17/astar-0.99-py3-none-any.whl", hash = "sha256:4d6e9bf8e90543d38cde7d90e873db78c5132247959c2d65abb8ac9d7e666aaf", size = 6635, upload-time = "2023-06-16T08:28:01.608Z" },
@@ -260,7 +260,7 @@ name = "cffi"
 version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pycparser", marker = "implementation_name != 'PyPy'" },
+    { name = "pycparser" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/eb/56/b1ba7935a17738ae8453301356628e8147c79dbb825bcbc73dc7401f9846/cffi-2.0.0.tar.gz", hash = "sha256:44d1b5909021139fe36001ae048dbdde8214afa20200eda0f64c068cac5d5529", size = 523588, upload-time = "2025-09-08T23:24:04.541Z" }
 wheels = [
@@ -918,7 +918,7 @@ requires-dist = [
     { name = "python-dateutil", marker = "extra == 'test'", specifier = ">=2.9.0.post0" },
     { name = "regex", specifier = ">=2024.11.6" },
     { name = "ruff", marker = "extra == 'development'", specifier = ">=0.14.0" },
-    { name = "scikit-build-core", marker = "extra == 'development'", specifier = ">=0.11.6" },
+    { name = "scikit-build-core", marker = "extra == 'development'", specifier = ">=1.0.2" },
     { name = "speedy-antlr-tool", marker = "extra == 'development'", specifier = ">=1.4.3" },
     { name = "sphinxcontrib-mermaid", marker = "extra == 'book'", specifier = ">=1.0.0" },
     { name = "tccbox", marker = "extra == 'test'", specifier = ">=2025.6.6" },
@@ -2167,7 +2167,7 @@ name = "pexpect"
 version = "4.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ptyprocess", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
+    { name = "ptyprocess" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/42/92/cc564bf6381ff43ce1f4d06852fc19a2f11d180f23dc32d9588bee2f149d/pexpect-4.9.0.tar.gz", hash = "sha256:ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f", size = 166450, upload-time = "2023-11-25T09:07:26.339Z" }
 wheels = [
@@ -3076,15 +3076,15 @@ wheels = [
 
 [[package]]
 name = "scikit-build-core"
-version = "0.12.2"
+version = "1.0.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "packaging" },
     { name = "pathspec" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/28/cd/9ebb50029b6d8a3ee9e38cdce514ebd70190ec1edf28ab0a1f66d0b84670/scikit_build_core-0.12.2.tar.gz", hash = "sha256:562e0bbc9de1a354c87825ccf732080268d6582a0200f648e8c4a2dcb1e3736d", size = 303553, upload-time = "2026-03-05T18:25:57.666Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/86/24/127c8523aba8651e1ab6c93a6710cb4991224851529fc15c3e8770213e6d/scikit_build_core-1.0.2.tar.gz", hash = "sha256:ade206d443a6610870bc2e31c89a17f9e14068eb5215cd49d249c986655011c7", size = 469825, upload-time = "2026-07-09T16:21:20.969Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/07/49/b2f0fbe3165d55c02e7f9eec6a10685d518af0ef6e919ff2f589c2d15c85/scikit_build_core-0.12.2-py3-none-any.whl", hash = "sha256:6ea4730da400f9a998ec3287bd3ebc1d751fe45ad0a93451bead8618adbc02b1", size = 192625, upload-time = "2026-03-05T18:25:56.207Z" },
+    { url = "https://files.pythonhosted.org/packages/2d/e2/138d376fe4046afd94760f30ab7a684149bbe6300b25701f7f7ab99cd5a4/scikit_build_core-1.0.2-py3-none-any.whl", hash = "sha256:847d626591f7fdd0956e146f265f9bb108911fc76a6582d9c5be9c6dcfbc8d3c", size = 275968, upload-time = "2026-07-09T16:21:19.601Z" },
 ]
 
 [[package]]
