@@ -6,7 +6,6 @@ build-backend = "maturin"
 manifest-path = "rust/Cargo.toml"
 python-source = "src"
 module-name = "fandango.native"
-editable-profile = "dev"
 
 [tool.uv]
 cache-keys = [
