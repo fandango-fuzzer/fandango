@@ -8,10 +8,6 @@ inputs:
   needs-sudo:
     description: "Whether to use sudo"
     required: true
-  skip-parser:
-    description: "Whether to skip the parser"
-    required: false
-    default: ""
 
 runs:
   using: composite
@@ -36,7 +32,4 @@ runs:
           uv.lock
     - name: Install Python dependencies
       shell: bash
-      run: |
-        uv sync --all-extras --locked --verbose
-      env:
-        FANDANGO_SKIP_CPP_PARSER: ${{ inputs.skip-parser }}
+      run: uv sync --all-extras --locked --verbose

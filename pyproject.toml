@@ -1,21 +1,24 @@
 [build-system]
-requires = ["scikit-build-core>=1.0.2"]
-build-backend = "scikit_build_core.build"
+requires = ["maturin>=1.7,<2.0"]
+build-backend = "maturin"
 
-[tool.scikit-build]
-wheel.packages = ["src/fandango"]
-build-dir = "build"
-# redirect mode (default) keeps CMake artifacts out of the source tree; see
-# fandango/beartype.py for the beartype.claw compatibility shim (beartype/beartype#556).
-# The C++ parser extension installs as top-level sa_fandango_cpp_parser (CMakeLists.txt).
+[tool.maturin]
+manifest-path = "rust/Cargo.toml"
+python-source = "src"
+module-name = "fandango.native"
+editable-profile = "dev"
 
-[[tool.scikit-build.overrides]]
-if.env.FANDANGO_SKIP_CPP_PARSER = true
-wheel.cmake = false
-
-[[tool.scikit-build.overrides]]
-if.env.FANDANGO_REQUIRE_BINARY_BUILD = true
-wheel.cmake = true
+[tool.uv]
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "rust/Cargo.toml" },
+    { file = "rust/Cargo.lock" },
+    { file = "rust/build.rs" },
+    { file = "rust/src/**/*.rs" },
+    { file = "src/fandango/native.pyi" },
+    { file = "src/fandango/language/cpp_parser/**/*.cpp" },
+    { file = "src/fandango/language/cpp_parser/**/*.h" },
+]
 
 [project]
 name = "fandango-fuzzer"
@@ -81,11 +84,11 @@ test = [
 development = [
     "fandango-fuzzer[test]",
     "matplotlib>=3.10.0",
+    "maturin>=1.7,<2.0",
     "mypy>=1.16.0",
     "pre-commit>=4.2.0",
     "pygls>=2.0.0a4",           # language server
     "ruff>=0.14.0",
-    "scikit-build-core>=1.0.2",
     "speedy-antlr-tool>=1.4.3",
     "types-cachetools>=5.5.2",  # enable mypy to check cachetools
 ]
@@ -119,6 +122,7 @@ exclude = [
     "dist",
     "fcc",
     "evaluation/protocol_testing_eval/profuzzbench",
+    "src/fandango/native.pyi",
     "src/fandango/language/parser/FandangoLexer.py",
     "src/fandango/language/parser/sa_fandango.py",
     "src/fandango/language/parser/*Parser*.py",
@@ -142,10 +146,11 @@ exclude = [
     'dist/',
     'fcc/*',
     'evaluation/protocol_testing_eval/profuzzbench/.*',
+    'src/fandango/native\.pyi$',
     'src/fandango/language/parser/FandangoLexer\.py$',
     'src/fandango/language/parser/FandangoParser\.py$',
     'src/fandango/language/parser/FandangoParserVisitor\.py$',
-    'src/fandango/language/parser/sa_fandango\.py$',
+    # 'src/fandango/language/parser/sa_fandango\.py$',
     'src/fandango/converters/antlr/ANTLRv4[^.]*\.py$',
     'src/fandango/converters/antlr/LexerAdaptor[^.]*\.py$',
 ]
