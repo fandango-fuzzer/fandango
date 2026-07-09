@@ -64,7 +64,7 @@ $ make system-dev-tools
 
 (sec:pip-install)=
 ### Step 5: Install Fandango
-ti
+
 Install your local copy of Fandango:
 
 ```shell
@@ -85,12 +85,6 @@ $ uv sync --locked --all-extras
 ```
 :::
 
-
-If you don't need the (much faster) C++ parser, build Fandango without it:
-
-```shell
-$ FANDANGO_SKIP_CPP_PARSER=1 python -m pip install -e .
-```
 
 Reset the shell PATH cache (not necessary on Windows):
 
@@ -150,6 +144,39 @@ To support reproducible environments and compatibility across a wider range of t
 - `pylock.toml` is derived from `uv.lock` to support a wider range of ecosystem tools. Update with `uv export --output-file=pylock.toml --all-extras --locked`.
 
 After updating dependencies in `pyproject.toml`, make sure to regenerate `uv.lock` and `pylock.toml` to keep them up to date, e.g. by running `make lock`. Both pre-commit hooks and the CI pipeline contain checks for these.
+
+(sec:rust-native-interface)=
+## Rust native extension (`fandango.native`)
+
+Parts of Fandango are implemented as a Rust extension module exposed under `fandango.native`.
+The sources live in `rust/` and are built with [maturin](https://www.maturin.rs/) as part of the normal editable install (`uv sync`, `pip install -e .`, etc.).
+
+### Layout
+
+- `rust/src/lib.rs` and `rust/src/**/*.rs` — Python module `fandango.native` Rust source code
+- `rust/build.rs` — compiles the C++ parser sources under `src/fandango/language/cpp_parser/`
+- `src/fandango/native.pyi` — type stubs consumed by mypy and IDEs
+
+Python code should import the native API directly, for example:
+
+```python
+from fandango.native import cpp_parse
+```
+
+### Adding or changing Rust exports
+
+1. Implement the function in `rust/src/lib.rs` (or a private helper module such as `cpp_bridge.rs`).
+2. Export it from the `#[pymodule] mod native { ... }` block with `#[pymodule_export]`.
+3. Add Python type annotations for stub generation using `#[pyo3(signature = ...)]` on the `#[pyfunction]`. Use fully-qualified Python paths in string annotations, for example `"antlr4.InputStream"` or `"type[fandango.language.parser.FandangoParser.FandangoParser]"`.
+4. Regenerate the type stubs:
+
+```shell
+$ make native-stubs
+```
+
+This runs `maturin generate-stubs` and writes `src/fandango/native.pyi` unchanged. The stub file itself is excluded from mypy self-checking (because of the imports) but is still used when type-checking the calling sites.
+
+CI re-runs `make native-stubs`, checks if it is up to date, and rejects stubs containing `Any` or `Incomplete` (missing `#[pyo3(signature = ...)]`).
 
 (sec:first-time-contributors)=
 ## First Time Contributors

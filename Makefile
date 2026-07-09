@@ -326,6 +326,10 @@ lock:
 	uv lock
 	uv export --output-file=pylock.toml --all-extras --locked
 
+.PHONY: native-stubs
+native-stubs:
+	uv run maturin generate-stubs --out src/fandango --quiet
+
 ## Statistics
 .PHONY: stats statistics
 stats statistics:

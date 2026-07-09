@@ -8,6 +8,7 @@ from contextlib import contextmanager
 import pytest
 from beartype.roar import BeartypeCallHintParamViolation
 
+from fandango import native
 from fandango.meta import dummy_function_to_check_if_beartype_is_active
 
 
@@ -119,3 +120,7 @@ def test_experimental_submodule_warning_category():
         ]
         assert exp
         assert all(issubclass(w.category, ExperimentalWarning) for w in exp)
+
+
+def test_greet() -> None:
+    assert native.greet("world") == "Hello from Rust, world!"

@@ -21,7 +21,8 @@ def parse_tree(filename: str, fan_contents: str) -> ParseTree:
         if fandango.Fandango.parser == "cpp":
             sa_fandango.USE_CPP_IMPLEMENTATION = True
             try:
-                import sa_fandango_cpp_parser  # type: ignore[import-not-found] # noqa: F401
+                # import to see if it's there — import obviously not used
+                from fandango.native import cpp_parse as _cpp_parse  # noqa: F401
             except ImportError as err:
                 raise ImportError(
                     "Requested C++ parser not available. "

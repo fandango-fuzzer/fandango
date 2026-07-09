@@ -4,14 +4,13 @@
 FROM ghcr.io/astral-sh/uv:0.11.7-python3.14-trixie-slim AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential cmake \
+    build-essential cargo \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY pyproject.toml uv.lock CMakeLists.txt README.md LICENSE.md SECURITY.md ./
+COPY pyproject.toml uv.lock README.md LICENSE.md SECURITY.md ./
+COPY rust/ rust/
 COPY src/ src/
-
-ENV FANDANGO_REQUIRE_BINARY_BUILD=1
 RUN uv sync --frozen --no-dev --no-editable
 
 # =============

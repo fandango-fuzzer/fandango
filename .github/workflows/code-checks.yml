@@ -26,7 +26,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           needs-sudo: true
-          skip-parser: 1
 
       - name: Check formatting with ruff
         run: |
@@ -35,6 +34,16 @@ jobs:
       - name: Run ruff
         run: |
           uv run ruff check src tests evaluation scripts
+
+      - name: Check if native type stubs are up-to-date
+        shell: bash
+        run: |
+          make native-stubs
+          if grep -E '\bAny\b|Incomplete' src/fandango/native.pyi; then
+            echo "Error: native.pyi contains Any/Incomplete; add #[pyo3(signature = ...)] in rust/src/lib.rs"
+            exit 1
+          fi
+          git diff --exit-code src/fandango/native.pyi
 
   uv-check:
     runs-on: ${{ matrix.os }}
@@ -89,7 +98,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           needs-sudo: ${{ matrix.os == 'ubuntu-latest' }}
-          skip-parser: 1
 
       - name: Run mypy
         shell: bash
