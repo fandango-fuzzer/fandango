@@ -41,6 +41,8 @@ jobs:
         env:
           # Restrict Windows builds to 64-bit only (skips the failing win32 builds)
           CIBW_ARCHS_WINDOWS: AMD64
+          # Free-threaded Windows builds need version-specific import libs; skip them there.
+          CIBW_SKIP: "cp3??t-win*"
 
       - uses: actions/upload-artifact@v4
         with:
