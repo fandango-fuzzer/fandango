@@ -1,67 +1,59 @@
-use glob::glob;
 use std::env;
-use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::path::PathBuf;
 
-fn run_python(code: &str) -> String {
+fn main() {
+    let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .expect("rust crate has no parent directory")
+        .to_path_buf();
+
+    println!(
+        "cargo:rerun-if-changed={}",
+        project_root.join("CMakeLists.txt").display()
+    );
+    println!(
+        "cargo:rerun-if-changed={}",
+        project_root
+            .join("src/fandango/language/cpp_parser")
+            .display()
+    );
+
     let python = env::var("PYO3_PYTHON")
         .or_else(|_| env::var("PYTHON_SYS_EXECUTABLE"))
         .unwrap_or_else(|_| "python3".into());
-    let output = Command::new(python)
-        .args(["-c", code])
-        .output()
-        .expect("failed to run Python");
-    assert!(output.status.success(), "failed to run Python: {code}");
-    String::from_utf8(output.stdout)
-        .expect("python output is not UTF-8")
-        .trim()
-        .to_owned()
-}
 
-fn cpp_sources(dir: &Path) -> Vec<PathBuf> {
-    let mut files: Vec<_> = glob(&format!("{}/**/*.cpp", dir.display()))
-        .expect("invalid glob pattern for C++ sources")
-        .map(|entry| entry.expect("failed to read C++ source glob entry"))
-        .collect();
-    files.sort();
-    files
-}
+    let dst = cmake::Config::new(&project_root)
+        .define("SKBUILD_PROJECT_NAME", "fandango")
+        .define("SKBUILD_PROJECT_VERSION", env!("CARGO_PKG_VERSION"))
+        .define("Python3_EXECUTABLE", &python)
+        // STATIC archive must be PIC to link into the cdylib (Linux).
+        .define("CMAKE_POSITION_INDEPENDENT_CODE", "ON")
+        // Build the archive directly (cmake-rs defaults to an install target).
+        .build_target("sa_fandango_cpp_parser")
+        .build();
 
-fn main() {
-    let cpp_parser_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .expect("rust crate has no parent directory")
-        .join("src/fandango/language/cpp_parser");
+    // cmake-rs builds into $OUT_DIR/build; no install() rules in CMakeLists.txt.
+    println!("cargo:rustc-link-search=native={}/build", dst.display());
+    println!(
+        "cargo:rustc-link-search=native={}/build/Release",
+        dst.display()
+    );
+    println!(
+        "cargo:rustc-link-search=native={}/build/Debug",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=sa_fandango_cpp_parser");
 
-    let mut build = cc::Build::new();
-    build.cpp(true).std("c++17");
-    // C++ uses the CPython API (auto-generated speedy-antlr sources). Match PyO3's abi3.
-    build.define("Py_LIMITED_API", Some("0x030B0000"));
-    // ANTLR before Python headers: on case-insensitive FS, Python's token.h shadows Token.h.
-    build.include(&cpp_parser_dir);
-    build.include(cpp_parser_dir.join("antlr4-cpp-runtime"));
-    build.include(run_python(
-        "import sysconfig; print(sysconfig.get_paths()['include'])",
-    ));
-
-    // MSVC settings for the vendored ANTLR C++ runtime.
-    #[cfg(windows)]
-    {
-        // Statically link ANTLR into fandango_cpp_parser.lib (no separate antlr4 DLL).
-        build.define("ANTLR4CPP_STATIC", None);
-        // Without this MSVC leaves __cplusplus at 199711L; ANTLR and our code use C++17.
-        build.flag("/Zc:__cplusplus");
+    let target_os = env::var("CARGO_CFG_TARGET_OS").expect("CARGO_CFG_TARGET_OS not set");
+    match target_os.as_str() {
+        "macos" => {
+            println!("cargo:rustc-link-lib=c++");
+            // Extension loads into the running interpreter; resolve Python symbols at runtime.
+            println!("cargo:rustc-cdylib-link-arg=-Wl,-undefined,dynamic_lookup");
+        }
+        "linux" => println!("cargo:rustc-link-lib=stdc++"),
+        _ => {}
     }
-
-    for source in cpp_sources(&cpp_parser_dir) {
-        println!("cargo:rerun-if-changed={}", source.display());
-        build.file(source);
-    }
-    build.compile("fandango_cpp_parser");
-
-    // Extension loads into the running interpreter; resolve Python symbols at runtime.
-    #[cfg(target_os = "macos")]
-    println!("cargo:rustc-cdylib-link-arg=-Wl,-undefined,dynamic_lookup");
 
     // Import library for C++ code that #include <Python.h> (auto-generated speedy-antlr).
     #[cfg(windows)]

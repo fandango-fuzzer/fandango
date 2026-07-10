@@ -1,5 +1,5 @@
 [build-system]
-requires = ["maturin>=1.7,<2.0"]
+requires = ["maturin>=1.9.4,<2.0"]
 build-backend = "maturin"
 
 [tool.maturin]
@@ -7,9 +7,23 @@ manifest-path = "rust/Cargo.toml"
 python-source = "src"
 module-name = "fandango.native"
 
+[tool.cibuildwheel.linux]
+before-all = "curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal && yum install -y cmake"
+environment = { PATH = "$HOME/.cargo/bin:$PATH" }
+
+[tool.cibuildwheel.macos]
+before-all = "curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal && brew install cmake"
+environment = { PATH = "$HOME/.cargo/bin:$PATH" }
+
+[tool.cibuildwheel.windows]
+archs = ["AMD64"]
+before-all = "curl -sSf -o rustup-init.exe https://win.rustup.rs && ./rustup-init.exe -y"
+environment = { PATH = "$USERPROFILE\\.cargo\\bin;$PATH" }
+
 [tool.uv]
 cache-keys = [
     { file = "pyproject.toml" },
+    { file = "CMakeLists.txt" },
     { file = "rust/Cargo.toml" },
     { file = "rust/Cargo.lock" },
     { file = "rust/build.rs" },
@@ -83,7 +97,7 @@ test = [
 development = [
     "fandango-fuzzer[test]",
     "matplotlib>=3.10.0",
-    "maturin>=1.7,<2.0",
+    "maturin>=1.9.4,<2.0",
     "mypy>=1.16.0",
     "pre-commit>=4.2.0",
     "pygls>=2.0.0a4",           # language server

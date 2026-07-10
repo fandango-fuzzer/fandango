@@ -150,17 +150,33 @@ After updating dependencies in `pyproject.toml`, make sure to regenerate `uv.loc
 
 Parts of Fandango are implemented as a Rust extension module exposed under `fandango.native`.
 The sources live in `rust/` and are built with [maturin](https://www.maturin.rs/) as part of the normal editable install (`uv sync`, `pip install -e .`, etc.).
+The C++ parser is compiled via `CMakeLists.txt` (driven from `rust/build.rs` with cmake-rs) and linked into that extension.
 
 ### Layout
 
 - `rust/src/lib.rs` and `rust/src/**/*.rs` — Python module `fandango.native` Rust source code
-- `rust/build.rs` — compiles the C++ parser sources under `src/fandango/language/cpp_parser/`
+- `CMakeLists.txt` — builds the C++ parser under `src/fandango/language/cpp_parser/`
+- `rust/build.rs` — drives CMake via cmake-rs and links the static library into the extension
 - `src/fandango/native.pyi` — type stubs consumed by mypy and IDEs
 
 Python code should import the native API directly, for example:
 
 ```python
 from fandango.native import cpp_parse
+```
+
+### Local packaging smoke tests
+
+Build an sdist and a wheel for your current Python (no upload):
+
+```shell
+$ make package-test
+```
+
+Build native-platform wheels the way CI does (still no upload; needs Rust and CMake):
+
+```shell
+$ make cibuildwheel-test
 ```
 
 ### Adding or changing Rust exports

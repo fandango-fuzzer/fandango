@@ -330,6 +330,23 @@ lock:
 native-stubs:
 	uv run maturin generate-stubs --out src/fandango --quiet
 
+## Packaging (local smoke tests; does not upload)
+# package-test: sdist + wheel for the current interpreter (via `uv build`)
+# cibuildwheel-test: native-platform wheels only (needs Rust+CMake; Docker for Linux-from-mac)
+.PHONY: package-test
+package-test:
+	rm -rf dist wheelhouse
+	uv build
+	@echo "Built artifacts in dist/:"
+	@ls -la dist
+
+.PHONY: cibuildwheel-test
+cibuildwheel-test:
+	rm -rf wheelhouse
+	uvx --from cibuildwheel==3.1.3 cibuildwheel --platform auto
+	@echo "Built wheels in wheelhouse/:"
+	@ls -la wheelhouse
+
 ## Statistics
 .PHONY: stats statistics
 stats statistics:
