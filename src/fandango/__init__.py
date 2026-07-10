@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-# needs to be before any other imports
 import os
 
 from fandango.beartype import activate_beartype
 
+# needs to be before any other imports
 if os.environ.get("FANDANGO_RUN_BEARTYPE", False):
     activate_beartype()
 
