@@ -17,7 +17,7 @@ environment = { PATH = "$HOME/.cargo/bin:$PATH" }
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
-before-all = "curl -sSf -o rustup-init.exe https://win.rustup.rs && ./rustup-init.exe -y"
+before-all = "curl -sSf -o rustup-init.exe https://win.rustup.rs && .\\rustup-init.exe -y"
 environment = { PATH = "$USERPROFILE\\.cargo\\bin;$PATH" }
 
 [tool.uv]

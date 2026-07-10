@@ -1,5 +1,6 @@
 use std::env;
 use std::path::PathBuf;
+use std::process::Command;
 
 fn main() {
     let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -21,11 +22,23 @@ fn main() {
     let python = env::var("PYO3_PYTHON")
         .or_else(|_| env::var("PYTHON_SYS_EXECUTABLE"))
         .unwrap_or_else(|_| "python3".into());
+    let include = Command::new(&python)
+        .args(["-c", "import sysconfig; print(sysconfig.get_path('include'))"])
+        .output()
+        .unwrap_or_else(|err| panic!("failed to run {python}: {err}"));
+    assert!(
+        include.status.success(),
+        "failed to get Python include path: {}",
+        String::from_utf8_lossy(&include.stderr)
+    );
+    let include_dir = String::from_utf8(include.stdout)
+        .expect("python output is not UTF-8")
+        .trim()
+        .to_owned();
 
     let dst = cmake::Config::new(&project_root)
-        .define("SKBUILD_PROJECT_NAME", "fandango")
-        .define("SKBUILD_PROJECT_VERSION", env!("CARGO_PKG_VERSION"))
-        .define("Python3_EXECUTABLE", &python)
+        .define("FANDANGO_VERSION", env!("CARGO_PKG_VERSION"))
+        .define("Python3_INCLUDE_DIR", &include_dir)
         // STATIC archive must be PIC to link into the cdylib (Linux).
         .define("CMAKE_POSITION_INDEPENDENT_CODE", "ON")
         // Build the archive directly (cmake-rs defaults to an install target).
