@@ -4,14 +4,23 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 fn run_python(code: &str) -> String {
-    let python = env::var("PYO3_PYTHON")
-        .or_else(|_| env::var("PYTHON_SYS_EXECUTABLE"))
-        .unwrap_or_else(|_| "python3".into());
-    let output = Command::new(python)
+    let python = env::var_os("PYO3_PYTHON")
+        .or_else(|| env::var_os("PYTHON_SYS_EXECUTABLE"))
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("python3"));
+
+    let output = Command::new(&python)
         .args(["-c", code])
         .output()
-        .expect("failed to run Python");
-    assert!(output.status.success(), "failed to run Python: {code}");
+        .unwrap_or_else(|err| panic!("failed to run {}: {err}", python.display()));
+
+    assert!(
+        output.status.success(),
+        "failed to run {} -c {code:?}: {}",
+        python.display(),
+        String::from_utf8_lossy(&output.stderr)
+    );
+
     String::from_utf8(output.stdout)
         .expect("python output is not UTF-8")
         .trim()
@@ -28,6 +37,8 @@ fn cpp_sources(dir: &Path) -> Vec<PathBuf> {
 }
 
 fn main() {
+    let config = pyo3_build_config::get();
+
     let cpp_parser_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .expect("rust crate has no parent directory")
@@ -35,8 +46,18 @@ fn main() {
 
     let mut build = cc::Build::new();
     build.cpp(true).std("c++17");
-    // C++ uses the CPython API (auto-generated speedy-antlr sources). Match PyO3's abi3.
-    build.define("Py_LIMITED_API", Some("0x030B0000"));
+
+    // Follow PyO3's resolved ABI (abi3 feature may be off, e.g. free-threaded).
+    let target_abi = config.target_abi();
+    if matches!(
+        target_abi.kind(),
+        pyo3_build_config::PythonAbiKind::Stable(pyo3_build_config::StableAbi::Abi3)
+    ) {
+        let version = target_abi.version();
+        let limited_api = format!("0x{:02X}{:02X}0000", version.major, version.minor);
+        build.define("Py_LIMITED_API", Some(limited_api.as_str()));
+    }
+
     // ANTLR before Python headers: on case-insensitive FS, Python's token.h shadows Token.h.
     build.include(&cpp_parser_dir);
     build.include(cpp_parser_dir.join("antlr4-cpp-runtime"));
@@ -57,11 +78,11 @@ fn main() {
         println!("cargo:rerun-if-changed={}", source.display());
         build.file(source);
     }
+
     build.compile("fandango_cpp_parser");
 
     // Extension loads into the running interpreter; resolve Python symbols at runtime.
-    #[cfg(target_os = "macos")]
-    println!("cargo:rustc-cdylib-link-arg=-Wl,-undefined,dynamic_lookup");
+    pyo3_build_config::add_extension_module_link_args();
 
     // Import library for C++ code that #include <Python.h> (auto-generated speedy-antlr).
     #[cfg(windows)]

@@ -1,4 +1,4 @@
-name: Tests
+name: Unit Tests
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   test:
-    name: Run Tests
+    name: Run Unit Tests
     runs-on: ${{ matrix.os }}
 
     strategy:

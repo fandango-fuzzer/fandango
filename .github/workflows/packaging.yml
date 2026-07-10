@@ -1,4 +1,4 @@
-name: Build & Upload to PyPI and Docker Hub
+name: Packaging
 
 on:
   release:

@@ -27,6 +27,7 @@ dependencies = [
  "cc",
  "glob",
  "pyo3",
+ "pyo3-build-config",
  "python3-dll-a",
 ]
 
