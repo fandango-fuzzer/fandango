@@ -131,7 +131,7 @@ resolution-markers = [
     "python_full_version < '3.12' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [
-    { name = "sortedcontainers" },
+    { name = "sortedcontainers", marker = "python_full_version < '3.12'" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b5/c9/4e7a3100197ce6658d0c287ab51061a709603f43ac7976e9f5740533aa17/astar-0.99-py3-none-any.whl", hash = "sha256:4d6e9bf8e90543d38cde7d90e873db78c5132247959c2d65abb8ac9d7e666aaf", size = 6635, upload-time = "2023-06-16T08:28:01.608Z" },
@@ -217,11 +217,11 @@ wheels = [
 
 [[package]]
 name = "cachedir-tag"
-version = "0.0.4"
+version = "0.0.5"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/b4/a8/baa72ae4aa40144d5c69ab11eb1f94c3cc76fc067f99ee1fd7d38f69b8df/cachedir_tag-0.0.4.tar.gz", hash = "sha256:b43f57cb19ccf98628057098ddbfead7f317f61a6f4a0771ee356a1f1d2509ce", size = 3807, upload-time = "2025-02-13T10:24:36.707Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c4/cc/a4836b21108573851b701a3137b16eebfd589e5bdff569f5f5173af36bfe/cachedir_tag-0.0.5.tar.gz", hash = "sha256:40ea1bffff8de77de7e094f70624805b2a6c5b989982094a5db4e684763a86e1", size = 4624, upload-time = "2026-06-30T13:10:00.168Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7e/9e/321341fce74669512b70aa0e9a48606e3ca01dec350738c21c9236ac23aa/cachedir_tag-0.0.4-py2.py3-none-any.whl", hash = "sha256:79895cef301eb492df3c56717a3eb4f52990dbba21c2112e6a72540aa8511b29", size = 3894, upload-time = "2025-02-13T10:24:35.056Z" },
+    { url = "https://files.pythonhosted.org/packages/ba/cc/b994cf19817f738739de6a9a0574370a1d5cd192c025fc5f5afa5c68b5d3/cachedir_tag-0.0.5-py2.py3-none-any.whl", hash = "sha256:18af8e157251ab916277978f4337070820aced9503ce3a59171a1c296facc0fc", size = 3954, upload-time = "2026-06-30T13:09:59.167Z" },
 ]
 
 [[package]]
@@ -260,7 +260,7 @@ name = "cffi"
 version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pycparser" },
+    { name = "pycparser", marker = "implementation_name != 'PyPy'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/eb/56/b1ba7935a17738ae8453301356628e8147c79dbb825bcbc73dc7401f9846/cffi-2.0.0.tar.gz", hash = "sha256:44d1b5909021139fe36001ae048dbdde8214afa20200eda0f64c068cac5d5529", size = 523588, upload-time = "2025-09-08T23:24:04.541Z" }
 wheels = [
@@ -2167,7 +2167,7 @@ name = "pexpect"
 version = "4.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ptyprocess" },
+    { name = "ptyprocess", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/42/92/cc564bf6381ff43ce1f4d06852fc19a2f11d180f23dc32d9588bee2f149d/pexpect-4.9.0.tar.gz", hash = "sha256:ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f", size = 166450, upload-time = "2023-11-25T09:07:26.339Z" }
 wheels = [
