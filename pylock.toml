@@ -150,10 +150,10 @@ wheels = [{ url = "https://files.pythonhosted.org/packages/1a/39/47f9197bdd44df2
 
 [[packages]]
 name = "cachedir-tag"
-version = "0.0.4"
+version = "0.0.5"
 index = "https://pypi.org/simple"
-sdist = { url = "https://files.pythonhosted.org/packages/b4/a8/baa72ae4aa40144d5c69ab11eb1f94c3cc76fc067f99ee1fd7d38f69b8df/cachedir_tag-0.0.4.tar.gz", upload-time = 2025-02-13T10:24:36Z, size = 3807, hashes = { sha256 = "b43f57cb19ccf98628057098ddbfead7f317f61a6f4a0771ee356a1f1d2509ce" } }
-wheels = [{ url = "https://files.pythonhosted.org/packages/7e/9e/321341fce74669512b70aa0e9a48606e3ca01dec350738c21c9236ac23aa/cachedir_tag-0.0.4-py2.py3-none-any.whl", upload-time = 2025-02-13T10:24:35Z, size = 3894, hashes = { sha256 = "79895cef301eb492df3c56717a3eb4f52990dbba21c2112e6a72540aa8511b29" } }]
+sdist = { url = "https://files.pythonhosted.org/packages/c4/cc/a4836b21108573851b701a3137b16eebfd589e5bdff569f5f5173af36bfe/cachedir_tag-0.0.5.tar.gz", upload-time = 2026-06-30T13:10:00Z, size = 4624, hashes = { sha256 = "40ea1bffff8de77de7e094f70624805b2a6c5b989982094a5db4e684763a86e1" } }
+wheels = [{ url = "https://files.pythonhosted.org/packages/ba/cc/b994cf19817f738739de6a9a0574370a1d5cd192c025fc5f5afa5c68b5d3/cachedir_tag-0.0.5-py2.py3-none-any.whl", upload-time = 2026-06-30T13:09:59Z, size = 3954, hashes = { sha256 = "18af8e157251ab916277978f4337070820aced9503ce3a59171a1c296facc0fc" } }]
 
 [[packages]]
 name = "cachetools"
