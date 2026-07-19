@@ -16,6 +16,7 @@ class ParseState:
         children: Optional[list[DerivationTree]] = None,
         is_incomplete: bool = False,
         incomplete_idx: int = 0,
+        cycle_depth: int = 0,
     ):
         self._nonterminal = nonterminal
         self._position = position
@@ -24,6 +25,7 @@ class ParseState:
         self.children = children or []
         self.is_incomplete = is_incomplete
         self.incomplete_idx = incomplete_idx
+        self.cycle_depth = cycle_depth
         self._hash: Optional[int] = None
 
     @property
@@ -85,6 +87,7 @@ class ParseState:
             and self.position == other.position
             and self.symbols == other.symbols
             and self._dot == other._dot
+            and self.children == other.children
         )
 
     def __repr__(self) -> str:
@@ -102,9 +105,15 @@ class ParseState:
         )
 
     def next(self) -> "ParseState":
-        next_state = self.copy()
-        next_state._dot += 1
-        return next_state
+        return ParseState(
+            self.nonterminal,
+            self.position,
+            self.symbols,
+            self._dot + 1,
+            self.children.copy() if self.children is not None else None,
+            self.is_incomplete,
+            cycle_depth=self.cycle_depth,
+        )
 
     def copy(self) -> "ParseState":
         return ParseState(
@@ -112,7 +121,8 @@ class ParseState:
             self.position,
             self.symbols,
             self._dot,
-            self.children[:],
+            self.children.copy() if self.children is not None else None,
             self.is_incomplete,
             self.incomplete_idx,
+            cycle_depth=self.cycle_depth,
         )
