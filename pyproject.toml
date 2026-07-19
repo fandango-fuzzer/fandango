@@ -104,9 +104,11 @@ book = [
 full = ["fandango-fuzzer[book,development,test]"]
 
 [project.urls]
-homepage = "https://fandango-fuzzer.github.io/"
-repository = "https://github.com/fandango-fuzzer/fandango/"
+Homepage = "https://fandango-fuzzer.github.io/fandango/"
+Repository = "https://github.com/fandango-fuzzer/fandango"
 "Bug Tracker" = "https://github.com/fandango-fuzzer/fandango/issues"
+Documentation = "https://fandango-fuzzer.github.io/fandango/"
+Changelog = "https://github.com/fandango-fuzzer/fandango/releases"
 
 [project.scripts]
 fandango = "fandango.cli:main"

@@ -48,6 +48,7 @@ parts:
   - caption: Fandango Reference
     chapters:
     - file: Reference
+    - file: Configuration
     - file: Installing
     - file: Commands
     - file: Language
