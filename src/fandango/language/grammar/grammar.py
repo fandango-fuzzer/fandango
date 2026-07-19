@@ -912,42 +912,55 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             [self.visit(self.rules[symbol]) for symbol in self.rules], []
         )
         while nodes:
-            node = nodes.pop(0)
-            if isinstance(node, TerminalNode):
-                continue
-            elif isinstance(node, NonTerminalNode):
-                if node.symbol not in self.rules:
-                    raise FandangoValueError(
-                        f"Symbol {node.symbol.format_as_spec()} not found in grammar"
-                    )
-                if self.rules[node.symbol].distance_to_completion == float("inf"):
-                    nodes.append(node)
+            made_progress = False
+            for _ in range(len(nodes)):
+                node = nodes.pop(0)
+                if isinstance(node, TerminalNode):
+                    made_progress = True
+                    continue
+                elif isinstance(node, NonTerminalNode):
+                    if node.symbol not in self.rules:
+                        raise FandangoValueError(
+                            f"Symbol {node.symbol.format_as_spec()} not found in grammar"
+                        )
+                    if self.rules[node.symbol].distance_to_completion == float("inf"):
+                        nodes.append(node)
+                    else:
+                        node.distance_to_completion = (
+                            self.rules[node.symbol].distance_to_completion + 1
+                        )
+                        made_progress = True
+                elif isinstance(node, Alternative):
+                    new_dist = min([n.distance_to_completion for n in node.alternatives]) + 1
+                    if new_dist == float("inf"):
+                        nodes.append(node)
+                    else:
+                        node.distance_to_completion = new_dist
+                        made_progress = True
+                elif isinstance(node, Concatenation):
+                    if any([n.distance_to_completion == float("inf") for n in node.nodes]):
+                        nodes.append(node)
+                    else:
+                        node.distance_to_completion = (
+                            sum([n.distance_to_completion for n in node.nodes]) + 1
+                        )
+                        made_progress = True
+                elif isinstance(node, Repetition):
+                    if node.node.distance_to_completion == float("inf"):
+                        nodes.append(node)
+                    else:
+                        node.distance_to_completion = (
+                            node.node.distance_to_completion * node.min + 1
+                        )
+                        made_progress = True
                 else:
-                    node.distance_to_completion = (
-                        self.rules[node.symbol].distance_to_completion + 1
-                    )
-            elif isinstance(node, Alternative):
-                node.distance_to_completion = (
-                    min([n.distance_to_completion for n in node.alternatives]) + 1
+                    raise FandangoValueError(f"Unknown node type {node.node_type}")
+            
+            if not made_progress and nodes:
+                # No progress made in a full pass; unresolvable recursion detected.
+                raise FandangoValueError(
+                    "Grammar contains unresolvable recursive rules (no base case) leading to an infinite loop."
                 )
-                if node.distance_to_completion == float("inf"):
-                    nodes.append(node)
-            elif isinstance(node, Concatenation):
-                if any([n.distance_to_completion == float("inf") for n in node.nodes]):
-                    nodes.append(node)
-                else:
-                    node.distance_to_completion = (
-                        sum([n.distance_to_completion for n in node.nodes]) + 1
-                    )
-            elif isinstance(node, Repetition):
-                if node.node.distance_to_completion == float("inf"):
-                    nodes.append(node)
-                else:
-                    node.distance_to_completion = (
-                        node.node.distance_to_completion * node.min + 1
-                    )
-            else:
-                raise FandangoValueError(f"Unknown node type {node.node_type}")
 
     def default_result(self) -> list[Node]:
         return []
