@@ -674,6 +674,15 @@ class IterativeParser(
         for s in table[state.position].find_dot(state.nonterminal):
             dot_params = dict(s.dot_params or [])
             s = s.next()
+            
+            # Detect zero-length cycles to prevent infinite loops
+            if s.position == state.position:
+                s.cycle_depth = state.cycle_depth + 1
+                if s.cycle_depth > 1:
+                    continue
+            else:
+                s.cycle_depth = 0
+
             if state.nonterminal in self._rules:
                 s.append_child(
                     ParserDerivationTree(
