@@ -241,3 +241,24 @@ To run fuzzing continuously, consider specifying `--infinite` to keep Fandango p
 ```bash
 $ fandango fuzz -f persons.fan --infinite --input-method=libfuzzer --file-mode=binary ./harness.{so,dylib}
 ```
+
+## Mutating Inputs
+
+### Why Mutate?
+Fandango is a great mutation tool: It can take an existing population of inputs, apply mutations to them, and output a new set of mutated inputs. This is useful when you have a set of valid inputs (like an existing test suite) and you want Fandango to explore small variations around them.
+
+### Providing Seed Inputs
+You can pass a directory or a ZIP archive containing initial seed inputs using the `-i` or `--initial-population` option. Fandango will load these inputs, use them as the starting point for its evolutionary algorithm, and produce mutated variations.
+
+```bash
+$ fandango fuzz -f persons.fan -i seeds/ -n 10
+```
+
+### Mutation Options
+By default, Fandango applies a mix of structural and byte-level mutations. You can control the rate at which individuals undergo mutation using the `--mutation-rate` option:
+
+```bash
+$ fandango fuzz -f persons.fan -i seeds/ --mutation-rate 0.8 -n 10
+```
+
+This instructs Fandango to mutate 80% of the individuals in each generation, increasing the variability of the generated outputs.
