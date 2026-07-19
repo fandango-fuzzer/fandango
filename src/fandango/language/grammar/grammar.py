@@ -43,6 +43,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         fuzzing_mode: Optional[FuzzingMode] = FuzzingMode.COMPLETE,
         local_variables: Optional[dict[str, Any]] = None,
         global_variables: Optional[dict[str, Any]] = None,
+        options: Optional[dict[str, Any]] = None,
     ):
         self._grammar_settings = grammar_settings
         self.rules: dict[NonTerminal, Node] = rules or {}
@@ -50,6 +51,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         self.fuzzing_mode = fuzzing_mode
         self._local_variables = local_variables or {}
         self._global_variables = global_variables or {}
+        self.options = options or {}
         self._parser = Parser(self.rules)
         self._k_path_cache: LRUCache[
             tuple[NonTerminal, bool, CoverageGoal], list[set[tuple[Symbol, ...]]]
