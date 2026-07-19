@@ -247,6 +247,11 @@ class Fandango(FandangoBase):
         """
         LOGGER.info("---------- Initializing base population ----------")
 
+        if getattr(self._grammar, "options", None):
+            for k, v in self._grammar.options.items():
+                if k not in settings or settings[k] is None:
+                    settings[k] = v
+
         start_symbol = settings.pop("start_symbol", self._start_symbol)
 
         constraints = [] if skip_base_constraints else self.constraints[:]
@@ -405,6 +410,14 @@ class Fandango(FandangoBase):
         :param settings: Additional settings for the evolution algorithm
         :return: A list of derivation trees
         """
+        if getattr(self._grammar, "options", None):
+            if desired_solutions is None and "desired_solutions" in self._grammar.options:
+                desired_solutions = self._grammar.options["desired_solutions"]
+            if max_generations is None and "max_generations" in self._grammar.options:
+                max_generations = self._grammar.options["max_generations"]
+            if not infinite and "infinite" in self._grammar.options:
+                infinite = self._grammar.options["infinite"]
+
         max_generations, desired_solutions, infinite = (
             self._sanitize_runtime_end_settings(
                 mode,

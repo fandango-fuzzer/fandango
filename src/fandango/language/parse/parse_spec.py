@@ -39,6 +39,19 @@ def parse_content(
         cached_spec = CachedFandangoSpec.load(fan_contents, filename)
 
     if not cached_spec:
+        import re
+        import ast
+        options = {}
+        for line in fan_contents.splitlines():
+            match = re.match(r'^\s*#\s*@option\s+(\w+)\s*=\s*(.+)$', line)
+            if match:
+                key, val = match.groups()
+                try:
+                    val = ast.literal_eval(val.strip())
+                except (ValueError, SyntaxError):
+                    val = val.strip()
+                options[key] = val
+
         tree = parse_tree(filename, fan_contents)
 
         cached_spec = CachedFandangoSpec(
@@ -49,6 +62,7 @@ def parse_content(
             max_repetitions=max_repetitions,
             used_symbols=used_symbols,
             includes=includes,
+            options=options,
         )
         if use_cache:
             cached_spec.persist(fan_contents, filename)

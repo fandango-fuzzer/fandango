@@ -123,6 +123,9 @@ def parse(
         )
         parsed_constraints += new_spec.constraints
         new_grammar = new_spec.grammar
+        if not hasattr(new_grammar, "options"):
+            new_grammar.options = {}
+        new_grammar.options.update(new_spec.options)
         pyenv_globals = new_spec.global_vars
         pyenv_locals = new_spec.local_vars
         assert new_grammar is not None

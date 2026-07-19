@@ -443,7 +443,8 @@ Often, a protocol specification is already given in the form of such a state dia
 You can convert these into Fandango grammars as follows:
 
 1. Every _state_ $S$ in the diagram becomes a _nonterminal_ $S$ in the grammar.
-2. Every _transition_ $A \rightarrow B$ in the diagram becomes an _expansion_ of $A$ into $B$, or $A ::= B$.
+2. Every _transition_ $A \rightarrow B$ with label $L$ in the diagram becomes an _expansion_ of $A$ into $B$ via $L$, or $A ::= L\ B$.
+   For example, if state $A$ transitions to state $B$ with message `"hello"`, the grammar rule would be $A ::=$ `"hello"` $B$.
 3. If there are multiple _alternatives_ outgoing from $A$, each of them becomes a separate alternative for the expansion of $A$.
 
 The animation below illustrates how this conversion works applied on the first states of the SMTP protocol.

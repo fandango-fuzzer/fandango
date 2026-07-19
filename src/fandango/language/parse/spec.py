@@ -49,7 +49,12 @@ class FandangoSpec:
         ] = None,
         pyenv_globals: Optional[dict[str, Any]] = None,
         pyenv_locals: Optional[dict[str, Any]] = None,
+        options: Optional[dict[str, Any]] = None,
     ) -> None:
+        if options is None:
+            options = {}
+        self.options = options
+
         if pyenv_globals is None:
             env_key = uuid.uuid4()
             assert CURRENT_ENV_KEY.contextVar is not None
@@ -151,7 +156,11 @@ class CachedFandangoSpec:
         max_repetitions: int = 5,
         used_symbols: Optional[set[str]] = None,
         includes: Optional[list[str]] = None,
+        options: Optional[dict[str, Any]] = None,
     ):
+        if options is None:
+            options = {}
+        self.options = options
         if used_symbols is None:
             used_symbols = set()
         self.version = fandango.version()
@@ -191,6 +200,7 @@ class CachedFandangoSpec:
             productions_ctx=self.productions,
             grammar_settings_ctx=self.grammar_settings,
             constraints_ctx=self.constraints,
+            options=self.options,
         )
 
     @classmethod
