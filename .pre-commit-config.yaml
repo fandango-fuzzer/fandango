@@ -9,7 +9,6 @@ repos:
         exclude: |
             (?x)^(
                 src/fandango/language/parser/FandangoLexer.py|
-                src/fandango/language/parser/sa_fandango\.py|
                 src/fandango/language/parser/.*Parser.*\.py|
                 src/fandango/converters/antlr/ANTLRv4.*\.py
             )$
@@ -23,7 +22,6 @@ repos:
         exclude: |
             (?x)^(
                 src/fandango/language/parser/FandangoLexer.py|
-                src/fandango/language/parser/sa_fandango\.py|
                 src/fandango/language/parser/.*Parser.*\.py|
                 src/fandango/converters/antlr/ANTLRv4.*\.py
             )$
@@ -37,7 +35,6 @@ repos:
         exclude: |
             (?x)^(
                 src/fandango/language/parser/FandangoLexer.py|
-                src/fandango/language/parser/sa_fandango\.py|
                 src/fandango/language/parser/.*Parser.*\.py|
                 src/fandango/converters/antlr/ANTLRv4.*\.py|
                 evaluation/protocol_testing_eval/profuzzbench/.*
@@ -52,7 +49,6 @@ repos:
         exclude: |
             (?x)^(
                 src/fandango/language/parser/FandangoLexer.py|
-                src/fandango/language/parser/sa_fandango\.py|
                 src/fandango/language/parser/.*Parser.*\.py|
                 src/fandango/converters/antlr/ANTLRv4.*\.py|
                 evaluation/protocol_testing_eval/profuzzbench/.*
