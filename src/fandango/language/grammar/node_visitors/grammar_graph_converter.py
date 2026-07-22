@@ -10,6 +10,7 @@ from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.grammar.nodes.parallel import Parallel
 from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
 
@@ -55,7 +56,7 @@ class GrammarGraphNode(abc.ABC):
     def walk(self, tree_node: DerivationTree) -> "GrammarGraphNode":
         if issubclass(
             self.node.__class__,
-            (NonTerminalNode, Concatenation, Repetition, Alternative),
+            (NonTerminalNode, Concatenation, Repetition, Alternative, Parallel),
         ):
             if isinstance(self.node, NonTerminalNode):
                 symbol = self.node.symbol
@@ -235,6 +236,27 @@ class GrammarGraphConverter(
 
     def visitConcatenation(
         self, node: Concatenation
+    ) -> tuple[GrammarGraphNode, list[GrammarGraphNode]]:
+        chain_end: list[GrammarGraphNode] = list()
+        reaches: list[GrammarGraphNode] = list()
+        graph_node = EagerGrammarGraphNode(node, reaches)
+        self.current_parent.append(graph_node)
+        first = True
+        for child in node.children():
+            if first:
+                first = False
+                next_node, chain_end = self.visit(child)
+                reaches.append(next_node)
+            else:
+                next_node, next_end_nodes = self.visit(child)
+                for end_node in chain_end:
+                    self._set_next(end_node, [next_node])
+                chain_end = next_end_nodes
+        self.current_parent.pop()
+        return graph_node, chain_end
+
+    def visitParallel(
+        self, node: Parallel
     ) -> tuple[GrammarGraphNode, list[GrammarGraphNode]]:
         chain_end: list[GrammarGraphNode] = list()
         reaches: list[GrammarGraphNode] = list()

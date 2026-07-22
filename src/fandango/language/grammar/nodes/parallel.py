@@ -1,7 +1,7 @@
 from collections.abc import Iterable, Iterator, Sequence
 from typing import TYPE_CHECKING, Any
 
-from fandango import FandangoError
+from fandango.errors import FandangoError
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.symbols.non_terminal import NonTerminal
@@ -51,7 +51,7 @@ class Parallel(Node):
         return len(self.nodes)
 
     def format_as_spec(self) -> str:
-        return " ".join(map(lambda x: x.format_as_spec(), self.nodes))
+        return " || ".join(map(lambda x: x.format_as_spec(), self.nodes))
 
     def descendents(
         self,

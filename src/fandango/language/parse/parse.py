@@ -336,7 +336,12 @@ def check_grammar_types(
         elif (
             tree.node_type == NodeType.CONCATENATION
             or tree.node_type == NodeType.ALTERNATIVE
+            or tree.node_type == NodeType.PARALLEL
         ):
+            concatenation_like = tree.node_type in (
+                NodeType.CONCATENATION,
+                NodeType.PARALLEL,
+            )
             common_tp = None
             tp_child = None
             first = True
@@ -352,7 +357,7 @@ def check_grammar_types(
                     max_bits = max_child_bits
                     step = child_step
                     first = False
-                elif tree.node_type == NodeType.CONCATENATION:
+                elif concatenation_like:
                     min_bits += min_child_bits
                     max_bits += max_child_bits
                     step += child_step
@@ -367,7 +372,7 @@ def check_grammar_types(
                     tp_child = child
                     continue
                 if not compatible(tp, common_tp):
-                    if tree.node_type == NodeType.CONCATENATION:
+                    if concatenation_like:
                         LOGGER.warning(
                             f"{rule_symbol!s}: Concatenating {common_tp!r} ({tp_child!s}) and {tp!r} ({child!s})"
                         )

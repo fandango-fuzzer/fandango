@@ -9,6 +9,7 @@ from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.grammar.nodes.parallel import Parallel
 from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.grammar.parser.column import Column
@@ -124,6 +125,20 @@ class IterativeParser(
     def visitConcatenation(
         self, node: Concatenation
     ) -> IterativeParserVisitorReturnType:
+        intermediate_nt = NonTerminal(f"<__{node.id}>")
+        self._nodes[intermediate_nt.name()] = node
+        result: IterativeParserVisitorReturnType = [[]]
+        for child in node.children():
+            to_add = self.visit(child)
+            new_result = []
+            for r in result:
+                for a in to_add:
+                    new_result.append(r + a)
+            result = new_result
+        self.set_rule(intermediate_nt, result)
+        return [[(intermediate_nt, frozenset())]]
+
+    def visitParallel(self, node: Parallel) -> IterativeParserVisitorReturnType:
         intermediate_nt = NonTerminal(f"<__{node.id}>")
         self._nodes[intermediate_nt.name()] = node
         result: IterativeParserVisitorReturnType = [[]]

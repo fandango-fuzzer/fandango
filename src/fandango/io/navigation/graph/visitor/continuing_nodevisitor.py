@@ -5,6 +5,7 @@ from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.grammar.nodes.parallel import Parallel
 from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.tree import DerivationTree
@@ -126,6 +127,26 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
             child_idx += 1
         self.on_leave_controlflow()
         return continue_exploring
+
+    def visitParallel(self, node: Parallel) -> bool:
+        self.on_enter_controlflow(f"<__{node.id}>")
+        tree = self.current_tree[-1]
+        all_complete = True
+        for child_idx, branch in enumerate(node.nodes):
+            if tree is not None and child_idx < len(tree):
+                self.current_tree.append([tree[child_idx]])
+            else:
+                # Branch not started yet: explore it in prediction mode.
+                self.current_tree.append(None)
+            try:
+                branch_complete = self.visit(branch)
+            finally:
+                self.current_tree.pop()
+            # The parallel node as a whole is only complete (i.e. control can
+            # move past it) once *all* of its branches are complete.
+            all_complete = all_complete and branch_complete
+        self.on_leave_controlflow()
+        return all_complete
 
     def visitAlternative(self, node: Alternative) -> bool:
         self.on_enter_controlflow(f"<__{node.id}>")
