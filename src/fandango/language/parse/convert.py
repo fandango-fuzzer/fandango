@@ -25,6 +25,7 @@ from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.grammar.nodes.parallel import Parallel
 from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.parser.FandangoParser import FandangoParser
@@ -72,6 +73,7 @@ class GrammarProcessor(FandangoParserVisitor):
         self.seenRepetitions = 0
         self.seenOptions = 0
         self.seenPluses = 0
+        self.seenParallel = 0
 
     def get_grammar(
         self,
@@ -140,14 +142,13 @@ class GrammarProcessor(FandangoParserVisitor):
         ]
         if len(nodes) == 1:
             return nodes[0]
-        raise NotImplementedError("Not implemented")  # TODO: Implement
-        # self.seenParallel += 1
-        # nid = self.seenParallel
-        # return Parallel(
-        #    nodes,
-        #    self._grammar_settings,
-        #    f"{NodeType.PARALLEL}:{nid}_{self.id_prefix}",
-        # )
+        self.seenParallel += 1
+        nid = self.seenParallel
+        return Parallel(
+            nodes,
+            self._grammar_settings,
+            f"{NodeType.PARALLEL}:{nid}_{self.id_prefix}",
+        )
 
     def visitConcatenation(self, ctx: FandangoParser.ConcatenationContext):
         nodes = [self.visitOperator(child) for child in ctx.operator()]

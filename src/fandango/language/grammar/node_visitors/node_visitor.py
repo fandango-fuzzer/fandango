@@ -6,6 +6,7 @@ from fandango.language.grammar.nodes.char_set import CharSet
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.grammar.nodes.parallel import Parallel
 from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
 
@@ -59,3 +60,6 @@ class NodeVisitor(abc.ABC, Generic[AggregateType, ResultType]):
 
     def visitCharSet(self, node: CharSet) -> ResultType:
         return cast(ResultType, self.default_result())
+
+    def visitParallel(self, node: Parallel) -> ResultType:
+        return cast(ResultType, self.visitChildren(node))

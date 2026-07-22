@@ -25,6 +25,7 @@ class NodeType(enum.Enum):
     NON_TERMINAL = "non_terminal"
     TERMINAL = "terminal"
     CHAR_SET = "char_set"
+    PARALLEL = "parallel"
 
     def __repr__(self) -> str:
         return str(self)
