@@ -273,6 +273,7 @@ class IterativeParser(
                 recipient=tree.recipient,
                 sender=tree.sender,
                 origin_repetitions=tree.origin_repetitions,
+                arrival_index=tree.arrival_index,
             )
         ]
 
@@ -673,6 +674,7 @@ class IterativeParser(
             recipient=tree.recipient,
             read_only=tree.read_only,
             origin_repetitions=origin_repetitions,
+            arrival_index=tree.arrival_index,
         )
 
     def to_derivation_tree(self, tree: DerivationTree) -> DerivationTree:

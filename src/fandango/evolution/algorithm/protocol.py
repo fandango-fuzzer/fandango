@@ -90,6 +90,11 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             packet_tree = packet_tree
             assert packet_sender is not None
 
+            # Stamp the received message with a monotonic arrival index so it can
+            # be identified by mount order downstream, even when it is
+            # value-identical to a message already in the tree (parallel branch).
+            packet_tree.mark_arrived()
+
             for hookin_option in forecast.paths:
                 # Deepcopy so that a failed constraint attempt on one NT
                 # does not corrupt the shared base tree for the next candidate.
@@ -240,7 +245,13 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 )
                 if self._io_instance.received_msg():
                     continue
-                new_packet = next_history_tree.protocol_msgs()[-1]
+
+                new_packet = max(
+                    next_history_tree.protocol_msgs(),
+                    key=lambda r: (
+                        r.msg.arrival_index if r.msg.arrival_index is not None else -1
+                    ),
+                )
                 if (
                     new_packet.recipient is None
                     or not self._io_instance.parties[

@@ -117,6 +117,25 @@ class DerivationTree:
     This class is used to represent a node in the derivation tree.
     """
 
+    # Session-global monotonic counter handed out by mark_arrived().
+    _arrival_counter: int = 0
+
+    @classmethod
+    def next_arrival_index(cls) -> int:
+        cls._arrival_counter += 1
+        return cls._arrival_counter
+
+    def mark_arrived(self) -> None:
+        """Stamp this message node with the next monotonic arrival index.
+
+        Called at the single point where a message is mounted into the tree
+        (generation and reception). The stamp identifies *which* message was
+        added in a step - by mount order, not by value - so a new message that
+        is value-identical to an existing one (e.g. same message type on the
+        other side of a parallel node) is still told apart from it.
+        """
+        self.arrival_index = DerivationTree.next_arrival_index()
+
     def __init__(
         self,
         symbol: Symbol,
@@ -128,6 +147,7 @@ class DerivationTree:
         recipient: Optional[str] = None,
         read_only: Optional[bool] = False,
         origin_repetitions: Optional[list[tuple[str, int, int]]] = None,
+        arrival_index: Optional[int] = None,
     ) -> None:
         """
         Create a new derivation tree node.
@@ -156,6 +176,12 @@ class DerivationTree:
             origin_repetitions = []
         self.origin_repetitions: list[tuple[str, int, int]] = origin_repetitions
         self.read_only = read_only
+        # Monotonic order in which this (message) node arrived / was mounted in a
+        # protocol run. Set via mark_arrived(). Used to identify the message added
+        # in a step even when it is value-identical to an existing one (e.g. two
+        # parallel branches emitting the same message type). None for nodes that
+        # are not protocol messages or have not been stamped yet.
+        self.arrival_index = arrival_index
         self._size: Optional[int] = None
         self.set_children(children or [])
 
@@ -482,6 +508,7 @@ class DerivationTree:
             sources=[],
             read_only=self.read_only,
             origin_repetitions=list(self.origin_repetitions),
+            arrival_index=self.arrival_index,
         )
         memo[id(self)] = copied
 

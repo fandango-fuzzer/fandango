@@ -223,6 +223,7 @@ class PacketForecaster:
                         assert isinstance(cpy.symbol, NonTerminal)
                         r_msg.msg.set_children(cpy.children)
                         r_msg.msg.sources = deepcopy(cpy.sources)
+                        r_msg.msg.arrival_index = orig_r_msg.msg.arrival_index
                         r_msg.msg.symbol = NonTerminal("<" + cpy.symbol.name()[1:])
                     else:
                         break

@@ -271,6 +271,18 @@ class PacketGuide:
             map(lambda x: x.msg, self._history_tree.protocol_msgs())
         )
         all_current_msgs = prev_msgs + current_session_msgs
+
+        if all(m.arrival_index is not None for m in all_current_msgs) and all(
+            m.arrival_index is not None for m in self._prev_session_msgs
+        ):
+            seen = {m.arrival_index for m in self._prev_session_msgs}
+            new_msgs = [m for m in all_current_msgs if m.arrival_index not in seen]
+            new_msgs.sort(
+                key=lambda m: m.arrival_index if m.arrival_index is not None else -1
+            )
+            return new_msgs
+
+        # Fallback
         new_msgs = []
         for prev, new in zip(self._prev_session_msgs, all_current_msgs, strict=False):
             if prev != new:

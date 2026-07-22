@@ -32,6 +32,7 @@ class PacketIterativeParser(IterativeParser):
         ):
             i_msg.msg.set_children(r_msg.msg.children)
             i_msg.msg.sources = r_msg.msg.sources
+            i_msg.msg.arrival_index = r_msg.msg.arrival_index
             symbol = r_msg.msg.symbol
             if isinstance(symbol, NonTerminal):
                 # TODO: Is this just to create a new string?

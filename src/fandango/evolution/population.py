@@ -168,5 +168,10 @@ class IoPopulationManager(PopulationManager):
         fuzz_point.set_children(fuzz_point.children[:-1])
         current_pck.node.fuzz(fuzz_point, self._grammar, max_nodes)
 
+        if fuzz_point.children:
+            for record in fuzz_point.children[-1].protocol_msgs():
+                if record.msg.arrival_index is None:
+                    record.msg.mark_arrived()
+
         self._prev_packet_idx = current_idx
         return tree

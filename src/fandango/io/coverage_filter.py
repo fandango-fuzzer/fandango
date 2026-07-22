@@ -65,8 +65,15 @@ class PacketCoverageFilter:
         return 0
 
     def filter(self, individual: DerivationTree) -> Optional[DerivationTree]:
-        if len(individual.protocol_msgs()) != 0:
-            msg = individual.protocol_msgs()[-1].msg
+        protocol_records = individual.protocol_msgs()
+        if len(protocol_records) != 0:
+            record = max(
+                protocol_records,
+                key=lambda r: (
+                    r.msg.arrival_index if r.msg.arrival_index is not None else -1
+                ),
+            )
+            msg = record.msg
             symbol = msg.symbol
             assert isinstance(symbol, NonTerminal)
             msg_key = PacketNonTerminal(msg.sender, msg.recipient, symbol)
