@@ -110,6 +110,7 @@ POWER              : '**';
 ASSIGN             : '=';
 OPEN_BRACK         : '[' { open_brace(); };
 CLOSE_BRACK        : ']' { close_brace(); };
+PARALLEL           : '||';
 OR_OP              : '|';
 XOR                : '^';
 AND_OP             : '&';

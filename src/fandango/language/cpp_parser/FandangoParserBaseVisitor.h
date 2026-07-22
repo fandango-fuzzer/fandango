@@ -35,6 +35,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitParallel(FandangoParser::ParallelContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitConcatenation(FandangoParser::ConcatenationContext *ctx) override {
     return visitChildren(ctx);
   }

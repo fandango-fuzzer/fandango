@@ -25,7 +25,9 @@ production
     | INDENT* nonterminal '::=' alternative (':' ':' expression)? (';' | NEWLINE+ | EOF) DEDENT* // deprecated
     ;
 
-alternative: concatenation ('|' concatenation)*;
+alternative: parallel ('|' parallel)*;
+
+parallel: concatenation (PARALLEL concatenation)*;
 
 concatenation: operator (operator)*;
 
@@ -1218,6 +1220,7 @@ fstring_any
         | ASSIGN
         | OPEN_BRACK
         | CLOSE_BRACK
+        | PARALLEL
         | OR_OP
         | XOR
         | AND_OP

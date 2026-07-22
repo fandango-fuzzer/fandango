@@ -123,9 +123,7 @@ class GrammarProcessor(FandangoParserVisitor):
         return GrammarSetting(selector, rules)
 
     def visitAlternative(self, ctx: FandangoParser.AlternativeContext) -> Node:
-        nodes: list[Node] = [
-            self.visitConcatenation(child) for child in ctx.concatenation()
-        ]
+        nodes: list[Node] = [self.visitParallel(child) for child in ctx.parallel()]
         if len(nodes) == 1:
             return nodes[0]
         self.seenAlternatives += 1
@@ -135,6 +133,21 @@ class GrammarProcessor(FandangoParserVisitor):
             self._grammar_settings,
             f"{NodeType.ALTERNATIVE}:{nid}_{self.id_prefix}",
         )
+
+    def visitParallel(self, ctx: FandangoParser.ParallelContext):
+        nodes: list[Node] = [
+            self.visitConcatenation(child) for child in ctx.concatenation()
+        ]
+        if len(nodes) == 1:
+            return nodes[0]
+        raise NotImplementedError("Not implemented")  # TODO: Implement
+        # self.seenParallel += 1
+        # nid = self.seenParallel
+        # return Parallel(
+        #    nodes,
+        #    self._grammar_settings,
+        #    f"{NodeType.PARALLEL}:{nid}_{self.id_prefix}",
+        # )
 
     def visitConcatenation(self, ctx: FandangoParser.ConcatenationContext):
         nodes = [self.visitOperator(child) for child in ctx.operator()]

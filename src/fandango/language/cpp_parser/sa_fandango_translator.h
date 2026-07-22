@@ -17,6 +17,7 @@ class SA_FandangoTranslator : public FandangoParserBaseVisitor {
     PyObject *StatementContext_cls = NULL;
     PyObject *ProductionContext_cls = NULL;
     PyObject *AlternativeContext_cls = NULL;
+    PyObject *ParallelContext_cls = NULL;
     PyObject *ConcatenationContext_cls = NULL;
     PyObject *OperatorContext_cls = NULL;
     PyObject *KleeneContext_cls = NULL;
@@ -273,6 +274,8 @@ class SA_FandangoTranslator : public FandangoParserBaseVisitor {
     antlrcpp::Any visitProduction(FandangoParser::ProductionContext *ctx);
 
     antlrcpp::Any visitAlternative(FandangoParser::AlternativeContext *ctx);
+
+    antlrcpp::Any visitParallel(FandangoParser::ParallelContext *ctx);
 
     antlrcpp::Any visitConcatenation(FandangoParser::ConcatenationContext *ctx);
 

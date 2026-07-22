@@ -29,6 +29,8 @@ public:
 
     virtual std::any visitAlternative(FandangoParser::AlternativeContext *context) = 0;
 
+    virtual std::any visitParallel(FandangoParser::ParallelContext *context) = 0;
+
     virtual std::any visitConcatenation(FandangoParser::ConcatenationContext *context) = 0;
 
     virtual std::any visitOperator(FandangoParser::OperatorContext *context) = 0;

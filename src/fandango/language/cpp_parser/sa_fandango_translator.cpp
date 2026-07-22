@@ -16,6 +16,7 @@ SA_FandangoTranslator::~SA_FandangoTranslator() {
     Py_XDECREF(StatementContext_cls);
     Py_XDECREF(ProductionContext_cls);
     Py_XDECREF(AlternativeContext_cls);
+    Py_XDECREF(ParallelContext_cls);
     Py_XDECREF(ConcatenationContext_cls);
     Py_XDECREF(OperatorContext_cls);
     Py_XDECREF(KleeneContext_cls);
@@ -289,6 +290,12 @@ antlrcpp::Any SA_FandangoTranslator::visitProduction(FandangoParser::ProductionC
 antlrcpp::Any SA_FandangoTranslator::visitAlternative(FandangoParser::AlternativeContext *ctx){
     if(!AlternativeContext_cls) AlternativeContext_cls = PyObject_GetAttrString(translator->parser_cls, "AlternativeContext");
     PyObject *py_ctx = translator->convert_ctx(this, ctx, AlternativeContext_cls);
+    return py_ctx;
+}
+
+antlrcpp::Any SA_FandangoTranslator::visitParallel(FandangoParser::ParallelContext *ctx){
+    if(!ParallelContext_cls) ParallelContext_cls = PyObject_GetAttrString(translator->parser_cls, "ParallelContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, ParallelContext_cls);
     return py_ctx;
 }
 
