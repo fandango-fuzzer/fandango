@@ -90,9 +90,6 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             packet_tree = packet_tree
             assert packet_sender is not None
 
-            # Stamp the received message with a monotonic arrival index so it can
-            # be identified by mount order downstream, even when it is
-            # value-identical to a message already in the tree (parallel branch).
             packet_tree.mark_arrived()
 
             for hookin_option in forecast.paths:
