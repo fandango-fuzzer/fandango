@@ -1,4 +1,4 @@
-<start> ::= <Client:hello> <after_hello>
+<start> ::= <Client:hello> <after_hello> <Client:join>
 <after_hello> ::= (<upload> || <heartbeat>)
 
 <upload> ::= <Client:Server:put> <Server:Client:stored> <Client:Server:commit> <Server:Client:committed>
@@ -9,6 +9,7 @@
 <stored> ::= 'STORED report.txt\n'
 <commit> ::= 'COMMIT report.txt\n'
 <committed> ::= 'COMMITTED report.txt\n'
+<join> ::= 'JOIN\n'
 
 <ping> ::= 'PING\n'
 <pong> ::= 'PONG\n'

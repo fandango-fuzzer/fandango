@@ -62,4 +62,4 @@ class NodeVisitor(abc.ABC, Generic[AggregateType, ResultType]):
         return cast(ResultType, self.default_result())
 
     def visitParallel(self, node: Parallel) -> ResultType:
-        return cast(ResultType, self.visitChildren(node))
+        return self.visitConcatenation(node)
