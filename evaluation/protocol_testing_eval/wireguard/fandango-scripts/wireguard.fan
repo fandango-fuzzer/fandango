@@ -434,7 +434,7 @@ where all(str(<env>..<new_handshake_cancel>..<timer_id>)     == str(TIMER_ID_NEW
 where all(str(<env>..<new_handshake_expired>..<timer_id>)    == str(TIMER_ID_NEW_HANDSHAKE) for <env> in *<new_handshake_expired>)
 
 
-# HANDSHAKE MESSAGES║
+# HANDSHAKE MESSAGES
 <area_msg_initiator> ::= <StdOut:tai64n><Client:msg_initiator>
 <tai64n> ::= <byte>{12} := TAI64N()
 
