@@ -19,7 +19,6 @@ class Parallel(Concatenation):
         super().__init__(nodes, grammar_settings, id)
         self._node_type = NodeType.PARALLEL
 
-
     def accept(
         self,
         visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor[fandango.language.grammar.node_visitors.node_visitor.AggregateType, fandango.language.grammar.node_visitors.node_visitor.ResultType]",

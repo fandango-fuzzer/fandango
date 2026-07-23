@@ -1,8 +1,10 @@
-<start> ::= <upload> || <heartbeat>
+<start> ::= <Client:hello> <after_hello>
+<after_hello> ::= (<upload> || <heartbeat>)
 
 <upload> ::= <Client:Server:put> <Server:Client:stored> <Client:Server:commit> <Server:Client:committed>
 <heartbeat> ::= <Client:Server:ping> <Server:Client:pong>
 
+<hello> ::= 'HELLO\n'
 <put> ::= 'PUT report.txt\n'
 <stored> ::= 'STORED report.txt\n'
 <commit> ::= 'COMMIT report.txt\n'

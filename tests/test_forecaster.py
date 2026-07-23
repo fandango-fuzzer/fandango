@@ -9,8 +9,8 @@ from fandango.language.tree import DerivationTree
 from tests.utils import RESOURCES_ROOT
 
 
-def get_grammar():
-    with open(RESOURCES_ROOT / "forecaster.fan") as f:
+def get_grammar(name: str="forecaster.fan"):
+    with open(RESOURCES_ROOT / name) as f:
         spec = f.read()
     fandango = Fandango(spec, use_stdlib=False, use_cache=False)
     return fandango.grammar
@@ -104,3 +104,13 @@ def test_forecast_8():
     prediction: ForecastingResult = forecaster.predict(tree)
     expected: dict[str, list[str]] = {}
     assert_prediction(prediction, expected)
+
+def test_forecast_parallel():
+    grammar = get_grammar(name="parallel_io.fan")
+    forecaster = PacketForecaster(grammar)
+    tree = grammar.parse("HELLO\\n", mode=ParsingMode.INCOMPLETE)
+    assert tree is not None
+    prediction: ForecastingResult = forecaster.predict(tree)
+    expected: dict[str, list[str]] = {}
+    assert_prediction(prediction, expected)
+
