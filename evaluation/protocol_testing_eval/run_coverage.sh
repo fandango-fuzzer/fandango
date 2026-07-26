@@ -1,22 +1,11 @@
-#!/usr/bin/env bash
+#!/bin/bash
 #
-# Build a target's instrumented-server image, run it with Fandango inside a
-# container, and copy out the coverage report.
-#
+# Build a target's instrumented-server image, and runs Fandango on it within docker.
 #   ./run_coverage.sh <target> [results_dir] [driver flags...]
-#
 #   target       bind9 | opensmtpd | wireguard | lightftp
 #   results_dir  where the report lands (default: ./results-<target>)
 #   driver flags --experiment --duration --guidance --interval --run-id
 #                --plateau-timeout --skip-build
-#
-# Environment overrides:
-#   SKIP_BUILD=1           reuse the existing image instead of rebuilding
-#   CACHEBUST              override the build's cache-busting value
-#   FANDANGO_DURATION      how long Fandango runs, seconds
-#   OVERALL_TIMEOUT        host watchdog: kill the container after this many seconds
-#   RUN_FANDANGO_TIMEOUT   timeout for the fandango call itself, seconds
-#   NO_MESSAGES, BASELINE_IDLE, FANDANGO_FAN   forwarded into the container
 
 set -eo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -42,8 +31,8 @@ case "${1:-}" in
   *) results_dir="$1"; shift ;;
 esac
 
-# Remaining arguments are flags for the in-container driver. We consume
-# --skip-build ourselves and note --duration so we can size the watchdog.
+# Remaining arguments are flags for the driver in the container. We consume
+# --skip-build ourselves and note --duration so we can contigure the timeout.
 driver_flags=()
 meas_duration=""
 while [ $# -gt 0 ]; do
@@ -59,7 +48,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-# Tell the driver where to write coverage, but only if we're driving it at all.
+# Tell the driver where to write coverage.
 if [ ${#driver_flags[@]} -gt 0 ]; then
   driver_flags+=(--out-dir /home/ubuntu/cov_out)
 fi
@@ -75,11 +64,10 @@ else
   echo "building $image from $target_dir (local fandango checkout)"
 
   # CACHEBUST invalidates the layer that copies in the local checkout whenever
-  # HEAD moves
+  # the git head changes
   cachebust="${CACHEBUST:-$(git -C "$here" rev-parse HEAD 2>/dev/null || echo 0)}"
 
-  # _stage_fandango.sh drops a copy of the source at $target_dir/_fandango_src
-  if "$here/_stage_fandango.sh" "$target_dir" &&
+  if "$here/stage_fandango.sh" "$target_dir" &&
      docker build "$target_dir" -f "$target_dir/Dockerfile-fandango" \
        --build-arg "CACHEBUST=$cachebust" -t "$image:latest"; then
     rm -rf "$target_dir/_fandango_src"

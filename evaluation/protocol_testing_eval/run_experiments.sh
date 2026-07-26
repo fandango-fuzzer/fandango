@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Run an experiment over the targets, one container per run.
 # The image is built once per target. Runs go up to --concurrency at a time and
 # write to experiments/<target>/<condition>/run_<n>/ (logs + code coverage).
@@ -52,7 +52,7 @@ for t in $targets; do
   [ -f "$t/Dockerfile-fandango" ] || { echo "no such target: $t" >&2; continue; }
 
   echo "building $t (from local fandango checkout)"
-  ./_stage_fandango.sh "$t" || { echo "failed to stage local fandango for $t" >&2; continue; }
+  ./stage_fandango.sh "$t" || { echo "failed to stage local fandango for $t" >&2; continue; }
   docker build "$t" -f "$t/Dockerfile-fandango" \
     --build-arg CACHEBUST="$(git rev-parse HEAD 2>/dev/null)" -t "$t-fandango:latest"
   build_rc=$?

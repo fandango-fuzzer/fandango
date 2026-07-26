@@ -14,8 +14,7 @@ FANDANGO_DIR="/home/ubuntu/fandango"
 
 mkdir -p "${COV_OUT_DIR}"
 
-# Watchdog: kill the whole process group if the run wedges, so the container
-# always exits and the host can still collect coverage.
+# Watchdog: kill the whole process group if the run wedges, so the container can collect coverage at all times.
 (
   sleep "${RUN_FANDANGO_TIMEOUT}"
   echo "watchdog timeout reached, killing process group" >&2

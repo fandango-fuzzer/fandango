@@ -51,8 +51,8 @@ ENV CARGO_HOME=/opt/rust/cargo
 ENV PATH=/opt/rust/cargo/bin:${PATH}
 
 # Branch coverage for Rust is a nightly-only feature (`-Z coverage-options=branch`),
-# so we install a nightly toolchain. Stable `-C instrument-coverage` only emits
-# line/region counters (branches come out as 0/0).
+# so we install a nightly toolchain. Stable `-C instrument-coverage` doesn't
+# emit branch counters.
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
         sh -s -- -y --default-toolchain nightly --profile minimal && \
     rustup component add llvm-tools-preview --toolchain nightly

@@ -58,18 +58,18 @@ SCOPE = {
 # Files that match SCOPE but belong to a DNS subsystem the grammar doesnt include, so we drop them here.
 EXCLUDE_DNS = {
     "bind9": [
-        # DNSSEC validation, NSEC, key handling and the crypto providers
+        # DNSSEC validation, NSEC, key handling, the crypto providers
         "/dnssec.c", "/validator.c", "/nsec.c", "/nsec3.c", "/nta.c",
         "/keytable.c", "/keydata.c", "/keymgr.c", "/kasp.c",
         "/dst_api.c", "/dst_parse.c", "/hmac_link.c", "/openssl_link.c",
         "/openssldh_link.c", "/opensslecdsa_link.c", "/openssleddsa_link.c",
         "/opensslrsa_link.c", "/gssapictx.c", "/zonekey.c", "/zoneverify.c",
         "/private.c",
-        # dynamic update, zone management and zone transfer
+        # dynamic update, zone management, zone transfer
         "/zone.c", "/xfrin.c", "/xfrout.c", "/journal.c", "/master.c",
         "/masterdump.c", "/catz.c", "/diff.c", "/update.c", "/ssu.c",
         "/ssu_external.c", "/ipkeylist.c", "/notify.c",
-        # TSIG and TKEY, rate limiting, DLZ and response policy zones
+        # TSIG and TKEY, rate limiting, DLZ, response policy zones
         "/tsig.c", "/tkey.c", "/tsec.c", "/rpz.c", "/rrl.c", "/dlz.c", "/dyndb.c",
     ],
 }

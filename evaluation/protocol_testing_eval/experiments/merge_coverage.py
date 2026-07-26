@@ -25,7 +25,6 @@ pattern = "coverage_overlap_*.csv" if overlap else "coverage_[0-9]*.csv"
 
 
 def median_curve(condition_dir):
-    """Median coverage curve over the runs of a condition."""
     files = sorted(glob.glob(os.path.join(condition_dir, "run_*", pattern)))
     if not files:
         sys.exit(f"no {pattern} under {condition_dir}/run_*/")
@@ -79,14 +78,14 @@ def finish(times, median, peak, idx, out, n):
             times = np.concatenate([times, [end]])
             median = np.concatenate([median, [peak]])
 
-    # thin to at most 100 points
+    # Output at most 100 points
     MAX_POINTS = 100
     if len(times) > MAX_POINTS:
         sample_times = np.linspace(times[0], times[-1], MAX_POINTS)
         i = np.clip(np.searchsorted(times, sample_times, side="right") - 1, 0, len(times) - 1)
         times, median = sample_times, median[i]
 
-    # start every curve at (0, 0) so none floats in from the middle
+    # start every curve at (0, 0)
     ANCHOR_X = 0.001
     if times[0] > 1.2:
         times = np.concatenate([[ANCHOR_X], times])

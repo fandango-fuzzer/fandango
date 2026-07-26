@@ -26,8 +26,7 @@ echo "COV_OUT_DIR=$COV_OUT_DIR"
 echo "BORINGTUN_BIN=$BORINGTUN_BIN"
 echo "LLVM_PROFILE_FILE=$LLVM_PROFILE_FILE"
 
-# Watchdog: kill the whole process group if the run wedges, so the container
-# always exits and the host can still collect coverage.
+# Watchdog: kill the whole process group if the run wedges, so the container can collect coverage at all times.
 RUN_FANDANGO_TIMEOUT="${RUN_FANDANGO_TIMEOUT:-600}"
 (
   sleep "$RUN_FANDANGO_TIMEOUT"

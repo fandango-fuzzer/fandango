@@ -1,6 +1,4 @@
 #!/bin/bash
-# In-container entry point for the LightFTP target: start instrumented fftp,
-# run Fandango against it, then write the gcov report into COV_OUT_DIR.
 set -u
 
 WORKDIR="${WORKDIR:-/home/ubuntu}"
@@ -16,8 +14,7 @@ COV_OUT_DIR="${COV_OUT_DIR:-/home/ubuntu/cov_out}"
 COV_OUT_DIR="${COV_OUT_DIR%/}/"
 mkdir -p "$COV_OUT_DIR"
 
-# Watchdog: if anything wedges, kill the whole process group so the container
-# always exits and the host can still collect coverage.
+# Watchdog: kill the whole process group if the run wedges, so the container can collect coverage at all times.
 (
   sleep "${RUN_FANDANGO_TIMEOUT:-600}"
   echo "watchdog timeout reached, killing process group" >&2

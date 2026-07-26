@@ -1,6 +1,5 @@
 FROM ubuntu:22.04
 
-# Install common dependencies
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get -y update && \
     apt-get -y install sudo \
@@ -38,7 +37,6 @@ RUN groupadd ubuntu && \
 
 RUN chmod 777 /tmp
 
-# ---- Fandango install recipe (copied from ../LightFTP/Dockerfile-fandango) ----
 RUN python3.11 -m pip install -U pip setuptools wheel
 
 RUN python3.11 -m pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org gcovr==8.6
@@ -52,12 +50,11 @@ RUN cd /fandango && \
 # The DNS grammar imports faker.
 RUN python3.11 -m pip install --no-cache-dir faker
 
-# ---- Build BIND 9 (named) from source with gcov instrumentation ----
+# Build BIND 9 with gcov
 ENV BIND_VERSION=9.18.33
 ENV BIND_SRC=/home/ubuntu/bind9-src
 ENV BIND_PREFIX=/home/ubuntu/bind9-install
 
-# Coverage instrumentation flags. -O0 keeps line/branch mapping faithful.
 ENV BIND_CFLAGS="-fprofile-arcs -ftest-coverage -O0 -g"
 
 RUN mkdir -p ${BIND_SRC} && \
@@ -98,7 +95,6 @@ COPY config/named.conf /home/ubuntu/bind-conf/named.conf
 COPY cache/example.com /var/cache/bind/example.com
 COPY cache/0.0.127.in-addr.arpa /var/cache/bind/0.0.127.in-addr.arpa
 
-# Fandango driver + grammar + in-container entry point.
 COPY fandango-scripts/ /home/ubuntu/fandango/
 
 ENV WORKDIR="/home/ubuntu"
