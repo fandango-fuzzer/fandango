@@ -5,6 +5,7 @@
 #
 #   ./run_experiments.sh <target|all> <throughput|coverage> \
 #       [--runs N] [--concurrency C] [--duration S] [--interval I] [--plateau S] [--start-run N]
+# targets are: bind9, lightftp, opensmtpd, wireguard
 set -uo pipefail
 cd "$(dirname "$0")"
 
