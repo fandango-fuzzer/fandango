@@ -111,29 +111,29 @@ def test_forecast_parallel():
     tree = grammar.parse("HELLO\n", mode=ParsingMode.INCOMPLETE)
     assert tree is not None
     prediction: ForecastingResult = forecaster.predict(tree)
-    expected: dict[str, list[str]] = {"Client": ["<put>", "<ping>"]}
+    expected: dict[str, list[str]] = {"Client": ["<put>", "<ping>", "<fun_talk>"]}
     assert_prediction(prediction, expected)
     tree = grammar.parse("HELLO\nPUT report.txt\n", mode=ParsingMode.INCOMPLETE)
     assert tree is not None
     prediction: ForecastingResult = forecaster.predict(tree)
-    expected = {"Server": ["<stored>"], "Client": ["<ping>"]}
+    expected = {"Server": ["<stored>"], "Client": ["<ping>", "<fun_talk>"]}
     assert_prediction(prediction, expected)
     tree = grammar.parse("HELLO\nPUT report.txt\nPING\n", mode=ParsingMode.INCOMPLETE)
     assert tree is not None
     prediction: ForecastingResult = forecaster.predict(tree)
-    expected = {"Server": ["<stored>", "<pong>"]}
+    expected = {"Server": ["<stored>", "<pong>"], "Client": ["<fun_talk>"]}
     assert_prediction(prediction, expected)
     tree = grammar.parse("HELLO\nPUT report.txt\nSTORED report.txt\nPING\nPONG\n", mode=ParsingMode.INCOMPLETE)
     assert tree is not None
     prediction: ForecastingResult = forecaster.predict(tree)
-    expected = {"Client": ["<commit>"]}
+    expected = {"Client": ["<commit>", "<fun_talk>"]}
     assert_prediction(prediction, expected)
     tree = grammar.parse("HELLO\nPUT report.txt\nSTORED report.txt\nCOMMIT report.txt\nCOMMITTED report.txt\nPING\nPONG\n", mode=ParsingMode.INCOMPLETE)
     assert tree is not None
     prediction: ForecastingResult = forecaster.predict(tree)
-    expected = {"Client": ["<join>"]}
+    expected = {"Client": ["<fun_talk>"]}
     assert_prediction(prediction, expected)
-    tree = grammar.parse("HELLO\nPUT report.txt\nSTORED report.txt\nCOMMIT report.txt\nCOMMITTED report.txt\nPING\nPONG\nJOIN\n", mode=ParsingMode.INCOMPLETE)
+    tree = grammar.parse("HELLO\nPUT report.txt\nSTORED report.txt\nCOMMIT report.txt\nCOMMITTED report.txt\nPING\nPONG\nFUN\nFUN ANSWER\nJOIN\n", mode=ParsingMode.INCOMPLETE)
     assert tree is not None
     prediction: ForecastingResult = forecaster.predict(tree)
     expected = {}

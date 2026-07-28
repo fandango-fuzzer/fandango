@@ -707,6 +707,7 @@ class TestISO8601Parsing(TestCLIParsing):
         self.assertEqual(0, code, err)
         self.assertEqual("", err, err)
 
+
 class TestParallelParsing(unittest.TestCase):
     grammar: Grammar
 
@@ -718,16 +719,39 @@ class TestParallelParsing(unittest.TestCase):
             self.parser = Parser(grammar.rules)
             self.iter_parser = IterParsingTester(grammar.rules)
 
-    def test_p1(self):
+    def test_incomplete(self):
         words = [
             "HELLO\n",
-            "Hello\nPUT report.txt\nSTORED report.txt\n",
-            "Hello\nPING\n",
-            "Hello\nPUT report.txt\nSTORED report.txt\nPING\n",
-            "Hello\nPUT report.txt\nSTORED report.txt\nCOMMIT report.txt\nCOMMITTED report.txt\nPING\n",
-            "Hello\nPUT report.txt\nSTORED report.txt\nCOMMIT report.txt\nCOMMITTED report.txt\nPING\nPONG\n",
-            "Hello\nPUT report.txt\nSTORED report.txt\nCOMMIT report.txt\nCOMMITTED report.txt\nPING\nPONG\nJOIN\n",
+            "HELLO\nPUT report.txt\nSTORED report.txt\n",
+            "HELLO\nPING\n",
+            "HELLO\nFUN\n",
+            "HELLO\nPUT report.txt\nSTORED report.txt\nFUN\n",
+            "HELLO\nPUT report.txt\nSTORED report.txt\nPING\n",
+            "HELLO\nPUT report.txt\nSTORED report.txt\nPING\nFUN\n",
+            "HELLO\nPUT report.txt\nSTORED report.txt\nCOMMIT report.txt\nCOMMITTED report.txt\nPING\n",
+            "HELLO\nPUT report.txt\nSTORED report.txt\nCOMMIT report.txt\nCOMMITTED report.txt\nPING\nPONG\n",
+            "HELLO\nPUT report.txt\nSTORED report.txt\nCOMMIT report.txt\nCOMMITTED report.txt\nPING\nPONG\nFUN\nFUN ANSWER\nJOIN\n",
         ]
         for w in words:
             parse_tree = self.iter_parser.parse(w, mode=ParsingMode.INCOMPLETE)
-            self.assertIsNotNone(parse_tree)
+            self.assertIsNotNone(parse_tree, w)
+
+    def test_bad_interleaving(self):
+        words = [
+            "HELLO\nPUT report.txt\nPING\nSTORED report.txt\n",
+            "HELLO\nPUT report.txt\nSTORED report.txt\nJOIN\n",
+            "HELLO\nPING\nPONG\nJOIN\n",
+        ]
+        for w in words:
+            parse_tree = self.iter_parser.parse(w, mode=ParsingMode.INCOMPLETE)
+            self.assertIsNone(parse_tree, w)
+
+    def test_complete(self):
+        word = "HELLO\nPUT report.txt\nSTORED report.txt\nCOMMIT report.txt\nCOMMITTED report.txt\nPING\nPONG\nFUN\nFUN ANSWER\nJOIN\n"
+        parse_tree = self.parser.parse(word, mode=ParsingMode.COMPLETE)
+        self.assertIsNotNone(parse_tree)
+        assert parse_tree is not None
+        self.assertEqual(word, parse_tree.to_string())
+
+        incomplete_word = "HELLO\nPUT report.txt\nSTORED report.txt\nPING\nPONG\nJOIN\n"
+        self.assertIsNone(self.parser.parse(incomplete_word, mode=ParsingMode.COMPLETE))
