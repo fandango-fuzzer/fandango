@@ -706,3 +706,28 @@ class TestISO8601Parsing(TestCLIParsing):
         out, err, code = run_command(command)
         self.assertEqual(0, code, err)
         self.assertEqual("", err, err)
+
+class TestParallelParsing(unittest.TestCase):
+    grammar: Grammar
+
+    def setUp(self):
+        with open(RESOURCES_ROOT / "parallel_io.fan") as file:
+            grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
+            self.grammar = grammar
+            self.parser = Parser(grammar.rules)
+            self.iter_parser = IterParsingTester(grammar.rules)
+
+    def test_p1(self):
+        words = [
+            "HELLO\n",
+            "Hello\nPUT report.txt\nSTORED report.txt\n",
+            "Hello\nPING\n",
+            "Hello\nPUT report.txt\nSTORED report.txt\nPING\n",
+            "Hello\nPUT report.txt\nSTORED report.txt\nCOMMIT report.txt\nCOMMITTED report.txt\nPING\n",
+            "Hello\nPUT report.txt\nSTORED report.txt\nCOMMIT report.txt\nCOMMITTED report.txt\nPING\nPONG\n",
+            "Hello\nPUT report.txt\nSTORED report.txt\nCOMMIT report.txt\nCOMMITTED report.txt\nPING\nPONG\nJOIN\n",
+        ]
+        for w in words:
+            parse_tree = self.iter_parser.parse(w, mode=ParsingMode.INCOMPLETE)
+            self.assertIsNotNone(parse_tree)
