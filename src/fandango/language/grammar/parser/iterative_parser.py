@@ -46,6 +46,9 @@ class IterativeParser(
         self._tmp_rules: dict[NonTerminal, set[ParserStateSymbolContent]] = {}
         self._incomplete: set[DerivationTree] = set()
         self._nodes: dict[str, Node] = {}
+        self._parallel_nts: set[NonTerminal] = set()
+        self._parallel_branch_nts: set[Symbol] = set()
+        self._parallel_descendants: set[NonTerminal] = set()
         self._max_position = -1
         self.elapsed_time: float = 0.0
         self._process()
@@ -62,6 +65,8 @@ class IterativeParser(
         self._rules.clear()
         self._implicit_rules.clear()
         self._context_rules.clear()
+        self._parallel_nts.clear()
+        self._parallel_branch_nts.clear()
         for nonterminal in self.grammar_rules:
             self.set_rule(nonterminal, self.visit(self.grammar_rules[nonterminal]))
 
@@ -70,6 +75,32 @@ class IterativeParser(
                 tuple(a)  # type: ignore[misc]
                 for a in self._implicit_rules[nonterminal]
             }
+
+        self._process_parallels()
+
+    def _rules_of(
+        self, nonterminal: NonTerminal
+    ) -> Generator[tuple[ParserStateSymbolContent, ...], None, None]:
+        for rules in (self._rules, self._implicit_rules, self._tmp_rules):
+            if nonterminal in rules:
+                yield from rules[nonterminal]  # type: ignore[misc]
+        if nonterminal in self._context_rules:
+            yield (self._context_rules[nonterminal][1],)
+
+    def _process_parallels(self) -> None:
+        self._parallel_descendants = set()
+        seen: set[NonTerminal] = set()
+        worklist = list(self._parallel_nts)
+        while worklist:
+            nonterminal = worklist.pop()
+            if nonterminal in seen:
+                continue
+            seen.add(nonterminal)
+            for rule in self._rules_of(nonterminal):
+                for symbol, _ in rule:
+                    if isinstance(symbol, NonTerminal):
+                        self._parallel_descendants.add(symbol)
+                        worklist.append(symbol)
 
     def set_implicit_rule(
         self, rule: IterativeParserVisitorReturnType
@@ -141,15 +172,12 @@ class IterativeParser(
     def visitParallel(self, node: Parallel) -> IterativeParserVisitorReturnType:
         intermediate_nt = NonTerminal(f"<__{node.id}>")
         self._nodes[intermediate_nt.name()] = node
-        result: IterativeParserVisitorReturnType = [[]]
-        for child in node.children():
-            to_add = self.visit(child)
-            new_result = []
-            for r in result:
-                for a in to_add:
-                    new_result.append(r + a)
-            result = new_result
-        self.set_rule(intermediate_nt, result)
+        branches = [
+            self.set_implicit_rule(self.visit(child)) for child in node.children()
+        ]
+        self._parallel_nts.add(intermediate_nt)
+        self._parallel_branch_nts.update(branch for branch, _ in branches)
+        self.set_rule(intermediate_nt, [branches])
         return [[(intermediate_nt, frozenset())]]
 
     def visitRepetition(
@@ -681,6 +709,31 @@ class IterativeParser(
         assert tree is not None
         return self._rec_to_derivation_tree(tree)
 
+    def _advance_single(
+        self,
+        state: ParseState,
+        parent: ParseState,
+        use_implicit: bool = False,
+    ) -> ParseState:
+        dot_params = dict(parent.dot_params or [])
+        advanced = parent.next()
+        if state.nonterminal in self._rules:
+            advanced.append_child(
+                ParserDerivationTree(state.nonterminal, state.children, **dot_params)
+            )
+        else:
+            if use_implicit and state.nonterminal in self._implicit_rules:
+                advanced.append_child(
+                    ParserDerivationTree(
+                        NonTerminal(state.nonterminal.name()),
+                        state.children,
+                        **dict(advanced.dot_params or []),
+                    )
+                )
+            else:
+                advanced.extend_children(state.children)
+        return advanced
+
     def complete(
         self,
         state: ParseState,
@@ -689,26 +742,43 @@ class IterativeParser(
         use_implicit: bool = False,
     ) -> None:
         for s in table[state.position].find_dot(state.nonterminal):
-            dot_params = dict(s.dot_params or [])
-            s = s.next()
-            if state.nonterminal in self._rules:
-                s.append_child(
-                    ParserDerivationTree(
-                        state.nonterminal, state.children, **dot_params
-                    )
-                )
-            else:
-                if use_implicit and state.nonterminal in self._implicit_rules:
-                    s.append_child(
-                        ParserDerivationTree(
-                            NonTerminal(state.nonterminal.name()),
-                            state.children,
-                            **dict(s.dot_params or []),
-                        )
-                    )
+            table[k].add(self._advance_single(state, s, use_implicit))
+
+    def can_cut(self, state: ParseState) -> bool:
+        if not self._parallel_nts or self._parsing_mode != ParsingMode.INCOMPLETE:
+            return False
+        if state.finished() or state.incomplete_idx != 0:
+            # Don't cut in the middle of a terminal.
+            return False
+        if state.nonterminal not in self._parallel_descendants:
+            return False
+        # A branch that hasn't parsed anything yet is cut at its own nonterminal,
+        # so that it doesn't add any empty nodes to the resulting tree.
+        return (
+            len(state.children) != 0 or state.nonterminal in self._parallel_branch_nts
+        )
+
+    def cut_branch(self, state: ParseState, table: list[Column], k: int) -> None:
+        worklist = [state]
+        seen: set[tuple[NonTerminal, int, int]] = set()
+        while worklist:
+            current = worklist.pop()
+            key = (current.nonterminal, current.position, current._dot)
+            if key in seen:
+                continue
+            seen.add(key)
+            for parent in list(table[current.position].find_dot(current.nonterminal)):
+                advanced = self._advance_single(current, parent)
+                advanced.is_incomplete = True
+                advanced.incomplete_idx = 0
+                if (
+                    parent.nonterminal in self._parallel_nts
+                    and advanced.dot is not None
+                ):
+                    # There is a parallel branch left that we may start parsing.
+                    table[k].add(advanced)
                 else:
-                    s.extend_children(state.children)
-            table[k].add(s)
+                    worklist.append(advanced)
 
     def place_repetition_shortcut(self, table: list[Column], k: int) -> None:
         col = table[k]
@@ -832,7 +902,11 @@ class IterativeParser(
 
                     self.complete(state, table, curr_table_idx)
                 else:
-                    if not state.is_incomplete and state.next_symbol_is_nonterminal():
+                    if self.can_cut(state):
+                        self.cut_branch(state, table, curr_table_idx)
+                    if state.dot is None:
+                        continue
+                    if state.next_symbol_is_nonterminal():
                         self.predict(state, table, curr_table_idx, self._hookin_parent)
                     else:
                         if state.dot is not None and state.dot.is_type(
