@@ -1,9 +1,10 @@
 <start> ::= <Client:hello> <after_hello> <Client:join>
-<after_hello> ::= (<upload> || <heartbeat> || <fun>)
+<after_hello> ::= (<upload> || <heartbeat> || <fun>) | <alternative>
 
 <upload> ::= <Client:Server:put> <Server:Client:stored> <Client:Server:commit> <Server:Client:committed>
 <heartbeat> ::= <Client:Server:ping> <Server:Client:pong>
 <fun> ::= <Client:Server:fun_talk> <Server:Client:fun_answer>
+<alternative> ::= <Client:alt> <Server:alt_answer>
 
 <hello> ::= 'HELLO\n'
 <put> ::= 'PUT report.txt\n'
@@ -13,6 +14,8 @@
 <join> ::= 'JOIN\n'
 <fun_talk> ::= 'FUN\n'
 <fun_answer> ::= 'FUN ANSWER\n'
+<alt> ::= "ALT\n"
+<alt_answer> ::= 'ALT ANSWER\n'
 
 <ping> ::= 'PING\n'
 <pong> ::= 'PONG\n'

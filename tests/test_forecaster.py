@@ -111,7 +111,7 @@ def test_forecast_parallel():
     tree = grammar.parse("HELLO\n", mode=ParsingMode.INCOMPLETE)
     assert tree is not None
     prediction: ForecastingResult = forecaster.predict(tree)
-    expected: dict[str, list[str]] = {"Client": ["<put>", "<ping>", "<fun_talk>"]}
+    expected: dict[str, list[str]] = {"Client": ["<put>", "<ping>", "<fun_talk>", "<alt>"]}
     assert_prediction(prediction, expected)
     tree = grammar.parse("HELLO\nPUT report.txt\n", mode=ParsingMode.INCOMPLETE)
     assert tree is not None

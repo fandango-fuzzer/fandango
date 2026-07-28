@@ -722,6 +722,7 @@ class TestParallelParsing(unittest.TestCase):
     def test_incomplete(self):
         words = [
             "HELLO\n",
+            "HELLO\nALT\n",
             "HELLO\nPUT report.txt\nSTORED report.txt\n",
             "HELLO\nPING\n",
             "HELLO\nFUN\n",
@@ -741,6 +742,7 @@ class TestParallelParsing(unittest.TestCase):
             "HELLO\nPUT report.txt\nPING\nSTORED report.txt\n",
             "HELLO\nPUT report.txt\nSTORED report.txt\nJOIN\n",
             "HELLO\nPING\nPONG\nJOIN\n",
+            "HELLO\nPUT report.txt\nPING\nSTORED report.txt\nALT\n",
         ]
         for w in words:
             parse_tree = self.iter_parser.parse(w, mode=ParsingMode.INCOMPLETE)
