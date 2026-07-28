@@ -98,6 +98,7 @@ class ParseState:
             )
             + ("•" if self.finished() else "")
             + f", column {self.position}"
+            + (", incomplete" if self.is_incomplete else "")
             + ")"
         )
 
