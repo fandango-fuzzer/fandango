@@ -34,7 +34,6 @@ parts:
     - file: Png
     - file: Gif
     - file: Mp3
-    - file: Hatching
     # - file: Whitebox
   - caption: Checking Responses
     chapters:
@@ -47,6 +46,11 @@ parts:
     - file: Parties
     - file: FTP
     - file: DNS
+  - caption: Hatching Specs
+    chapters:
+    - file: Hatching
+    - file: Style
+    # - file: Organizing Specs
   - caption: Fandango Reference
     chapters:
     - file: Reference

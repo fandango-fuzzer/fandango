@@ -17,6 +17,7 @@ Creating _binary_ inputs with Fandango is a bit more challenging than creating h
 This is because they have a few special features, such as _checksums_ and _length encodings_.
 Fortunately, we can address all of them with dedicated constraints.
 
+(sec:checksums)=
 ## Checksums
 
 :::{margin}
@@ -133,7 +134,7 @@ In Python, it is likely that someone has already implemented the specific checks
 * [The `binascii` module](https://docs.python.org/3/library/binascii.html) offers CRC checks.
 * [The `zlib` module](https://docs.python.org/3/library/zlib.html) provides CRC32 and ADLER32 checks used in zip files.
 
-
+(sec:bytes)=
 ## Characters and Bytes
 
 The second set of features one frequently encounters in binary formats is, well, _bytes_.
@@ -190,7 +191,7 @@ $ fandango fuzz -f binfinity.fan -n 10
 assert _exit_code == 0
 ```
 
-
+(sec:length_encodings)=
 ## Length Encodings
 
 The third set of features one frequently encounters in binary formats is _length encodings_ - that is, a particular field holds a value that represents the length of one or more fields that follow.
