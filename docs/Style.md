@@ -145,7 +145,7 @@ For details on syntax, see {ref}`sec:language`.
 
 ### Avoid Naming Conflicts
 
-Do not define the same element multiple times.
+Grammars have a _global_ naming scope, so do not define the same element multiple times.
 If an element like `<checksum>` or `<length>` appears in multiple
 contexts `C`, give it a separate prefix for each context: `<C_checksum>` and `<C_length>`.
 
