@@ -27,9 +27,9 @@ This style guide is work in progress, and likely to be extended over time.
 ```
 
 
-## File names and metadata
+## Managing `.fan` Files
 
-### Naming `.fan` files
+### How to Name `.fan` Files
 
 A `.fan` file name should start with the format name (typically the file extension), optionally followed by `-` and additional details, such as
 
@@ -39,7 +39,7 @@ gif89a-v1.fan
 svg-general.fan
 ```
 
-### State the metadata
+### How to State Metadata
 
 At the beginning of a `.fan` file, state
 
@@ -75,7 +75,7 @@ Future Fandango versions will establish a standard for providing such metadata.
 ```
 
 (sec:specialized_variant)=
-### Creating format variants
+### Managing Format Variants
 
 For significant variants of a format, have them build on each other.
 For instance, to disable an extension `<extension>` in an original specification, create a `specialized-format.fan` that says:
@@ -99,19 +99,9 @@ include ("simple-format.fan")
 For details on file inclusion, extension, and generalization, see {ref}`sec:hatching`.
 
 
-## Naming and format conventions
+## Naming and Format Conventions
 
-### Naming conventions for grammars
-
-* Use `lowercase_identifiers` for nonterminals.
-* Use `CapWords` for protocol parties (notably because they are Python classes).
-* Do not prefix identifiers with `_`, as these are defined for internal Fandango use.
-* Stick to ASCII letters and numbers for all identifiers.
-
-For details on syntax, see {ref}`sec:language`.
-
-
-### Formatting grammars
+### How to Format Grammars
 
 Present rules in a top-down style, e.g. starting with `<start>` (describing the overall structure) and then going down into details of the individual constituents.
 First list the format's major sections or element types, then write rules for each; keep on refining.
@@ -128,18 +118,7 @@ You _can_ use indentation to express hierarchies, such as
 However, applying this style across the entire grammar can quickly lead to high indentation levels.
 If you break down your grammar into individual sections, have each section again begin on column 1.
 
-
-### Cover the entire specification
-
-Do not just produce a toy subset, but go for maximum coverage of the respective language or protocol.
-Share only specifications that define the vast majority of format features.
-
-```{tip}
-Document missing parts with `TODO`, `FIXME` and alike.
-```
-
-
-### Use correct Fandango syntax
+### Use Correct Fandango Syntax
 
 Here are the most important Fandango syntax rules:
 
@@ -156,20 +135,34 @@ Here are the most important Fandango syntax rules:
 A bare line break silently truncates the rule.
 * Never put a literal newline inside a short string (`'...'`); use `\n` or a `'''triple-quoted'''` string instead.
 * Comments (`#`) extend until the end of the line, so finish the rule before commenting.
+* Use `lowercase_identifiers` for nonterminals.
+* Use `CapWords` for protocol parties (notably because they are Python classes).
+* Do not prefix identifiers with `_`, as these are defined for internal Fandango use.
+* Stick to ASCII letters and numbers for all identifiers.
 
 For details on syntax, see {ref}`sec:language`.
 
 
-### Naming scopes
+### Avoid Naming Conflicts
 
 Do not define the same element multiple times.
 If an element like `<checksum>` or `<length>` appears in multiple
 contexts `C`, give it a separate prefix for each context: `<C_checksum>` and `<C_length>`.
 
 
-### Apply the Python Style Guide
+### Cover the Entire Specification
 
-Unless otherwise stated, use the [Python conventions as defined in PEP8](https://peps.python.org/pep-0008/) for writing your specifications.
+Do not just produce a toy subset, but go for maximum coverage of the respective language or protocol.
+Share only specifications that define the vast majority of format features.
+
+```{tip}
+Document missing parts with `TODO`, `FIXME` and alike.
+```
+
+
+### Follow Python Style Conventions
+
+Unless otherwise stated, stick to Python conventions for writing your specifications.
 This includes
 
 * code layout (4 spaces indentation; max line length 72 characters);
@@ -178,33 +171,33 @@ This includes
 * whitespace in expressions and statements; and
 * naming conventions for Python elements.
 
+See [PEP 8 - Style Guide for Python Code](https://peps.python.org/pep-0008/) for details
 
-## Repetitions and length encodings
+## Repetitions and Length Encodings
 
-### Repetitions
+### Use Repetitions Wherever Possible
 
 Prefer `+` and `*` to denote repetitions, and `?` to denote optional elements; avoid modeling repetition by means of the grammar.
 See {ref}`sec:repeat` for details.
 
-### Regular expressions
+### Use Regular Expressions for Simple Elements
 
 For simple elements, prefer regular expressions (using `r"expr"`) over grammar forms.
 See {ref}`sec:regexes` for details.
 
 
-### Length encodings
+### Use Explicit Length Encodings
 
-If you know the length of a field is N bytes, use `<byte>{N}` instead
-of `<byte>*` and/or an associated constraint.
+If you know the length of a field is `N` bytes, use `<byte>{N}` instead of `<byte>*` or an associated constraint.
 
 You can also use `<byte>{EXPR}`, where `EXPR` is computed from other elements (say, a preceding length value).
 See {ref}`sec:length_encodings` for details.
 
 
 
-## Using constraints
+## Using Constraints
 
-### Use constraints to enforce semantics
+### Use Constraints to Enforce Semantics
 
 Wherever possible, use `where` constraints to enforces semantic properties. These include
 
@@ -218,7 +211,7 @@ For details on constraints, see {ref}`sec:constraints` and {ref}`sec:generators`
 See also {ref}`sec:checksums` on how to specify checksums.
 
 
-### Use constructive helper functions
+### Use Constructive Helper Functions
 
 Use constructive helper functions (rather than checking helper func-
 tions) whenever possible.
@@ -239,14 +232,14 @@ ok(<NT>, ...)
 where Fandango must make use of slower algorithms to find proper values for `<NT>` until `ok(...)` is finally satisfied.
 
 
-### Prefer inline expressions over function definitions
+### Prefer Inline Expressions over Function Definitions
 
 Prefer a `where` clause or an inline Python expression directly in the grammar over introducing named Python functions.
 
 Function definitions are justified _only_ when the computation is genuinely too complex to write as one `where` expression or one `:=` expression inline (e.g. a real multi-step checksum algorithm) — never merely because a value is "random," reused in several places, or convenient to name.
 
 
-### Prefer constraints over generators
+### Prefer Constraints over Generators
 
 Do _not_ use a `:=` generator and helper function as a workaround to avoid writing a `where` constraint.
 If two symbols must agree (e.g. a length symbol and the actual length of some payload), express that agreement as a `where` equality between the two, not by generating both from one Python-side random computation that merely happens to keep them in sync.
@@ -254,7 +247,7 @@ If two symbols must agree (e.g. a length symbol and the actual length of some pa
 For details on generators (and when to use them), see {ref}`sec:generators`.
 
 
-### When to use generators
+### Use Generators only where Appropriate
 
 Generators (`:=`) are for producing a value with no other constraint attached (a free choice).
 Constraints (`where`) are for relationships between two or more parts of the grammar.
@@ -263,7 +256,7 @@ Do not blur the two to dodge writing the (more verbose but more correct) constra
 For details on generators (and when to use them), see {ref}`sec:generators`.
 
 
-## Quality assurance
+## Quality Assurance
 
 ### Verify your spec with Fandango
 
@@ -284,7 +277,7 @@ Ensure the Fandango exit code is 0 _and_ `out/` has exactly 10 files — if not,
 For details on how to invoke Fandango, see {ref}`sec:invoking` and {ref}`sec:commands`.
 
 
-### Verify your outputs with a processing program
+### Verify your Outputs with a Processing Program
 
 Feed your generated inputs into a program that should process them.
 If inputs are rejected, you should adapt the spec accordingly.
