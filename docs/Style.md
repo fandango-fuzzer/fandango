@@ -171,13 +171,14 @@ This includes
 * whitespace in expressions and statements; and
 * naming conventions for Python elements.
 
-See [PEP 8 - Style Guide for Python Code](https://peps.python.org/pep-0008/) for details
+See the [Style Guide for Python Code](https://peps.python.org/pep-0008/) for details.
 
 ## Repetitions and Length Encodings
 
 ### Use Repetitions Wherever Possible
 
-Prefer `+` and `*` to denote repetitions, and `?` to denote optional elements; avoid modeling repetition by means of the grammar.
+Prefer `+` and `*` to denote repetitions, and `?` to denote optional elements.
+Avoid modeling repetition by means of the grammar.
 See {ref}`sec:repeat` for details.
 
 ### Use Regular Expressions for Simple Elements
