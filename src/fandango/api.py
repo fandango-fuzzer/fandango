@@ -13,7 +13,7 @@ from fandango.language.grammar import FuzzingMode, ParsingMode
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.parse.parse import parse
 from fandango.language.tree import DerivationTree
-from fandango.logger import LOGGER
+from fandango.logger import LOGGER, set_raise_on_logged_exceptions
 
 DEFAULT_MAX_GENERATIONS = 500
 
@@ -248,6 +248,8 @@ class Fandango(FandangoBase):
         LOGGER.info("---------- Initializing base population ----------")
 
         start_symbol = settings.pop("start_symbol", self._start_symbol)
+        if settings.pop("warnings_are_errors", False):
+            set_raise_on_logged_exceptions(True)
 
         constraints = [] if skip_base_constraints else self.constraints[:]
 

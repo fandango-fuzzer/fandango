@@ -9,7 +9,7 @@ from fandango.cli.parser import get_parser
 from fandango.cli.shell import shell_command
 from fandango.cli.upgrade import check_for_fandango_update
 from fandango.experimental import dont_warn_about_module
-from fandango.logger import LOGGER
+from fandango.logger import LOGGER, set_raise_on_logged_exceptions
 
 
 def main(
@@ -28,6 +28,9 @@ def main(
 
     parser = get_parser(in_command_line=True)
     args = parser.parse_args(argv or sys.argv[1:])
+
+    if getattr(args, "warnings_are_errors", None):
+        set_raise_on_logged_exceptions(True)
 
     LOGGER.setLevel(os.getenv("FANDANGO_LOG_LEVEL", "WARNING"))  # Default
 

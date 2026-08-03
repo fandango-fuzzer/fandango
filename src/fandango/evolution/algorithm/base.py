@@ -44,7 +44,6 @@ class GeneticAlgorithm(ABC):
         mutation_rate: float = 0.2,
         destruction_rate: float = 0.0,
         logger_level: Optional[LoggerLevel] = None,
-        warnings_are_errors: bool = False,
         best_effort: bool = False,
         random_seed: Optional[int] = None,
         start_symbol: str = "<start>",
