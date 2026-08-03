@@ -17,6 +17,7 @@ from typing import IO, Hashable, Optional
 from uuid import UUID
 
 from fandango.errors import FandangoError, FandangoValueError
+from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
 
@@ -124,7 +125,7 @@ class FandangoParty(  # noqa: B024 # this is an abstract base class without any 
             self.party_name = party_name
         self._connection_mode = connection_mode
         self.io_instance = FandangoIO.instance()
-        self.io_instance.parties[self.party_name] = self
+        self.io_instance.register_party(self)
 
     @classmethod
     def instance(cls, party_name: Optional[str] = None) -> "FandangoParty":
@@ -381,24 +382,22 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
     def stop(self) -> None:
         """Stops the current party."""
         self._running = False
+        for sock in (self._connection, self._sock):
+            if sock is not None:
+                try:
+                    sock.shutdown(socket.SHUT_RDWR)
+                except OSError:
+                    pass
         if self._send_thread is not None:
             self._send_thread.join()
             self._send_thread = None
         if self._connection is not None:
-            try:
-                self._connection.shutdown(socket.SHUT_RDWR)
-            except OSError:
-                pass
             try:
                 self._connection.close()
             except OSError:
                 pass
             self._connection = None
         if self._sock is not None:
-            try:
-                self._sock.shutdown(socket.SHUT_RDWR)
-            except OSError:
-                pass
             try:
                 self._sock.close()
             except OSError:
@@ -745,6 +744,99 @@ class In(FandangoParty):
                 self.proc.stdin.close()
 
 
+class TimerControl(FandangoParty):
+    def __init__(self) -> None:
+        super().__init__(connection_mode=ConnectionMode.CONNECT)
+        self.timers: dict[str, tuple[int, bool, threading.Thread]] = {}
+        self.lock = threading.Lock()
+
+    def start(self) -> None:
+        pass
+
+    def stop(self) -> None:
+        self.stop_timers()
+
+    def start_timer(self, name: str, time_s: int) -> None:
+        def timer_sleep() -> None:
+            timer_start_time = time.time()
+            while (time.time() - timer_start_time) < time_s:
+                with self.lock:
+                    entry = self.timers.get(name)
+                    if entry is None or not entry[1]:
+                        return
+                time.sleep(0.1)
+            self._on_timer_expire(name)
+
+        timer_thread = threading.Thread(target=timer_sleep, daemon=True)
+        with self.lock:
+            self.timers[name] = (time.time_ns(), True, timer_thread)
+            timer_thread.start()
+
+    def stop_timers(self, name: Optional[str] = None) -> None:
+        with self.lock:
+            if name is not None:
+                timers_to_stop = [name]
+            else:
+                timers_to_stop = list(self.timers.keys())
+            to_join: list[tuple[str, threading.Thread]] = []
+            for timer_name in timers_to_stop:
+                if timer_name not in self.timers:
+                    continue
+                timeout, _, timer_thread = self.timers[timer_name]
+                self.timers[timer_name] = (timeout, False, timer_thread)
+                to_join.append((timer_name, timer_thread))
+        with self.lock:
+            for timer_name, _ in to_join:
+                self.timers.pop(timer_name, None)
+
+    def send(
+        self, message: DerivationTree | str | bytes, recipient: Optional[str]
+    ) -> None:
+        if not isinstance(message, DerivationTree):
+            raise ValueError("Timer message must be a DerivationTree")
+        timer_id_node = message.find_all_nodes(
+            NonTerminal("<timer_id>"), exclude_read_only=False
+        )
+        if len(timer_id_node) == 0:
+            raise ValueError("No timer_id found in timer message")
+        timer_id = str(timer_id_node[0])
+        if len(message.children) == 0:
+            raise ValueError("No timer_command found in timer message")
+        timer_cmd = str(message).split(" ")[0]
+
+        if timer_cmd == "start:":
+            timer_time_s_nodes = message.find_all_nodes(
+                NonTerminal("<timer_timeout>"), exclude_read_only=False
+            )
+            if len(timer_time_s_nodes) == 0:
+                raise ValueError("No timer_timeout found in timer message")
+            self.stop_timers(timer_id)
+            self.start_timer(timer_id, int(timer_time_s_nodes[0]))
+        elif timer_cmd == "cancel:":
+            self.stop_timers(timer_id)
+        else:
+            raise ValueError(f"Unknown timer command: {timer_cmd}")
+
+        pass
+
+    def _on_timer_expire(self, name: str) -> None:
+        with self.lock:
+            if name in self.timers:
+                del self.timers[name]
+        self.receive(f"expired: {name}\n", "TimerEvent")
+
+
+class TimerEvent(FandangoParty):
+    def __init__(self) -> None:
+        super().__init__(connection_mode=ConnectionMode.EXTERNAL)
+
+    def start(self) -> None:
+        pass
+
+    def stop(self) -> None:
+        pass
+
+
 class FandangoIO(object):
     """
     Singleton class for managing all `FandangoParty` parties.
@@ -839,7 +931,9 @@ class FandangoIO(object):
                 prev_sender != sender
                 or prev_recipient != recipient
                 or (
-                    type(fragments[-1][2]) is type(msg_fragment) if fragments else False
+                    type(fragments[-1][2]) is not type(msg_fragment)
+                    if fragments
+                    else False
                 )
             ):
                 prev_sender = sender
@@ -862,6 +956,11 @@ class FandangoIO(object):
         """Returns a list of all received messages from external parties."""
         with self.receive_lock:
             return list(self.receive)
+
+    def get_received_parties(self) -> set[str]:
+        """Returns a set of all parties that have received messages."""
+        with self.receive_lock:
+            return {sender for sender, _, _ in self.receive}
 
     def clear_received_msg(self, idx: int) -> None:
         """Clears a specific received message by its index."""
@@ -894,6 +993,9 @@ class FandangoIO(object):
         """
         if sender in self.parties.keys():
             self.parties[sender].send(message, recipient)
+
+    def register_party(self, party: FandangoParty) -> None:
+        self.parties[party.party_name] = party
 
 
 class ProcessManager(object):

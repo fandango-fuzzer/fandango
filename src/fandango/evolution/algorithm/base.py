@@ -8,7 +8,7 @@ from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
 from fandango.evolution.crossover import CrossoverOperator, SimpleSubtreeCrossover
 from fandango.evolution.mutation import MutationOperator, SimpleMutation
-from fandango.io.navigation.coverage_goal import CoverageGoal
+from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.language.grammar import FuzzingMode
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.tree import DerivationTree
@@ -58,6 +58,7 @@ class GeneticAlgorithm(ABC):
         stop_criterion: Optional[Callable[[DerivationTree], bool]] = None,
         stop_after_seconds: Optional[int] = None,
     ):
+        self.grammar = grammar
         pass
 
     @abstractmethod
@@ -66,4 +67,9 @@ class GeneticAlgorithm(ABC):
         max_generations: Optional[int] = None,
         mode: FuzzingMode = FuzzingMode.COMPLETE,
     ) -> Generator[DerivationTree, None, None]:
+        pass
+
+    @abstractmethod
+    def reset(self) -> None:
+        """Reset the algorithm to its initial state as after calling the constructor."""
         pass

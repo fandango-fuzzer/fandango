@@ -12,8 +12,9 @@ from fandango.evolution.algorithm import (
     DefaultAlgorithm,
     GeneticAlgorithm,
     LoggerLevel,
+    ProtocolAlgorithm,
 )
-from fandango.io.navigation.coverage_goal import CoverageGoal
+from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.language.grammar import FuzzingMode
 from fandango.language.parse.parse import parse
 from tests.utils import EVALUATION_ROOT
@@ -91,10 +92,10 @@ class Server(NetworkParty):
                 use_stdlib=False,
             )
         assert grammar is not None
-        return DefaultAlgorithm(
-            grammar=grammar,
-            constraints=constraints,
-            logger_level=LoggerLevel.INFO,
+        return ProtocolAlgorithm(
+            packet_algorithm=DefaultAlgorithm(
+                grammar=grammar, constraints=constraints, logger_level=LoggerLevel.DEBUG
+            ),
             coverage_goal=coverage_goal,
         )
 

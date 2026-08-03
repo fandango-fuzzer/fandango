@@ -2,16 +2,20 @@ import unittest
 from typing import TypeGuard
 
 from fandango.api import Fandango
-from fandango.io.navigation.grammarnavigator import GrammarNavigator
-from fandango.io.navigation.packetnavigator import PacketNavigator
+from fandango.io.navigation.graph.grammarnavigator import GrammarNavigator
+from fandango.io.navigation.graph.packetnavigator import PacketNavigator
+from fandango.io.navigation.graph.reachability_checker import ReachabilityChecker
+from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConverter
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.language import DerivationTree, NonTerminal
 from fandango.language.grammar import ParsingMode
+from fandango.language.grammar.grammar import Grammar, KPath
 from fandango.language.grammar.node_visitors.grammar_graph_converter import (
     GrammarGraphNode,
 )
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
-from tests.utils import DOCS_ROOT, RESOURCES_ROOT
+from fandango.language.parse.parse import parse
+from tests.utils import DOCS_ROOT, EVALUATION_ROOT, RESOURCES_ROOT
 
 
 class TestGrammarGraph(unittest.TestCase):
@@ -114,3 +118,150 @@ class TestGrammarGraph(unittest.TestCase):
         assert path is not None
         if None not in path:
             self.assertFalse("Expected symbol to be not reachable")
+
+    def test_packet_navigator_symbol_not_extensible(self):
+        grammar = self.get_grammar(RESOURCES_ROOT / "navigation_io.fan")
+        checker = ReachabilityChecker(grammar)
+
+        tree_to_continue = grammar.parse(
+            "a",
+            mode=ParsingMode.INCOMPLETE,
+            include_controlflow=True,
+        )
+        k_path: KPath = (
+            NonTerminal("<start>"),
+            NonTerminal("<test>"),
+            NonTerminal("<state_4>"),
+        )
+        result_1 = checker.find_reachability(
+            k_path_to_reach=k_path, tree=tree_to_continue
+        )
+        self.assertTrue(result_1.path_reachable)
+        self.assertTrue(result_1.completable_by_extension)
+
+        tree_to_continue = grammar.parse(
+            "ac",
+            mode=ParsingMode.INCOMPLETE,
+            include_controlflow=True,
+        )
+        k_path = (
+            NonTerminal("<start>"),
+            NonTerminal("<test>"),
+            NonTerminal("<state_4>"),
+        )
+        result_1 = checker.find_reachability(
+            k_path_to_reach=k_path, tree=tree_to_continue
+        )
+        self.assertFalse(result_1.path_reachable)
+        self.assertFalse(result_1.completable_by_extension)
+
+        k_path = (
+            NonTerminal("<start>"),
+            NonTerminal("<test>"),
+            NonTerminal("<H>"),
+        )
+        result_1 = checker.find_reachability(
+            k_path_to_reach=k_path, tree=tree_to_continue
+        )
+        self.assertTrue(result_1.path_reachable)
+        self.assertTrue(result_1.completable_by_extension)
+
+        k_path = (
+            NonTerminal("<start>"),
+            NonTerminal("<test>"),
+            NonTerminal("<G>"),
+        )
+        result_1 = checker.find_reachability(
+            k_path_to_reach=k_path, tree=tree_to_continue
+        )
+        self.assertFalse(result_1.path_reachable)
+        self.assertFalse(result_1.completable_by_extension)
+
+        tree_to_continue = grammar.parse(
+            "ad",
+            mode=ParsingMode.INCOMPLETE,
+            include_controlflow=True,
+        )
+        k_path = (
+            NonTerminal("<start>"),
+            NonTerminal("<test>"),
+            NonTerminal("<state_4>"),
+        )
+        result_1 = checker.find_reachability(
+            k_path_to_reach=k_path, tree=tree_to_continue
+        )
+        self.assertTrue(result_1.path_reachable)
+        self.assertTrue(result_1.completable_by_extension)
+
+        k_path = (
+            NonTerminal("<start>"),
+            NonTerminal("<test>"),
+            NonTerminal("<G>"),
+        )
+        result_1 = checker.find_reachability(
+            k_path_to_reach=k_path, tree=tree_to_continue
+        )
+        self.assertTrue(result_1.path_reachable)
+        self.assertFalse(result_1.completable_by_extension)
+
+    def test_smtp(self):
+        packet_history = (
+            "<response_setup><request_ehlo><response_ehlo><request_auth><response_auth_expect_user>"
+            "<request_auth_user_correct><response_auth_expect_pass><request_auth_pass_incorrect>"
+            "<response_auth_fail><request_auth><response_auth_expect_user><request_auth_user_incorrect>"
+            "<response_auth_expect_pass><request_auth_pass_incorrect><response_auth_fail><request_auth>"
+            "<response_auth_expect_user><request_auth_user_correct><response_auth_expect_pass>"
+            "<request_auth_pass_correct><response_auth_success><request_mail_from><response_mail_from>"
+        )
+        dest_k_path = (
+            NonTerminal("<exchange_login_valid>"),
+            NonTerminal("<state_logged_in>"),
+            NonTerminal("<state_logged_in>"),
+            NonTerminal("<state_logged_in>"),
+            NonTerminal("<state_logged_in>"),
+        )
+        client_def = """
+class Client(FandangoParty):
+    def __init__(self):
+        super().__init__(
+            connection_mode=ConnectionMode.CONNECT
+        )
+
+class Server(FandangoParty):
+    def __init__(self):
+        super().__init__(
+            connection_mode=ConnectionMode.EXTERNAL
+        )
+        """
+
+        with open(EVALUATION_ROOT / "protocol_testing_eval/smtp/smtp.fan") as f:
+            grammar, constraints = parse(
+                [f, client_def],
+                use_stdlib=False,
+            )
+        assert grammar is not None
+        reduced_rules = StateGrammarConverter(grammar.grammar_settings).process(
+            grammar.rules, NonTerminal("<start>")
+        )
+        state_grammar = Grammar(
+            grammar_settings=grammar.grammar_settings,
+            rules=reduced_rules,
+            fuzzing_mode=grammar.fuzzing_mode,
+            local_variables=grammar._local_variables,
+            global_variables=grammar._global_variables,
+        )
+        checker = ReachabilityChecker(state_grammar)
+        hist_tree = state_grammar.parse(
+            word=packet_history, mode=ParsingMode.INCOMPLETE, include_controlflow=True
+        )
+        assert hist_tree is not None
+
+        result = checker.find_reachability(k_path_to_reach=dest_k_path, tree=hist_tree)
+        self.assertTrue(result.path_reachable)
+        self.assertTrue(result.completable_by_extension)
+
+        navigator = PacketNavigator(grammar, NonTerminal("<start>"))
+        path = navigator.astar_tree_symbols(
+            tree=hist_tree, destination_k_path=dest_k_path
+        )
+        self.assertIsNotNone(path)

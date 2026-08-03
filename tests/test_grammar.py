@@ -5,6 +5,7 @@ import random
 import unittest
 
 from fandango.evolution.algorithm import DefaultAlgorithm
+from fandango.language.grammar.nodes.node import Node
 from fandango.language.parse.parse import parse
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
@@ -108,6 +109,22 @@ class ConstraintTest(unittest.TestCase):
         update_orig_inner = grammar.parse("123", start=NonTerminal("<converted_inner>"))
         updated_tree = tree.replace(grammar, orig_c_inner, update_orig_inner)
         self.assertTrue(updated_tree.children[0].children[0].read_only)
+
+    def test_permutations(self):
+        with open(RESOURCES_ROOT / "permutation.fan", "r") as file:
+            grammar, c = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
+        start_rule = grammar.rules[NonTerminal("<start>")]
+        self.assertEqual(len(start_rule.children()), 3)
+        perm_rule = start_rule.children()[1]
+        work = set(perm_rule.descendents(grammar))
+        seen: set[Node] = set()
+        while len(work) > 0:
+            node = work.pop()
+            desc = set(node.descendents(grammar))
+            work = work.union(desc.difference(seen))
+            seen.add(node)
+        self.assertEqual(len(seen), 16)
 
     def test_repetitions(self):
         with open(RESOURCES_ROOT / "repetitions.fan", "r") as file:

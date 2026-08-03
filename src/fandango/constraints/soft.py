@@ -133,6 +133,10 @@ class Value(GeneticBase):
         self.cache[tree_hash] = fitness
         return fitness
 
+    def clear_cache(self) -> None:
+        """Empty this value's fitness cache."""
+        self.cache.clear()
+
     def get_symbols(self) -> Collection[NonTerminalSearch]:
         """
         Get the placeholders of the constraint.

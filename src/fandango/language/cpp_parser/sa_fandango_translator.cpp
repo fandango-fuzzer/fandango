@@ -21,6 +21,7 @@ SA_FandangoTranslator::~SA_FandangoTranslator() {
     Py_XDECREF(KleeneContext_cls);
     Py_XDECREF(PlusContext_cls);
     Py_XDECREF(OptionContext_cls);
+    Py_XDECREF(PermutationContext_cls);
     Py_XDECREF(RepeatContext_cls);
     Py_XDECREF(SymbolContext_cls);
     Py_XDECREF(Nonterminal_rightContext_cls);
@@ -318,6 +319,12 @@ antlrcpp::Any SA_FandangoTranslator::visitPlus(FandangoParser::PlusContext *ctx)
 antlrcpp::Any SA_FandangoTranslator::visitOption(FandangoParser::OptionContext *ctx){
     if(!OptionContext_cls) OptionContext_cls = PyObject_GetAttrString(translator->parser_cls, "OptionContext");
     PyObject *py_ctx = translator->convert_ctx(this, ctx, OptionContext_cls);
+    return py_ctx;
+}
+
+antlrcpp::Any SA_FandangoTranslator::visitPermutation(FandangoParser::PermutationContext *ctx){
+    if(!PermutationContext_cls) PermutationContext_cls = PyObject_GetAttrString(translator->parser_cls, "PermutationContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, PermutationContext_cls);
     return py_ctx;
 }
 

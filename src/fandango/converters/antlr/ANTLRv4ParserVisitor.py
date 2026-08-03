@@ -10,7 +10,6 @@ else:
 
 
 class ANTLRv4ParserVisitor(ParseTreeVisitor):
-
     # Visit a parse tree produced by ANTLRv4Parser#grammarSpec.
     def visitGrammarSpec(self, ctx: ANTLRv4Parser.GrammarSpecContext):
         return self.visitChildren(ctx)

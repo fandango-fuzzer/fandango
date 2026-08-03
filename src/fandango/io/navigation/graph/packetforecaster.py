@@ -4,9 +4,11 @@ from copy import deepcopy
 from typing import Any, Optional
 
 from fandango.errors import FandangoValueError
-from fandango.io.navigation.packetiterativeparser import PacketIterativeParser
-from fandango.io.navigation.stategrammarconverter import StateGrammarConverter
-from fandango.io.navigation.visitor.continuing_nodevisitor import ContinuingNodeVisitor
+from fandango.io.navigation.graph.packetiterativeparser import PacketIterativeParser
+from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConverter
+from fandango.io.navigation.graph.visitor.continuing_nodevisitor import (
+    ContinuingNodeVisitor,
+)
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
@@ -169,17 +171,14 @@ class ForecastingResult:
 
     def union(self, other: ForecastingResult) -> ForecastingResult:
         """
-        Combines two ForecastingResults by adding all packets from the other result.
-        Returns a copy of the current ForecastingResult with the combined packets.
+        Merge ``other`` into this result in place and return ``self``.
         :param other: The other ForecastingResult to combine with.
         """
-        c_new = deepcopy(self)
-        c_other = deepcopy(other)
-        for party, fnt in c_other.parties_to_packets.items():
+        for party, fnt in other.parties_to_packets.items():
             for fp in fnt.nt_to_packet.values():
-                c_new.add_packet(party, fp)
-        c_new.complete_trees.update(c_other.complete_trees)
-        return c_new
+                self.add_packet(party, fp)
+        self.complete_trees.update(other.complete_trees)
+        return self
 
 
 class PacketForecaster:

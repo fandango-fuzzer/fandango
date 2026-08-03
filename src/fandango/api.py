@@ -8,7 +8,12 @@ from typing import IO, Any, Optional, cast
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
 from fandango.errors import FandangoFailedError, FandangoParseError
-from fandango.evolution.algorithm import DefaultAlgorithm
+from fandango.evolution.algorithm import (
+    DefaultAlgorithm,
+    GeneticAlgorithm,
+    ProtocolAlgorithm,
+    SimpleGeneticAlgorithm,
+)
 from fandango.language.grammar import FuzzingMode, ParsingMode
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.parse.parse import parse
@@ -63,6 +68,7 @@ class FandangoBase(ABC):
                 message="Failed to parse grammar, Grammar is None",
             )
         self._grammar = grammar
+        self._last_fuzzing_mode: FuzzingMode = FuzzingMode.COMPLETE
 
     @property
     def grammar(self) -> Grammar:
@@ -202,7 +208,7 @@ class Fandango(FandangoBase):
             start_symbol=start_symbol,
             includes=includes,
         )
-        self.fandango: Optional[DefaultAlgorithm] = None
+        self.fandango: Optional[GeneticAlgorithm] = None
 
     @classmethod
     def _with_parsed(
@@ -219,6 +225,7 @@ class Fandango(FandangoBase):
         obj._constraints = constraints
         obj.fandango = None
         obj._start_symbol = start_symbol if start_symbol is not None else "<start>"
+        obj._last_fuzzing_mode = FuzzingMode.COMPLETE
         return obj
 
     def _parse_extra_constraints(
@@ -265,9 +272,22 @@ class Fandango(FandangoBase):
                 )
                 constraints += cast(list[Constraint | SoftValue], extra_constraints)
 
-        self.fandango = DefaultAlgorithm(
-            self.grammar, constraints, start_symbol=start_symbol, **settings
-        )
+        match self._last_fuzzing_mode:
+            case FuzzingMode.COMPLETE:
+                self.fandango = DefaultAlgorithm(
+                    self.grammar, constraints, start_symbol=start_symbol, **settings
+                )
+            case FuzzingMode.IO:
+                self.fandango = ProtocolAlgorithm(
+                    packet_algorithm=SimpleGeneticAlgorithm(
+                        grammar=self.grammar,
+                        constraints=constraints,
+                        start_symbol=start_symbol,
+                        **settings,
+                    ),
+                )
+            case _:
+                raise ValueError(f"Unknown fuzzing mode: {self._last_fuzzing_mode}")
         LOGGER.info("---------- Done initializing base population ----------")
 
     def generate_solutions(
@@ -284,7 +304,8 @@ class Fandango(FandangoBase):
         :param max_generations: Maximum number of generations to evolve through
         :return: A generator for solutions to the language
         """
-        if self.fandango is None:
+        if self.fandango is None or mode != self._last_fuzzing_mode:
+            self._last_fuzzing_mode = mode
             self.init_population()
             assert self.fandango is not None
 
@@ -362,6 +383,7 @@ class Fandango(FandangoBase):
         """
         assert self.fandango is not None
         if desired_solutions is not None and len(solutions) < desired_solutions:
+            assert isinstance(self.fandango, SimpleGeneticAlgorithm)
             warnings_are_errors = settings.get("warnings_are_errors", False)
             best_effort = settings.get("best_effort", False)
             if (

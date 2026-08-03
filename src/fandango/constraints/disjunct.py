@@ -102,6 +102,11 @@ class DisjunctionConstraint(Constraint):
             for constraint in self.constraints:
                 constraint.accept(visitor)
 
+    def clear_cache(self) -> None:
+        super().clear_cache()
+        for constraint in self.constraints:
+            constraint.clear_cache()
+
     def invert(self) -> "Constraint":
         """
         Return an inverted version of this disjunction constraint.

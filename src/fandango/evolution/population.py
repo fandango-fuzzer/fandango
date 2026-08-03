@@ -5,7 +5,7 @@ from typing import Optional
 from fandango.constraints.failing_tree import FailingTree, Suggestion
 from fandango.errors import FandangoValueError
 from fandango.evolution import GeneratorWithReturn
-from fandango.io.navigation.packetforecaster import ForecastingPacket
+from fandango.io.navigation.graph.packetforecaster import ForecastingPacket
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
