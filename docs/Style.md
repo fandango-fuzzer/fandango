@@ -124,7 +124,7 @@ Here are the most important Fandango syntax rules:
 
 ```
      <NT> ::= ALT_1 | ALT_2    productions / alternatives
-     "..."   r'...'            string literal / regex
+     "..."  r'...'  b'...'     string literal / regex / bytes object
      *  +  ?  {N,M}            repetition
      := PYTHON_EXPR            generator (default value)
      where PYTHON_EXPR         constraint (cast symbols: str(), int(), len())
@@ -156,7 +156,7 @@ Do not just produce a toy subset, but go for maximum coverage of the respective 
 Share only specifications that define the vast majority of format features.
 
 ```{tip}
-Document missing parts with `TODO`, `FIXME` and alike.
+Document missing parts with `TODO`, `FIXME` and alike, both in the appropriate parts of the spec as well as under "Details" at the beginning of the file.
 ```
 
 
@@ -183,7 +183,7 @@ See {ref}`sec:repeat` for details.
 
 ### Use Regular Expressions for Simple Elements
 
-For simple elements, prefer regular expressions (using `r"expr"`) over grammar forms.
+For elements that are all equivalent from a testing perspective (and hence do not require exploration of alternatives), prefer regular expressions (using `r"expr"`) over grammar forms.
 See {ref}`sec:regexes` for details.
 
 
@@ -207,6 +207,9 @@ Wherever possible, use `where` constraints to enforces semantic properties. Thes
 * relationships between symbols (e.g. a length symbol matching the size of a related payload);
 * nestings; and
 * checksums.
+
+Break down constraints into individual `where` clauses as much as possible.
+This makes it easier for Fandango to solve them one by one.
 
 For details on constraints, see {ref}`sec:constraints` and {ref}`sec:generators`.
 See also {ref}`sec:checksums` on how to specify checksums.
@@ -259,7 +262,7 @@ For details on generators (and when to use them), see {ref}`sec:generators`.
 
 ## Quality Assurance
 
-### Verify your spec with Fandango
+### Verify your Specification with Fandango
 
 Your spec should actually be verified to work, not just be plausible-looking.
 With your spec in `SPEC.fan` producing files with an extension `EXTENSION`, run
@@ -273,7 +276,13 @@ For GIF files in `gif,fan`, this would be:
 $ fandango fuzz -f gif.fan -n 10 -d out -x .gif --warnings-are-errors
 ```
 
-Ensure the Fandango exit code is 0 _and_ `out/` has exactly 10 files — if not, fix and re-run.
+Ensure that
+
+* the Fandango exit code is 0;
+* Fandango does not produce warnings or error messages; and
+* `out/` has exactly 10 files.
+
+If not, fix and re-run.
 
 For details on how to invoke Fandango, see {ref}`sec:invoking` and {ref}`sec:commands`.
 
