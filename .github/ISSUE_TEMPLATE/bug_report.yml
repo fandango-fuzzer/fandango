@@ -1,0 +1,79 @@
+name: Bug report
+description: Something in Fandango does not behave the way it should
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this.
+
+        **Found a security vulnerability?** Please do not file it here.
+        Report it privately with GitHub's [security advisory form](https://github.com/fandango-fuzzer/fandango/security/advisories/new).
+        See [SECURITY.md](https://github.com/fandango-fuzzer/fandango/blob/main/SECURITY.md).
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what did you get instead?
+      placeholder: |
+        I expected Fandango to generate inputs matching my grammar, but it
+        exited with an error instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: spec
+    attributes:
+      label: The spec
+      description: >
+        The smallest `.fan` spec that still shows the problem. Reducing it is
+        the single most useful thing you can do to get this fixed quickly.
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: command
+    attributes:
+      label: The command you ran
+      placeholder: fandango fuzz -f my_spec.fan -n 10
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: output
+    attributes:
+      label: The full output
+      description: The complete error message and traceback, not just the last line.
+      render: shell
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Fandango version
+      description: The output of `fandango --version`.
+      placeholder: Fandango 1.1.1
+    validations:
+      required: true
+
+  - type: input
+    id: python-os
+    attributes:
+      label: Python version and operating system
+      placeholder: Python 3.13.5 on macOS 15.2
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched the existing issues and did not find this
+          required: false
+        - label: I am using a supported Python version (3.11 or later)
+          required: false

@@ -25,7 +25,50 @@ Fandango is in active development! We are constantly expanding its capabilities.
 * High-diversity input generation
 * ...and much more!
 
+## Installation
+
+Fandango requires Python 3.11 or later:
+
+```shell
+$ pip install fandango-fuzzer
+```
+
+Then write a specification and generate inputs from it:
+
+```shell
+$ fandango fuzz -f your_spec.fan -n 10
+```
+
+See [Installing](https://fandango-fuzzer.github.io/Installing.html) for other
+options, including building from source.
+
 📚 **Ready to dive deeper?** For complete documentation, including tutorials, references, and advanced usage guides, visit the [Fandango Documentation](https://fandango-fuzzer.github.io/).
+
+New to Fandango? The [hands-on tutorial](https://fandango-fuzzer.github.io/HandsOn.html)
+takes one small protocol and works up from random bytes to a stateful
+conversation, one idea at a time.
+
+## Contributing
+
+Contributions are welcome, and reporting a bug or fixing a typo counts.
+
+* [**Contributing guide**](CONTRIBUTING.md) covers setting up a development
+  environment, what our CI checks, and how to get a pull request merged. Please
+  note that we ask you to comment on an issue and be assigned before starting
+  work on it.
+* [**Code of Conduct**](CODE_OF_CONDUCT.md) applies to everyone taking part.
+* [**Getting help**](SUPPORT.md) if something is unclear or not working.
+* [**Security policy**](SECURITY.md) for reporting vulnerabilities. Please
+  report these privately via GitHub's [security advisory form](https://github.com/fandango-fuzzer/fandango/security/advisories/new), not as a
+  public issue.
+
+## Citing Fandango
+
+If you use Fandango in academic work, please cite the ISSTA 2025 paper
+[*FANDANGO: Evolving Language-Based Testing*](https://doi.org/10.1145/3728915)
+by José Antonio Zamudio Amaya, Marius Smytzek, and Andreas Zeller. GitHub's
+"Cite this repository" button, backed by [`CITATION.cff`](CITATION.cff), gives
+you a ready-made BibTeX entry.
 
 ## License
 

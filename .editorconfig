@@ -1,0 +1,37 @@
+# EditorConfig helps keep formatting consistent across editors.
+# See https://editorconfig.org
+#
+# These settings match the Ruff configuration in pyproject.toml, so your editor
+# and `ruff format` agree. Ruff remains the source of truth for Python.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.py]
+indent_size = 4
+max_line_length = 88
+
+[*.{yml,yaml,json,toml}]
+indent_size = 2
+
+[*.{md,fan}]
+indent_size = 4
+# Markdown uses trailing double-space for hard line breaks, and .fan specs are
+# whitespace-significant, so leave trailing whitespace alone in both.
+trim_trailing_whitespace = false
+
+[*.g4]
+indent_size = 4
+
+[Makefile]
+indent_style = tab
+
+[*.{bat,ps1}]
+end_of_line = crlf
