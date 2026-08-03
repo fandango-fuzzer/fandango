@@ -3,10 +3,10 @@
 # Usage: python cprofile_profile.py [fandango_args]
 # Example: python cprofile_profile.py -f docs/persons.fan -n 100
 
+import os
 import subprocess
 import sys
 import tempfile
-import os
 
 if len(sys.argv) < 2:
     print("Usage: python cprofile_profile.py [fandango_args]")

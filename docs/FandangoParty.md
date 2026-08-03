@@ -115,10 +115,10 @@ However, the `FandangoParty` classes all support sending `DerivationTree`, `str`
 On a `FandangoParty` object, the `receive()` method is invoked when data has been received by the party.
 
 ```python
-receive(message: str | bytes), sender: Optional[str]) -> None
+receive(message: str | bytes | None), sender: Optional[str]) -> None
 ```
 
-* `message: str | bytes`: The message received.
+* `message: str | bytes | None`: The message received.
 * `recipient: str`: The sender of the message.
 
 This method is typically overloaded and extended in subclasses.
@@ -126,9 +126,15 @@ For instance, to apply a `decompress()` method to every message received, write
 
 ```python
 class CompressedNetworkParty(NetworkParty):
-    def receive(self, message: DerivationTree, sender: Optional[str]) -> None:
-        super().receive(uncompress(message), sender)
+    def receive(self, message: str | bytes | None, sender: Optional[str]) -> None:
+        super().receive(decompress(message), sender)
 ```
+
+Note that a party can also receive `None`-type messages.
+These signal the party that its communication partner has closed the connection.
+Fandango does assume that a party only closes the connection when the protocol execution is complete.
+The party specification throws an exception if its communication partner closes the connection during the protocol execution.
+If you want to allow for connection closures during the protocol execution, you have to overload the `receive()` function to handle `None`-type messages.
 
 
 (sec:startstop-api)=
@@ -165,6 +171,10 @@ One can also invoke it with a party name; in that case, the class is ignored (us
 FandangoParty.instance("Client").stop()  # Equivalent to the above.
 ```
 
+The `instance()` method is not thread-safe and cannot identify a party implementation from a thread different from the main thread.
+The receive-method of a party implementation is often not invoked from the main thread, as listen loops usually run asynchronously.
+Use the local reference to `self.io_instance.parties["PartyName"]` in those cases to access the party implementation.
+[Generators](sec:generators) and [Converters](sec:conversion) run on the main thread and can safely access the party implementation.
 
 
 (sec:networkparty-class)=

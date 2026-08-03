@@ -3,7 +3,7 @@ import os
 import sys
 import time
 import traceback
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from ansi_styles import ansiStyles as styles
 
@@ -22,10 +22,26 @@ logging.basicConfig(
     format="%(name)s:%(levelname)s: %(message)s",
 )
 
+# When True, print_exception re-raises after logging.
+# Initialized from FANDANGO_RAISE_ALL_EXCEPTIONS (must be set before import);
+# also enabled by --warnings-are-errors / warnings_are_errors=True.
+_RAISE_ON_LOGGED_EXCEPTIONS: bool = bool(
+    os.environ.get("FANDANGO_RAISE_ALL_EXCEPTIONS", False)
+)
+
+
+def set_raise_on_logged_exceptions(enabled: bool) -> None:
+    """Re-raise exceptions that would otherwise only be logged by print_exception."""
+    global _RAISE_ON_LOGGED_EXCEPTIONS
+    _RAISE_ON_LOGGED_EXCEPTIONS = enabled
+
+
+def raise_on_logged_exceptions() -> bool:
+    return _RAISE_ON_LOGGED_EXCEPTIONS
+
 
 def print_exception(e: Exception, exception_note: Optional[str] = None) -> None:
-    if exception_note is not None and getattr(Exception, "add_note", None):
-        # Python 3.11+ has add_note() method
+    if exception_note is not None:
         e.add_note(exception_note)
         exception_note = None
 
@@ -44,10 +60,7 @@ def print_exception(e: Exception, exception_note: Optional[str] = None) -> None:
             "  Convert <symbol> to the expected type, say 'str(<symbol>)', 'int(<symbol>)', or 'bytes(<symbol>)'",
             file=sys.stderr,
         )
-    if os.environ.get("FANDANGO_RAISE_ALL_EXCEPTIONS"):
-        raise e
-
-    if os.environ.get("FANDANGO_RAISE_ALL_EXCEPTIONS"):
+    if raise_on_logged_exceptions():
         raise e
 
 
@@ -66,7 +79,7 @@ LINES = None
 
 def use_visualization() -> bool:
     """Return True if we should use visualization while Fandango is running"""
-    global COLUMNS, LINES, USE_VISUALIZATION
+    global COLUMNS, LINES
 
     if os.environ.get("FANDANGO_DISABLE_VISUALIZATION"):
         return False
@@ -196,6 +209,6 @@ def log_guidance_hint(message: str) -> None:
 def log_message_coverage(
     coverage: list[tuple[NonTerminal, float]],
 ) -> None:
-    LOGGER.info(f"Current message coverage:")
+    LOGGER.info("Current message coverage:")
     for symbol, coverage_val in coverage:
         LOGGER.info(f"{symbol}: {coverage_val:.2f}")

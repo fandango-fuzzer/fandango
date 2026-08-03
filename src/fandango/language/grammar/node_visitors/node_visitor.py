@@ -1,11 +1,12 @@
 import abc
 from typing import Generic, TypeVar, cast
+
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.char_set import CharSet
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
-from fandango.language.grammar.nodes.repetition import Repetition, Star, Plus, Option
+from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
 
 AggregateType = TypeVar("AggregateType")
@@ -50,11 +51,11 @@ class NodeVisitor(abc.ABC, Generic[AggregateType, ResultType]):
     def visitOption(self, node: Option) -> ResultType:
         return self.visit(node.node)
 
-    def visitNonTerminalNode(self, _node: NonTerminalNode) -> ResultType:
+    def visitNonTerminalNode(self, node: NonTerminalNode) -> ResultType:
         return cast(ResultType, self.default_result())
 
-    def visitTerminalNode(self, _node: TerminalNode) -> ResultType:
+    def visitTerminalNode(self, node: TerminalNode) -> ResultType:
         return cast(ResultType, self.default_result())
 
-    def visitCharSet(self, _node: CharSet) -> ResultType:
+    def visitCharSet(self, node: CharSet) -> ResultType:
         return cast(ResultType, self.default_result())

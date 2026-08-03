@@ -1,26 +1,23 @@
 import os
-from pathlib import Path
 import platform
+from collections.abc import Iterable
+from pathlib import Path
 from typing import Optional
 
-from antlr4.tree.Tree import ParseTree
-from fandango.language.parse.parse_tree import parse_tree
 from xdg_base_dirs import xdg_data_dirs, xdg_data_home
 
+from fandango.language.parse.parse_tree import parse_tree
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.parser.FandangoParserVisitor import FandangoParserVisitor
 from fandango.logger import LOGGER
 
 
-def read_file(file_to_be_included: str, includes: set[str]) -> str:
-    path = os.path.dirname(file_to_be_included)
-    if not path:
-        # If the current file has no path, use the current directory
-        path = "."
+def read_file(file_to_be_included: Path, includes: set[Path]) -> str:
+    dirs = {file_to_be_included.resolve().parent}
+    dirs.update(includes)
+
     if os.environ.get("FANDANGO_PATH"):
-        path += ":" + os.environ["FANDANGO_PATH"]
-    dirs = {Path(dir) for dir in path.split(":")}
-    dirs |= {Path(dir) for dir in includes}
+        dirs.update(Path(dir) for dir in os.environ["FANDANGO_PATH"].split(":"))
 
     if platform.system() == "Darwin":
         dirs |= {Path.home() / "Library" / "Fandango"}  # ~/Library/Fandango
@@ -33,9 +30,9 @@ def read_file(file_to_be_included: str, includes: set[str]) -> str:
 
     for dir in dirs:
         full_file_name = dir / file_to_be_included
-        if not os.path.exists(full_file_name):
+        if not full_file_name.exists():
             continue
-        with open(full_file_name, "r") as full_file:
+        with full_file_name.open("r") as full_file:
             LOGGER.debug(f"{file_to_be_included}: including {full_file_name}")
             return full_file.read()
 
@@ -49,15 +46,15 @@ class FandangoSplitter(FandangoParserVisitor):
         self,
         filename: str,
         used_symbols: set[str],
-        includes: Optional[list[str] | set[str]] = None,
+        includes: Optional[Iterable[str | Path]] = None,
         depth: int = 0,
     ) -> None:
         self._filename = filename
-        self._includes = set(includes) if includes is not None else set()
+        self._includes = set(Path(include) for include in (includes or []))
         self._depth = depth
         self._used_symbols: set[str] = used_symbols or set()
-        dirname = os.path.dirname(filename)
-        if dirname:
+        dirname = Path(filename).parent
+        if dirname != Path("."):
             self._includes.add(dirname)
 
         # depth, production
@@ -83,7 +80,7 @@ class FandangoSplitter(FandangoParserVisitor):
         filename = filename[
             1:-1
         ]  # remove quotes, assume we're just using simple quotes
-        contents = read_file(filename, includes=self._includes)
+        contents = read_file(Path(filename), includes=self._includes)
         inner = FandangoSplitter(
             filename=filename,
             used_symbols=self._used_symbols,

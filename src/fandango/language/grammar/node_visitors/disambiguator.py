@@ -1,5 +1,6 @@
-from typing import TYPE_CHECKING
 from collections.abc import Sequence
+from typing import TYPE_CHECKING
+
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
@@ -7,9 +8,9 @@ from fandango.language.grammar.nodes.char_set import CharSet
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
-from fandango.language.grammar.nodes.repetition import Repetition, Star, Plus, Option
+from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
-from fandango.language.symbols import NonTerminal, Terminal, Slice
+from fandango.language.symbols import NonTerminal, Slice, Terminal
 
 if TYPE_CHECKING:
     import fandango

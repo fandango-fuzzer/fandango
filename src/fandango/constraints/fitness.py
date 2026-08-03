@@ -1,6 +1,7 @@
 import abc
 import copy
 from typing import Optional
+
 from fandango.constraints.failing_tree import FailingTree, Suggestion
 
 
@@ -92,7 +93,7 @@ class ConstraintFitness(Fitness):
         total: int,
         success: bool,
         suggestion: Suggestion,
-        failing_trees: list[FailingTree] = [],
+        failing_trees: Optional[list[FailingTree]] = None,
     ):
         """
         Initialize the ConstraintFitness with the given solved, total, success, and failing trees.
@@ -142,7 +143,7 @@ class DistanceAwareConstraintFitness(ConstraintFitness):
         values: list[float],
         suggestion: Suggestion,
         success: bool = True,
-        failing_trees: list[FailingTree] = [],
+        failing_trees: Optional[list[FailingTree]] = None,
     ):
         super().__init__(
             solved=sum(1 for it in values if it == 1.0),

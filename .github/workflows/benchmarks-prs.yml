@@ -4,6 +4,10 @@ on:
   pull_request:
     types: [opened, reopened, edited, synchronize]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   run_benchmarks:
     name: Run PR Benchmarks
@@ -15,7 +19,7 @@ jobs:
       - name: Install Fandango
         uses: ./.github/workflows/setup-fandango
         with:
-          python-version: 3.13
+          python-version: "3.13"
           needs-sudo: true
 
       - name: Run Benchmarks

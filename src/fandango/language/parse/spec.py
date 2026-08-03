@@ -7,7 +7,7 @@ import time
 import uuid
 import warnings
 from pathlib import Path
-from typing import Optional, Any
+from typing import Any, Optional
 
 import cachedir_tag
 from antlr4.tree.Tree import ParseTree
@@ -41,10 +41,12 @@ class FandangoSpec:
         filename: str = "<input_>",
         code_text: str = "",
         max_repetitions: int = 5,
-        used_symbols: set[str] = set(),
-        productions_ctx: list[FandangoParser.ProductionContext] = [],
-        constraints_ctx: list[FandangoParser.ConstraintContext] = [],
-        grammar_settings_ctx: list[FandangoParser.Grammar_setting_contentContext] = [],
+        used_symbols: Optional[set[str]] = None,
+        productions_ctx: Optional[list[FandangoParser.ProductionContext]] = None,
+        constraints_ctx: Optional[list[FandangoParser.ConstraintContext]] = None,
+        grammar_settings_ctx: Optional[
+            list[FandangoParser.Grammar_setting_contentContext]
+        ] = None,
         pyenv_globals: Optional[dict[str, Any]] = None,
         pyenv_locals: Optional[dict[str, Any]] = None,
     ) -> None:
@@ -56,6 +58,18 @@ class FandangoSpec:
 
         if pyenv_locals is None:
             pyenv_locals = dict()
+
+        if productions_ctx is None:
+            productions_ctx = []
+
+        if constraints_ctx is None:
+            constraints_ctx = []
+
+        if grammar_settings_ctx is None:
+            grammar_settings_ctx = []
+
+        if used_symbols is None:
+            used_symbols = set()
 
         self.version = fandango.version()
         self.lazy = lazy
@@ -228,9 +242,7 @@ class CachedFandangoSpec:
         cache_dir = get_cache_dir()
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir, mode=0o700, exist_ok=True)
-            cachedir_tag.tag(
-                cache_dir, application="Fandango"
-            )  # type: ignore[no-untyped-call] # cachedir_tag doesn't provide types
+            cachedir_tag.tag(cache_dir, application="Fandango")  # type: ignore[no-untyped-call] # cachedir_tag doesn't provide types
 
         # Keep separate hashes for different Fandango and Python versions
         hash_contents = fan_contents + fandango.version() + "-" + sys.version

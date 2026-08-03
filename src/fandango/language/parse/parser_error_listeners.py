@@ -1,4 +1,5 @@
 from typing import Optional
+
 from antlr4.error.ErrorListener import ErrorListener
 from antlr4.InputStream import InputStream
 from antlr4.Recognizer import Recognizer
@@ -39,7 +40,7 @@ class SpeedyAntlrErrorListener(sa_fandango.SA_ErrorListener):
     def syntaxError(
         self,
         input_stream: InputStream,
-        offending_symbol: Token,
+        offendingSymbol: Token,
         char_index: int,
         line: int,
         column: int,

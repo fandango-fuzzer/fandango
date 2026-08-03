@@ -1,11 +1,11 @@
 import pytest
 
-from fandango.language.parse.parse import parse
-from fandango.errors import FandangoParseError
-from fandango.language.tree import DerivationTree
 from fandango.constraints.comparison import ComparisonConstraint
 from fandango.constraints.expression import ExpressionConstraint
+from fandango.errors import FandangoParseError
+from fandango.language.parse.parse import parse
 from fandango.language.symbols import NonTerminal, Terminal
+from fandango.language.tree import DerivationTree
 
 
 @pytest.mark.parametrize(
@@ -43,15 +43,15 @@ def test_fstrings(expression):
     except FandangoParseError:
         pytest.fail(f"Failed to parse expression: {expression}")
     else:
-        assert (
-            grammar is not None
-        ), f"Grammar should not be None for expression: {expression}"
-        assert (
-            len(constraints) == 1
-        ), f"Constraints should contain one item for expression: {expression}"
-        assert isinstance(
-            constraints[0], ExpressionConstraint
-        ), f"Constraints should be an ExpressionConstraint for expression: {expression}"
+        assert grammar is not None, (
+            f"Grammar should not be None for expression: {expression}"
+        )
+        assert len(constraints) == 1, (
+            f"Constraints should contain one item for expression: {expression}"
+        )
+        assert isinstance(constraints[0], ExpressionConstraint), (
+            f"Constraints should be an ExpressionConstraint for expression: {expression}"
+        )
 
 
 def test_concreate_constraint():
@@ -77,19 +77,19 @@ where f"{<x>!s:03}" == "100"
     grammar, constraints = parse(raw_grammar)
     assert grammar is not None, "Grammar should not be None"
     assert len(constraints) == 1, "Constraints should contain one item"
-    assert isinstance(
-        constraints[0], ComparisonConstraint
-    ), "Constraints should be a ComparisonConstraint"
+    assert isinstance(constraints[0], ComparisonConstraint), (
+        "Constraints should be a ComparisonConstraint"
+    )
     constraint: ComparisonConstraint = constraints[0]
     assert len(constraint.searches) == 1, "Constraint should have one search"
     tmp_var: str = ""
     for search in constraint.searches:
         tmp_var = search
-    assert (
-        eval(constraint._left, {tmp_var: "25"}) == "250"
-    ), "Left side of comparison should evaluate to '250'"
-    assert (
-        eval(constraint._right) == "100"
-    ), "Right side of comparison should evaluate to '100'"
+    assert eval(constraint._left, {tmp_var: "25"}) == "250", (
+        "Left side of comparison should evaluate to '250'"
+    )
+    assert eval(constraint._right) == "100", (
+        "Right side of comparison should evaluate to '100'"
+    )
     assert constraint.check(VALID), "Constraint should pass for VALID tree"
     assert not constraint.check(INVALID), "Constraint should fail for INVALID tree"

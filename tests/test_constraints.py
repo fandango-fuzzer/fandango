@@ -2,11 +2,11 @@
 
 import unittest
 
-
 from fandango.constraints.constraint import Constraint
+from fandango.language.parse.parse import parse
 from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
-from fandango.language.parse.parse import parse
+
 from .utils import RESOURCES_ROOT
 
 
@@ -391,7 +391,9 @@ where int(<number>) < 100000
         ]
 
         for tree, sat_even, sat_greater, sat_less in examples:
-            for sat, constraint in zip((sat_even, sat_greater, sat_less), constraints):
+            for sat, constraint in zip(
+                (sat_even, sat_greater, sat_less), constraints, strict=True
+            ):
                 assert isinstance(constraint, Constraint)
                 fitness = constraint.fitness(tree)
                 self.assertEqual(sat, fitness.success, fitness.success)
@@ -411,7 +413,12 @@ class ConverterTest(unittest.TestCase):
     def test_standards(self):
         # Earlier Fandango versions overloaded int(); so check if it still works
         self.assertEqual(int(45), 45, int(45))
-        self.assertEqual(int.from_bytes(b"\x01"), 1, int.from_bytes(b"\x01"))
+        for endian in ("little", "big"):
+            self.assertEqual(
+                int.from_bytes(b"\x01", byteorder=endian),
+                1,
+                int.from_bytes(b"\x01", byteorder=endian),
+            )
 
     def test_string_converters(self):
         tree = DerivationTree(Terminal("5"))

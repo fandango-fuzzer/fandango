@@ -10,7 +10,9 @@ class FandangoError(ValueError):
 class FandangoParseError(FandangoError, SyntaxError):
     """Error during parsing inputs"""
 
-    def __init__(self, message: Optional[str] = None, position: Optional[int] = None):
+    def __init__(  # noqa: B042 # we actually want different construct calls for the superclasses
+        self, message: Optional[str] = None, position: Optional[int] = None
+    ):
         if message is None:
             if position is not None:
                 message = f"Parse error at position {position}"
@@ -27,16 +29,14 @@ class FandangoSyntaxError(FandangoError, SyntaxError):
     """Error during parsing a Fandango spec"""
 
     def __init__(self, message: str):
-        FandangoError.__init__(self, message)
-        SyntaxError.__init__(self, message)
+        super().__init__(message)
 
 
 class FandangoValueError(FandangoError, ValueError):
     """Error during evaluating a Fandango spec"""
 
     def __init__(self, message: str):
-        FandangoError.__init__(self, message)
-        ValueError.__init__(self, message)
+        super().__init__(message)
 
 
 class FandangoConversionError(FandangoValueError):
@@ -52,4 +52,4 @@ class FandangoFailedError(FandangoError):
     """Error during the Fandango algorithm"""
 
     def __init__(self, message: str):
-        super().__init__(self, message)
+        super().__init__(message)

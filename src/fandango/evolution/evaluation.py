@@ -1,22 +1,26 @@
 import random
-from typing import Counter, Optional, Union
-from collections.abc import Generator, Sequence
+from collections import Counter
+from collections.abc import Callable, Generator, Sequence
+from typing import Optional, Union
+
+from cachetools import LRUCache
 
 from fandango.constraints.constraint import Constraint
-from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
-from fandango.constraints.soft import SoftValue
 from fandango.constraints.failing_tree import (
     ApplyAllSuggestions,
     FailingTree,
     NopSuggestion,
     Suggestion,
 )
+from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
+from fandango.constraints.soft import SoftValue
 from fandango.evolution import GeneratorWithReturn
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.language import NonTerminal
-from fandango.language.tree import DerivationTree
 from fandango.language.grammar.grammar import Grammar, KPath
+from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER, print_exception
+from fandango.utils import cache_size
 
 
 class Evaluator:
@@ -27,7 +31,10 @@ class Evaluator:
         expected_fitness: float,
         diversity_k: int,
         diversity_weight: float,
-        warnings_are_errors: bool = False,
+        stop_criterion: Optional[Callable[[DerivationTree], bool]] = None,
+        use_fcc: bool = False,
+        put: Optional[str] = None,
+        put_args: Optional[list[str]] = None,
     ):
         self._grammar = grammar
         self._soft_constraints: list[SoftValue] = []
@@ -36,12 +43,28 @@ class Evaluator:
         self._expected_fitness = expected_fitness
         self._diversity_k = diversity_k
         self._diversity_weight = diversity_weight
-        self._warnings_are_errors = warnings_are_errors
-        self._fitness_cache: dict[int, tuple[float, list[FailingTree], Suggestion]] = {}
+        self._fitness_cache: LRUCache[
+            int, tuple[float, list[FailingTree], Suggestion]
+        ] = LRUCache(maxsize=cache_size())
         self._solution_set: set[int] = set()
         self._checks_made = 0
+        self._stop_criterion = stop_criterion
+        self._stop_criterion_met = False
+        self.fcc = None
+        if use_fcc:
+            # dynamic import to only emit the experimental warning when it is actually needed
+            from fandango.experimental.execution.fcc import FCC
+
+            self.fcc = FCC(put, put_args)
 
         for constraint in constraints:
+            if "DynamicAnalysis" in constraint.format_as_spec():
+                assert self.fcc is not None, (
+                    "FCC is required for DynamicAnalysis constraint"
+                )
+                constraint.global_variables["DynamicAnalysis"] = (
+                    self.fcc.dynamic_analysis.trace_input
+                )
             if isinstance(constraint, SoftValue):
                 self._soft_constraints.append(constraint)
             elif isinstance(constraint, RepetitionBoundsConstraint):
@@ -50,6 +73,10 @@ class Evaluator:
                 self._hard_constraints.append(constraint)
             else:
                 raise ValueError(f"Invalid constraint type: {type(constraint)}")
+
+    @property
+    def stop_criterion_met(self) -> bool:
+        return self._stop_criterion_met
 
     @property
     def expected_fitness(self) -> float:
@@ -72,9 +99,11 @@ class Evaluator:
         :param population: The population to compute the mutation pool for.
         :return: The mutation pool.
         """
-        weights = [
-            self._fitness_cache[hash((ind.get_root(), ind))][0] for ind in population
-        ]
+        weights = []
+        for ind in population:
+            gen = GeneratorWithReturn(self.evaluate_individual(ind))
+            gen.collect()
+            weights.append(gen.return_value[0])
         if not all(w == 0 for w in weights):
             return random.choices(population, weights=weights, k=len(population))
         else:
@@ -85,7 +114,7 @@ class Evaluator:
         For soft constraints, the normalized fitness may change over time as we observe more inputs, this method flushes the fitness cache if the grammar contains any soft constraints.
         """
         if len(self._soft_constraints) > 0:
-            self._fitness_cache = {}
+            self._fitness_cache.clear()
 
     def compute_diversity_bonus(
         self,
@@ -245,13 +274,17 @@ class Evaluator:
             )
 
         if fitness >= self._expected_fitness and key not in self._solution_set:
+            if self._stop_criterion:
+                self._stop_criterion_met |= self._stop_criterion(individual)
             self._solution_set.add(key)
             yield individual
 
         self._fitness_cache[key] = (fitness, failing_trees, suggestion)
         return fitness, failing_trees, suggestion
 
-    def evaluate_population(self, population: list[DerivationTree]) -> Generator[
+    def evaluate_population(
+        self, population: list[DerivationTree]
+    ) -> Generator[
         DerivationTree,
         None,
         list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
@@ -266,7 +299,7 @@ class Evaluator:
             evaluation = [
                 (ind, fitness + bonus, failing_trees, suggestion)
                 for (ind, fitness, failing_trees, suggestion), bonus in zip(
-                    evaluation, bonuses
+                    evaluation, bonuses, strict=False
                 )
             ]
         return evaluation
@@ -309,7 +342,6 @@ class IoEvaluator(Evaluator):
         expected_fitness: float,
         diversity_k: int,
         diversity_weight: float,
-        warnings_are_errors: bool = False,
     ):
         super().__init__(
             grammar,
@@ -317,7 +349,6 @@ class IoEvaluator(Evaluator):
             expected_fitness,
             diversity_k,
             diversity_weight,
-            warnings_are_errors,
         )
         self._submitted_solutions: set[int] = set()
         self._hold_back_solutions: set[DerivationTree] = set()
@@ -433,7 +464,9 @@ class IoEvaluator(Evaluator):
         self._fitness_cache[key] = (fitness, failing_trees, suggestion)
         return fitness, failing_trees, suggestion
 
-    def evaluate_population(self, population: list[DerivationTree]) -> Generator[
+    def evaluate_population(
+        self, population: list[DerivationTree]
+    ) -> Generator[
         DerivationTree,
         None,
         list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
@@ -449,7 +482,7 @@ class IoEvaluator(Evaluator):
             fill_up_by_msg_nt: dict[PacketNonTerminal, list[DerivationTree]] = {}
             for ind in [*self._past_trees, *population]:
                 msgs = ind.protocol_msgs()
-                for i, msg in enumerate(msgs):
+                for msg in msgs:
                     assert msg.sender is not None
                     assert isinstance(msg.msg.symbol, NonTerminal)
                     key = PacketNonTerminal(msg.sender, msg.recipient, msg.msg.symbol)

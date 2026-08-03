@@ -1,17 +1,10 @@
 import re
-import uuid
-
-from copy import deepcopy
+from collections.abc import Container, Iterable
 from typing import IO, Optional
 
-from fandango.constraints import predicates
-from fandango.io import CURRENT_ENV_KEY
-from fandango.language.parse.io import init_io
-from fandango.language.parse.slice_parties import slice_parties
-
-from fandango.errors import FandangoValueError
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
+from fandango.errors import FandangoValueError
 from fandango.language.grammar import FuzzingMode, closest_match
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.node_visitors.symbol_finder import SymbolFinder
@@ -19,7 +12,9 @@ from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
+from fandango.language.parse.io import init_io
 from fandango.language.parse.parse_spec import parse_content
+from fandango.language.parse.slice_parties import slice_parties
 from fandango.language.search import (
     AnnotatedSearch,
     DescendantAttributeSearch,
@@ -30,10 +25,6 @@ from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree_value import TreeValueType
 from fandango.logger import LOGGER
 
-# Save the standard library grammar and constraints
-STDLIB_GRAMMAR: Optional[Grammar] = None
-STDLIB_CONSTRAINTS: Optional[list[Constraint | SoftValue]] = None
-
 
 def parse(
     fan_files: str | IO[str] | list[str | IO[str]],
@@ -43,14 +34,14 @@ def parse(
     use_stdlib: bool = True,
     check: bool = True,
     lazy: bool = False,
-    given_grammars: list[Grammar] = [],
+    given_grammars: Iterable[Grammar] = (),
     start_symbol: Optional[str] = None,
-    includes: Optional[list[str]] = [],
+    includes: Optional[list[str]] = None,
     parties: Optional[list[str]] = None,
     max_repetitions: int = 5,
 ) -> tuple[Optional[Grammar], list[Constraint | SoftValue]]:
     """
-    Parse .fan content, handling multiple files, standard library, and includes.
+    Parse .fan content, handling multiple files, standard library.
     :param fan_files: One (open) .fan file, one string, or a list of these
     :param constraints: List of constraints (as strings); default: []
     :param use_cache: If True (default), cache parsing results
@@ -59,11 +50,13 @@ def parse(
     :param lazy: If True, the constraints are evaluated lazily
     :param given_grammars: Grammars to use in addition to the standard library
     :param start_symbol: The grammar start symbol (default: "<start>")
-    :param includes: A list of directories to search for include files; default: []
     :param parties: If given, list of parties to consider in the grammar
     :param max_repetitions: The maximal number of repetitions
     :return: A tuple of the grammar and constraints
     """
+
+    if includes is None:
+        includes = []
 
     if not isinstance(fan_files, list):
         fan_files = [fan_files]
@@ -74,17 +67,16 @@ def parse(
     if constraints is None:
         constraints = []
 
-    if includes is None:
-        includes = []
-
     if start_symbol is None:
         start_symbol = "<start>"
 
     pyenv_globals = None
     pyenv_locals = None
 
-    global STDLIB_SYMBOLS, STDLIB_GRAMMAR, STDLIB_CONSTRAINTS
-    if use_stdlib and STDLIB_GRAMMAR is None:
+    used_symbols = set()
+    grammars = []
+    parsed_constraints: list[Constraint | SoftValue] = []
+    if use_stdlib:
         LOGGER.debug("Reading standard library")
         stdlib_spec = parse_content(
             stdlib,
@@ -94,31 +86,19 @@ def parse(
             pyenv_globals=pyenv_globals,
             pyenv_locals=pyenv_locals,
         )
-        STDLIB_GRAMMAR = stdlib_spec.grammar
-        STDLIB_CONSTRAINTS = stdlib_spec.constraints
+        stdlib_grammar = stdlib_spec.grammar
+        stdlib_constraints = stdlib_spec.constraints
         pyenv_globals = stdlib_spec.global_vars
         pyenv_locals = stdlib_spec.local_vars
 
-    used_symbols = set()
-    if use_stdlib:
-        assert STDLIB_GRAMMAR is not None
-        for symbol in STDLIB_GRAMMAR.rules.keys():
+        for symbol in stdlib_grammar.rules.keys():
             # Do not complain about unused symbols in the standard library
             used_symbols.add(symbol.name())
 
-    grammars = []
-    parsed_constraints: list[Constraint | SoftValue] = []
-    if use_stdlib:
-        assert STDLIB_GRAMMAR is not None
-        assert STDLIB_CONSTRAINTS is not None
-        try:
-            grammars = [deepcopy(STDLIB_GRAMMAR)]
-        except TypeError:
-            # This can happen if we invoke parse() from a notebook
-            grammars = [STDLIB_GRAMMAR]
-        parsed_constraints = STDLIB_CONSTRAINTS.copy()
+        grammars.append(stdlib_grammar)
+        parsed_constraints.extend(stdlib_constraints)
 
-    grammars += given_grammars
+    grammars.extend(given_grammars)
 
     LOGGER.debug("Reading files")
 
@@ -221,13 +201,10 @@ def parse(
     return grammar, parsed_constraints
 
 
-### Consistency Checks
-
-
 def check_grammar_consistency(
     grammar: Grammar,
     *,
-    given_used_symbols: set[str] = set(),
+    given_used_symbols: Container[str] = frozenset(),
     start_symbol: str = "<start>",
 ) -> None:
     check_grammar_definitions(
@@ -239,7 +216,7 @@ def check_grammar_consistency(
 def check_grammar_definitions(
     grammar: Grammar,
     *,
-    given_used_symbols: set[str] = set(),
+    given_used_symbols: Container[str] = frozenset(),
     start_symbol: str = "<start>",
 ) -> None:
     if not grammar:
@@ -299,11 +276,7 @@ def check_grammar_definitions(
             f"Undefined symbol {first_undefined_symbol!s} in grammar"
         )
         if undefined_symbols:
-            if getattr(Exception, "add_note", None):
-                # Python 3.11+ has add_note() method
-                error.add_note(
-                    f"Other undefined symbols: {', '.join(undefined_symbols)}"
-                )
+            error.add_note(f"Other undefined symbols: {', '.join(undefined_symbols)}")
         raise error
 
 
@@ -324,7 +297,6 @@ def check_grammar_types(
 
     def get_type(tree: Node, rule_symbol: str) -> tuple[Optional[str], int, int, int]:
         # LOGGER.debug(f"Checking type of {tree!s} in {rule_symbol!s} ({tree.node_type!s})")
-        nonlocal symbol_types, grammar
 
         tp: Optional[str]
         if isinstance(tree, TerminalNode):

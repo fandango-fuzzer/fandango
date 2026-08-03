@@ -1,14 +1,15 @@
 import logging
 import os
 import sys
-from typing import Any, IO, Optional
+from typing import IO, Any, Optional
 
 from fandango import Fandango
 from fandango.cli.commands import COMMANDS, run
-from fandango.cli.shell import shell_command
 from fandango.cli.parser import get_parser
+from fandango.cli.shell import shell_command
 from fandango.cli.upgrade import check_for_fandango_update
-from fandango.logger import LOGGER
+from fandango.experimental import dont_warn_about_module
+from fandango.logger import LOGGER, set_raise_on_logged_exceptions
 
 
 def main(
@@ -28,6 +29,9 @@ def main(
     parser = get_parser(in_command_line=True)
     args = parser.parse_args(argv or sys.argv[1:])
 
+    if getattr(args, "warnings_are_errors", None):
+        set_raise_on_logged_exceptions(True)
+
     LOGGER.setLevel(os.getenv("FANDANGO_LOG_LEVEL", "WARNING"))  # Default
 
     if args.quiet and args.quiet == 1:
@@ -38,6 +42,9 @@ def main(
         LOGGER.setLevel(logging.INFO)  # Give more info
     elif args.verbose and args.verbose > 1:
         LOGGER.setLevel(logging.DEBUG)  # Even more info
+
+    for enable_experimental_module in args.enable_experimental_modules:
+        dont_warn_about_module(enable_experimental_module)
 
     # Check if updates are available
     check_for_fandango_update()

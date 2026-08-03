@@ -1,1 +1,1 @@
-../evaluation/experiments/ftp/ftp.fan
+../evaluation/protocol_testing_eval/ftp/ftp.fan

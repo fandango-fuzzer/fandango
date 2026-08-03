@@ -2,13 +2,13 @@ import argparse
 import difflib
 import logging
 import os
-from typing import IO, Any, Optional
 import zipfile
-
+from collections.abc import Iterable
+from typing import IO, Any, Optional
 
 from fandango.api import Fandango
-from fandango.constraints.soft import SoftValue
 from fandango.constraints.constraint import Constraint
+from fandango.constraints.soft import SoftValue
 from fandango.errors import FandangoError, FandangoParseError
 from fandango.evolution import GeneratorWithReturn
 from fandango.language.grammar.grammar import Grammar
@@ -77,11 +77,11 @@ def _copy_setting(
 
 
 def make_fandango_settings(
-    args: argparse.Namespace, initial_settings: dict[str, Any] = {}
+    args: argparse.Namespace, initial_settings: Optional[dict[str, Any]] = None
 ) -> dict[str, Any]:
     """Create keyword settings for Fandango() constructor"""
     LOGGER.debug(f"Pre-sanitized settings: {args}")
-    settings = initial_settings.copy()
+    settings = initial_settings.copy() if initial_settings is not None else {}
     _copy_setting(args, settings, "population_size")
     _copy_setting(args, settings, "mutation_rate")
     _copy_setting(args, settings, "crossover_rate")
@@ -94,6 +94,15 @@ def make_fandango_settings(
     _copy_setting(args, settings, "max_repetitions")
     _copy_setting(args, settings, "max_nodes")
     _copy_setting(args, settings, "max_node_rate")
+    if hasattr(args, "stop_criterion") and args.stop_criterion is not None:
+        # previously is a str, we eval it into a function
+        settings["stop_criterion"] = eval(args.stop_criterion)
+    _copy_setting(args, settings, "stop_after_seconds")
+    _copy_setting(args, settings, "use_fcc")
+
+    if settings.get("use_fcc", False):
+        settings["put"] = args.test_command
+        settings["put_args"] = args.test_args  # list[str]
 
     if hasattr(args, "start_symbol") and args.start_symbol is not None:
         if args.start_symbol.startswith("<"):
@@ -163,13 +172,16 @@ def get_file_mode(
 
 def parse_contents_from_args(
     args: argparse.Namespace,
-    given_grammars: list[Grammar] = [],
+    given_grammars: Iterable[Grammar] = (),
     check: bool = True,
 ) -> tuple[Optional[Grammar], list[Constraint | SoftValue]]:
     """Parse .fan content as given in args"""
     max_constraints = [f"maximizing {c}" for c in (args.maxconstraints or [])]
     min_constraints = [f"minimizing {c}" for c in (args.minconstraints or [])]
     constraints = (args.constraints or []) + max_constraints + min_constraints
+
+    if "use_fcc" in args and args.use_fcc:
+        assert args.test_command is not None
 
     extra_defs = ""
     if "test_command" in args and args.test_command:
@@ -236,7 +248,7 @@ class Server(NetworkParty):
 
 def parse_constraints_from_args(
     args: argparse.Namespace,
-    given_grammars: list[Grammar] = [],
+    given_grammars: Iterable[Grammar] = (),
     check: bool = True,
 ) -> tuple[Optional[Grammar], list[Constraint | SoftValue]]:
     """Parse .fan constraints as given in args"""
@@ -267,21 +279,17 @@ def validate(
         original != parsed.value()
     ):  # force comparison between values, rely on type coercion for different types
         exc = FandangoError(f"{filename!r}: parsed tree does not match original")
-        if getattr(Exception, "add_note", None):
-            # Python 3.11+ has add_note() method
-            if isinstance(original, DerivationTree) and isinstance(
-                parsed, DerivationTree
-            ):
-                original_grammar = original.to_grammar()
-                parsed_grammar = parsed.to_grammar()
-                diff = difflib.context_diff(
-                    original_grammar.split("\n"),
-                    parsed_grammar.split("\n"),
-                    fromfile="original",
-                    tofile="parsed",
-                )
-                out = "\n".join(diff)
-                exc.add_note(out)
+        if isinstance(original, DerivationTree) and isinstance(parsed, DerivationTree):
+            original_grammar = original.to_grammar()
+            parsed_grammar = parsed.to_grammar()
+            diff = difflib.context_diff(
+                original_grammar.split("\n"),
+                parsed_grammar.split("\n"),
+                fromfile="original",
+                tofile="parsed",
+            )
+            out = "\n".join(diff)
+            exc.add_note(out)
         raise exc
 
 
@@ -333,8 +341,14 @@ def parse_file(
 
 
 def exec_single(
-    code: str, _globals: dict[str, Any] = {}, _locals: dict[str, Any] = {}
+    code: str,
+    _globals: Optional[dict[str, Any]] = None,
+    _locals: Optional[dict[str, Any]] = None,
 ) -> None:
     """Execute CODE in 'single' mode, printing out results if any"""
+    if _globals is None:
+        _globals = {}
+    if _locals is None:
+        _locals = {}
     block = compile(code, "<input>", mode="single")
     exec(block, _globals, _locals)

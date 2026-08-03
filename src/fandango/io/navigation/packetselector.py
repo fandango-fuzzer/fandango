@@ -1,22 +1,22 @@
 from typing import Optional
 
 from fandango.io import FandangoIO
-from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.coverage_goal import CoverageGoal
-from fandango.io.navigation.stategrammarconverter import StateGrammarConverter
+from fandango.io.navigation.packetforecaster import (
+    ForecastingPacket,
+    ForecastingResult,
+    PacketForecaster,
+)
+from fandango.io.navigation.packetnavigator import PacketNavigator
+from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.powerschedule import (
     PowerScheduleCoverage,
     PowerScheduleKPath,
 )
-from fandango.language.tree import DerivationTree
-from fandango.io.navigation.packetforecaster import (
-    ForecastingPacket,
-    PacketForecaster,
-    ForecastingResult,
-)
-from fandango.io.navigation.packetnavigator import PacketNavigator
+from fandango.io.navigation.stategrammarconverter import StateGrammarConverter
 from fandango.language.grammar.grammar import Grammar, KPath
 from fandango.language.symbols import NonTerminal, Symbol
+from fandango.language.tree import DerivationTree
 from fandango.logger import log_guidance_hint
 
 
@@ -286,7 +286,7 @@ class PacketSelector:
         )
         all_current_msgs = prev_msgs + current_session_msgs
         new_msgs = []
-        for prev, new in zip(self._prev_session_msgs, all_current_msgs):
+        for prev, new in zip(self._prev_session_msgs, all_current_msgs, strict=False):
             if prev != new:
                 new_msgs.extend(current_session_msgs)
                 return new_msgs
@@ -445,67 +445,6 @@ class PacketSelector:
         if len(all_paths) == 0:
             return 1.0
         return 1.0 - (len(u_paths) / len(all_paths))
-
-    """
-    def _compute_coverage_trees(
-        self, overlap_to_root: bool = False
-    ) -> dict[NonTerminal, tuple[int, int]]:
-        messages_by_nt = self._group_messages_by_nt(self._all_derivation_trees())
-        paths_by_role = {}
-        roles_by_symbol = dict()
-        paths_by_role["all_party"] = {
-            "covered": list(),
-            "covered_unique": set(),
-            "all": list(),
-            "all_unique": set(),
-            "symbols": set(),
-        }
-        for p_nt in self.grammar.get_protocol_messages(self.start_symbol):
-            if p_nt.sender not in paths_by_role:
-                paths_by_role[p_nt.sender] = {
-                    "covered": list(),
-                    "covered_unique": set(),
-                    "all": list(),
-                    "all_unique": set(),
-                    "symbols": set(),
-                }
-            paths_by_role[p_nt.sender]["symbols"].add(p_nt.symbol)
-            paths_by_role["all_party"]["symbols"].add(p_nt.symbol)
-            roles_by_symbol.setdefault(p_nt.symbol, set()).add(p_nt.sender)
-            roles_by_symbol[p_nt.symbol].add("all_party")
-
-        nt_coverage = {}
-        for symbol in self.state_grammar_symbols:
-            all_k_paths = self.grammar.generate_all_k_paths(
-                self.diversity_k, symbol, overlap_to_root
-            )
-
-            covered_k_paths = set()
-            if symbol in messages_by_nt:
-                for tree in messages_by_nt[symbol]:
-                    covered_k_paths.update(
-                        self.grammar._extract_k_paths_from_tree(
-                            tree, self.diversity_k, overlap_to_root
-                        )
-                    )
-            if symbol in roles_by_symbol:
-                for role in roles_by_symbol[symbol]:
-                    paths_by_role[role]["all"].extend(all_k_paths)
-                    paths_by_role[role]["all_unique"].update(all_k_paths)
-                    paths_by_role[role]["covered"].extend(covered_k_paths)
-                    paths_by_role[role]["covered_unique"].update(covered_k_paths)
-            nt_coverage[symbol] = (len(covered_k_paths), len(all_k_paths))
-        for role, paths in paths_by_role.items():
-            nt_coverage[NonTerminal("__role_" + role)] = (
-                len(paths["covered"]),
-                len(paths["all"]),
-            )
-            nt_coverage[NonTerminal("__role_unique_" + role)] = (
-                len(paths["covered_unique"]),
-                len(paths["all_unique"]),
-            )
-        return nt_coverage
-    """
 
     def set_coverage_goal(self, goal: CoverageGoal) -> None:
         self.coverage_goal = goal

@@ -1,6 +1,7 @@
 import random
 import struct
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from enum import Enum, auto
 
 from fandango import DerivationTree
@@ -471,8 +472,7 @@ class BytesSwapMutation(ByteLevelMutationOperator):
 
             input[second_start : second_start + len(first_temp)] = first_temp
             input[
-                second_start
-                + len(first_temp) : second_start
+                second_start + len(first_temp) : second_start
                 + len(first_temp)
                 + len(middle_temp)
             ] = middle_temp
@@ -495,8 +495,7 @@ class BytesSwapMutation(ByteLevelMutationOperator):
 
             input[first_start : first_start + len(second_temp)] = second_temp
             input[
-                first_start
-                + len(second_temp) : first_start
+                first_start + len(second_temp) : first_start
                 + len(second_temp)
                 + len(middle_temp)
             ] = middle_temp
@@ -548,11 +547,12 @@ def havoc_mutations() -> tuple[ByteLevelMutationOperator, ...]:
     )
 
 
+HAVOC_MUTATIONS = havoc_mutations()
+
+
 def havoc_mutate(
     input_: DerivationTree,
-    mutations: (
-        list[ByteLevelMutationOperator] | tuple[ByteLevelMutationOperator, ...]
-    ) = havoc_mutations(),
+    mutations: Sequence[ByteLevelMutationOperator] = HAVOC_MUTATIONS,
     max_stack_pow: int = 7,
     nop_probability: float = 0,
 ) -> bytes:

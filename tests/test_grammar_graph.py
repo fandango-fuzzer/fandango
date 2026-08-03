@@ -2,16 +2,16 @@ import unittest
 from typing import TypeGuard
 
 from fandango.api import Fandango
-from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.grammarnavigator import GrammarNavigator
 from fandango.io.navigation.packetnavigator import PacketNavigator
-from fandango.language import NonTerminal, DerivationTree
+from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
+from fandango.language import DerivationTree, NonTerminal
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.node_visitors.grammar_graph_converter import (
     GrammarGraphNode,
 )
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
-from tests.utils import RESOURCES_ROOT, DOCS_ROOT
+from tests.utils import DOCS_ROOT, RESOURCES_ROOT
 
 
 class TestGrammarGraph(unittest.TestCase):

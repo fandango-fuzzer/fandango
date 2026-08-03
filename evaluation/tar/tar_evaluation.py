@@ -2,7 +2,7 @@ import subprocess
 import tempfile
 import time
 
-from fandango.evolution.algorithm import Fandango, LoggerLevel
+from fandango.evolution.algorithm import LoggerLevel, SimpleGeneticAlgorithm
 from fandango.language.parse.parse import parse
 
 
@@ -32,7 +32,9 @@ def evaluate_tar(
 
     time_in_an_hour = time.time() + seconds
 
-    fandango = Fandango(grammar, constraints, logger_level=LoggerLevel.ERROR)
+    fandango = SimpleGeneticAlgorithm(
+        grammar, constraints, logger_level=LoggerLevel.ERROR
+    )
     fan_gen = fandango.generate()
     for solution in fan_gen:
         solutions.append(solution)

@@ -1,18 +1,20 @@
 import argparse
-from collections.abc import Callable
 import glob
 import os
-from pathlib import Path
 import shutil
-from ansi_styles import ansiStyles as styles
 import sys
 import tempfile
+from collections.abc import Callable
+from pathlib import Path
 from typing import Any, Optional
 
+from ansi_styles import ansiStyles as styles
+
 import fandango
-from fandango import Fandango, DerivationTree
+from fandango import DerivationTree, Fandango
 from fandango.cli.output import open_file, output_population, output_solution
 from fandango.cli.parser import get_parser
+from fandango.cli.upgrade import check_for_fandango_update
 from fandango.cli.utils import (
     get_file_mode,
     make_fandango_settings,
@@ -21,18 +23,12 @@ from fandango.cli.utils import (
     parse_file,
     validate,
 )
-from fandango.cli.upgrade import check_for_fandango_update
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
-from fandango.converters.FandangoConverter import FandangoConverter
 from fandango.converters.antlr.ANTLRFandangoConverter import ANTLRFandangoConverter
-from fandango.converters.bt.BTFandangoConverter import (
-    BitfieldOrder,
-    BTFandangoConverter,
-    Endianness,
-)
 from fandango.converters.dtd.DTDFandangoConverter import DTDFandangoConverter
 from fandango.converters.fan.FandangoFandangoConverter import FandangoFandangoConverter
+from fandango.converters.FandangoConverter import FandangoConverter
 from fandango.converters.state.FandangoStateConverter import FandangoStateConverter
 from fandango.errors import FandangoError, FandangoParseError
 from fandango.language.grammar import FuzzingMode
@@ -77,7 +73,6 @@ def set_command(args: argparse.Namespace) -> None:
     """Set global settings"""
     global DEFAULT_FAN_CONTENT
     global DEFAULT_CONSTRAINTS
-    global DEFAULT_SETTINGS
 
     if args.fan_files:
         LOGGER.info("Parsing Fandango content")
@@ -178,6 +173,19 @@ def fuzz_command(args: argparse.Namespace) -> None:
     )
     LOGGER.debug("Evolving population")
 
+    if getattr(args, "output", None) is not None:
+        p = Path(args.output)
+        if p.exists():
+            LOGGER.info(f"Removing existing output file {p}")
+            p.unlink()
+
+    if getattr(args, "directory", None) is not None:
+        out_dir = Path(args.directory)
+        if out_dir.exists() and (not out_dir.is_dir() or len(os.listdir(out_dir)) > 0):
+            raise FandangoError(
+                f"Output directory {out_dir} is not a directory or is not empty"
+            )
+
     def solutions_callback(sol: DerivationTree, i: int) -> None:
         return output_solution(sol, args, i, file_mode)
 
@@ -209,9 +217,9 @@ def fuzz_command(args: argparse.Namespace) -> None:
         output_population(population, args, file_mode=file_mode, output_on_stdout=False)
         generated_files = glob.glob(args.directory + "/*")
         generated_files.sort()
-        assert len(generated_files) == len(
-            population
-        ), f"len(generated_files): {len(generated_files)}, len(population): {len(population)}"
+        assert len(generated_files) == len(population), (
+            f"len(generated_files): {len(generated_files)}, len(population): {len(population)}"
+        )
 
         errors = 0
         for i in range(len(generated_files)):
@@ -392,6 +400,17 @@ def convert_command(args: argparse.Namespace) -> None:
                 converter = DTDFandangoConverter(input_file)
                 spec = converter.to_fan()
             case "bt" | "010":
+                if (3, 11) <= sys.version_info < (3, 12):
+                    raise FandangoError(
+                        "BTFandangoConverter is not supported in Python 3.11 because py010parser does not support it"
+                    )
+
+                from fandango.converters.bt.BTFandangoConverter import (
+                    BitfieldOrder,
+                    BTFandangoConverter,
+                    Endianness,
+                )
+
                 if args.endianness == "little":
                     endianness = Endianness.LittleEndian
                 else:

@@ -1,9 +1,10 @@
 import abc
 import enum
-from typing import TYPE_CHECKING, Any
 from collections.abc import Sequence
-from fandango.language.tree import DerivationTree
+from typing import TYPE_CHECKING, Any
+
 from fandango.constraints.base import GeneticBase
+from fandango.language.tree import DerivationTree
 
 if TYPE_CHECKING:
     import fandango

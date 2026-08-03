@@ -1,18 +1,19 @@
-from abc import ABC, abstractmethod
-from collections.abc import Callable, Generator
 import itertools
 import logging
 import time
+from abc import ABC, abstractmethod
+from collections.abc import Callable, Generator
 from typing import IO, Any, Optional, cast
+
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
+from fandango.errors import FandangoFailedError, FandangoParseError
+from fandango.evolution.algorithm import DefaultAlgorithm
 from fandango.language.grammar import FuzzingMode, ParsingMode
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.parse.parse import parse
 from fandango.language.tree import DerivationTree
-from fandango.logger import LOGGER
-from fandango.evolution.algorithm import Fandango as FandangoStrategy
-from fandango.errors import FandangoFailedError, FandangoParseError
+from fandango.logger import LOGGER, set_raise_on_logged_exceptions
 
 DEFAULT_MAX_GENERATIONS = 500
 
@@ -201,7 +202,7 @@ class Fandango(FandangoBase):
             start_symbol=start_symbol,
             includes=includes,
         )
-        self.fandango: Optional[FandangoStrategy] = None
+        self.fandango: Optional[DefaultAlgorithm] = None
 
     @classmethod
     def _with_parsed(
@@ -247,6 +248,8 @@ class Fandango(FandangoBase):
         LOGGER.info("---------- Initializing base population ----------")
 
         start_symbol = settings.pop("start_symbol", self._start_symbol)
+        if settings.pop("warnings_are_errors", False):
+            set_raise_on_logged_exceptions(True)
 
         constraints = [] if skip_base_constraints else self.constraints[:]
 
@@ -262,7 +265,7 @@ class Fandango(FandangoBase):
                 )
                 constraints += cast(list[Constraint | SoftValue], extra_constraints)
 
-        self.fandango = FandangoStrategy(
+        self.fandango = DefaultAlgorithm(
             self.grammar, constraints, start_symbol=start_symbol, **settings
         )
         LOGGER.info("---------- Done initializing base population ----------")
@@ -301,6 +304,7 @@ class Fandango(FandangoBase):
         desired_solutions: Optional[int],
         max_generations: Optional[int],
         infinite: bool,
+        use_fcc: bool,
     ) -> tuple[Optional[int], Optional[int], bool]:
         """
         Sanitize the runtime end settings and emit warnings if necessary.
@@ -338,6 +342,8 @@ class Fandango(FandangoBase):
             if max_generations is not None:
                 LOGGER.warning("Infinite mode is activated, overriding max_generations")
             max_generations = None  # infinite overrides max_generations
+            if use_fcc:
+                desired_solutions = None
 
         return max_generations, desired_solutions, infinite
 
@@ -407,6 +413,7 @@ class Fandango(FandangoBase):
                 desired_solutions,
                 max_generations,
                 infinite,
+                settings.get("use_fcc", False),
             )
         )
 

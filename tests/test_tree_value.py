@@ -1,4 +1,5 @@
 import pytest
+
 from fandango.errors import FandangoConversionError
 from fandango.language.symbols.terminal import Terminal
 from fandango.language.tree import DerivationTree
@@ -6,9 +7,9 @@ from fandango.language.tree_value import (
     DIRECT_ACCESS_METHODS_BASE_TO_FIRST_ARG_TYPE,
     DIRECT_ACCESS_METHODS_BASE_TO_UNDERLYING_TYPE,
     TreeValue,
+    TreeValueType,
     trailing_bits_to_int,
 )
-from fandango.language.tree_value import TreeValue, TreeValueType, trailing_bits_to_int
 
 A_BITS = [int(bit) for bit in f"{ord('a'):08b}"]
 ONE_BITS = [int(bit) for bit in f"{ord('1'):08b}"]
@@ -333,9 +334,9 @@ def test_to_underlying_type_no_arg(method):
         check_method(DerivationTree(Terminal(b"1")), method)
         check_method(TreeValue(b"1"), method)
         run += 1
-    assert (
-        run > 0
-    ), f"{method} not found in dirs of 1, {set(dir(1) + dir('1') + dir(b'1'))}"
+    assert run > 0, (
+        f"{method} not found in dirs of 1, {set(dir(1) + dir('1') + dir(b'1'))}"
+    )
 
 
 UNDERLYING_TYPE_INT_ARG = [
@@ -380,9 +381,9 @@ def test_to_underlying_type_int_arg(method):
         check_method(DerivationTree(Terminal(left[2])), method, right[2])
         check_method(TreeValue(left[2]), method, right[2])
         run += 1
-    assert (
-        run > 0
-    ), f"{method} not found in dirs of 1, {set(dir(1) + dir('1') + dir(b'1'))}"
+    assert run > 0, (
+        f"{method} not found in dirs of 1, {set(dir(1) + dir('1') + dir(b'1'))}"
+    )
 
 
 MODS = [
@@ -420,9 +421,9 @@ def test_to_underlying_type_mod(method):
         )
         assert not callable(getattr(TreeValue(left[2]), method)(right[2]))
         run += 1
-    assert (
-        run > 0
-    ), f"{method} not found in dirs of 1, {set(dir(1) + dir('1') + dir(b'1'))}"
+    assert run > 0, (
+        f"{method} not found in dirs of 1, {set(dir(1) + dir('1') + dir(b'1'))}"
+    )
 
 
 FORMATS = [
@@ -456,9 +457,9 @@ def test_to_underlying_type_format(method):
         check_method(TreeValue(b"{}"), method, b"1")
         run += 1
 
-    assert (
-        run > 0
-    ), f"{method} not found in dirs of 1, {set(dir(1) + dir('1') + dir(b'1'))}"
+    assert run > 0, (
+        f"{method} not found in dirs of 1, {set(dir(1) + dir('1') + dir(b'1'))}"
+    )
 
 
 FORMAT_MAP = [
@@ -550,9 +551,9 @@ def test_to_first_arg(method):
         assert not callable(getattr(DerivationTree(Terminal(b"1")), method)(b"1"))
         assert not callable(getattr(TreeValue(b"1"), method)(b"1"))
         run += 1
-    assert (
-        run > 0
-    ), f"{method} not found in dirs of 1, {set(dir(1) + dir('1') + dir(b'1'))}"
+    assert run > 0, (
+        f"{method} not found in dirs of 1, {set(dir(1) + dir('1') + dir(b'1'))}"
+    )
 
 
 def test_check_all_direct_methods_tested():
@@ -582,5 +583,5 @@ def test_tree_value_direct_access_non_base_type(base_value):
     with pytest.warns(DeprecationWarning):
         assert base_value.startswith(DerivationTree(Terminal("Hello")))
 
-    with pytest.raises(Exception):
+    with pytest.raises(AssertionError):
         base_value.startswith(1.0)  # float is illegal base type

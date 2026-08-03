@@ -165,6 +165,15 @@ def _get_main_parser(in_command_line: bool) -> argparse.ArgumentParser:
             help="Parser implementation to use (default: 'auto': use C++ parser code if available, otherwise Python).",
         )
 
+        main_parser.add_argument(
+            "--enable-experimental-module",
+            dest="enable_experimental_modules",
+            type=str,
+            help="Enable warnings about experimental modules. Can be given multiple times. Example: --enable-experimental-module execution",
+            default=[],
+            action="append",
+        )
+
     return main_parser
 
 
@@ -416,9 +425,9 @@ def _get_file_parser() -> argparse.ArgumentParser:
     )
     output_group.add_argument(
         "--format",
-        choices=["string", "bits", "tree", "grammar", "value", "repr", "none"],
+        choices=["string", "bits", "tree", "grammar", "value", "repr", "1", "none"],
         default="string",
-        help="Produce output(s) as string (default), as a bit string, as a derivation tree, as a grammar, as a Python value, in internal representation, or none.",
+        help="Produce output(s) as string (default), as a bit string, as a derivation tree, as a grammar, as a Python value, in internal representation, as the constant '1' (for testing), or none.",
     )
     output_group.add_argument(
         "--validate",
@@ -452,6 +461,25 @@ def _populate_fuzz_parser(parser: argparse.ArgumentParser) -> None:
         default=None,
         help="Write output to OUTPUT (default: stdout).",
     )
+    """The following two arguments can be used to stop Fandango once a specified objective is met.
+    `--stop-criterion` accepts a lambda function that is evaluated on each derivation tree.
+    `--stop-after-seconds` terminates execution after the specified number of seconds.
+    These options are useful for setting up experiments.
+    """
+    parser.add_argument(
+        "--stop-criterion",
+        type=str,
+        default=None,
+        dest="stop_criterion",
+        help='stop criterion to be used. This is a lambda function which is run on every new solution. Example: `lambda t: t.to_string().startswith("abc")`. Is `eval()`ed, so be careful!',
+    )
+    parser.add_argument(
+        "--stop-after-seconds",
+        type=int,
+        dest="stop_after_seconds",
+        default=None,
+        help="Stop after a given number of seconds, evaluated at each generation beginning. Example: `--stop-after-seconds 60`",
+    )
 
     command_group = parser.add_argument_group("command invocation settings")
 
@@ -460,6 +488,13 @@ def _populate_fuzz_parser(parser: argparse.ArgumentParser) -> None:
         choices=["stdin", "filename", "libfuzzer"],
         default="filename",
         help="When invoking COMMAND, choose whether Fandango input will be passed as standard input (`stdin`), as last argument on the command line (`filename`) (default), or to a libFuzzer style harness compiled to a shared .so/.dylib object (`libfuzzer`).",
+    )
+    command_group.add_argument(
+        "--fcc",
+        default=False,
+        dest="use_fcc",
+        action="store_true",
+        help="The command to be invoked is a fcc-compiled binary.",
     )
     command_group.add_argument(
         "test_command",

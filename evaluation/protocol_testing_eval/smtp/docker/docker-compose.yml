@@ -1,0 +1,9 @@
+version: "3.9"
+
+services:
+  opensmtpd:
+    build: opensmtpd
+    container_name: opensmtpd_coverage
+    ports:
+      - "8025:8025"           # expose SMTP locally
+    tty: true

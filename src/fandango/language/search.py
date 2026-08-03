@@ -4,8 +4,8 @@ search criteria.
 """
 
 import abc
-from typing import Generic, Optional, Any, TypeVar
 import warnings
+from typing import Any, Generic, Optional, TypeVar
 
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
@@ -228,13 +228,15 @@ class NonTerminalSearch(abc.ABC):
 
     def __repr__(self) -> str:
         warnings.warn(
-            f"Don't rely on the __repr__ impl on {self.__class__.__name__}, use method specific to your usecase. Report this as a bug if this is called from within Fandango."
+            f"Don't rely on the __repr__ impl on {self.__class__.__name__}, use method specific to your usecase. Report this as a bug if this is called from within Fandango.",
+            stacklevel=2,
         )
         return f"{self.__class__.__name__}({self.format_as_spec()})"
 
     def __str__(self) -> str:
         warnings.warn(
-            f"Don't rely on the __str__ impl on {self.__class__.__name__}, use method specific to your usecase. Report this as a bug if this is called from within Fandango."
+            f"Don't rely on the __str__ impl on {self.__class__.__name__}, use method specific to your usecase. Report this as a bug if this is called from within Fandango.",
+            stacklevel=2,
         )
         return self.format_as_spec()
 
@@ -332,7 +334,7 @@ class RuleSearch(NonTerminalSearch):
         if scope and self.symbol in scope:
             return [Tree(scope[self.symbol])]
         else:
-            return list(map(Tree, tree.find_all_trees(self.symbol)))
+            return [Tree(t) for t in tree.find_subtrees(self.symbol)]
 
     def find_direct(
         self,
@@ -548,7 +550,10 @@ class SelectiveSearch(NonTerminalSearch):
 
     def _find(self, bases: list[Container]) -> list[Container]:
         result = []
-        for symbol, is_direct, items in zip(*zip(*self.symbols), self.slices):
+        for symbol, is_direct, items in zip(
+            *zip(*self.symbols, strict=False), self.slices, strict=False
+        ):
+            children: list[list[DerivationTree]]
             if is_direct:
                 children = [
                     t.find_direct_trees(symbol)
@@ -557,7 +562,9 @@ class SelectiveSearch(NonTerminalSearch):
                 ]
             else:
                 children = [
-                    t.find_all_trees(symbol) for base in bases for t in base.get_trees()
+                    list(t.find_subtrees(symbol))
+                    for base in bases
+                    for t in base.get_trees()
                 ]
             if items is not None:
                 for index, child in enumerate(children):
@@ -586,7 +593,7 @@ class SelectiveSearch(NonTerminalSearch):
 
     def format_as_spec(self) -> str:
         slice_reprs: list[str] = []
-        for symbol, is_direct, items in zip(*self.symbols, self.slices):
+        for symbol, is_direct, items in zip(*self.symbols, self.slices, strict=False):
             slice_repr = f"{'' if is_direct else '*'}{symbol.format_as_spec()}"
             if items is not None:
                 slice_repr += ": "

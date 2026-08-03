@@ -5,18 +5,18 @@ from collections.abc import Sequence
 from io import UnsupportedOperation
 from typing import Any, Optional, cast
 
-from fandango.constraints.soft import SoftValue
-from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
-from fandango.errors import FandangoValueError
-from fandango.constraints.constraint import Constraint
 from fandango.constraints.comparison import ComparisonConstraint
 from fandango.constraints.conjunction import ConjunctionConstraint
+from fandango.constraints.constraint import Constraint
 from fandango.constraints.disjunct import DisjunctionConstraint
 from fandango.constraints.exists import ExistsConstraint
 from fandango.constraints.expression import ExpressionConstraint
-from fandango.constraints.forall import ForallConstraint
 from fandango.constraints.failing_tree import Comparison
-from fandango.language import NonTerminalSearch, NodeType
+from fandango.constraints.forall import ForallConstraint
+from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
+from fandango.constraints.soft import SoftValue
+from fandango.errors import FandangoValueError
+from fandango.language import NodeType, NonTerminalSearch
 from fandango.language.grammar import FuzzingMode
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.grammar_settings import GrammarSetting
@@ -1206,7 +1206,7 @@ class SearchProcessor(FandangoParserVisitor):
             kvpairs, searches, search_map = self.visitDouble_starred_kvpairs(
                 ctx.double_starred_kvpairs()
             )
-            keys_, values_ = zip(*kvpairs)
+            keys_, values_ = zip(*kvpairs, strict=True)
             keys.extend(keys_)
             values.extend(values_)
         else:

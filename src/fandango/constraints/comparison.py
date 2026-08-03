@@ -1,7 +1,10 @@
-from copy import copy
 import math
+from copy import copy
 from typing import Any, Optional, Unpack, cast
+
 from fandango.constraints.base import GeneticBaseInitArgs
+from fandango.constraints.constraint import Constraint
+from fandango.constraints.constraint_visitor import ConstraintVisitor
 from fandango.constraints.failing_tree import (
     ApplyAllSuggestions,
     ApplyFirstSuggestion,
@@ -10,21 +13,21 @@ from fandango.constraints.failing_tree import (
     NopSuggestion,
     Suggestion,
 )
+from fandango.constraints.fitness import (
+    ConstraintFitness,
+    DistanceAwareConstraintFitness,
+)
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.search import (
     AnnotatedContainer,
     AnnotatedSearch,
     NonTerminalSearch,
 )
-from fandango.language.tree import DerivationTree
-from fandango.constraints.constraint_visitor import ConstraintVisitor
-from fandango.constraints.constraint import Constraint
-from fandango.constraints.fitness import (
-    ConstraintFitness,
-    DistanceAwareConstraintFitness,
-)
 from fandango.language.symbols.non_terminal import NonTerminal
+from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER, print_exception
+
+_MAX_FAILED_COMPARISON_FITNESS = 1 - 1e-4
 
 
 class EqualComparisonSuggestion(Suggestion):
@@ -88,8 +91,8 @@ class ComparisonConstraint(Constraint):
         operator: Comparison,
         left: str,
         right: str,
-        left_searches: dict[str, NonTerminalSearch] = dict(),
-        right_searches: dict[str, NonTerminalSearch] = dict(),
+        left_searches: Optional[dict[str, NonTerminalSearch]] = None,
+        right_searches: Optional[dict[str, NonTerminalSearch]] = None,
         **kwargs: Unpack[GeneticBaseInitArgs],
     ) -> None:
         """
@@ -101,9 +104,11 @@ class ComparisonConstraint(Constraint):
         :param dict[str, NonTerminalSearch] right_searches: The searches to use for the right side.
         :param kwargs: Additional keyword arguments.
         """
-        assert (
-            "searches" not in kwargs
-        ), "don't provide searches combination, instead provide left_searches and right_searches"
+        left_searches = left_searches or {}
+        right_searches = right_searches or {}
+        assert "searches" not in kwargs, (
+            "don't provide searches combination, instead provide left_searches and right_searches"
+        )
         searches: dict[str, NonTerminalSearch] = {}
         searches.update(
             {
@@ -302,11 +307,17 @@ class ComparisonConstraint(Constraint):
         if self._operator.compare(left, right):
             return 1.0, NopSuggestion()
 
-        dist_norm = _distance_norm(left, right)
-        fitness = (1.0 - dist_norm) if dist_norm is not None else 0.0
         if self._operator == Comparison.NOT_EQUAL:
             # NOT_EQUAL does not span a range to the fitness is immediately zero if they are equal (introduced by @henryhchchc, moved by @riesentoaster)
             fitness = 0.0
+        else:
+            dist_norm = _distance_norm(left, right)
+            fitness = (1.0 - dist_norm) if dist_norm is not None else 0.0
+
+            # fitness should never be 1.0 here, as the comparison failed above
+            # this is especially important for strict inequalities like 2 > 2,
+            # where the distance norm is 0 and would wrongly yield fitness 1.0
+            fitness = min(fitness, _MAX_FAILED_COMPARISON_FITNESS)
 
         suggestions = []
 
@@ -357,7 +368,7 @@ def _distance_norm(left: Any, right: Any) -> Optional[float]:
         except Exception:
             return None
 
-    if dist is float | int:
+    if isinstance(dist, (float, int)):
         dist = 2 * (_sigmoid(abs(dist)) - 0.5)
         return dist
     else:

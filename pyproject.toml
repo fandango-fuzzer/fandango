@@ -1,14 +1,25 @@
 [build-system]
-requires = ["scikit-build-core>=0.11.6", "setuptools>=73.0.1"]
-build-backend = "scikit_build_core.setuptools.build_meta"
+requires = ["scikit-build-core>=1.0.2"]
+build-backend = "scikit_build_core.build"
 
 [tool.scikit-build]
 wheel.packages = ["src/fandango"]
+build-dir = "build"
+# redirect mode (default) keeps CMake artifacts out of the source tree; see
+# fandango/beartype.py for the beartype.claw compatibility shim (beartype/beartype#556).
+# The C++ parser extension installs as top-level sa_fandango_cpp_parser (CMakeLists.txt).
 
-# If you update this info, please also update the version in setup.py
+[[tool.scikit-build.overrides]]
+if.env.FANDANGO_SKIP_CPP_PARSER = true
+wheel.cmake = false
+
+[[tool.scikit-build.overrides]]
+if.env.FANDANGO_REQUIRE_BINARY_BUILD = true
+wheel.cmake = true
+
 [project]
 name = "fandango-fuzzer"
-version = "1.1.0rc1"
+version = "1.1.1"
 authors = [
     { name = "José Antonio Zamudio Amaya", email = "jose.zamudio@cispa.de" },
     { name = "Marius Smytzek", email = "marius.smytzek@cispa.de" },
@@ -17,13 +28,13 @@ authors = [
 description = "Fandango produces myriads of high-quality random inputs to test programs, giving users unprecedented control over format and shape of the inputs."
 readme = "README.md"
 license = { file = "LICENSE.md" }
-requires-python = ">=3.10,<4.0"
+requires-python = ">=3.11,<4.0"
 classifiers = [
     "Intended Audience :: Science/Research",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering",
     "Topic :: Software Development :: Testing",
@@ -32,19 +43,21 @@ classifiers = [
 dependencies = [
     "ansi_styles>=0.2.2",
     "antlr4-python3-runtime>=4.13",
+    "astar>=0.99",
+    "beartype>=0.21.0,!=0.22.6,!=0.22.7",
     "cachedir_tag>=0.0.3",
+    "cachetools>=5.5.2",
     "dill>=0.3.7",
     "exrex>=0.12.0",
     "gnureadline>=8.2.13 ; platform_system != 'Windows' and implementation_name != 'pypy'",
     "lxml>=5.3.2",
+    "packaging>=25.0",
     "py010parser>=0.1.18",
     "pyreadline3>=3.5.4; platform_system == 'Windows'",
     "regex>=2024.11.6",
     "tdigest>=0.5.2.2",
     "thefuzz>=0.22",
     "xdg-base-dirs>=6.0.2",
-    "beartype>=0.21.0,!=0.22.6,!=0.22.7",
-    "astar>=0.99",
 ]
 
 [project.optional-dependencies]
@@ -61,30 +74,34 @@ test = [
     "python-dateutil>=2.9.0.post0",
     "docutils>=0.20.1",
     "tccbox>=2025.6.6",             # We have upgraded from ==2024.7.1 (the version ISLa used) because it is not compatible with Python 3.12 anymore :(
+    "pandas>=2.3.3",                # for evaluation and benchmarking
+    "numpy>=2.1.3",
 ]
 
 development = [
     "fandango-fuzzer[test]",
-    "black>=25.1.0",
+    "matplotlib>=3.10.0",
     "mypy>=1.16.0",
     "pre-commit>=4.2.0",
     "pygls>=2.0.0a4",           # language server
+    "ruff>=0.14.0",
+    "scikit-build-core>=1.0.2",
     "speedy-antlr-tool>=1.4.3",
-    "types-setuptools>=73.0.1", # enable mypy to check setup.py
-    "scikit-build-core>=0.11.6", # For type checking
+    "types-cachetools>=5.5.2",  # enable mypy to check cachetools
 ]
 
 book = [
-    "fandango-fuzzer[development]", # need black and faker
+    "fandango-fuzzer[development]", # need e.g. ruff and faker
     "aiosmtpd>=1.4.6",              # example server for protocol testing
     "docutils>=0.20.1",             # Jupyter-book needs docutils<=0.20
     "ghp-import>=2.1.0",
     "graphviz>=0.20.3",
     "jupyter-book>=1.0.4,<2.0.0",
     "pagelabels>=1.2.1",
-    "pyppeteer>=2.0.0",
     "sphinxcontrib-mermaid>=1.0.0",
 ]
+
+full = ["fandango-fuzzer[book,development,test]"]
 
 [project.urls]
 homepage = "https://fandango-fuzzer.github.io/"
@@ -94,9 +111,26 @@ repository = "https://github.com/fandango-fuzzer/fandango/"
 [project.scripts]
 fandango = "fandango.cli:main"
 
-[tool.black]
+[tool.ruff]
 line-length = 88
-target-version = ['py311']
+target-version = "py311"
+exclude = [
+    "build",
+    "dist",
+    "fcc",
+    "evaluation/protocol_testing_eval/profuzzbench",
+    "src/fandango/language/parser/FandangoLexer.py",
+    "src/fandango/language/parser/sa_fandango.py",
+    "src/fandango/language/parser/*Parser*.py",
+    "src/fandango/converters/antlr/ANTLRv4*.py",
+    "src/fandango/converters/antlr/LexerAdaptor*.py",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I"]
+ignore = [
+    "E501", # line too long
+]
 
 [tool.mypy]
 follow_untyped_imports = true
@@ -104,6 +138,10 @@ check_untyped_defs = true
 enable_error_code = ['ignore-without-code']
 # See https://mypy.readthedocs.io/en/stable/config_file.html#confval-exclude
 exclude = [
+    'build/',
+    'dist/',
+    'fcc/*',
+    'evaluation/protocol_testing_eval/profuzzbench/.*',
     'src/fandango/language/parser/FandangoLexer\.py$',
     'src/fandango/language/parser/FandangoParser\.py$',
     'src/fandango/language/parser/FandangoParserVisitor\.py$',
@@ -113,7 +151,14 @@ exclude = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "-n auto --timeout 300 --durations=10 --pythonhashseed=1 --benchmark-max-time=10 --benchmark-disable"
+# -n auto: use all cores
+# --timeout 300: timeout after 300 seconds
+# --durations=10: show the 10 slowest tests
+# --pythonhashseed=1: use a fixed hash seed
+# --benchmark-max-time=10: stop after 10 seconds for each benchmark
+# --benchmark-disable: disable benchmarks unless manually overwritten
+# --maxschedchunk=1: max number of chunks to schedule to balance load across cores and schedule long-running tests first (see conftest.py)
+addopts = "-n auto --timeout 300 --durations=10 --pythonhashseed=1 --benchmark-max-time=10 --benchmark-disable --maxschedchunk=1"
 filterwarnings = [
     "error",                                                  # warnings are errors
     "ignore::pytest_benchmark.logger.PytestBenchmarkWarning", # benchmarks don't run with xdist, that's fine, they are run manually in the CI

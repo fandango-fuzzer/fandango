@@ -5,12 +5,12 @@ import sys
 import types
 
 import antlr4
-from antlr4 import InputStream, CommonTokenStream, Token
-from antlr4.tree.Tree import ParseTree
+from antlr4 import CommonTokenStream, InputStream, Token
 from antlr4.error.ErrorListener import ErrorListener
+from antlr4.tree.Tree import ParseTree
 
-from .FandangoParser import FandangoParser
 from .FandangoLexer import FandangoLexer
+from .FandangoParser import FandangoParser
 
 # -------------------------------------------------------------------------------
 # User API
@@ -99,7 +99,7 @@ def parse(
 # -------------------------------------------------------------------------------
 
 try:
-    from . import sa_fandango_cpp_parser
+    import sa_fandango_cpp_parser
 except ImportError:
     USE_CPP_IMPLEMENTATION = False
 

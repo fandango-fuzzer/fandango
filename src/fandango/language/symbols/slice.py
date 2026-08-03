@@ -1,4 +1,4 @@
-from fandango.language.symbols import Symbol, SymbolType
+from fandango.language.symbols.symbol import Symbol, SymbolType
 from fandango.logger import LOGGER
 
 

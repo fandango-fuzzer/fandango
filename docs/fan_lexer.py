@@ -6,8 +6,7 @@
 #     $ ./fan_lexer.py FILE...
 
 from pygments.lexers.python import PythonLexer
-from pygments.token import *
-from pygments.lexer import words
+from pygments.token import Keyword, Name
 
 
 class FanLexer(PythonLexer):
@@ -25,6 +24,7 @@ class FanLexer(PythonLexer):
 
 
 if __name__ == "__main__":
-    import os, sys
+    import os
+    import sys
 
     os.system(f"pygmentize -x -l {sys.argv[0]}:FanLexer " + " ".join(sys.argv[1:]))
