@@ -56,7 +56,6 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
         mutation_rate: float = 0.2,
         destruction_rate: float = 0.0,
         logger_level: Optional[LoggerLevel] = None,
-        warnings_are_errors: bool = False,
         best_effort: bool = False,
         random_seed: Optional[int] = None,
         start_symbol: str = "<start>",
@@ -91,7 +90,6 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
         self.destruction_rate = destruction_rate
         self.start_symbol = start_symbol
         self.tournament_size = tournament_size
-        self.warnings_are_errors = warnings_are_errors
         self.best_effort = best_effort
         self.current_max_nodes = max_nodes
         self.diversity_k = diversity_k
@@ -106,7 +104,6 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
             self.population_manager: PopulationManager = IoPopulationManager(
                 grammar,
                 start_symbol,
-                warnings_are_errors,
             )
             self.evaluator: Evaluator = IoEvaluator(
                 grammar,
@@ -114,13 +111,11 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
                 expected_fitness,
                 diversity_k,
                 diversity_weight,
-                warnings_are_errors,
             )
         else:
             self.population_manager = PopulationManager(
                 grammar,
                 start_symbol,
-                warnings_are_errors,
             )
             self.evaluator = Evaluator(
                 grammar,
@@ -128,7 +123,6 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
                 expected_fitness,
                 diversity_k,
                 diversity_weight,
-                warnings_are_errors,
                 stop_criterion,
                 use_fcc,
                 put,

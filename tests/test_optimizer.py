@@ -70,7 +70,6 @@ class GeneticTest(unittest.TestCase):
         manager = PopulationManager(
             grammar=self.fandango.grammar,
             start_symbol=self.fandango.start_symbol,
-            warnings_are_errors=True,
         )
         population: list[DerivationTree] = []
         expected_count = 10
@@ -96,7 +95,6 @@ class GeneticTest(unittest.TestCase):
         manager = PopulationManager(
             grammar=self.fandango.grammar,
             start_symbol=self.fandango.start_symbol,
-            warnings_are_errors=True,
         )
 
         initial_count = 10

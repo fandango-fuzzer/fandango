@@ -31,7 +31,6 @@ class Evaluator:
         expected_fitness: float,
         diversity_k: int,
         diversity_weight: float,
-        warnings_are_errors: bool = False,
         stop_criterion: Optional[Callable[[DerivationTree], bool]] = None,
         use_fcc: bool = False,
         put: Optional[str] = None,
@@ -44,7 +43,6 @@ class Evaluator:
         self._expected_fitness = expected_fitness
         self._diversity_k = diversity_k
         self._diversity_weight = diversity_weight
-        self._warnings_are_errors = warnings_are_errors
         self._fitness_cache: LRUCache[
             int, tuple[float, list[FailingTree], Suggestion]
         ] = LRUCache(maxsize=cache_size())
@@ -344,7 +342,6 @@ class IoEvaluator(Evaluator):
         expected_fitness: float,
         diversity_k: int,
         diversity_weight: float,
-        warnings_are_errors: bool = False,
     ):
         super().__init__(
             grammar,
@@ -352,7 +349,6 @@ class IoEvaluator(Evaluator):
             expected_fitness,
             diversity_k,
             diversity_weight,
-            warnings_are_errors,
         )
         self._submitted_solutions: set[int] = set()
         self._hold_back_solutions: set[DerivationTree] = set()
