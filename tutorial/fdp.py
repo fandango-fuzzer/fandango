@@ -32,7 +32,7 @@ One message is one line:
 * ``LEN``       is the decimal length of the body ``"<TYPE> <payload>"``
 * ``CRC``       is the CRC-16/CCITT (4 hex digits) of that same body
 
-Example:  ``FDP1 MSG to=general&body=hello world LEN=31 CRC=1b7c``
+Example:  ``FDP1 MSG to=general&body=hello world LEN=31 CRC=5248``
 """
 
 import re
@@ -58,20 +58,21 @@ _TRAILER = re.compile(r"^(?P<body>.*) LEN=(?P<len>\d+) CRC=(?P<crc>[0-9a-f]+)$")
 # Typed values passed between pipeline stages
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class Frame:
     version: str
     msgtype: str
-    body: str             # "<TYPE> <payload>" - the bytes LEN and CRC describe
-    payload: str          # body without the leading type token
-    length: int           # claimed body length (from the LEN field)
-    crc: str              # claimed checksum (from the CRC field, 4 hex digits)
+    body: str  # "<TYPE> <payload>" - the bytes LEN and CRC describe
+    payload: str  # body without the leading type token
+    length: int  # claimed body length (from the LEN field)
+    crc: str  # claimed checksum (from the CRC field, 4 hex digits)
 
 
 @dataclass
 class Message:
     frame: Frame
-    fields: dict          # parsed key -> value
+    fields: dict  # parsed key -> value
 
 
 @dataclass
@@ -81,10 +82,10 @@ class Valid:
 
 @dataclass
 class Response:
-    stage: str            # deepest stage reached: frame|parse|validate|apply
-    code: str             # ERR_* on rejection, OK_* on acceptance
+    stage: str  # deepest stage reached: frame|parse|validate|apply
+    code: str  # ERR_* on rejection, OK_* on acceptance
     detail: str = ""
-    trace: tuple = ()     # branch labels this input drove through (cheap coverage)
+    trace: tuple = ()  # branch labels this input drove through (cheap coverage)
 
 
 @dataclass
@@ -99,6 +100,7 @@ class Session:
 # ---------------------------------------------------------------------------
 # Checksum (CRC-16/CCITT-FALSE) over a text body
 # ---------------------------------------------------------------------------
+
 
 def crc16(data: bytes) -> int:
     crc = 0xFFFF
@@ -132,16 +134,38 @@ def _mark(label: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Planted "bug" beacons for the fdp_validate self-check.
+#   Each _bug(tag) marks a branch that a specific tutorial step is meant to
+#   unlock. A student runs `python fdp_validate.py --step X --spec their.fan`;
+#   the validator collects the tags their generated inputs trigger and reports
+#   which the step still leaves unfound. A complete grammar finds them all,
+#   which is the signal that it is safe to move on. Beacons accumulate until a
+#   caller clears the set (the validator resets it before each batch); they are
+#   NOT part of the protocol and are excluded from coverage counts by the
+#   harness (it drops any line whose source begins with `_bug(`).
+# ---------------------------------------------------------------------------
+
+_BUGS: set = set()
+# `_bug` is the set's bound C method, so a beacon call executes no line of this
+# file: only the call site is a Python line, and the harness drops those. That
+# keeps the coverage counts identical with or without the beacons.
+_bug = _BUGS.add
+
+
+# ---------------------------------------------------------------------------
 # Stage 1: framing.  Reachable by ANY bytes.
 # ---------------------------------------------------------------------------
+
 
 def frame(data: bytes):
     try:
         line = data.decode("ascii")
     except UnicodeDecodeError:
+        _bug("raw-nonascii")
         return Response("frame", "ERR_ENCODING")
     line = line.rstrip("\n")
     if not line.startswith(PROTO):
+        _bug("raw-badmagic")
         return Response("frame", "ERR_MAGIC")
     _mark("frame:anchor")
     if len(line) < 5 or line[3] not in VERSIONS or line[4] != " ":
@@ -170,6 +194,7 @@ def frame(data: bytes):
 # Stage 2: parsing.  Reachable only once framing holds.
 # ---------------------------------------------------------------------------
 
+
 def parse(fr: Frame):
     fields: dict = {}
     records = [] if fr.payload == "" else fr.payload.split("&")
@@ -181,6 +206,7 @@ def parse(fr: Frame):
             return Response("parse", "ERR_EMPTY_KEY")
         fields[key] = value
     _mark("parse:ok")
+    _bug("shape:" + fr.msgtype)
     return Message(fr, fields)
 
 
@@ -189,17 +215,20 @@ def parse(fr: Frame):
 #   This is the semantic gate: length encoding, checksum, field invariants.
 # ---------------------------------------------------------------------------
 
+
 def validate(msg: Message):
     fr = msg.frame
     if fr.length != len(fr.body):
         return Response("validate", "ERR_LENGTH")
     _mark("validate:length")
+    _bug("gate-length")
     if len(fr.body) > MAX_BODY:
         return Response("validate", "ERR_TOO_LONG")
     _mark("validate:size")
     if fr.crc != crc16hex(fr.body):
         return Response("validate", "ERR_CRC")
     _mark("validate:crc")
+    _bug("gate-crc")
 
     t = fr.msgtype
     f = msg.fields
@@ -212,6 +241,7 @@ def validate(msg: Message):
     if len(f) > MAX_RECORDS:
         return Response("validate", "ERR_FIELDS", detail="too many records")
     _mark("validate:fields")
+    _bug("gate-fields")
     return Valid(msg)
 
 
@@ -219,6 +249,7 @@ def validate(msg: Message):
 # Stage 4: application.  Reachable only once validation holds.
 #   Deep branches here require session STATE that only a prior message can set.
 # ---------------------------------------------------------------------------
+
 
 def apply(session: Session, vm: Valid):
     msg = vm.message
@@ -231,6 +262,7 @@ def apply(session: Session, vm: Valid):
 
     if t == "PING":
         _mark("apply:pong")
+        _bug("handler-ping")
         return Response("apply", "OK_PONG")
 
     if t == "LOGIN":
@@ -238,16 +270,20 @@ def apply(session: Session, vm: Valid):
             return Response("apply", "ERR_ALREADY")
         session.user = f["user"]
         _mark("apply:login")
+        _bug("handler-login")
         return Response("apply", "OK_LOGIN", detail=session.user)
 
     # everything below requires an authenticated session -> the protocol gate
     if session.user is None:
+        _bug("gate-noauth")
         return Response("apply", "ERR_NOAUTH")
     _mark("apply:authed")
+    _bug("session-authed")
 
     if t == "SUB":
         session.subs.add(f["chan"])
         _mark("apply:sub")
+        _bug("session-sub")
         return Response("apply", "OK_SUB", detail=f["chan"])
 
     if t == "MSG":
@@ -256,11 +292,13 @@ def apply(session: Session, vm: Valid):
         session.seq += 1
         session.log.append((session.seq, f["to"], f["body"]))
         _mark("apply:msg")
+        _bug("session-msg")
         return Response("apply", "OK_MSG", detail=str(session.seq))
 
     if t == "QUIT":
         session.closed = True
         _mark("apply:quit")
+        _bug("session-quit")
         return Response("apply", "OK_QUIT", detail=f"delivered={len(session.log)}")
 
     return Response("apply", "ERR_UNHANDLED")
@@ -269,6 +307,7 @@ def apply(session: Session, vm: Valid):
 # ---------------------------------------------------------------------------
 # The pipeline entry point.  One line in, one Response out.
 # ---------------------------------------------------------------------------
+
 
 def process(data: bytes, session: Optional[Session] = None) -> Response:
     if session is None:

@@ -4,9 +4,9 @@
 A line-oriented REPL: read one FDP message per line from stdin, run it through
 the FDP pipeline on a *persistent* Session (so state carries across messages),
 and write the server's reply to stdout. This is what Fandango drives in the
-protocol block:
+protocol block, from this directory:
 
-    fandango talk -f 04_protocol.fan ./fdp_server.py
+    fandango -v talk -f exercises/04b_protocol.fan -n 1 python fdp_server.py
 
 Because the session persists, the interesting handlers (OK_SUB, OK_MSG,
 OK_QUIT) are only reachable when the client sends messages in the right order,
