@@ -55,6 +55,10 @@ class Constraint(GeneticBase, ABC):
         """
         pass
 
+    def clear_cache(self) -> None:
+        """Empty this constraint's fitness cache (recursing into nested constraints)."""
+        self.cache.clear()
+
     def get_symbols(self) -> Collection[NonTerminalSearch]:
         """
         Get the placeholders of the constraint.

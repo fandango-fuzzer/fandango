@@ -34,15 +34,18 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
         self.current_tree = [None]
         if self.tree is not None:
             self.current_path.append((self.tree.nonterminal, False))
+            self.current_path_collapsed.append((self.tree.nonterminal, False))
             if len(self.tree.children) != 0:
                 self.current_tree = [[self.tree.children[0]]]
             self.visit(self.grammar.rules[self.current_path[-1][0]])
         else:
             self.current_path.append((NonTerminal("<start>"), True))
+            self.current_path_collapsed.append((NonTerminal("<start>"), True))
             self.visit(NonTerminalNode(NonTerminal("<start>"), []))
 
         self.current_tree.pop()
         self.current_path.pop()
+        self.current_path_collapsed.pop()
 
     def on_enter_controlflow(self, expected_nt: str) -> None:
         tree = self.current_tree[-1]
@@ -138,7 +141,6 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
                 try:
                     continue_exploring = self.visit(alt)
                     found = True
-                    break
                 except GrammarKeyError:
                     self.current_tree = fallback_tree
                     self.current_path = fallback_path
@@ -164,12 +166,12 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
 
     def visitRepetitionType(self, node: Repetition) -> bool:
         tree = self.current_tree[-1]
-        continue_exploring = True
+        last_complete = True
         tree_len = 0
         if tree is not None and len(tree) != 0:
             tree_len = len(tree)
             self.current_tree.append([tree[-1]])
-            continue_exploring = self.visit(node.node)
+            last_complete = self.visit(node.node)
             self.current_tree.pop()
 
         rep_min = node.min
@@ -185,15 +187,17 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
             assert prefix_tree is not None
             rep_min, _ = node.bounds_constraint.min(prefix_tree)
             rep_max, _ = node.bounds_constraint.max(prefix_tree)
-        if continue_exploring and tree_len < rep_max:
+        if not last_complete:
+            return False
+        if tree_len < rep_max:
             self.current_tree.append(None)
-            continue_exploring = self.visit(node.node)
+            can_continue = self.visit(node.node)
             self.current_tree.pop()
-            if continue_exploring:
-                return continue_exploring
+            if can_continue:
+                return True
         if tree_len >= rep_min:
             return True
-        return continue_exploring
+        return False
 
     def visitStar(self, node: Star) -> bool:
         self.on_enter_controlflow(f"<__{node.id}>")

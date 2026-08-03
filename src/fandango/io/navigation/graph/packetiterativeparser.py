@@ -39,3 +39,16 @@ class PacketIterativeParser(IterativeParser):
             else:
                 raise FandangoValueError("NonTerminal symbol must be a string!")
         return i_cpy
+
+
+class NavigatorPacketIterativeParser(PacketIterativeParser):
+    """
+    Variant of PacketIterativeParser for use in PacketNavigator.
+    Keeps reduced-grammar symbols (e.g. <_packet_X>) intact so that
+    the grammar-graph walk stays consistent with the reduced grammar.
+    """
+
+    def construct_incomplete_tree(
+        self, state: ParseState, table: list[Column]
+    ) -> DerivationTree:
+        return IterativeParser.construct_incomplete_tree(self, state, table)

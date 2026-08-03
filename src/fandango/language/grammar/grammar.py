@@ -9,7 +9,7 @@ from cachetools import LRUCache
 
 import fandango.language.grammar.nodes as nodes
 from fandango.errors import FandangoParseError, FandangoValueError
-from fandango.io.navigation.coverage_goal import CoverageGoal
+from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.language.grammar import FuzzingMode, ParsingMode, closest_match
 from fandango.language.grammar.has_settings import HasSettings
@@ -146,6 +146,10 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                 raise e
             generated_param.sources = []
             generated_param._parent = tree
+            # If this symbol would've been used with a generator, set its children to RO
+            if self.is_use_generator(generated_param):
+                for child in generated_param.children:
+                    child.set_all_read_only(True)
             for child in generated_param.children:
                 self.populate_sources(child)
             args.append(generated_param)

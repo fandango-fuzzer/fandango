@@ -1,4 +1,9 @@
-from fandango.evolution.algorithm import LoggerLevel, SimpleGeneticAlgorithm
+from fandango.evolution.algorithm import (
+    LoggerLevel,
+    ProtocolAlgorithm,
+    SimpleGeneticAlgorithm,
+)
+from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.language.grammar import FuzzingMode
 from fandango.language.parse.parse import parse
 
@@ -8,10 +13,14 @@ def main():
     with open("dune.fan") as f:
         grammar, constraints = parse(f, use_stdlib=False)
     assert grammar is not None
-    fandango = SimpleGeneticAlgorithm(
+    packet_algorithm = SimpleGeneticAlgorithm(
         grammar=grammar,
         constraints=constraints,
-        logger_level=LoggerLevel.INFO,
+        logger_level=LoggerLevel.DEBUG,
+    )
+    fandango = ProtocolAlgorithm(
+        packet_algorithm=packet_algorithm,
+        coverage_goal=CoverageGoal.STATE_INPUTS_OUTPUTS,
     )
 
     list(fandango.generate(mode=FuzzingMode.IO))  # force evaluation of generator

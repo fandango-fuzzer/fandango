@@ -122,8 +122,10 @@ class GrammarProcessor(FandangoParserVisitor):
         }
         return GrammarSetting(selector, rules)
 
-    def visitAlternative(self, ctx: FandangoParser.AlternativeContext):
-        nodes = [self.visitConcatenation(child) for child in ctx.concatenation()]
+    def visitAlternative(self, ctx: FandangoParser.AlternativeContext) -> Node:
+        nodes: list[Node] = [
+            self.visitConcatenation(child) for child in ctx.concatenation()
+        ]
         if len(nodes) == 1:
             return nodes[0]
         self.seenAlternatives += 1
@@ -269,7 +271,39 @@ class GrammarProcessor(FandangoParserVisitor):
 
             return rep_node
 
-    def visitSymbol(self, ctx: FandangoParser.SymbolContext):
+    def visitPermutation(self, ctx: FandangoParser.PermutationContext):
+        """All nodes in the permutation context. We generate all possible permutations of them using alternatives."""
+        nodes = [self.visitSymbol(c) for c in ctx.symbol()]
+        return self._node_permutation_tree(nodes)
+
+    def _concat_two_nodes(self, first: Node, second: Node) -> Node:
+        self.seenConcatenations += 1
+        nid = self.seenConcatenations
+        return Concatenation(
+            [first, second],
+            self._grammar_settings,
+            f"{NodeType.CONCATENATION}:{nid}_{self.id_prefix}",
+        )
+
+    def _node_permutation_tree(self, nodes: list[Node]) -> Node:
+        """Generate all possible permutations of the nodes in the list `nodes`."""
+        if len(nodes) == 1:
+            return nodes[0]
+        branches: list[Node] = []
+        for i, first in enumerate(nodes):
+            remaining = nodes[:i] + nodes[i + 1 :]
+            tail = self._node_permutation_tree(remaining)
+            branches.append(self._concat_two_nodes(first, tail))
+        self.seenAlternatives += 1
+        nid = self.seenAlternatives
+        return Alternative(
+            branches,
+            self._grammar_settings,
+            f"{NodeType.ALTERNATIVE}:{nid}_{self.id_prefix}",
+            is_permutation=True,
+        )
+
+    def visitSymbol(self, ctx: FandangoParser.SymbolContext) -> Node:
         if ctx.nonterminal_right():
             return self.visitNonterminal_right(ctx.nonterminal_right())
         elif ctx.string():
@@ -286,7 +320,9 @@ class GrammarProcessor(FandangoParserVisitor):
         else:
             raise FandangoValueError(f"Unknown symbol: {ctx.getText()}")
 
-    def visitNonterminal_right(self, ctx: FandangoParser.Nonterminal_rightContext):
+    def visitNonterminal_right(
+        self, ctx: FandangoParser.Nonterminal_rightContext
+    ) -> Node:
         if ctx.identifier(1) is None:
             return NonTerminalNode(
                 NonTerminal("<" + ctx.identifier(0).getText() + ">"),

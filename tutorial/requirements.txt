@@ -1,0 +1,3 @@
+# The only dependency for the whole tutorial. The target program (fdp.py) and
+# all helper scripts use the Python standard library only.
+fandango-fuzzer>=1.1.1

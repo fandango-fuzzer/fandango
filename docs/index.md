@@ -38,7 +38,7 @@ sd_hide_title: true
 
 Fandango produces myriads of _high-quality random inputs and interactions_ to test programs and protocols, giving users unprecedented control over format and shape of the inputs.
 
-```{button-ref} Tutorial
+```{button-ref} Conventions
 :ref-type: doc
 :color: primary
 :class: sd-rounded-pill
@@ -78,7 +78,7 @@ Tie in [Python data generators and fakers](sec:generators) to obtain realistic i
 
 
 +++
-[Tutorial »](sec:tutorial)
+[Tutorial »](sec:handson)
 :::
 
 

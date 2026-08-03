@@ -156,7 +156,7 @@ class DerivationTree:
             origin_repetitions = []
         self.origin_repetitions: list[tuple[str, int, int]] = origin_repetitions
         self.read_only = read_only
-        self._size: int  # no need to set it, it will be set in invalidate_hash, which is called in set_children
+        self._size: Optional[int] = None
         self.set_children(children or [])
 
     def __len__(self) -> int:
@@ -171,6 +171,8 @@ class DerivationTree:
         return count
 
     def size(self) -> int:
+        if self._size is None:
+            self._size = 1 + sum(child.size() for child in self._children)
         return self._size
 
     @property
@@ -183,7 +185,7 @@ class DerivationTree:
             f"Received symbol of type {type(symbol)}"
         )
         self._symbol = symbol
-        self.invalidate_hash()
+        self.invalidate_hash(update_size=False)
 
     @property
     def nonterminal(self) -> NonTerminal:
@@ -222,9 +224,9 @@ class DerivationTree:
     def invalidate_hash(self, update_size: bool = True) -> None:
         self.hash_cache = None
         if update_size:
-            self._size = 1 + sum(child.size() for child in self._children)
+            self._size = None
         if self._parent is not None:
-            self._parent.invalidate_hash()
+            self._parent.invalidate_hash(update_size=update_size)
 
     @property
     def sender(self) -> Optional[str]:
@@ -233,7 +235,7 @@ class DerivationTree:
     @sender.setter
     def sender(self, sender: Optional[str]) -> None:
         self._sender = sender
-        self.invalidate_hash()
+        self.invalidate_hash(update_size=False)
 
     @property
     def recipient(self) -> Optional[str]:
@@ -242,7 +244,7 @@ class DerivationTree:
     @recipient.setter
     def recipient(self, recipient: Optional[str]) -> None:
         self._recipient = recipient
-        self.invalidate_hash()
+        self.invalidate_hash(update_size=False)
 
     def get_path(self) -> list["DerivationTree"]:
         path: list[DerivationTree] = []

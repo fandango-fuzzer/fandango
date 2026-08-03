@@ -170,6 +170,16 @@ numbers += make_rule("float32", ["<byte>{4}"])
 numbers += make_rule("float64", ["<byte>{8}"])
 stdlib += numbers
 
+
+timers = make_rule("timer_number", ["r'[0-9]+'"])
+timers += make_rule("timer_timeout", ["<timer_number>"])
+timers += make_rule("timer_id", ["<timer_number>"])
+timers += make_rule("timer_expired", ["'expired: ' <timer_id> '\\n'"])
+timers += make_rule("timer_cancel", ["'cancel: ' <timer_id> '\\n'"])
+timers += make_rule("timer_start", ["'start: ' <timer_id> ' (' <timer_timeout> ')\\n'"])
+stdlib += timers
+
+
 # These should go into a separate file
 # We should also have specs for email, urls, network addresses, etc.
 # stdlib += make_header("UUIDs")

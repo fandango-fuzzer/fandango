@@ -24,6 +24,10 @@ public:
     void _fstring_start();
     void _fstring_end();
     bool _is_not_fstring();
+    void _permutation_start();
+    void _permutation_end();
+    bool _can_start_permutation();
+    bool _is_in_permutation();
     static FandangoLexerBase *lexer;
 
 private:
@@ -32,6 +36,7 @@ private:
     int opened = 0;
     int inPython = 0;
     bool isFstring = false;
+    bool inPermutation = false;
     int skipLexer = 0;
 
     static const std::regex NEW_LINE_PATTERN;
@@ -50,3 +55,7 @@ private:
 #define fstring_start() FandangoLexerBase::lexer->_fstring_start();
 #define fstring_end() FandangoLexerBase::lexer->_fstring_end();
 #define is_not_fstring() FandangoLexerBase::lexer->_is_not_fstring();
+#define permutation_start() FandangoLexerBase::lexer->_permutation_start();
+#define permutation_end() FandangoLexerBase::lexer->_permutation_end();
+#define can_start_permutation() FandangoLexerBase::lexer->_can_start_permutation()
+#define is_in_permutation() FandangoLexerBase::lexer->_is_in_permutation()

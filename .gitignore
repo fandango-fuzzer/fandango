@@ -207,3 +207,8 @@ fcc/
 # env config
 .env
 docs/mini.fan
+
+# Tutorial: the reference solutions are withheld so the exercises stay
+# exercises. Maintainers can drop them in here to run `fdp_harness.py --all`
+# and `fdp_validate.py --record`; they are never committed.
+tutorial/solutions/

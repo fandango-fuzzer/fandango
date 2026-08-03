@@ -10,8 +10,8 @@ kernelspec:
   name: python3
 ---
 
-(sec:tutorial)=
-# Tutorial Conventions
+(sec:doc-conventions)=
+# Documentation Conventions
 
 (sec:conventions)=
 ## Conventions in this Documentation
@@ -26,7 +26,7 @@ $ fandango help
 ```
 
 ```{note}
-In this tutorial, a `$` at the beginning of a command stands for your input prompt.
+In this book, a `$` at the beginning of a command stands for your input prompt.
 Do not enter it yourself.
 ```
 
@@ -102,7 +102,7 @@ Warn about hazards that may lead to death or serious injury.
 
 ### Quizzes
 
-This documentation also uses _quizzes_ – that is, questions for the reader.
+This book also uses _quizzes_ – that is, questions for the reader.
 The solutions are initially hidden, but can be unhidden by clicking on them.
 
 For instance, what does a _Warning_ callout indicate?
