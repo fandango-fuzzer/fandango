@@ -9,12 +9,15 @@ parts:
     - file: Contributing
   - caption: First Steps
     chapters:
-    - file: Tutorial
+    - file: Conventions
     - file: Setup
     - file: FirstSpec
     - file: Invoking
     - file: Fuzzing
     - file: Strategies
+  - caption: Hands-On
+    chapters:
+    - file: HandsOn
   - caption: Advanced Input Generation
     chapters:
     - file: Constraints
