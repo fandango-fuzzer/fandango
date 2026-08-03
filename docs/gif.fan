@@ -1,4 +1,4 @@
-# gif_32x32.fan
+# gif.fan
 # Fandango specification for a structurally valid 32x32 GIF89a file.
 
 import struct

@@ -50,7 +50,8 @@ At the beginning of a `.fan` file, state
 * the resources you used to create the format (the official spec); if possible, with URLs
 * further details on capabilities (and non-capabilities)
 
-Here is an example:
+Here is an example. The capability lines state what your spec actually does,
+which is not necessarily everything the format allows:
 
 ```
 # GIF89a format
@@ -165,7 +166,7 @@ Document missing parts with `TODO`, `FIXME` and alike, both in the appropriate p
 Unless otherwise stated, stick to Python conventions for writing your specifications.
 This includes
 
-* code layout (4 spaces indentation; max line length 72 characters);
+* code layout (4 spaces indentation; max line length 88 characters, matching our Ruff configuration);
 * usage of blank lines (to separate larger grammar blocks);
 * source file encoding (should be UTF-8);
 * whitespace in expressions and statements; and
@@ -217,8 +218,8 @@ See also {ref}`sec:checksums` on how to specify checksums.
 
 ### Use Constructive Helper Functions
 
-Use constructive helper functions (rather than checking helper func-
-tions) whenever possible.
+Use constructive helper functions (rather than checking helper functions)
+whenever possible.
 In Fandango, a constraint of the form
 
 ```python
@@ -271,7 +272,7 @@ With your spec in `SPEC.fan` producing files with an extension `EXTENSION`, run
 $ fandango fuzz -f SPEC.fan -n 10 -d out -x .EXTENSION --warnings-are-errors
 ```
 
-For GIF files in `gif,fan`, this would be:
+For GIF files in `gif.fan`, this would be:
 ```shell
 $ fandango fuzz -f gif.fan -n 10 -d out -x .gif --warnings-are-errors
 ```
