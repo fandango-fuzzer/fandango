@@ -5,14 +5,14 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for the suggestion. Describing the problem you ran into is more
-        useful than describing a solution, because it leaves room for an
+        Thanks for the suggestion. Telling us what you were trying to do is
+        more useful than proposing a solution, because it leaves room for an
         approach you may not have considered.
 
   - type: textarea
-    id: problem
+    id: goal
     attributes:
-      label: What problem are you trying to solve?
+      label: What are you trying to do?
       description: >
         What were you doing when you needed this? What did you try, and where
         did it fall short?

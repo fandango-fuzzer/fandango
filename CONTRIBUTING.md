@@ -46,19 +46,29 @@ If you later cannot finish it, say so and unassign yourself. That is fine.
 
 ## Using AI assistance
 
-We are not against AI tools, we use them too, and we do not ask you to declare
-them. But **you own the code you submit**: you should be able to explain why it
-is written that way, why it is correct, and what you rejected. If a reviewer
-asks about a decision and the honest answer is "the model wrote it", the pull
-request is not ready.
+We are not against AI tools, we use them too. Two things we ask, and one we
+require.
+
+**Tell us when you used one.** If a change was substantially AI-assisted, say so
+in the pull request. We cannot verify it and it will not count against you, but
+it tells a reviewer what kind of read the change needs.
+
+**Write the description yourself.** Generated descriptions are long and say
+little, and writing it in your own words is the fastest way to find out whether
+you understand the change.
+
+**You own the code you submit.** You should be able to say why it is written
+that way, why it is correct, and what you rejected. Make sure you understand
+what every changed line does and why it is there.
 
 The problem is not AI, it is moving your work onto the maintainers. A patch
 generated from an issue and pushed unread costs us more time than the issue
 would have. Those pull requests get inspected closely, and if the work has been
 handed to us rather than done, we close them.
 
-Read every line, run it, and be ready to defend it in review. Do that and we do
-not care how you got there.
+Keep the diff minimal too. Models like to reformat and rename things the change
+never needed to touch, and every unrelated hunk is more for a reviewer to rule
+out.
 
 ## Setting up
 
@@ -93,7 +103,9 @@ so a stray file elsewhere can fail the build. `pre-commit` catches almost all
 of it locally.
 
 If you change dependencies in `pyproject.toml`, regenerate both lockfiles with
-`make lock`, or CI will fail.
+`make lock`, or CI will fail. See
+[the guide](https://fandango-fuzzer.github.io/Contributing.html#lockfiles) for
+what these are and why we keep both.
 
 ## What makes a pull request easy to merge
 

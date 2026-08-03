@@ -65,10 +65,28 @@ Contributions are welcome, and reporting a bug or fixing a typo counts.
 ## Citing Fandango
 
 If you use Fandango in academic work, please cite the ISSTA 2025 paper
-[*FANDANGO: Evolving Language-Based Testing*](https://doi.org/10.1145/3728915)
-by José Antonio Zamudio Amaya, Marius Smytzek, and Andreas Zeller. GitHub's
-"Cite this repository" button, backed by [`CITATION.cff`](CITATION.cff), gives
-you a ready-made BibTeX entry.
+[*FANDANGO: Evolving Language-Based Testing*](https://doi.org/10.1145/3728915).
+GitHub's "Cite this repository" button, backed by
+[`CITATION.cff`](CITATION.cff), generates this for you:
+
+```bibtex
+@article{zamudio2025fandango,
+  author  = {Zamudio Amaya, Jos\'{e} Antonio and Smytzek, Marius and Zeller, Andreas},
+  title   = {{FANDANGO}: {E}volving Language-Based Testing},
+  journal = {Proc. ACM Softw. Eng.},
+  volume  = {2},
+  number  = {ISSTA},
+  articleno = {ISSTA040},
+  numpages  = {23},
+  year    = {2025},
+  month   = jun,
+  doi     = {10.1145/3728915},
+  url     = {https://doi.org/10.1145/3728915},
+  publisher = {Association for Computing Machinery}
+}
+```
+
+Note that the first author's family name is "Zamudio Amaya".
 
 ## License
 

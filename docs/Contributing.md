@@ -296,12 +296,23 @@ fails the build.
 (sec:ai-assistance)=
 ## Using AI Assistance
 
-We are not against AI tools and we do not ask you to declare that you used one.
-Plenty of good contributions are written with a model in the loop, and we use
-them ourselves.
+We are not against AI tools. Plenty of good contributions are written with a
+model in the loop, and we use them ourselves.
 
-What we do require is that **you own the code you submit**. You should be able
-to explain why the change is written the way it is, why it is correct, what
+Two things we ask.
+
+**Tell us when you used one.** If a change was substantially written with AI
+assistance, say so in the pull request. We cannot verify it and it will not
+count against you. It tells a reviewer what kind of read the change needs, which
+makes triage faster for everyone.
+
+**Write the description yourself.** Generated pull request and issue
+descriptions tend to be long and say little, which moves work onto the reader.
+Writing it in your own words is also the quickest way to find out whether you
+understand the change.
+
+And one thing we require: **you own the code you submit**. You should be able to
+say why the change is written the way it is, why it is correct, what
 alternatives you rejected, and what happens at the edges. If a reviewer asks
 about a decision and the honest answer would be "the model wrote it that way",
 the pull request is not ready to open.
@@ -313,19 +324,16 @@ than the issue would have. Reviewing that means reconstructing an intent that
 was never formed in the first place, which is harder than writing the fix from
 scratch. That is not a contribution, it is a transfer of effort.
 
-This is usually easy to spot. Pull requests that look this way will be
-inspected closely, and if it turns out the work has been handed to us rather
-than done, we will close them without merging.
+Keep the diff minimal while you are at it. Models like to reformat, rename, and
+"improve" code the change never needed to touch, and every unrelated hunk is
+more for a reviewer to read and rule out.
 
 So before you open a pull request, whatever tools you used to get there:
 
-- Have you read every line you are about to submit?
+- Have you read every line you are about to submit, and do you understand what
+  each one does and why it is there?
 - Have you run it, and does your test actually fail without the change?
-- Can you defend each decision in review, in your own words?
-- Is it free of code, comments, or documentation that is not relevant to the
-  change?
-
-If the answer to all four is yes, we genuinely do not care how you got there.
+- Is the diff limited to what the change requires?
 
 (sec:contributing-code)=
 ## Contributing Code
