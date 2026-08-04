@@ -1,5 +1,9 @@
 
-include('gif.fan')
+# Refines the full GIF89a grammar generated from the 010 Editor template.
+# Note: gif.fan is the hand-written GIF spec used for *generation* and does not
+# cover enough of the format to parse arbitrary GIF files; this refinement needs
+# the complete grammar.
+include('gif-generated.fan')
 
 where <GifHeader>..<Signature> == b"GIF"
 where <GifHeader>..<Version> == b"89a"

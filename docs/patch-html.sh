@@ -72,3 +72,9 @@ patch -c -N $file <<EOF
 
 EOF
 done
+
+# Clean up backup files created by patch
+echo "Cleaning up backup files created by patch...\c"
+find _build/html -type f -name "*.orig" -delete
+find _build/html -type f -name "*.rej" -delete
+echo "done."

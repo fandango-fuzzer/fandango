@@ -11,20 +11,36 @@ kernelspec:
 ---
 
 (sec:gif)=
-# Case Study: The GIF Format
-
-```{admonition} Under Construction
-:class: attention
-To be added later.
-```
+# Case Study: GIF
 
 The [GIF format](https://www.fileformat.info/format/gif/egff.htm) is widely used to encode image sequences.
 
-We start with a very short GIF to keep things simple ([source](http://probablyprogramming.com/2009/03/15/the-tiniest-gif-ever)): [tinytrans.gif](tinytrans.gif).
+The GIF file [gif.fan](gif.fan) can be directly used in Fandango:
 
-We can parse this file using Fandango:
+```shell
+$ fandango fuzz -f gif.fan -n 1 --population-size=1 -o 32x32.gif 
+```
+
+produces a [32x32 pixel GIF file](32x32.gif):
+
+```{image} 32x32.gif
+:alt: Generated GIF file
+:class: bg-primary mb-1
+:width: 200px
+:align: center
+```
+
+Here is the generated `gif.fan` specification file.
+
+```{versionadded} 1.1
+`gif.fan` requires Fandango 1.1 or later.
+```
 
 ```{code-cell}
-!fandango parse -f gif89a.fan tinytrans.gif -o - --format=grammar --validate
-assert _exit_code == 0
+:tags: ["remove-input"]
+!cat gif.fan
+```
+
+```{note}
+Note that `gif.fan` does not support only all GIF features, so it cannot be used to [parse](sec:parsing) arbitrary GIF files.
 ```
