@@ -1,0 +1,51 @@
+name: Feature request
+description: Suggest something Fandango should be able to do
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion. Telling us what you were trying to do is
+        more useful than proposing a solution, because it leaves room for an
+        approach you may not have considered.
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: What are you trying to do?
+      description: >
+        What were you doing when you needed this? What did you try, and where
+        did it fall short?
+      placeholder: >
+        I am specifying a format where a field's value depends on a checksum of
+        two other fields, and I could not find a way to express that.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like Fandango to do?
+      description: If you have a concrete idea, sketch it. A `.fan` snippet helps.
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+      description: >
+        Including "I worked around it like this", which is useful for judging how
+        much the feature would buy.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched the existing issues and did not find this
+          required: false
+        - label: I would be willing to work on this myself
+          required: false

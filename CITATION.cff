@@ -1,0 +1,56 @@
+cff-version: 1.2.0
+message: >-
+  If you use Fandango in your research, please cite the ISSTA 2025 paper below
+  rather than this repository.
+title: Fandango
+abstract: >-
+  Fandango is a generator of inputs and interactions for software testing. Given
+  a specification of a program's input or interaction language, combining a
+  grammar with constraints written in Python, Fandango generates myriads of
+  valid inputs using an evolutionary search.
+type: software
+license: EUPL-1.2
+repository-code: https://github.com/fandango-fuzzer/fandango
+url: https://fandango-fuzzer.github.io/
+keywords:
+  - language-based testing
+  - fuzzing
+  - test generation
+  - grammars
+authors:
+  - given-names: José Antonio
+    family-names: Zamudio Amaya
+    email: jose.zamudio@cispa.de
+    affiliation: CISPA Helmholtz Center for Information Security
+  - given-names: Marius
+    family-names: Smytzek
+    email: marius.smytzek@cispa.de
+    affiliation: CISPA Helmholtz Center for Information Security
+  - given-names: Andreas
+    family-names: Zeller
+    email: andreas.zeller@cispa.de
+    affiliation: CISPA Helmholtz Center for Information Security
+
+preferred-citation:
+  type: article
+  title: "FANDANGO: Evolving Language-Based Testing"
+  year: 2025
+  month: 6
+  doi: 10.1145/3728915
+  url: https://doi.org/10.1145/3728915
+  journal: Proceedings of the ACM on Software Engineering
+  volume: 2
+  issue: ISSTA
+  number: ISSTA040
+  publisher:
+    name: Association for Computing Machinery
+  authors:
+    - given-names: José Antonio
+      family-names: Zamudio Amaya
+      affiliation: CISPA Helmholtz Center for Information Security
+    - given-names: Marius
+      family-names: Smytzek
+      affiliation: CISPA Helmholtz Center for Information Security
+    - given-names: Andreas
+      family-names: Zeller
+      affiliation: CISPA Helmholtz Center for Information Security

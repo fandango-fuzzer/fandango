@@ -1,0 +1,146 @@
+# Contributing to Fandango
+
+Thanks for wanting to help. Fandango is a community project, and your
+experience using it is as valuable a contribution as code.
+
+**The full guide lives in the Fandango book:
+<https://fandango-fuzzer.github.io/Contributing.html>** (source:
+[`docs/Contributing.md`](docs/Contributing.md)). This file is the short version.
+
+## Before you start
+
+By participating you agree to follow our
+[Code of Conduct](CODE_OF_CONDUCT.md).
+
+Found a **security vulnerability**? Do not open a public issue. Report it
+privately through GitHub's [security advisory form](https://github.com/fandango-fuzzer/fandango/security/advisories/new), or from the
+repository's Security tab. See [`SECURITY.md`](SECURITY.md).
+
+## Reporting a bug
+
+Open an [issue](https://github.com/fandango-fuzzer/fandango/issues/new/choose)
+and include:
+
+- the smallest `.fan` spec that still shows the problem, and the exact command
+  you ran,
+- what you expected, and what happened instead, with the full error output,
+- the output of `fandango --version`, plus your Python version and OS.
+
+## New to Fandango's specification language?
+
+Start with the [hands-on tutorial](https://fandango-fuzzer.github.io/HandsOn.html).
+It builds one small protocol from random bytes up to a stateful conversation, so
+by the end you have written the grammars, constraints, and feedback that most
+issues are about. It takes an afternoon and saves a round of review later.
+
+## Picking up an issue
+
+**If an issue is already assigned, please leave it** and pick another one.
+Someone is working on it.
+
+**If it is unassigned, comment on it before you start** and wait to be assigned.
+It lets us tell you if the issue is thornier than it looks, or already being
+handled elsewhere, which is much cheaper to hear before you write the code.
+
+If you later cannot finish it, say so and unassign yourself. That is fine.
+
+## Using AI assistance
+
+We are not against AI tools, we use them too. Two things we ask, and one we
+require.
+
+**Tell us when you used one.** If a change was substantially AI-assisted, say so
+in the pull request. We cannot verify it and it will not count against you, but
+it tells a reviewer what kind of read the change needs.
+
+**Write the description yourself.** Generated descriptions are long and say
+little, and writing it in your own words is the fastest way to find out whether
+you understand the change.
+
+**You own the code you submit.** You should be able to say why it is written
+that way, why it is correct, and what you rejected. Make sure you understand
+what every changed line does and why it is there.
+
+The problem is not AI, it is moving your work onto the maintainers. A patch
+generated from an issue and pushed unread costs us more time than the issue
+would have. Those pull requests get inspected closely, and if the work has been
+handed to us rather than done, we close them.
+
+Keep the diff minimal too. Models like to reformat and rename things the change
+never needed to touch, and every unrelated hunk is more for a reviewer to rule
+out.
+
+## Setting up
+
+Fandango needs **Python 3.11 or later**. Fork the repository on GitHub first,
+then clone your fork. With [uv](https://docs.astral.sh/uv/) (recommended, this
+is what our CI uses):
+
+```shell
+git clone https://github.com/YOUR-USERNAME/fandango.git
+cd fandango
+make system-dev-tools          # ANTLR and a C++ compiler
+uv sync --all-extras --locked  # exactly the dependency set CI resolves
+```
+
+If the C++ parser fails to build, skip it and use the pure-Python fallback:
+
+```shell
+FANDANGO_SKIP_CPP_PARSER=1 uv sync --all-extras --locked
+```
+
+Prefer plain `pip`? See
+[the full guide](https://fandango-fuzzer.github.io/Contributing.html).
+
+## Before you open a pull request
+
+```shell
+pre-commit install   # once; then it runs on every commit
+make tests           # note the plural: `make test` does nothing
+```
+
+CI checks formatting and types across the **whole repository**, not just `src`,
+so a stray file elsewhere can fail the build. `pre-commit` catches almost all
+of it locally.
+
+If you change dependencies in `pyproject.toml`, regenerate both lockfiles with
+`make lock`, or CI will fail. See
+[the guide](https://fandango-fuzzer.github.io/Contributing.html#lockfiles) for
+what these are and why we keep both.
+
+## Opening a pull request
+
+You work on your own fork, not on a branch of this repository:
+
+1. **Fork** the repository on GitHub.
+2. **Clone your fork** and set it up as in [Setting up](#setting-up) above.
+3. **Commit on a branch** and push it to your fork:
+
+   ```shell
+   git switch -c my-change
+   git commit -am "Say what changed and why"
+   git push -u origin my-change
+   ```
+
+4. **Open a pull request across forks**, from your branch on your fork to `main`
+   on `fandango-fuzzer/fandango`. GitHub offers this right after you push.
+
+You need nothing from us to start, and no push access here.
+
+## What makes a pull request easy to merge
+
+- It does one thing.
+- It explains **why**, not just what; the diff already shows the what.
+- It has a test for any behaviour it changes.
+- It updates the docs if it changes something a user can see.
+- It is green in CI.
+
+When a review asks for changes, push more commits rather than force-pushing a
+rewritten branch, so the review comments stay anchored. Pull requests are merged
+with a merge commit, so your branch's commits stay in the project history.
+
+## Licensing
+
+Fandango is released under the [European Union Public Licence v1.2](LICENSE.md).
+By contributing you agree your contribution is licensed under those same terms,
+and confirm you have the right to submit it.
