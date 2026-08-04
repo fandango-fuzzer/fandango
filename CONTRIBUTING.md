@@ -72,8 +72,9 @@ out.
 
 ## Setting up
 
-Fandango needs **Python 3.11 or later**. With
-[uv](https://docs.astral.sh/uv/) (recommended, this is what our CI uses):
+Fandango needs **Python 3.11 or later**. Fork the repository on GitHub first,
+then clone your fork. With [uv](https://docs.astral.sh/uv/) (recommended, this
+is what our CI uses):
 
 ```shell
 git clone https://github.com/YOUR-USERNAME/fandango.git
@@ -106,6 +107,25 @@ If you change dependencies in `pyproject.toml`, regenerate both lockfiles with
 `make lock`, or CI will fail. See
 [the guide](https://fandango-fuzzer.github.io/Contributing.html#lockfiles) for
 what these are and why we keep both.
+
+## Opening a pull request
+
+You work on your own fork, not on a branch of this repository:
+
+1. **Fork** the repository on GitHub.
+2. **Clone your fork** and set it up as in [Setting up](#setting-up) above.
+3. **Commit on a branch** and push it to your fork:
+
+   ```shell
+   git switch -c my-change
+   git commit -am "Say what changed and why"
+   git push -u origin my-change
+   ```
+
+4. **Open a pull request across forks**, from your branch on your fork to `main`
+   on `fandango-fuzzer/fandango`. GitHub offers this right after you push.
+
+You need nothing from us to start, and no push access here.
 
 ## What makes a pull request easy to merge
 

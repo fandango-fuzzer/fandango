@@ -98,6 +98,10 @@ Fandango requires **Python 3.11 or later**. Our CI tests against Python 3.11,
 
 ### Step 1: Fork and clone
 
+You do not need push access to the Fandango repository, and you should not wait
+for it. All your work happens on your own fork, and reaches us as a [pull
+request across forks](sec:contributing-code).
+
 Fork the [Fandango repository](https://github.com/fandango-fuzzer/fandango) on
 GitHub, then clone your fork:
 
@@ -338,7 +342,31 @@ So before you open a pull request, whatever tools you used to get there:
 (sec:contributing-code)=
 ## Contributing Code
 
-We use the usual GitHub pull request flow. If it is unfamiliar, see [GitHub's
+We use the usual GitHub pull request flow, from a fork:
+
+1. **Fork** the [Fandango
+   repository](https://github.com/fandango-fuzzer/fandango) on GitHub. This
+   gives you your own copy, at `https://github.com/YOUR-USERNAME/fandango`.
+2. **Clone your fork** and set it up as described in [Setting up a development
+   environment](sec:getting-started-with-development).
+3. **Commit your change on a branch** in your fork, and push that branch:
+
+   ```shell
+   $ git switch -c my-change
+   $ git commit -am "Say what changed and why"
+   $ git push -u origin my-change
+   ```
+
+4. **Open a pull request across forks**: from your branch on your fork, to
+   `main` on `fandango-fuzzer/fandango`. GitHub offers this on your fork's page
+   right after you push, and you can also open it from the [main
+   repository](https://github.com/fandango-fuzzer/fandango/compare) by picking
+   your fork and branch as the source.
+
+Branches on the main repository itself are for the core developers, so this is
+the route for everyone else, and it needs nothing from us to get started.
+
+If any of this is unfamiliar, see [GitHub's
 documentation](https://docs.github.com/en/pull-requests).
 
 Anyone interested in Fandango may review your code, and one of the core
