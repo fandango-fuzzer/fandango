@@ -169,7 +169,7 @@ def _get_main_parser(in_command_line: bool) -> argparse.ArgumentParser:
             "--enable-experimental-module",
             dest="enable_experimental_modules",
             type=str,
-            help="Enable warnings about experimental modules. Can be given multiple times. Example: --enable-experimental-module execution",
+            help="Opt in to an experimental module, silencing its warning. Can be given multiple times. Example: --enable-experimental-module execution",
             default=[],
             action="append",
         )

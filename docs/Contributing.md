@@ -1,3 +1,4 @@
+(sec:contributing)=
 # Contributing to Fandango
 
 Welcome! Fandango is a community project that aims to work for a wide range of

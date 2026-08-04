@@ -19,7 +19,7 @@ wheel.cmake = true
 
 [project]
 name = "fandango-fuzzer"
-version = "1.1.1"
+version = "1.2.0"
 authors = [
     { name = "José Antonio Zamudio Amaya", email = "jose.zamudio@cispa.de" },
     { name = "Marius Smytzek", email = "marius.smytzek@cispa.de" },

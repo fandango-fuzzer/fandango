@@ -32,18 +32,30 @@ During [_protocol testing_](sec:protocols), Fandango already produces such inter
 
 Grammar coverage is determined and achieved using the $k$-path metric by {cite:ts}`havrikov2019ase`.
 
-```{versionadded} 1.2
-For version 1.2, during input generation, Fandango will also achieve grammar coverage by construction.
+```{versionadded} 1.x
+In a future version, during input generation, Fandango will also achieve grammar coverage by construction.
 ```
 
 
+(sec:code-coverage)=
 ## Code Coverage
 
-As of version 1.2, Fandango will provide experimental support for guidance by code coverage.
-Details will be added here.
+As of version 1.2, Fandango provides _experimental_ support for guidance by code coverage.
+It works against a program under test that has been compiled with [`fcc`](https://github.com/fandango-fuzzer/fcc), the Fandango coverage compiler.
+`fcc` records the control flow graph of the program at compile time; at run time, Fandango tracks which basic blocks each input reaches, and favors inputs that get closer to code it has not seen yet.
+
+```shell
+$ fandango --enable-experimental-module execution fuzz -f spec.fan --fcc ./program
+```
+
+```{warning}
+This is an experimental feature, living in `fandango.experimental.execution`.
+It may change without notice, so do not rely on it in production.
+Fandango warns you about this the first time the module is loaded; `--enable-experimental-module execution` is how you acknowledge the warning and silence it.
+```
 
 ```{versionadded} 1.2
-This feature is planned for Fandango 1.2.
+Experimental code coverage guidance is available in Fandango 1.2 and later.
 ```
 
 
