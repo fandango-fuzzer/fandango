@@ -9,6 +9,7 @@ abstract: >-
   grammar with constraints written in Python, Fandango generates myriads of
   valid inputs using an evolutionary search.
 type: software
+version: 1.2.0
 license: EUPL-1.2
 repository-code: https://github.com/fandango-fuzzer/fandango
 url: https://fandango-fuzzer.github.io/
