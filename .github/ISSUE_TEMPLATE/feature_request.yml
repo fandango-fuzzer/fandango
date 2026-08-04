@@ -5,9 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for the suggestion. Telling us what you were trying to do is
-        more useful than proposing a solution, because it leaves room for an
-        approach you may not have considered.
+        Thanks for the suggestion. Telling us what you were trying to do is more useful than proposing a solution, because it leaves room for an approach you may not have considered.
 
   - type: textarea
     id: goal

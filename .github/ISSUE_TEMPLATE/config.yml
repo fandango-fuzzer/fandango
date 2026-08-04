@@ -1,11 +1,1 @@
 blank_issues_enabled: true
-contact_links:
-  - name: Documentation
-    url: https://fandango-fuzzer.github.io/
-    about: The Fandango book, including the hands-on tutorial and the reference.
-  - name: Report a security vulnerability
-    url: https://github.com/fandango-fuzzer/fandango/security/advisories/new
-    about: Report privately via GitHub security advisories, not as a public issue.
-  - name: Contributing guide
-    url: https://fandango-fuzzer.github.io/Contributing.html
-    about: How to set up a development environment and open a pull request.
