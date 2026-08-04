@@ -98,7 +98,9 @@ For instance, to apply a `compress()` method to every message sent, write
 
 ```python
 class CompressedNetworkParty(NetworkParty):
-    def send(self, message: DerivationTree | str | bytes, recipient: Optional[str]) -> None:
+    def send(
+        self, message: DerivationTree | str | bytes, recipient: Optional[str]
+    ) -> None:
         super().send(compress(message), recipient)
 ```
 
@@ -271,6 +273,7 @@ class Client(NetworkParty):
         )
         self.start()
 
+
 class Server(NetworkParty):
     def __init__(self):
         super().__init__(
@@ -290,6 +293,7 @@ class Client(NetworkParty):
             connection_mode=ConnectionMode.EXTERNAL,
         )
         self.start()
+
 
 class Server(NetworkParty):
     def __init__(self):

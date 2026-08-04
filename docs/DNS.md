@@ -68,7 +68,7 @@ We decode `<req_qd_count>` using a function `byte_to_int()`:
 ```python
 # Convert a 2-byte byte array to an integer
 def byte_to_int(byte_val):
-    return int(unpack('>H', bytes(byte_val))[0])
+    return int(unpack(">H", bytes(byte_val))[0])
 ```
 
 ```{note}
@@ -405,13 +405,21 @@ def verify_transitive(question, response):
     allowed_names = [bytes(question.find_direct_trees(NonTerminal("<q_name>"))[0])]
 
     for ans in response.find_subtrees("<answer_an>"):
-        if (bytes(ans.children[1])[0:2] == pack('>H', 5) and
-            bytes(ans.find_direct_trees(NonTerminal("<q_name_optional>"))[0]) in allowed_names):
-            allowed_names.append(bytes(ans.children[1].children[0].children[4])) # <type_cname>.<q_name>
+        if (
+            bytes(ans.children[1])[0:2] == pack(">H", 5)
+            and bytes(ans.find_direct_trees(NonTerminal("<q_name_optional>"))[0])
+            in allowed_names
+        ):
+            allowed_names.append(
+                bytes(ans.children[1].children[0].children[4])
+            )  # <type_cname>.<q_name>
 
     for ans in response.find_subtrees("<answer_an>"):
-        if (bytes(ans.children[1])[0:2] == type_byte and
-            bytes(ans.find_direct_trees(NonTerminal("<q_name_optional>"))[0]) in allowed_names):
+        if (
+            bytes(ans.children[1])[0:2] == type_byte
+            and bytes(ans.find_direct_trees(NonTerminal("<q_name_optional>"))[0])
+            in allowed_names
+        ):
             return True
 
     return False
@@ -489,8 +497,12 @@ We apply the DNS name compression algorithm to a DNS name starting at `curr_idx`
 % FIXME: Add full docstrings, with :param: and :return:
 
 ```python
-def compress_name(uncompressed: bytes, curr_idx: int,
-                  len_reduction: int, suffix_dict: dict[bytes, int]) -> tuple[bytes, int, int]:
+def compress_name(
+    uncompressed: bytes,
+    curr_idx: int,
+    len_reduction: int,
+    suffix_dict: dict[bytes, int],
+) -> tuple[bytes, int, int]:
     """
     Compress a single name in a DNS message.
     :param: uncompressed - the message before compression
@@ -503,7 +515,7 @@ def compress_name(uncompressed: bytes, curr_idx: int,
     while uncompressed[curr_idx + name_len] != 0:
         name_len += uncompressed[curr_idx + name_len] + 1
     name_len += 1
-    b_name = uncompressed[curr_idx:(curr_idx+name_len)]
+    b_name = uncompressed[curr_idx : (curr_idx + name_len)]
 
     if name_len == 1:
         return b_name, name_len, len_reduction
@@ -511,7 +523,7 @@ def compress_name(uncompressed: bytes, curr_idx: int,
     for n_offset, suffix in msg_suffix(b_name):
         if suffix in suffix_dict:
             cpr_ptr = suffix_dict[suffix]
-            bin_ptr = pack('>H', (192 << 8) | cpr_ptr)
+            bin_ptr = pack(">H", (192 << 8) | cpr_ptr)
             new_name = b_name[:n_offset] + bin_ptr
             len_reduction += len(b_name) - len(new_name)
             return new_name, name_len, len_reduction
@@ -539,33 +551,39 @@ def compress_msg(uncompressed: bytes) -> bytes:
     suffix_dict = dict()
     len_reduction = 0
     for i in range(qd_count):
-        name, decompressed_len, len_reduction = compress_name(uncompressed, curr_idx, len_reduction, suffix_dict)
+        name, decompressed_len, len_reduction = compress_name(
+            uncompressed, curr_idx, len_reduction, suffix_dict
+        )
         compressed = compressed + name
         curr_idx += decompressed_len
-        compressed += uncompressed[curr_idx:curr_idx+4]
+        compressed += uncompressed[curr_idx : curr_idx + 4]
         curr_idx += 4
 
     for i in range(an_count + ns_count + ar_count):
-        name, decompressed_len, len_reduction = compress_name(uncompressed, curr_idx, len_reduction, suffix_dict)
+        name, decompressed_len, len_reduction = compress_name(
+            uncompressed, curr_idx, len_reduction, suffix_dict
+        )
         compressed = compressed + name
         curr_idx += decompressed_len
-        rr_type = uncompressed[curr_idx:curr_idx+2]
+        rr_type = uncompressed[curr_idx : curr_idx + 2]
         compressed += rr_type
         rr_type = byte_to_int(rr_type)
         curr_idx += 2
-        compressed += uncompressed[curr_idx:curr_idx+6]
+        compressed += uncompressed[curr_idx : curr_idx + 6]
         curr_idx += 6
-        r_data_len = byte_to_int(uncompressed[curr_idx:curr_idx+2])
+        r_data_len = byte_to_int(uncompressed[curr_idx : curr_idx + 2])
         curr_idx += 2
 
-        if rr_type == 5: # If CNAME entry
-            name, decompressed_len, len_reduction = compress_name(uncompressed, curr_idx, len_reduction, suffix_dict)
-            compressed += pack('>H', len(name))
+        if rr_type == 5:  # If CNAME entry
+            name, decompressed_len, len_reduction = compress_name(
+                uncompressed, curr_idx, len_reduction, suffix_dict
+            )
+            compressed += pack(">H", len(name))
             compressed = compressed + name
             curr_idx += decompressed_len
         else:
-            compressed += uncompressed[curr_idx-2:curr_idx]
-            compressed += uncompressed[curr_idx:curr_idx+r_data_len]
+            compressed += uncompressed[curr_idx - 2 : curr_idx]
+            compressed += uncompressed[curr_idx : curr_idx + r_data_len]
             curr_idx += r_data_len
 
     return compressed
@@ -585,17 +603,19 @@ def decompress_name(compressed: bytes, name_idx: int) -> tuple[bytes, int]:
     """
     segment_len = compressed[name_idx]
     compressed_len = 0
-    decompressed = b''
+    decompressed = b""
 
     while segment_len != 0:
         # If first two bits are 1
         if (segment_len & 192) == 192:
             name_ptr = (segment_len & 63) << 8
-            name_ptr += compressed[name_idx+1]
+            name_ptr += compressed[name_idx + 1]
             decompressed = decompressed + decompress_name(compressed, name_ptr)[0]
             return decompressed, compressed_len + 2
         decompressed = decompressed + bytes([segment_len])
-        decompressed = decompressed + compressed[name_idx + 1 : name_idx + 1 + segment_len]
+        decompressed = (
+            decompressed + compressed[name_idx + 1 : name_idx + 1 + segment_len]
+        )
         compressed_len = compressed_len + segment_len + 1
         name_idx = name_idx + segment_len + 1
         segment_len = compressed[name_idx]
@@ -625,29 +645,29 @@ def decompress_msg(compressed: bytes) -> bytes:
         name, compressed_len = decompress_name(compressed, curr_idx)
         decompressed = decompressed + name
         curr_idx += compressed_len
-        decompressed += compressed[curr_idx:curr_idx+4]
+        decompressed += compressed[curr_idx : curr_idx + 4]
         curr_idx += 4
 
     for i in range(an_count + ns_count + ar_count):
         name, compressed_len = decompress_name(compressed, curr_idx)
         decompressed = decompressed + name
         curr_idx += compressed_len
-        rr_type = compressed[curr_idx:curr_idx+2]
+        rr_type = compressed[curr_idx : curr_idx + 2]
         decompressed += rr_type
         rr_type = byte_to_int(rr_type)
         curr_idx += 2
-        decompressed += compressed[curr_idx:curr_idx+6]
+        decompressed += compressed[curr_idx : curr_idx + 6]
         curr_idx += 6
-        r_data_len = byte_to_int(compressed[curr_idx:curr_idx+2])
+        r_data_len = byte_to_int(compressed[curr_idx : curr_idx + 2])
         curr_idx += 2
-        if rr_type == 5: #If CNAME entry
+        if rr_type == 5:  # If CNAME entry
             c_name, compressed_len = decompress_name(compressed, curr_idx)
-            decompressed += pack('>H', len(c_name))
+            decompressed += pack(">H", len(c_name))
             decompressed += c_name
             curr_idx += compressed_len
         else:
-            decompressed += compressed[curr_idx-2:curr_idx]
-            decompressed += compressed[curr_idx:curr_idx+r_data_len]
+            decompressed += compressed[curr_idx - 2 : curr_idx]
+            decompressed += compressed[curr_idx : curr_idx + r_data_len]
             curr_idx += r_data_len
 
     return decompressed
