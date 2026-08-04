@@ -41,8 +41,8 @@ You can extend this method to execute additional code, for instance to create co
 To this end, simply subclass the respective party class and override its `start()` method:
 
 ```python
-def create_configuration_file() -> None:
-    ... # Your code goes here
+def create_configuration_file() -> None: ...  # Your code goes here
+
 
 class MyClient(Client):
     def start(self) -> None:
@@ -80,8 +80,8 @@ In the same way as extending starting a party, one can also hook into _stopping_
 The `stop()` method is useful for this:
 
 ```python
-def cleanup_server() -> None:
-    ... # Your code goes here
+def cleanup_server() -> None: ...  # Your code goes here
+
 
 class Server(Server):
     def stop(self):
@@ -107,8 +107,9 @@ Here is an example in which we compress the `DerivationTree` passed via a `compr
 
 ```python
 def compress(msg: bytes) -> bytes:
-    compressed_message = ... # Your code goes here
+    compressed_message = ...  # Your code goes here
     return compressed_message
+
 
 class Server(Server):
     def send(self, message: DerivationTree | bytes | str, recipient: Optional[str]):
@@ -138,8 +139,9 @@ Again, you can extend this for your own needs.
 Here is an example in which we decompress the message received via a `decompress()` function.
 ```python
 def decompress(msg: bytes) -> bytes:
-    decompressed_message = ... # Your code goes here
+    decompressed_message = ...  # Your code goes here
     return decompressed_message
+
 
 class Server(Server):
     def receive(self, message: str | bytes | None, sender: Optional[str]):
@@ -165,23 +167,22 @@ Using the [`NetworkParty` constructor](sec:networkparty-class), the respective `
 ```python
 class Client_1(NetworkParty):
     def __init__(self):
-        super().__init__("localhost:8000",
-                         connection_mode=ConnectionMode.CONNECT)
+        super().__init__("localhost:8000", connection_mode=ConnectionMode.CONNECT)
+
 
 class Server_1(NetworkParty):
     def __init__(self):
-        super().__init__("localhost:8000",
-                         connection_mode=ConnectionMode.EXTERNAL)
+        super().__init__("localhost:8000", connection_mode=ConnectionMode.EXTERNAL)
+
 
 class Client_2(NetworkParty):
     def __init__(self):
-        super().__init__("localhost:8000",
-                         connection_mode=ConnectionMode.CONNECT)
+        super().__init__("localhost:8000", connection_mode=ConnectionMode.CONNECT)
+
 
 class Server_2(NetworkParty):
     def __init__(self):
-        super().__init__("localhost:8001",
-                         connection_mode=ConnectionMode.EXTERNAL)
+        super().__init__("localhost:8001", connection_mode=ConnectionMode.EXTERNAL)
 ```
 
 The grammar can then use `Client_1`, `Client_2`, `Server_1`, and `Server_2` as prefixes, and specify a protocol that involves all four parties.

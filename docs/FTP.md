@@ -85,14 +85,12 @@ The call to `self.start()` in the constructior starts the party and lets it conn
 class ClientControl(NetworkParty):
     def __init__(self):
         super().__init__(
-            connection_mode=ConnectionMode.CONNECT,
-            uri="tcp://[::1]:25521"
+            connection_mode=ConnectionMode.CONNECT, uri="tcp://[::1]:25521"
         )
         self.start()
 
     def receive(self, message: str | bytes | None, sender: Optional[str]) -> None:
         super().receive(message.decode("utf-8"), sender="ServerControl")
-
 ```
 
 The `ServerControl` party is the counterpart to `ClientControl`.
@@ -103,8 +101,7 @@ The party does, therefore, not connect to a socket. The call to `self.start()` i
 class ServerControl(NetworkParty):
     def __init__(self):
         super().__init__(
-            connection_mode=ConnectionMode.EXTERNAL,
-            uri="tcp://[::1]:25522"
+            connection_mode=ConnectionMode.EXTERNAL, uri="tcp://[::1]:25522"
         )
         self.start()
 
@@ -128,8 +125,7 @@ which is a dummy party, that we use to describe port disconnections in the gramm
 class ClientData(NetworkParty):
     def __init__(self):
         super().__init__(
-            connection_mode=ConnectionMode.CONNECT,
-            uri="tcp://[::1]:50100"
+            connection_mode=ConnectionMode.CONNECT, uri="tcp://[::1]:50100"
         )
 
     # Tell FANDANGO that all received messages come from ServerData.
@@ -144,9 +140,9 @@ class ClientData(NetworkParty):
 class ServerData(NetworkParty):
     def __init__(self):
         super().__init__(
-            connection_mode=ConnectionMode.EXTERNAL,
-            uri="tcp://[::1]:50100"
+            connection_mode=ConnectionMode.EXTERNAL, uri="tcp://[::1]:50100"
         )
+
     def receive(self, message: str | bytes | None, sender: Optional[str]) -> None:
         if message is None:
             super().receive("Data socket closed.\r\n", sender="SocketControlClient")
@@ -164,10 +160,8 @@ Here, we use the [`instance()`](sec:party-instance) method to access and stop th
 ```python
 class SocketControlClient(FandangoParty):
     def __init__(self):
-        super().__init__(
-            connection_mode=ConnectionMode.CONNECT
-        )
-        
+        super().__init__(connection_mode=ConnectionMode.CONNECT)
+
     def send(self, message: str | bytes, recipient: Optional[str]) -> None:
         if str(message).startswith("Data socket closed.\r\n"):
             ClientData.instance().stop()
@@ -182,9 +176,7 @@ class SocketControlClient(FandangoParty):
 ```python
 class SocketControlServer(FandangoParty):
     def __init__(self):
-        super().__init__(
-            connection_mode=ConnectionMode.EXTERNAL
-        )
+        super().__init__(connection_mode=ConnectionMode.EXTERNAL)
 
     def send(self, message: str | bytes, recipient: Optional[str]) -> None:
         if str(message).startswith("Data socket closed.\r\n"):
@@ -560,7 +552,7 @@ def open_data_port(port):
     if client_data.port != port:
         client_data.stop()
         client_data.port = port
-    if  server_data.port != port:
+    if server_data.port != port:
         server_data.stop()
         server_data.port = port
     client_data.start()
