@@ -15,6 +15,7 @@ class PacketCoverageFilter:
         self._solution_set: set[int] = set()
         self._past_msgs: set[DerivationTree] = set()
         self._current_msgs: set[DerivationTree] = set()
+        self.disable_filtering = False
 
     def add_completed_tree(self, tree: DerivationTree) -> None:
         """Fold a finished run's messages into the past-message set."""
@@ -65,6 +66,9 @@ class PacketCoverageFilter:
         return 0
 
     def filter(self, individual: DerivationTree) -> Optional[DerivationTree]:
+        if self.disable_filtering:
+            return individual
+
         if len(individual.protocol_msgs()) != 0:
             msg = individual.protocol_msgs()[-1].msg
             symbol = msg.symbol

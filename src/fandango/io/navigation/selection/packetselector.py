@@ -51,6 +51,7 @@ class PacketSelector:
             CoverageGoal.STATE_INPUTS,
         )
         self._next_packets: Optional[list[ForecastingPacket]] = None
+        self._is_enable_guidance = True
         self.compute(history_tree)
 
     def _input_parties(self) -> set[str]:
@@ -83,15 +84,21 @@ class PacketSelector:
     def forecasting_result(self) -> ForecastingResult:
         return self._forecast.result
 
+    def enable_guidance(self, enable: bool) -> None:
+        self._is_enable_guidance = enable
+
     def _ensure_next_packets(self) -> list[ForecastingPacket]:
         if self._next_packets is None:
-            self._next_packets = self._guide.select_next_packet(
-                self.history_tree,
-                self._last_completed_tree,
-                self._completed_count,
-                self._coverage_tracker.uncovered_paths,
-                self._coverage_tracker.coverage_scores,
-            )
+            if not self._is_enable_guidance:
+                self._next_packets = self.get_fuzzer_packets()
+            else:
+                self._next_packets = self._guide.select_next_packet(
+                    self.history_tree,
+                    self._last_completed_tree,
+                    self._completed_count,
+                    self._coverage_tracker.uncovered_paths,
+                    self._coverage_tracker.coverage_scores,
+                )
         return self._next_packets
 
     @property
@@ -123,8 +130,13 @@ class PacketSelector:
     def get_next_parties(self) -> list[str]:
         return self._forecast.get_next_parties()
 
-    def coverage_percent(self) -> float:
-        return self._coverage_tracker.coverage_percent()
+    def coverage_percent(self, *, alt_cache: bool = False) -> float:
+        return self._coverage_tracker.coverage_percent(alt_cache=alt_cache)
+
+    def _compute_coverage_trees(
+        self, overlap_to_root: bool = False
+    ) -> dict[NonTerminal, tuple[int, int]]:
+        return self._coverage_tracker.coverage_trees(overlap_to_root)
 
     def set_coverage_goal(self, goal: CoverageGoal) -> None:
         self._coverage_tracker.set_coverage_goal(goal)

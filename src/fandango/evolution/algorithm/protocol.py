@@ -1,9 +1,11 @@
+
+
 import random
 import time
 from collections.abc import Generator
 from typing import Optional
 
-from fandango.errors import FandangoFailedError, FandangoParseError
+from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.algorithm.base import GeneticAlgorithm
 from fandango.evolution.algorithm.simple import SimpleGeneticAlgorithm
@@ -27,7 +29,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS,
         remote_response_timeout: int = 15,
     ):
-        self.CLEAR_CONSTRAINT_CACHE_INTERVAL = 100
+        self.CLEAR_CONSTRAINT_CACHE_INTERVAL = 10
         self._start_symbol = NonTerminal("<start>")
         self._packet_algorithm = packet_algorithm
         self.grammar = packet_algorithm.grammar
@@ -49,6 +51,16 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._packet_coverage_filter = PacketCoverageFilter(
             self._packet_algorithm.diversity_k, self.grammar
         )
+        self._time_in_measurements = 0
+        self._time_in_measurements_since_coverage_gain = 0
+        self.coverage_log_interval = -1
+        self.stop_on_full_coverage = True
+        self.coverage_plateau_timeout = 0.0
+        self._is_enable_guidance = True
+        self.coverage_log: list[tuple[float, dict[NonTerminal, tuple[int, int]]]] = []
+        self.coverage_log_overlap: list[
+            tuple[float, dict[NonTerminal, tuple[int, int]]]
+        ] = []
         self.violations = []
         self.throw_on_violation = False
 
@@ -62,7 +74,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
     def _wait_for_remote_message(self, timeout: int) -> bool:
         wait_start = time.time()
         while not self._io_instance.received_msg():
-            if time.time() - wait_start > timeout:
+            if time.time() - wait_start > timeout and timeout >= 0:
                 return False
             time.sleep(0.025)
         return True
@@ -191,6 +203,20 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             and not self._packet_selector.is_complete()
         )
 
+    def _record_coverage_log(self) -> float:
+        start_measuring = time.time()
+        current_cov = self._packet_selector.coverage_percent(alt_cache=True)
+        LOGGER.info(f"Current coverage: {current_cov * 100:.2f}%")
+        self.coverage_log.append(
+            (
+                start_measuring - self._time_in_measurements,
+                self._packet_selector._compute_coverage_trees(False),
+            )
+        )
+        self._time_in_measurements += time.time() - start_measuring
+        self._time_in_measurements_since_coverage_gain += time.time() - start_measuring
+        return current_cov
+
     def _clear_constraint_caches(self) -> None:
         self._packet_algorithm.evaluator.clear_constraint_caches()
 
@@ -200,6 +226,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         mode: FuzzingMode = FuzzingMode.COMPLETE,
     ) -> Generator[DerivationTree, None, None]:
         iteration = 0
+        plateau_best_coverage = -1.0
+        plateau_last_gain = time.time()
         while True:
             iteration += 1
             if (
@@ -208,12 +236,38 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             ):
                 self._clear_constraint_caches()
             self._packet_selector.compute(self._protocol_tree)
-            LOGGER.info(
-                f"Current coverage: {self._packet_selector.coverage_percent() * 100:.2f}%"
-            )
+
+            iteration += 1
+            if (
+                self.coverage_log_interval > 0
+                and iteration % self.coverage_log_interval == 0
+            ):
+                coverage = self._record_coverage_log()
+                # Plateau early-stop
+                if self.coverage_plateau_timeout > 0:
+                    now = time.time()
+                    if coverage > plateau_best_coverage:
+                        plateau_best_coverage = coverage
+                        plateau_last_gain = now
+                        self._time_in_measurements_since_coverage_gain = 0
+                    elif now - (plateau_last_gain + self._time_in_measurements_since_coverage_gain) >= self.coverage_plateau_timeout:
+                        log_guidance_hint(
+                            f"Coverage plateaued at {plateau_best_coverage * 100:.2f}% "
+                            f"for {self.coverage_plateau_timeout:g}s, stopping evolution."
+                        )
+                        return None
 
             if self._is_failed_forecast():
                 raise FandangoFailedError("Could not forecast next packet")
+
+            if (
+                not self.stop_on_full_coverage
+                and self._is_enable_guidance
+                and self._packet_selector.is_guide_to_end()
+                and self._packet_selector.coverage_percent() == 1.0
+            ):
+                self.enable_guidance(False)
+                continue
 
             if self._is_protocol_run_complete():
                 final_tree = random.choice(
@@ -225,8 +279,11 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 if self._coverage_goal == CoverageGoal.SINGLE_DERIVATION:
                     return None
                 if self._packet_selector.coverage_percent() == 1.0:
-                    log_guidance_hint("Full coverage reached, stopping evolution.")
-                    return None
+                    if self.stop_on_full_coverage:
+                        self._record_coverage_log()
+                        log_guidance_hint("Full coverage reached, stopping evolution.")
+                        return None
+                    self.enable_guidance(False)
                 log_guidance_hint("Starting new protocol run.")
                 self._io_instance.reset_parties()
                 self._protocol_tree = DerivationTree(self._start_symbol, [])
@@ -261,7 +318,11 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             else:
                 try:
                     self._protocol_tree = self._handle_remote_response()
-                except (FandangoFailedError, FandangoParseError) as exc:
+                except (
+                    FandangoFailedError,
+                    FandangoParseError,
+                    FandangoValueError,
+                ) as exc:
                     self._packet_selector.record_coverage(self._protocol_tree)
                     self._packet_coverage_filter.add_completed_tree(self._protocol_tree)
                     self.violations.append((self._protocol_tree, exc))
@@ -309,3 +370,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._packet_selector.reset_coverage()
         self._packet_coverage_filter.reset()
         self._protocol_tree = DerivationTree(self._start_symbol)
+
+    def enable_guidance(self, value: bool) -> None:
+        self._is_enable_guidance = value
+        self._packet_coverage_filter.disable_filtering = not value
+        self._packet_selector.enable_guidance(value)

@@ -119,4 +119,4 @@ def test_reset_clears_basis(grammar_file):
     tracker.add_completed_tree(tree)
     tracker.reset()
     assert tracker._whole_covered == set()
-    assert tracker._message_covered == {}
+    assert tracker._message_covered == {False: {}, True: {}}
