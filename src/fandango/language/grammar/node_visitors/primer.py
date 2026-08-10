@@ -85,7 +85,7 @@ class PrimerVisitor(NodeVisitor[float, float]):
         return self.visitRepetition(node)
 
     def visitNonTerminalNode(self, node: NonTerminalNode) -> float:
-        return self.visit(self._rules[node.symbol]) + 1
+        return 1 + self.visit(self._rules[node.symbol])
 
     def visitTerminalNode(self, node: TerminalNode) -> float:
         return 1.0
