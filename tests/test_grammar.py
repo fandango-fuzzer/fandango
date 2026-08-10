@@ -9,7 +9,6 @@ from fandango.evolution.algorithm import DefaultAlgorithm
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.node_visitors.primer import PrimerVisitor
 from fandango.language.grammar.nodes.node import Node
-from fandango.language.grammar.nodes.repetition import Repetition
 from fandango.language.parse.parse import parse
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
