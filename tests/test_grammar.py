@@ -264,6 +264,4 @@ class PrimerTest(unittest.TestCase):
             "<term>": 8,
         }
         for name, dist in should_values.items():
-            self.assertEqual(
-                rules[NonTerminal(name)].distance_to_completion, dist
-            )
+            self.assertEqual(rules[NonTerminal(name)].distance_to_completion, dist)
