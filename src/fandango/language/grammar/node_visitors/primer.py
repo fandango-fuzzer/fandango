@@ -10,33 +10,39 @@ from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.symbols.non_terminal import NonTerminal
-from fandango.language.symbols.symbol import Symbol
 
 
 class PrimerVisitor(NodeVisitor):
 
     def __init__(self, rules: dict[NonTerminal, Node]):
         self._rules = rules
-        self._seen_count: dict[Node, int] = dict()
+        self._seen: set[int] = set()
         self.inf_loops: set[Node] = set()
+        self._changed = False
 
     def prime(self):
-        self._seen_count.clear()
+        self._seen.clear()
         self.inf_loops.clear()
+        self._changed = False
         for rule in self._rules.values():
             self.visit(rule)
+        while self._changed:
+            self._changed = False
+            for rule in self._rules.values():
+                self.visit(rule)
         self.inf_loops = {n for n in self.inf_loops if n.distance_to_completion == float('inf')}
 
     def visit(self, node: Node) -> ResultType:
-        seen_count = self._seen_count.get(node, 0)
-        if seen_count > 1:
-            return float('inf')
-        self._seen_count[node] = seen_count + 1
+        if id(node) in self._seen:
+            return node.distance_to_completion
+        self._seen.add(id(node))
         dist = super().visit(node)
-        node.distance_to_completion = dist
+        if node.distance_to_completion > dist:
+            self._changed = True
+            node.distance_to_completion = dist
         if dist == float('inf'):
             self.inf_loops.add(node)
-        self._seen_count[node] = self._seen_count.get(node, 0) - 1
+        self._seen.remove(id(node))
         return dist
 
     def visitAlternative(self, node: Alternative) -> ResultType:
