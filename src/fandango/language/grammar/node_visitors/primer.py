@@ -72,7 +72,8 @@ class PrimerVisitor(NodeVisitor[float, float]):
         return 1 + sum(self.visit(child) for child in node.children())
 
     def visitRepetition(self, node: Repetition) -> float:
-        return 1 + (node.min * self.visit(node.node))
+        child_dist = self.visit(node.node)
+        return 1 + (node.min * child_dist)
 
     def visitStar(self, node: Star) -> float:
         return self.visitRepetition(node)
