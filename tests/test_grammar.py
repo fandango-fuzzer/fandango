@@ -227,7 +227,6 @@ class ConstraintTest(unittest.TestCase):
 
 
 class PrimerTest(unittest.TestCase):
-
     @staticmethod
     def prime_infinite_loops_grammar() -> tuple[Grammar, PrimerVisitor]:
         with open(RESOURCES_ROOT / "infinite_loops.fan", "r") as file:
@@ -250,9 +249,22 @@ class PrimerTest(unittest.TestCase):
         grammar, primer = self.prime_infinite_loops_grammar()
         rules = grammar.rules
         infinity = {"<inf_simple>", "<inf_complex>", "<inf_a>", "<inf_b>", "<inf_c>"}
-        non_infinity = {"<start>", "<escapable>", "<space>", "<name>", "<expr>", "<dig>",
-                        "<numeral>", "<factor>", "<term>"}
+        non_infinity = {
+            "<start>",
+            "<escapable>",
+            "<space>",
+            "<name>",
+            "<expr>",
+            "<dig>",
+            "<numeral>",
+            "<factor>",
+            "<term>",
+        }
         for name in infinity:
-            self.assertEqual(rules[NonTerminal(name)].distance_to_completion, float("inf"))
+            self.assertEqual(
+                rules[NonTerminal(name)].distance_to_completion, float("inf")
+            )
         for name in non_infinity:
-            self.assertLess(rules[NonTerminal(name)].distance_to_completion, float("inf"))
+            self.assertLess(
+                rules[NonTerminal(name)].distance_to_completion, float("inf")
+            )
