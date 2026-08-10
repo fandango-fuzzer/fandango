@@ -915,10 +915,6 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         LOGGER.debug("Priming grammar")
         primer = PrimerVisitor(self.rules)
         primer.prime()
-        if primer.inf_loops:
-            raise FandangoValueError(
-                f"Grammar contains unbreakable, infinite loops: {primer.inf_loops}"
-            )
 
     def default_result(self) -> list[Node]:
         return []

@@ -232,13 +232,16 @@ class PrimerTest(unittest.TestCase):
             grammar, _ = parse(file, use_stdlib=False, use_cache=False, check=False)
         assert grammar is not None
         primer = PrimerVisitor(grammar.rules)
-        primer.prime()
+        primer.prime(raise_on_inf_loops=False)
         return grammar, primer
 
     def test_error_on_parse(self):
         with self.assertRaises(FandangoValueError):
             with open(RESOURCES_ROOT / "infinite_loops.fan", "r") as file:
                 grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+                assert grammar is not None
+                primer = PrimerVisitor(grammar.rules)
+                primer.prime()
 
     def test_contains_infinite_loops(self):
         grammar, primer = self.prime_infinite_loops_grammar()
