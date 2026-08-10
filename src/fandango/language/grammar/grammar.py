@@ -16,6 +16,7 @@ from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.literal_generator import LiteralGenerator
 from fandango.language.grammar.node_visitors.disambiguator import Disambiguator
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
+from fandango.language.grammar.node_visitors.primer import PrimerVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.char_set import CharSet
 from fandango.language.grammar.nodes.concatenation import Concatenation
@@ -912,46 +913,12 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
 
     def prime(self) -> None:
         LOGGER.debug("Priming grammar")
-        nodes: list[Node] = sum(
-            [self.visit(self.rules[symbol]) for symbol in self.rules], []
-        )
-        while nodes:
-            node = nodes.pop(0)
-            if isinstance(node, TerminalNode):
-                continue
-            elif isinstance(node, NonTerminalNode):
-                if node.symbol not in self.rules:
-                    raise FandangoValueError(
-                        f"Symbol {node.symbol.format_as_spec()} not found in grammar"
-                    )
-                if self.rules[node.symbol].distance_to_completion == float("inf"):
-                    nodes.append(node)
-                else:
-                    node.distance_to_completion = (
-                        self.rules[node.symbol].distance_to_completion + 1
-                    )
-            elif isinstance(node, Alternative):
-                node.distance_to_completion = (
-                    min([n.distance_to_completion for n in node.alternatives]) + 1
-                )
-                if node.distance_to_completion == float("inf"):
-                    nodes.append(node)
-            elif isinstance(node, Concatenation):
-                if any([n.distance_to_completion == float("inf") for n in node.nodes]):
-                    nodes.append(node)
-                else:
-                    node.distance_to_completion = (
-                        sum([n.distance_to_completion for n in node.nodes]) + 1
-                    )
-            elif isinstance(node, Repetition):
-                if node.node.distance_to_completion == float("inf"):
-                    nodes.append(node)
-                else:
-                    node.distance_to_completion = (
-                        node.node.distance_to_completion * node.min + 1
-                    )
-            else:
-                raise FandangoValueError(f"Unknown node type {node.node_type}")
+        primer = PrimerVisitor(self.rules)
+        primer.prime()
+        if primer.inf_loops:
+            raise FandangoValueError(
+                f"Grammar contains infinite loops: {primer.inf_loops}"
+            )
 
     def default_result(self) -> list[Node]:
         return []
