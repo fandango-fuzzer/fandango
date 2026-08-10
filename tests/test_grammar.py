@@ -4,7 +4,10 @@ import itertools
 import random
 import unittest
 
+from fandango.errors import FandangoValueError
 from fandango.evolution.algorithm import DefaultAlgorithm
+from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar.node_visitors.primer import PrimerVisitor
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.parse.parse import parse
 from fandango.language.symbols import NonTerminal
@@ -220,3 +223,48 @@ class ConstraintTest(unittest.TestCase):
             s = str(sol).split(".")
             self.assertEqual(s[0], "a" * 50, s[0])
             self.assertTrue(len(s[1]) >= 10)
+
+
+class PrimerTest(unittest.TestCase):
+    @staticmethod
+    def prime_infinite_loops_grammar() -> tuple[Grammar, PrimerVisitor]:
+        with open(RESOURCES_ROOT / "infinite_loops.fan", "r") as file:
+            grammar, _ = parse(file, use_stdlib=False, use_cache=False, check=False)
+        assert grammar is not None
+        primer = PrimerVisitor(grammar.rules)
+        primer.prime(raise_on_inf_loops=False)
+        return grammar, primer
+
+    def test_error_on_parse(self):
+        with self.assertRaises(FandangoValueError):
+            with open(RESOURCES_ROOT / "infinite_loops.fan", "r") as file:
+                grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+                assert grammar is not None
+                primer = PrimerVisitor(grammar.rules)
+                primer.prime()
+
+    def test_contains_infinite_loops(self):
+        grammar, primer = self.prime_infinite_loops_grammar()
+        self.assertTrue(primer.inf_loops, "Expected infinite loops")
+
+    def test_who_is_infinite(self):
+        grammar, primer = self.prime_infinite_loops_grammar()
+        rules = grammar.rules
+        should_values = {
+            "<inf_simple>": float("inf"),
+            "<inf_complex>": float("inf"),
+            "<inf_a>": float("inf"),
+            "<inf_b>": float("inf"),
+            "<inf_c>": float("inf"),
+            "<start>": 13,
+            "<escapable>": 11,
+            "<space>": 1,
+            "<name>": 2,
+            "<expr>": 10,
+            "<dig>": 2,
+            "<numeral>": 4,
+            "<factor>": 6,
+            "<term>": 8,
+        }
+        for name, dist in should_values.items():
+            self.assertEqual(rules[NonTerminal(name)].distance_to_completion, dist)
