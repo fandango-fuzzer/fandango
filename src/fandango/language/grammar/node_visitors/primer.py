@@ -13,7 +13,6 @@ from fandango.language.symbols.non_terminal import NonTerminal
 
 
 class PrimerVisitor(NodeVisitor):
-
     def __init__(self, rules: dict[NonTerminal, Node]):
         self._rules = rules
         self._seen: set[int] = set()
@@ -30,7 +29,9 @@ class PrimerVisitor(NodeVisitor):
             self._changed = False
             for rule in self._rules.values():
                 self.visit(rule)
-        self.inf_loops = {n for n in self.inf_loops if n.distance_to_completion == float('inf')}
+        self.inf_loops = {
+            n for n in self.inf_loops if n.distance_to_completion == float("inf")
+        }
 
     def visit(self, node: Node) -> ResultType:
         if id(node) in self._seen:
@@ -40,13 +41,13 @@ class PrimerVisitor(NodeVisitor):
         if node.distance_to_completion > dist:
             self._changed = True
             node.distance_to_completion = dist
-        if dist == float('inf'):
+        if dist == float("inf"):
             self.inf_loops.add(node)
         self._seen.remove(id(node))
         return dist
 
     def visitAlternative(self, node: Alternative) -> ResultType:
-        minimal_dist = float('inf')
+        minimal_dist = float("inf")
         for child in node.children():
             child_dist = self.visit(child)
             if minimal_dist > child_dist:
@@ -61,6 +62,8 @@ class PrimerVisitor(NodeVisitor):
 
     def visitRepetition(self, node: Repetition) -> ResultType:
         child_dist = self.visit(node.node)
+        if node.min == 0:
+            return 1
         return (node.min * child_dist) + 1
 
     def visitStar(self, node: Star) -> ResultType:
@@ -73,7 +76,7 @@ class PrimerVisitor(NodeVisitor):
         return self.visitRepetition(node)
 
     def visitNonTerminalNode(self, node: NonTerminalNode) -> ResultType:
-        return self.visit(self._rules[node.symbol])
+        return self.visit(self._rules[node.symbol]) + 1
 
     def visitTerminalNode(self, node: TerminalNode) -> ResultType:
         return 1
