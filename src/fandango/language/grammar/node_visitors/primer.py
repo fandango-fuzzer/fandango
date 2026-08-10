@@ -61,7 +61,7 @@ class PrimerVisitor(NodeVisitor):
 
     def visitRepetition(self, node: Repetition) -> ResultType:
         child_dist = self.visit(node.node)
-        return child_dist + 1
+        return (node.min * child_dist) + 1
 
     def visitStar(self, node: Star) -> ResultType:
         return self.visitRepetition(node)
