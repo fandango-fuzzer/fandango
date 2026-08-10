@@ -247,23 +247,23 @@ class PrimerTest(unittest.TestCase):
     def test_who_is_infinite(self):
         grammar, primer = self.prime_infinite_loops_grammar()
         rules = grammar.rules
-        infinity = {"<inf_simple>", "<inf_complex>", "<inf_a>", "<inf_b>", "<inf_c>"}
-        non_infinity = {
-            "<start>",
-            "<escapable>",
-            "<space>",
-            "<name>",
-            "<expr>",
-            "<dig>",
-            "<numeral>",
-            "<factor>",
-            "<term>",
+        should_values = {
+            "<inf_simple>": float("inf"),
+            "<inf_complex>": float("inf"),
+            "<inf_a>": float("inf"),
+            "<inf_b>": float("inf"),
+            "<inf_c>": float("inf"),
+            "<start>": 13,
+            "<escapable>": 11,
+            "<space>": 1,
+            "<name>": 2,
+            "<expr>": 10,
+            "<dig>": 2,
+            "<numeral>": 4,
+            "<factor>": 6,
+            "<term>": 8,
         }
-        for name in infinity:
+        for name, dist in should_values.items():
             self.assertEqual(
-                rules[NonTerminal(name)].distance_to_completion, float("inf")
-            )
-        for name in non_infinity:
-            self.assertLess(
-                rules[NonTerminal(name)].distance_to_completion, float("inf")
+                rules[NonTerminal(name)].distance_to_completion, dist
             )
