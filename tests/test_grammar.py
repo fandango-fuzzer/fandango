@@ -4,8 +4,12 @@ import itertools
 import random
 import unittest
 
+from fandango.errors import FandangoValueError
 from fandango.evolution.algorithm import DefaultAlgorithm
+from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar.node_visitors.primer import PrimerVisitor
 from fandango.language.grammar.nodes.node import Node
+from fandango.language.grammar.nodes.repetition import Repetition
 from fandango.language.parse.parse import parse
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
@@ -220,3 +224,35 @@ class ConstraintTest(unittest.TestCase):
             s = str(sol).split(".")
             self.assertEqual(s[0], "a" * 50, s[0])
             self.assertTrue(len(s[1]) >= 10)
+
+
+class PrimerTest(unittest.TestCase):
+
+    @staticmethod
+    def prime_infinite_loops_grammar() -> tuple[Grammar, PrimerVisitor]:
+        with open(RESOURCES_ROOT / "infinite_loops.fan", "r") as file:
+            grammar, _ = parse(file, use_stdlib=False, use_cache=False, check=False)
+        assert grammar is not None
+        primer = PrimerVisitor(grammar.rules)
+        primer.prime()
+        return grammar, primer
+
+    def test_error_on_parse(self):
+        with self.assertRaises(FandangoValueError):
+            with open(RESOURCES_ROOT / "infinite_loops.fan", "r") as file:
+                grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+
+    def test_contains_infinite_loops(self):
+        grammar, primer = self.prime_infinite_loops_grammar()
+        self.assertTrue(primer.inf_loops, "Expected infinite loops")
+
+    def test_who_is_infinite(self):
+        grammar, primer = self.prime_infinite_loops_grammar()
+        rules = grammar.rules
+        infinity = {"<inf_simple>", "<inf_complex>", "<inf_a>", "<inf_b>", "<inf_c>"}
+        non_infinity = {"<start>", "<escapable>", "<space>", "<name>", "<expr>", "<dig>",
+                        "<numeral>", "<factor>", "<term>"}
+        for name in infinity:
+            self.assertEqual(rules[NonTerminal(name)].distance_to_completion, float("inf"))
+        for name in non_infinity:
+            self.assertLess(rules[NonTerminal(name)].distance_to_completion, float("inf"))
