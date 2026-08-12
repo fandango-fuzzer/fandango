@@ -18,6 +18,7 @@ class ProtocolModel:
     def __init__(self, grammar: Grammar, start_symbol: NonTerminal):
         self._grammar = grammar
         self.state_grammar_symbols = self._get_state_grammar_symbols(start_symbol)
+        self.protocol_msg_symbols = grammar.get_protocol_messages(start_symbol)
         self.permutation_groups = self._build_permutation_groups()
 
     def group_messages_by_nt(
