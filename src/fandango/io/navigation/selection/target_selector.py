@@ -36,13 +36,25 @@ class TargetSelector:
     def _trim_to_state_symbols(self, uncovered_paths: list[KPath]) -> list[KPath]:
         """Trim each path back to its last state-grammar symbol; drop empties."""
         uncovered_paths = list(uncovered_paths)
+        protocol_msg_symbols = set(
+            map(lambda x: x.symbol, self._model.protocol_msg_symbols)
+        )
         for list_idx, path in enumerate(list(uncovered_paths)):
-            remaining_path = path
-            for path_idx, symbol in enumerate(path[::-1]):
-                if symbol in self._model.state_grammar_symbols:
-                    break
-                last_idx = len(path) - path_idx - 1
-                remaining_path = remaining_path[:last_idx]
+            path_last_state_cutoff = len(path) + 1
+            in_state_area = True
+            # Make sure that parts of the k-path are in the state area of the grammar. Ignore otherwise
+            if len(path) > 0:
+                first_symbol = path[0]
+                if first_symbol not in self._model.state_grammar_symbols:
+                    in_state_area = False
+                    path_last_state_cutoff = 0
+            if in_state_area:
+                for path_idx, symbol in enumerate(path):
+                    # Truncate k-path at first occurrence of a message symbol
+                    if symbol in protocol_msg_symbols:
+                        path_last_state_cutoff = path_idx + 1
+                        break
+            remaining_path = path[:path_last_state_cutoff]
             uncovered_paths[list_idx] = remaining_path
         return list(filter(lambda x: len(x) > 0, uncovered_paths))
 

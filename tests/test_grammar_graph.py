@@ -7,6 +7,9 @@ from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.graph.reachability_checker import ReachabilityChecker
 from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConverter
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
+from fandango.io.navigation.selection.packet_guide import PacketGuide
+from fandango.io.navigation.selection.protocol_model import ProtocolModel
+from fandango.io.navigation.selection.target_selector import TargetSelector
 from fandango.language import DerivationTree, NonTerminal
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.grammar import Grammar, KPath
@@ -265,3 +268,29 @@ class Server(FandangoParty):
             tree=hist_tree, destination_k_path=dest_k_path
         )
         self.assertIsNotNone(path)
+
+
+class TestTargetSelector(unittest.TestCase):
+    def test_cross_reference_msgs(self):
+        with open(RESOURCES_ROOT / "cross_reference_protocol_msg.fan") as f:
+            grammar, constraints = parse(
+                [f],
+                use_stdlib=False,
+            )
+        assert grammar is not None
+        start_symbol = NonTerminal("<start>")
+        nt_msg_a = NonTerminal("<msg_a>")
+        nt_msg_b = NonTerminal("<msg_b>")
+        a_follows_b = tuple([nt_msg_a, nt_msg_b])
+        b_follows_a = tuple([nt_msg_b, nt_msg_a])
+        pm = ProtocolModel(grammar, start_symbol)
+        ts = TargetSelector(grammar, start_symbol, pm)
+        all_paths = list(
+            grammar.generate_all_k_paths(
+                k=5, non_terminal=start_symbol, input_parties={"Party"}
+            )
+        )
+        for _ in range(10):
+            target = ts.select(all_paths, [])
+            self.assertFalse(PacketGuide._tuple_contains(a_follows_b, target))
+            self.assertFalse(PacketGuide._tuple_contains(b_follows_a, target))
