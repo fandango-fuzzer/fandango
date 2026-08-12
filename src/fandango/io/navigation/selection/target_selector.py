@@ -36,7 +36,9 @@ class TargetSelector:
     def _trim_to_state_symbols(self, uncovered_paths: list[KPath]) -> list[KPath]:
         """Trim each path back to its last state-grammar symbol; drop empties."""
         uncovered_paths = list(uncovered_paths)
-        protocol_msg_symbols = set(map(lambda x: x.symbol, self._model.protocol_msg_symbols))
+        protocol_msg_symbols = set(
+            map(lambda x: x.symbol, self._model.protocol_msg_symbols)
+        )
         for list_idx, path in enumerate(list(uncovered_paths)):
             path_last_state_cutoff = len(path) + 1
             in_state_area = True

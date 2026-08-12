@@ -271,7 +271,6 @@ class Server(FandangoParty):
 
 
 class TestTargetSelector(unittest.TestCase):
-
     def test_cross_reference_msgs(self):
         with open(RESOURCES_ROOT / "cross_reference_protocol_msg.fan") as f:
             grammar, constraints = parse(
@@ -286,7 +285,11 @@ class TestTargetSelector(unittest.TestCase):
         b_follows_a = tuple([nt_msg_b, nt_msg_a])
         pm = ProtocolModel(grammar, start_symbol)
         ts = TargetSelector(grammar, start_symbol, pm)
-        all_paths = list(grammar.generate_all_k_paths(k=5, non_terminal=start_symbol, input_parties={"Party"}))
+        all_paths = list(
+            grammar.generate_all_k_paths(
+                k=5, non_terminal=start_symbol, input_parties={"Party"}
+            )
+        )
         for _ in range(10):
             target = ts.select(all_paths, [])
             self.assertFalse(PacketGuide._tuple_contains(a_follows_b, target))
