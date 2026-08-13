@@ -89,7 +89,7 @@ def parse(stream:InputStream, entry_rule_name:str, sa_err_listener:SA_ErrorListe
 #-------------------------------------------------------------------------------
 
 try:
-    from . import sa_fandango_cpp_parser
+    import sa_fandango_cpp_parser
 except ImportError:
     USE_CPP_IMPLEMENTATION = False
 
