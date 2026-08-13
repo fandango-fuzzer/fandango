@@ -1,1 +1,1 @@
-<start> ::= b'\xff\x00\x80\xd7' 'ü'
+<start> ::= b'\xff\x00\x80\xd7\x0a' 'ü'

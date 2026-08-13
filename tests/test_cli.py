@@ -199,8 +199,10 @@ class TestCLI(unittest.TestCase):
         ]
         proc = subprocess.run(command, capture_output=True)
         self.assertEqual(b"", proc.stderr, proc.stderr)
-        # Strings are written in UTF-8; bytes as is
-        self.assertEqual(b"\xff\x00\x80\xd7" + "ü".encode(), proc.stdout, proc.stdout)
+        # Strings are written in UTF-8 (the .fan file is read as UTF-8, too,
+        # whatever the locale is); bytes as is, with no newline translation
+        expected = b"\xff\x00\x80\xd7\n" + "ü".encode()
+        self.assertEqual(expected, proc.stdout, proc.stdout)
         self.assertEqual(0, proc.returncode, proc.returncode)
 
     def test_output_bytes_on_stdout_that_cannot_encode_them(self):

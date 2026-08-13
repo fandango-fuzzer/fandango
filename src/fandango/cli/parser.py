@@ -323,7 +323,8 @@ def _get_file_parser() -> argparse.ArgumentParser:
     file_group.add_argument(
         "-f",
         "--fandango-file",
-        type=lambda fan_file_path: open(fan_file_path, "r"),
+        # .fan files are UTF-8, no matter what the locale says (Windows!)
+        type=lambda fan_file_path: open(fan_file_path, "r", encoding="utf-8"),
         dest="fan_files",
         metavar="FAN_FILE",
         default=None,

@@ -75,6 +75,10 @@ def open_file(
 # The encoding stdout writes text in
 TEXT_ENCODING = getattr(sys.stdout, "encoding", "utf-8")
 
+# How we have set up stdout to encode and translate what we print; we track it
+# ourselves, as a stream does not tell us how it translates newlines on writing
+_stdout_mode: tuple[str, str | None] = (TEXT_ENCODING, None)
+
 
 def output_population(
     population: list[DerivationTree],
@@ -184,6 +188,8 @@ def output_solution_to_stdout(
     args: argparse.Namespace,
     file_mode: str,
 ) -> None:
+    global _stdout_mode
+
     LOGGER.debug("Printing solution on stdout")
     out = output(solution, args, file_mode)
     separator = args.separator
@@ -192,12 +198,14 @@ def output_solution_to_stdout(
     reconfigure = getattr(sys.stdout, "reconfigure", None)
 
     if isinstance(out, str):
-        encoding = TEXT_ENCODING
+        # Text follows the platform conventions, newlines included
+        encoding, newline = TEXT_ENCODING, None
     else:
         # Decode the bytes and have stdout encode them right back; iso8859-1
         # maps every byte to the character of the same value, whereas UTF-8
-        # (or whatever the locale asks for) would mangle everything above \x7f
-        encoding = "iso8859-1"
+        # (or whatever the locale asks for) would mangle everything above \x7f.
+        # newline='' keeps Windows from writing each \n byte as \r\n
+        encoding, newline = "iso8859-1", ""
         out = out.decode(encoding)
         separator = separator.encode("utf-8").decode(encoding)
         if reconfigure is None:
@@ -206,9 +214,10 @@ def output_solution_to_stdout(
                 f" {type(sys.stdout).__name__}, which cannot encode as {encoding}"
             )
 
-    if reconfigure is not None and getattr(sys.stdout, "encoding", None) != encoding:
+    if reconfigure is not None and _stdout_mode != (encoding, newline):
         LOGGER.debug(f"Setting stdout encoding to {encoding!r}")
-        reconfigure(encoding=encoding)
+        reconfigure(encoding=encoding, newline=newline)
+        _stdout_mode = (encoding, newline)
 
     print(out, end="")
     print(separator, end="")

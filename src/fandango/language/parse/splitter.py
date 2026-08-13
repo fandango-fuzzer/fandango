@@ -32,7 +32,7 @@ def read_file(file_to_be_included: Path, includes: set[Path]) -> str:
         full_file_name = dir / file_to_be_included
         if not full_file_name.exists():
             continue
-        with full_file_name.open("r") as full_file:
+        with full_file_name.open("r", encoding="utf-8") as full_file:
             LOGGER.debug(f"{file_to_be_included}: including {full_file_name}")
             return full_file.read()
 
