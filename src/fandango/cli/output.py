@@ -75,9 +75,11 @@ def open_file(
 # The encoding stdout writes text in
 TEXT_ENCODING = getattr(sys.stdout, "encoding", "utf-8")
 
-# How we have set up stdout to encode and translate what we print; we track it
-# ourselves, as a stream does not tell us how it translates newlines on writing
-_stdout_mode: tuple[str, str | None] = (TEXT_ENCODING, None)
+# The stream we have set up to encode and translate what we print, and how; we
+# track this ourselves, as a stream does not tell us how it translates newlines.
+# Recording the stream, too, keeps us from trusting the setup of an earlier
+# sys.stdout, which main() may since have replaced
+_stdout_mode: tuple[IO[Any], str, str | None] = (sys.stdout, TEXT_ENCODING, None)
 
 
 def output_population(
@@ -214,10 +216,10 @@ def output_solution_to_stdout(
                 f" {type(sys.stdout).__name__}, which cannot encode as {encoding}"
             )
 
-    if reconfigure is not None and _stdout_mode != (encoding, newline):
+    if reconfigure is not None and _stdout_mode != (sys.stdout, encoding, newline):
         LOGGER.debug(f"Setting stdout encoding to {encoding!r}")
         reconfigure(encoding=encoding, newline=newline)
-        _stdout_mode = (encoding, newline)
+        _stdout_mode = (sys.stdout, encoding, newline)
 
     print(out, end="")
     print(separator, end="")
