@@ -1,5 +1,6 @@
 #!/usr/bin/env pytest
 import asyncio
+import io
 import json
 import os
 import re
@@ -11,13 +12,14 @@ import unittest
 from unittest.mock import patch
 
 from fandango import DISTRIBUTION_NAME
-from fandango.cli import get_parser
+from fandango.cli import get_parser, main
 from fandango.cli.upgrade import (
     Version,
     check_for_fandango_update,
     check_package_for_update,
     version,
 )
+from fandango.errors import FandangoError
 
 from .utils import DOCS_ROOT, IS_BEARTYPE_ACTIVE, RESOURCES_ROOT, run_command
 
@@ -180,6 +182,36 @@ class TestCLI(unittest.TestCase):
         self.assertEqual("", err, err)
         self.assertEqual(expected_output, out, out)
         self.assertEqual(0, code, code)
+
+    def test_output_bytes_on_stdout(self):
+        # Bytes must reach stdout as they are, so that piping the output
+        # into another command (say, `fandango parse`) preserves them
+        command = [
+            "fandango",
+            "fuzz",
+            "-f",
+            str(RESOURCES_ROOT / "high_bytes.fan"),
+            "-n",
+            "1",
+            "--separator",
+            "",
+            "--no-cache",
+        ]
+        proc = subprocess.run(command, capture_output=True)
+        self.assertEqual(b"", proc.stderr, proc.stderr)
+        # Strings are written in UTF-8; bytes as is
+        self.assertEqual(b"\xff\x00\x80\xd7" + "ü".encode(), proc.stdout, proc.stdout)
+        self.assertEqual(0, proc.returncode, proc.returncode)
+
+    def test_output_bytes_on_stdout_that_cannot_encode_them(self):
+        # Rather than write mangled bytes, we refuse to write them at all
+        out = io.StringIO()  # a stream that cannot be re-encoded
+        command = ["fuzz", "-f", str(RESOURCES_ROOT / "high_bytes.fan"), "-n", "1"]
+        with patch("sys.stdout", out), self.assertRaises(FandangoError) as ctx:
+            main(*command, stdout=None)
+
+        self.assertIn("Cannot write binary output", str(ctx.exception))
+        self.assertEqual("", out.getvalue(), out.getvalue())
 
     def test_infinite_mode(self):
         command = [

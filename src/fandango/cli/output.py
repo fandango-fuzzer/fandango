@@ -8,6 +8,7 @@ import tempfile
 from io import UnsupportedOperation
 from typing import IO, Any
 
+from fandango.errors import FandangoError
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER, clear_visualization
 
@@ -69,6 +70,10 @@ def open_file(
         return contextlib.nullcontext(fd)  # otherwise closing will cause an error
 
     return open(filename, mode)
+
+
+# The encoding stdout writes text in
+TEXT_ENCODING = getattr(sys.stdout, "encoding", "utf-8")
 
 
 def output_population(
@@ -181,10 +186,32 @@ def output_solution_to_stdout(
 ) -> None:
     LOGGER.debug("Printing solution on stdout")
     out = output(solution, args, file_mode)
-    if not isinstance(out, str):
-        out = out.decode("iso8859-1")
+    separator = args.separator
+    # Not every stdout can be re-encoded: a StringIO has no encoding at all,
+    # and a codecs stream has one, but no reconfigure()
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+
+    if isinstance(out, str):
+        encoding = TEXT_ENCODING
+    else:
+        # Decode the bytes and have stdout encode them right back; iso8859-1
+        # maps every byte to the character of the same value, whereas UTF-8
+        # (or whatever the locale asks for) would mangle everything above \x7f
+        encoding = "iso8859-1"
+        out = out.decode(encoding)
+        separator = separator.encode("utf-8").decode(encoding)
+        if reconfigure is None:
+            raise FandangoError(
+                f"Cannot write binary output: stdout is a"
+                f" {type(sys.stdout).__name__}, which cannot encode as {encoding}"
+            )
+
+    if reconfigure is not None and getattr(sys.stdout, "encoding", None) != encoding:
+        LOGGER.debug(f"Setting stdout encoding to {encoding!r}")
+        reconfigure(encoding=encoding)
+
     print(out, end="")
-    print(args.separator, end="")
+    print(separator, end="")
 
 
 def output_solution(
