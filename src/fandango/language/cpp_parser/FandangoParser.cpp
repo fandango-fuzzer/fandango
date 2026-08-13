@@ -723,7 +723,7 @@ void fandangoparserParserInitialize() {
   	1133,1,0,0,0,1133,43,1,0,0,0,1134,1132,1,0,0,0,1135,1140,3,46,23,0,1136,
   	1137,5,12,0,0,1137,1139,3,46,23,0,1138,1136,1,0,0,0,1139,1142,1,0,0,0,
   	1140,1138,1,0,0,0,1140,1141,1,0,0,0,1141,45,1,0,0,0,1142,1140,1,0,0,0,
-  	1143,1150,3,48,24,0,1144,1145,5,82,0,0,1145,1146,3,36,18,0,1146,1147,
+  	1143,1150,3,48,24,0,1144,1145,5,82,0,0,1145,1146,3,40,20,0,1146,1147,
   	5,83,0,0,1147,1150,1,0,0,0,1148,1150,3,50,25,0,1149,1143,1,0,0,0,1149,
   	1144,1,0,0,0,1149,1148,1,0,0,0,1150,47,1,0,0,0,1151,1152,3,50,25,0,1152,
   	1153,7,1,0,0,1153,1154,3,50,25,0,1154,49,1,0,0,0,1155,1164,3,52,26,0,
@@ -5350,8 +5350,8 @@ tree::TerminalNode* FandangoParser::Formula_atomContext::OPEN_PAREN() {
   return getToken(FandangoParser::OPEN_PAREN, 0);
 }
 
-FandangoParser::ImpliesContext* FandangoParser::Formula_atomContext::implies() {
-  return getRuleContext<FandangoParser::ImpliesContext>(0);
+FandangoParser::Quantifier_in_lineContext* FandangoParser::Formula_atomContext::quantifier_in_line() {
+  return getRuleContext<FandangoParser::Quantifier_in_lineContext>(0);
 }
 
 tree::TerminalNode* FandangoParser::Formula_atomContext::CLOSE_PAREN() {
@@ -5402,7 +5402,7 @@ FandangoParser::Formula_atomContext* FandangoParser::formula_atom() {
       setState(1144);
       match(FandangoParser::OPEN_PAREN);
       setState(1145);
-      implies();
+      quantifier_in_line();
       setState(1146);
       match(FandangoParser::CLOSE_PAREN);
       break;
