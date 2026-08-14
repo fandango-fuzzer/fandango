@@ -144,7 +144,7 @@ class DerivationTree:
         )
 
         self.hash_cache: Optional[int] = None
-        self._parent = parent
+        self._parent: Optional[DerivationTree] = None
         self._sender = sender
         self._recipient = recipient
         self._symbol = symbol
@@ -158,6 +158,7 @@ class DerivationTree:
         self.read_only = read_only
         self._size: Optional[int] = None
         self.set_children(children or [])
+        self._parent = parent
 
     def __len__(self) -> int:
         return len(self._children)
@@ -222,11 +223,13 @@ class DerivationTree:
         return self.symbol.is_non_terminal
 
     def invalidate_hash(self, update_size: bool = True) -> None:
-        self.hash_cache = None
-        if update_size:
-            self._size = None
-        if self._parent is not None:
-            self._parent.invalidate_hash(update_size=update_size)
+        # invalidate hash from self to root node iteratively
+        node: Optional[DerivationTree] = self
+        while node is not None:
+            node.hash_cache = None
+            if update_size:
+                node._size = None
+            node = node._parent
 
     @property
     def sender(self) -> Optional[str]:
@@ -485,11 +488,34 @@ class DerivationTree:
         )
         memo[id(self)] = copied
 
-        # Deepcopy the children
+        # Deepcopy the children.
         if copy_children:
-            copied.set_children(
-                [copy.deepcopy(child, memo) for child in self._children]
-            )
+            todo = [self]
+            copied_nodes = [self]
+            while todo:
+                node = todo.pop()
+                for child in node._children:
+                    if id(child) not in memo:
+                        memo[id(child)] = DerivationTree(
+                            child.symbol,
+                            [],
+                            sender=child.sender,
+                            recipient=child.recipient,
+                            sources=[],
+                            read_only=child.read_only,
+                            origin_repetitions=list(child.origin_repetitions),
+                        )
+                        todo.append(child)
+                        copied_nodes.append(child)
+            for node in copied_nodes:
+                node_copy = memo[id(node)]
+                assert isinstance(node_copy, DerivationTree)
+                kids = [memo[id(c)] for c in node._children]
+                node_copy._children = kids
+                for kid in kids:
+                    kid._parent = node_copy
+                if node is not self:
+                    node_copy.sources = copy.deepcopy(node.sources, memo)
 
         # Set the parent to None or update if necessary
         if copy_parent:

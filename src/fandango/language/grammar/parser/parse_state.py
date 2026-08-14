@@ -1,14 +1,129 @@
-from typing import Any, Optional
+from collections.abc import Iterator
+from typing import Any, Optional, Union
 
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree
 
 ParserStateSymbolContent = tuple[Symbol, frozenset[tuple[str, Any]]]
 
+#: What can occupy one symbol along a derivation; see `Edge.filler`.
+Filler = Union[DerivationTree, "ParseState", "LeoNest", list[DerivationTree]]
+
+
+class Edge:
+    """
+    Pointer to the previous ParseState (the one .next() was called on).
+    `filler` contains the parsed value produced by advancing the PArseState 'dot' between previous and the current parse state.
+    """
+
+    __slots__ = ("previous", "filler", "params")
+
+    def __init__(
+        self,
+        previous: Optional["ParseState"],
+        filler: Filler,
+        params: Optional[frozenset[tuple[str, Any]]] = None,
+    ):
+        self.previous = previous
+        self.filler = filler
+        self.params = params
+
+    def __repr__(self) -> str:
+        return f"Edge({self.filler!r})"
+
+
+# You want to read LeoNest's documentation first, then LeoEntry and then ReductionChain to understand this data structure.
+class ReductionChain:
+    """
+    Stores the nodes Leo's shortcut jumped over. `head` is the innermost node,
+    starting from the completed symbol.
+    `tail` are further reduction chains going up the tree towards the direction
+    of the root node, ending one below `LeoEntry.top`.
+    """
+
+    __slots__ = ("head", "tail")
+
+    def __init__(self, head: "ParseState", tail: Optional["ReductionChain"] = None):
+        self.head = head
+        self.tail = tail
+
+    def __iter__(self) -> Iterator["ParseState"]:
+        node: Optional[ReductionChain] = self
+        while node is not None:
+            yield node.head
+            node = node.tail
+
+    def __repr__(self) -> str:
+        return f"ReductionChain({list(self)!r})"
+
+
+class LeoEntry:
+    """
+    Stores the shortcut for one Leo reduction path. `top` is the item that
+    gets advanced in place of the whole path. `chain` is the path between the
+    completed symbol (in the table's column) and `top`, both ends excluded.
+    If both are neighbors, `chain` is None.
+    """
+
+    __slots__ = ("top", "chain")
+
+    def __init__(self, top: "ParseState", chain: Optional[ReductionChain] = None):
+        self.top = top
+        self.chain = chain
+
+    def push(self, waiter: "ParseState") -> "LeoEntry":
+        """The same top, with `waiter` prepended to the skipped chain."""
+        return LeoEntry(self.top, ReductionChain(waiter, self.chain))
+
+    def __repr__(self) -> str:
+        return f"LeoEntry(top={self.top!r})"
+
+
+class LeoNest:
+    """
+    Stands in for the completions Leo's shortcut skipped, as one edge filler.
+    `inner` is the item that completed, `chain` the skipped nodes above it, and
+    `top_params` the parameters of the symbol being filled.
+    The `top` field (towards which) `top_params` applies to is the symbol of its Edge.previous.
+    """
+
+    __slots__ = ("chain", "inner", "top_params")
+
+    def __init__(
+        self,
+        chain: Optional[ReductionChain],
+        inner: "ParseState",
+        top_params: Optional[frozenset[tuple[str, Any]]],
+    ):
+        self.chain = chain
+        self.inner = inner
+        self.top_params = top_params
+
+    def states(self) -> list["ParseState"]:
+        """Every state whose children the nest needs, innermost first."""
+        needed = [self.inner]
+        if self.chain is not None:
+            needed.extend(self.chain)
+        return needed
+
+    def __repr__(self) -> str:
+        return f"LeoNest({self.inner!r})"
+
 
 class ParseState:
-    _prev: "Optional[ParseState]"
-    _added: list[DerivationTree]
+
+    __slots__ = (
+        "nonterminal",
+        "position",
+        "symbols",
+        "_dot",
+        "incomplete_idx",
+        "edges",
+        "_hash",
+    )
+
+    # Beartype type-definition
+    edges: list[Edge]
 
     def __init__(
         self,
@@ -16,71 +131,79 @@ class ParseState:
         position: int,
         symbols: tuple[ParserStateSymbolContent, ...],
         dot: int = 0,
-        children: Optional[list[DerivationTree]] = None,
-        is_incomplete: bool = False,
+        edges: Optional[list[DerivationTree]] = None,
         incomplete_idx: int = 0,
     ):
-        self._nonterminal = nonterminal
-        self._position = position
-        self._symbols = symbols
+        self.nonterminal = nonterminal
+        self.position = position
+        self.symbols = symbols
         self._dot = dot
-        self._prev = None
-        self._added: list[DerivationTree] = children if children is not None else []
-        self._children_cache: Optional[list[DerivationTree]] = None
-        self.is_incomplete = is_incomplete
         self.incomplete_idx = incomplete_idx
+        self.edges = []
+        if edges:
+            self.edges.append(Edge(None, list(edges), None))
         self._hash: Optional[int] = None
 
-    @property
-    def nonterminal(self) -> NonTerminal:
-        return self._nonterminal
+    def add_edge(
+        self,
+        previous: Optional["ParseState"],
+        filler: Filler,
+        params: Optional[frozenset[tuple[str, Any]]] = None,
+    ) -> None:
+        """Record that this state is reachable from `previous` via `filler`."""
+        self.edges.append(Edge(previous, filler, params))
 
-    @property
-    def children(self) -> list[DerivationTree]:
-        """The full child list, flattened from the shared chain on demand."""
-        cached = self._children_cache
-        if cached is not None:
-            return cached
-        chunks = []
-        node = self
-        while node is not None:
-            if node._added:
-                chunks.append(node._added)
-            node = node._prev
-        children: list[DerivationTree] = []
-        for chunk in reversed(chunks):
-            children.extend(chunk)
-        self._children_cache = children
-        return children
+    def predecessor(self) -> Optional["ParseState"]:
+        """The state one symbol back along the first derivation, if any."""
+        return self.edges[0].previous if self.edges else None
 
-    def append_child(self, child: DerivationTree) -> None:
-        self._added.append(child)
-        self._children_cache = None
+    def last_filler(self) -> Optional[Filler]:
+        """What filled the most recent symbol along the first derivation."""
+        return self.edges[0].filler if self.edges else None
 
-    def extend_children(self, children: list[DerivationTree]) -> None:
-        self._added.extend(children)
-        self._children_cache = None
+    def set_edge(
+        self,
+        previous: Optional["ParseState"],
+        filler: Filler,
+        params: Optional[frozenset[tuple[str, Any]]] = None,
+    ) -> None:
+        self.edges = [Edge(previous, filler, params)]
 
-    def replace_last_child(self, child: DerivationTree) -> None:
-        if self._added:
-            self._added[-1] = child
-        else:
-            prev = self._prev
-            assert prev is not None and len(prev._added) == 1, (
-                "replace_last_child expects the previous state to have "
-                "contributed exactly one (partial terminal) child"
-            )
-            self._prev = prev._prev
-            self._added = [child]
-        self._children_cache = None
+    def derivation_chunks(self) -> list[Edge]:
+        """
+        The edges along this state's first derivation. Starting from here towards edges going to previous states.
 
-    @property
-    def position(self) -> int:
-        return self._position
+        Therefore, returns edges in reversed order.
+        """
+        chunks: list[Edge] = []
+        node: Optional[ParseState] = self
+        while node is not None and node.edges:
+            edge = node.edges[0]
+            chunks.append(edge)
+            node = edge.previous
+        return chunks
 
-    @property
-    def symbols(self) -> tuple[ParserStateSymbolContent, ...]:
-        return self._symbols
+    def has_children(self) -> bool:
+        """
+        Whether this state has any children.
+        """
+        stack: list[ParseState] = [self]
+        while stack:
+            node: Optional[ParseState] = stack.pop()
+            while node is not None and node.edges:
+                edge = node.edges[0]
+                filler = edge.filler
+                if isinstance(filler, DerivationTree):
+                    return True
+                if isinstance(filler, list):
+                    if filler:
+                        return True
+                elif isinstance(filler, LeoNest):
+                    stack.extend(filler.states())
+                else:
+                    stack.append(filler)
+                node = edge.previous
+        return False
 
     @property
     def dot(self) -> Optional[Symbol]:
@@ -90,6 +213,13 @@ class ParseState:
     def dot_params(self) -> Optional[frozenset[tuple[str, Any]]]:
         return self.symbols[self._dot][1] if self._dot < len(self.symbols) else None
 
+    @property
+    def is_incomplete(self) -> bool:
+        """
+        Whether the terminal under the dot is only partially matched.
+        """
+        return self.incomplete_idx > 0
+
     def finished(self) -> bool:
         return self._dot >= len(self.symbols) and not self.is_incomplete
 
@@ -97,9 +227,6 @@ class ParseState:
         return (
             self._dot < len(self.symbols) and self.symbols[self._dot][0].is_non_terminal
         )
-
-    def next_symbol_is_terminal(self) -> bool:
-        return self._dot < len(self.symbols) and self.symbols[self._dot][0].is_terminal
 
     def __hash__(self) -> int:
         if self._hash is None:
@@ -112,6 +239,7 @@ class ParseState:
                     self.symbols[0][0] if self.symbols else None,
                 )
             )
+        assert self._hash is not None
         return self._hash
 
     def __eq__(self, other: object) -> bool:
@@ -138,21 +266,31 @@ class ParseState:
         )
 
     def next(self) -> "ParseState":
-        next_state = self.copy()
-        next_state._dot += 1
-        return next_state
+        """Returns self rule, with 'dot' advanced by one position. (edges not copied)"""
+        return ParseState(
+            self.nonterminal,
+            self.position,
+            self.symbols,
+            self._dot + 1,
+            None,
+            self.incomplete_idx,
+        )
 
-    def copy(self) -> "ParseState":
-        # Share this state's children rather than copying them: the copy
-        # contributes nothing of its own and chains back to us.
+    def __deepcopy__(self, memo: dict[int, Any]) -> "ParseState":
+        """
+        Copy self, by value. Only copies edges by reference.
+        """
         copied = ParseState(
             self.nonterminal,
             self.position,
             self.symbols,
             self._dot,
             None,
-            self.is_incomplete,
             self.incomplete_idx,
         )
-        copied._prev = self
+        copied.edges = list(self.edges)
+        memo[id(self)] = copied
         return copied
+
+    def copy(self) -> "ParseState":
+        return self.__deepcopy__(dict())

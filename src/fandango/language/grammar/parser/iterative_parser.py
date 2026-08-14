@@ -4,15 +4,14 @@ from typing import Any, Optional
 
 from fandango.errors import FandangoValueError
 from fandango.language.grammar import ParsingMode
-from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
-from fandango.language.grammar.nodes.alternative import Alternative
-from fandango.language.grammar.nodes.concatenation import Concatenation
-from fandango.language.grammar.nodes.node import Node, NodeType
-from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
-from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
-from fandango.language.grammar.nodes.terminal import TerminalNode
+from fandango.language.grammar.nodes.node import Node
+from fandango.language.grammar.nodes.repetition import Repetition
 from fandango.language.grammar.parser.column import Column
+from fandango.language.grammar.parser.forest import ForestBuilder
+from fandango.language.grammar.parser.grammar_compiler import GrammarCompiler
 from fandango.language.grammar.parser.parse_state import (
+    LeoEntry,
+    LeoNest,
     ParserStateSymbolContent,
     ParseState,
 )
@@ -25,241 +24,28 @@ from fandango.language.tree_value import TreeValue, TreeValueType
 IterativeParserVisitorReturnType = list[list[ParserStateSymbolContent]]
 
 
-class IterativeParser(
-    NodeVisitor[
-        IterativeParserVisitorReturnType,
-        IterativeParserVisitorReturnType,
-    ]
-):
+class IterativeParser:
     def __init__(
         self,
         grammar_rules: dict[NonTerminal, Node],
     ):
         self.implicit_start = NonTerminal("<*start*>")
-        self.grammar_rules: dict[NonTerminal, Node] = grammar_rules
-        self._rules: dict[NonTerminal, set[ParserStateSymbolContent]] = {}
-        self._implicit_rules: dict[NonTerminal, set[ParserStateSymbolContent]] = {}
-        self._context_rules: dict[
-            NonTerminal, tuple[Node, ParserStateSymbolContent]
-        ] = dict()
-        self._tmp_rules: dict[NonTerminal, set[ParserStateSymbolContent]] = {}
+        self._compiler = GrammarCompiler(grammar_rules)
+        self.grammar_rules = self._compiler.grammar_rules
+        self._rules = self._compiler._rules
+        self._implicit_rules = self._compiler._implicit_rules
+        self._context_rules = self._compiler._context_rules
+        self._tmp_rules = self._compiler._tmp_rules
         self._incomplete: set[DerivationTree] = set()
-        self._nodes: dict[str, Node] = {}
         self._max_position = -1
-        self.elapsed_time: float = 0.0
-        self._process()
         self._table_idx = 0
         self._table: list[Column] = []
         self._parsing_mode = ParsingMode.COMPLETE
-        self._bit_position = -1
         self._start: Optional[NonTerminal] = None
         self._first_consume = True
         self._hookin_parent: Optional[DerivationTree] = None
-        self._prefix_word = None
-
-    def _process(self) -> None:
-        self._rules.clear()
-        self._implicit_rules.clear()
-        self._context_rules.clear()
-        for nonterminal in self.grammar_rules:
-            self.set_rule(nonterminal, self.visit(self.grammar_rules[nonterminal]))
-
-        for nonterminal in self._implicit_rules:
-            self._implicit_rules[nonterminal] = {
-                tuple(a)  # type: ignore[misc]
-                for a in self._implicit_rules[nonterminal]
-            }
-
-    def set_implicit_rule(
-        self, rule: IterativeParserVisitorReturnType
-    ) -> ParserStateSymbolContent:
-        nonterminal = NonTerminal(f"<*{len(self._implicit_rules)}*>")
-        self._implicit_rules[nonterminal] = rule  # type: ignore[assignment] # TODO: this is wrong somewhere but magically works. Fix me!
-        return (nonterminal, frozenset())
-
-    def set_rule(
-        self, nonterminal: NonTerminal, rule: IterativeParserVisitorReturnType
-    ) -> None:
-        self._rules[nonterminal] = {tuple(a) for a in rule}  # type: ignore[misc]
-
-    def set_context_rule(
-        self, node: Node, non_terminal: ParserStateSymbolContent
-    ) -> NonTerminal:
-        nonterminal = NonTerminal(f"<*ctx_{len(self._context_rules)}*>")
-        self._context_rules[nonterminal] = (node, non_terminal)
-        return nonterminal
-
-    def set_tmp_rule(
-        self,
-        rule: IterativeParserVisitorReturnType,
-        nonterminal: Optional[NonTerminal] = None,
-    ) -> tuple[ParserStateSymbolContent, str]:
-        if nonterminal is None:
-            nonterminal = NonTerminal(f"<*tmp_{len(self._tmp_rules)}*>")
-        rule_id = str(nonterminal.value())[2:-2]
-        self._tmp_rules[nonterminal] = {tuple(a) for a in rule}  # type: ignore[misc]
-        return (nonterminal, frozenset()), rule_id
-
-    def _clear_tmp(self) -> None:
-        self._tmp_rules.clear()
-
-    def default_result(self) -> IterativeParserVisitorReturnType:
-        return []
-
-    def aggregate_results(
-        self,
-        aggregate: IterativeParserVisitorReturnType,
-        result: IterativeParserVisitorReturnType,
-    ) -> IterativeParserVisitorReturnType:
-        aggregate.extend(result)
-        return aggregate
-
-    def visitAlternative(self, node: Alternative) -> IterativeParserVisitorReturnType:
-        intermediate_nt = NonTerminal(f"<__{node.id}>")
-        self._nodes[intermediate_nt.name()] = node
-        result = self.visitChildren(node)
-        self.set_rule(intermediate_nt, result)
-        return [[(intermediate_nt, frozenset())]]
-
-    def visitConcatenation(
-        self, node: Concatenation
-    ) -> IterativeParserVisitorReturnType:
-        intermediate_nt = NonTerminal(f"<__{node.id}>")
-        self._nodes[intermediate_nt.name()] = node
-        result: IterativeParserVisitorReturnType = [[]]
-        for child in node.children():
-            to_add = self.visit(child)
-            new_result = []
-            for r in result:
-                for a in to_add:
-                    new_result.append(r + a)
-            result = new_result
-        self.set_rule(intermediate_nt, result)
-        return [[(intermediate_nt, frozenset())]]
-
-    def visitRepetition(
-        self,
-        node: Repetition,
-        nt: Optional[ParserStateSymbolContent] = None,
-        tree: Optional[DerivationTree] = None,
-    ) -> IterativeParserVisitorReturnType:
-        repetition_nt = NonTerminal(f"<__{node.id}>")
-        self._nodes[repetition_nt.name()] = node
-        is_context = node.bounds_constraint is not None
-
-        if nt is None:
-            alternatives = self.visit(node.node)
-            nt = self.set_implicit_rule(alternatives)
-
-            if is_context:
-                i_nt = self.set_context_rule(node, nt)
-                self.set_rule(repetition_nt, [[(i_nt, frozenset())]])
-                return [[(repetition_nt, frozenset())]]
-
-        prev = None
-        if node.bounds_constraint is not None:
-            assert tree is not None
-            right_most_node = tree
-            while len(right_most_node.children) != 0:
-                right_most_node = right_most_node.children[-1]
-            node_min, _ = node.bounds_constraint.min(right_most_node)
-            node_max, _ = node.bounds_constraint.max(right_most_node)
-        else:
-            node_min = node.min
-            node_max = node.max
-        for _rep in range(node_min, node_max):
-            alts = [[nt]]
-            if prev is not None:
-                alts.append([nt, prev])
-            if is_context:
-                prev, rule_id = self.set_tmp_rule(alts)
-            else:
-                prev = self.set_implicit_rule(alts)
-        alts = [node_min * [nt]]
-        if prev is not None:
-            alts.append(node_min * [nt] + [prev])
-        if is_context:
-            tmp_nt, rule_id = self.set_tmp_rule(alts)
-            return [[tmp_nt]]
-        min_nt = self.set_implicit_rule(alts)
-        self.set_rule(repetition_nt, [[min_nt]])
-        return [[(repetition_nt, frozenset())]]
-
-    def visitStar(self, node: Star) -> IterativeParserVisitorReturnType:
-        intermediate_nt = NonTerminal(f"<__{node.id}>")
-        self._nodes[intermediate_nt.name()] = node
-        alternatives: IterativeParserVisitorReturnType = [[]]
-        nt = self.set_implicit_rule(alternatives)
-        for r in self.visit(node.node):
-            alternatives.append(r + [nt])
-        result = [[nt]]
-        self.set_rule(intermediate_nt, result)
-        return [[(intermediate_nt, frozenset())]]
-
-    def visitPlus(self, node: Plus) -> IterativeParserVisitorReturnType:
-        intermediate_nt = NonTerminal(f"<__{node.id}>")
-        self._nodes[intermediate_nt.name()] = node
-        alternatives: IterativeParserVisitorReturnType = []
-        nt = self.set_implicit_rule(alternatives)
-        for r in self.visit(node.node):
-            alternatives.append(r)
-            alternatives.append(r + [nt])
-        result = [[nt]]
-        self.set_rule(intermediate_nt, result)
-        return [[(intermediate_nt, frozenset())]]
-
-    def visitOption(self, node: Option) -> IterativeParserVisitorReturnType:
-        intermediate_nt = NonTerminal(f"<__{node.id}>")
-        self._nodes[intermediate_nt.name()] = node
-        result: IterativeParserVisitorReturnType = [[]] + self.visit(node.node)
-        self.set_rule(intermediate_nt, result)
-        return [[(intermediate_nt, frozenset())]]
-
-    def visitNonTerminalNode(
-        self, node: NonTerminalNode
-    ) -> IterativeParserVisitorReturnType:
-        params = dict()
-        if node.sender is not None:
-            params["sender"] = node.sender
-        if node.recipient is not None:
-            params["recipient"] = node.recipient
-        parameters = frozenset(params.items())
-        return [[(node.symbol, parameters)]]
-
-    def visitTerminalNode(self, node: TerminalNode) -> IterativeParserVisitorReturnType:
-        return [[(node.symbol, frozenset())]]
-
-    def collapse(self, tree: Optional[DerivationTree]) -> Optional[DerivationTree]:
-        if tree is None:
-            return None
-        if isinstance(tree.symbol, NonTerminal):
-            if str(tree.symbol.value()).startswith("<__"):
-                raise FandangoValueError(
-                    "Can't collapse a tree with an implicit root node"
-                )
-        return self._collapse(tree)[0]
-
-    def _collapse(self, tree: DerivationTree) -> list[DerivationTree]:
-        reduced = []
-        for child in tree.children:
-            rec_reduced = self._collapse(child)
-            reduced.extend(rec_reduced)
-
-        if isinstance(tree.symbol, NonTerminal):
-            if str(tree.symbol.value()).startswith("<__"):
-                return reduced
-
-        return [
-            DerivationTree(
-                tree.symbol,
-                children=reduced,
-                sources=tree.sources,
-                read_only=tree.read_only,
-                recipient=tree.recipient,
-                sender=tree.sender,
-                origin_repetitions=tree.origin_repetitions,
-            )
-        ]
+        self._columns_per_byte = 8
+        self._forest = ForestBuilder(self._rules, self._compiler._nodes)
 
     def can_continue(self) -> bool:
         if len(self._table) <= 1:
@@ -289,6 +75,14 @@ class IterativeParser(
         symbol = state.dot
         assert symbol is not None
         assert isinstance(symbol, NonTerminal)
+        predicted = table[k].predicted
+        if symbol in predicted:
+            # We dont add update the table, if we've already predicted the same symbol in the same column.
+            # We make an exception for context rules, as they depend on semantics.
+            if symbol not in self._context_rules:
+                return
+        else:
+            predicted.add(symbol)
         if state.dot in self._rules:
             table[k].update(
                 {ParseState(symbol, k, rule, 0) for rule in self._rules[symbol]}  # type: ignore[arg-type] # TODO:  this is a bug!
@@ -320,7 +114,9 @@ class IterativeParser(
     def construct_incomplete_tree(
         self, state: ParseState, table: list[Column]
     ) -> DerivationTree:
-        current_tree = ParserDerivationTree(state.nonterminal, state.children)
+        current_tree = ParserDerivationTree(
+            state.nonterminal, self._forest.children_of(state)
+        )
         current_state = state
         found_next_state = True
         while found_next_state:
@@ -334,13 +130,16 @@ class IterativeParser(
             if current_tree.symbol.name().startswith("<*"):
                 current_tree = ParserDerivationTree(
                     current_state.nonterminal,
-                    [*current_state.children, *current_tree.children],
+                    [
+                        *self._forest.children_of(current_state),
+                        *current_tree.children,
+                    ],
                     **dict(current_state.dot_params or {}),
                 )
             else:
                 current_tree = ParserDerivationTree(
                     current_state.nonterminal,
-                    [*current_state.children, current_tree],
+                    [*self._forest.children_of(current_state), current_tree],
                     **dict(current_state.dot_params or {}),
                 )
 
@@ -365,7 +164,7 @@ class IterativeParser(
         if hookin_parent is not None:
             hookin_parent.set_children(hookin_parent.children + [tree])
         try:
-            [[context_nt]] = self.visitRepetition(
+            context_nt = self._compiler.compile_bounded_repetition(
                 node, nt_rule, tree if hookin_parent is None else hookin_parent
             )
         except (ValueError, FandangoValueError):
@@ -386,8 +185,8 @@ class IterativeParser(
             state.position,
             tuple(new_symbols),
             state._dot,
-            state.children,
-            state.is_incomplete,
+            self._forest.children_of(state),
+            state.incomplete_idx,
         )
         if state in table[k]:
             table[k].replace(state, new_state)
@@ -431,7 +230,7 @@ class IterativeParser(
         # LOGGER.debug(f"Found bit {bit}")
         next_state = state.next()
         tree = ParserDerivationTree(Terminal(bit))
-        next_state.append_child(tree)
+        next_state.set_edge(state, tree)
         # LOGGER.debug(f"Added tree {tree.to_string()!r} to state {next_state!r}")
         # Insert a new table entry with next state
         # This is necessary, as our initial table holds one entry
@@ -476,7 +275,8 @@ class IterativeParser(
 
         check_word = word[w:]
         if state.is_incomplete:
-            prev_terminal = state.children[-1]
+            prev_terminal = state.last_filler()
+            assert isinstance(prev_terminal, DerivationTree)
             prev_val = prev_terminal.symbol.value()
             prev_val_raw: str | bytes
             if prev_val.is_type(TreeValueType.BYTES):
@@ -493,7 +293,7 @@ class IterativeParser(
             dot_len = len(str(state.dot.value()))
 
         match, match_length = state.dot.check(check_word)
-        table_idx_multiplier = 8
+        table_idx_multiplier = self._columns_per_byte
 
         if not match:
             if (w + dot_len - state.incomplete_idx) < len(word):
@@ -504,21 +304,17 @@ class IterativeParser(
 
             next_state = state.copy()
             next_state.incomplete_idx = match_length
-            next_state.is_incomplete = True
             tree = ParserDerivationTree(Terminal(check_word[:match_length]))
-            if state.is_incomplete:
-                next_state.replace_last_child(tree)
-            else:
-                next_state.append_child(tree)
+            next_state.set_edge(
+                state.predecessor() if state.is_incomplete else state, tree
+            )
         else:
             next_state = state.next()
-            next_state.is_incomplete = False
             next_state.incomplete_idx = 0
             tree = ParserDerivationTree(Terminal(check_word[:match_length]))
-            if state.is_incomplete:
-                next_state.replace_last_child(tree)
-            else:
-                next_state.append_child(tree)
+            next_state.set_edge(
+                state.predecessor() if state.is_incomplete else state, tree
+            )
         table[k + ((match_length - state.incomplete_idx) * table_idx_multiplier)].add(
             next_state
         )
@@ -534,7 +330,6 @@ class IterativeParser(
         table: list[Column],
         k: int,
         w: int,
-        mode: ParsingMode,
     ) -> bool:
         """
         Scan a byte from the input `word`.
@@ -555,7 +350,8 @@ class IterativeParser(
         check_word = word[w:]
         prev_match_length = 0
         if state.is_incomplete:
-            prev_terminal = state.children[-1]
+            prev_terminal = state.last_filler()
+            assert isinstance(prev_terminal, DerivationTree)
             prev_val = prev_terminal.symbol.value()
             prev_val_raw: str | bytes
             if prev_val.is_type(TreeValueType.BYTES):
@@ -568,7 +364,7 @@ class IterativeParser(
                 check_word = str(TreeValue(prev_val_raw).append(TreeValue(check_word)))
             prev_match_length = len(prev_val_raw)
 
-        table_idx_multiplier = 8
+        table_idx_multiplier = self._columns_per_byte
         match, match_length = state.dot.check(check_word)
         table_offset = match_length
         if match and match_length <= prev_match_length:
@@ -584,25 +380,23 @@ class IterativeParser(
 
         if match:
             next_state = state.next()
-            next_state.is_incomplete = False
             next_state.incomplete_idx = 0
             tree = ParserDerivationTree(Terminal(check_word[:match_length]))
-            if state.is_incomplete:
-                next_state.replace_last_child(tree)
-            else:
-                next_state.append_child(tree)
+            # Growing a partial match replaces the previous partial
+            # terminal rather than adding a child, so step back over it.
+            next_state.set_edge(
+                state.predecessor() if state.is_incomplete else state, tree
+            )
             table[
                 k + ((table_offset - state.incomplete_idx) * table_idx_multiplier)
             ].add(next_state)
         if incomplete_match:
             next_state = state.copy()
-            next_state.is_incomplete = True
             next_state.incomplete_idx = incomplete_match_length
             tree = ParserDerivationTree(Terminal(check_word[:incomplete_match_length]))
-            if state.is_incomplete:
-                next_state.replace_last_child(tree)
-            else:
-                next_state.append_child(tree)
+            next_state.set_edge(
+                state.predecessor() if state.is_incomplete else state, tree
+            )
             table[
                 k
                 + (
@@ -614,141 +408,60 @@ class IterativeParser(
         self._max_position = max(self._max_position, w + match_length)
         return True
 
-    def _rec_to_derivation_tree(
-        self,
-        tree: DerivationTree,
-        origin_repetitions: Optional[list[tuple[str, int, int]]] = None,
-    ) -> DerivationTree:
-        if origin_repetitions is None:
-            origin_repetitions = []
+    def _leo_entry(
+        self, table: list[Column], index: int, symbol: Symbol
+    ) -> Optional[LeoEntry]:
+        """
+        When only one way to reduce upwards from `symbol` exists, returns the
+        top of that chain, else None.
+        """
+        pending: list[tuple[int, Symbol, ParseState]] = []
+        entry: Optional[LeoEntry] = None
+        current_index, current_symbol = index, symbol
+        while True:
+            column = table[current_index]
+            if current_symbol in column.leo:
+                entry = column.leo[current_symbol]
+                break
+            waiters = column.dot_map.get(current_symbol)
+            if waiters is None or len(waiters) != 1:
+                column.leo[current_symbol] = None
+                break
+            waiter = waiters[0]
+            if waiter._dot != len(waiter.symbols) - 1 or waiter.is_incomplete:
+                column.leo[current_symbol] = None
+                break
+            pending.append((current_index, current_symbol, waiter))
+            current_index, current_symbol = waiter.position, waiter.nonterminal
+            if current_index > index:
+                break
 
-        rep_option = None
-        is_controlflow_node = (
-            isinstance(tree.symbol, NonTerminal) and tree.symbol.name() in self._nodes
-        )
-        if is_controlflow_node:
-            nt = tree.symbol
-            assert isinstance(nt, NonTerminal)
-            node = self._nodes[nt.name()]
-            if isinstance(node, Repetition):
-                node.iteration += 1
-                rep_option = (node.id, node.iteration, 0)
-
-        children: list[DerivationTree] = []
-        for child in tree.children:
-            if is_controlflow_node:
-                if rep_option is not None:
-                    current_origin_repetitions = list(origin_repetitions) + [rep_option]
-                    rep_option = (rep_option[0], rep_option[1], rep_option[2] + 1)
-                else:
-                    current_origin_repetitions = list(origin_repetitions)
-            else:
-                current_origin_repetitions = []
-
-            children.append(
-                self._rec_to_derivation_tree(child, current_origin_repetitions)
-            )
-
-        return DerivationTree(
-            tree.symbol,
-            children,
-            parent=tree.parent,
-            sources=tree.sources,
-            sender=tree.sender,
-            recipient=tree.recipient,
-            read_only=tree.read_only,
-            origin_repetitions=origin_repetitions,
-        )
-
-    def to_derivation_tree(self, tree: DerivationTree) -> DerivationTree:
-        assert tree is not None
-        return self._rec_to_derivation_tree(tree)
+        for cached_index, cached_symbol, waiter in reversed(pending):
+            entry = LeoEntry(waiter) if entry is None else entry.push(waiter)
+            table[cached_index].leo[cached_symbol] = entry
+        return entry
 
     def complete(
         self,
         state: ParseState,
         table: list[Column],
         k: int,
-        use_implicit: bool = False,
     ) -> None:
+        target = table[k]
+        if state.position < k:
+            entry = self._leo_entry(table, state.position, state.nonterminal)
+            if entry is not None:
+                top = entry.top
+                advanced = top.next()
+                advanced.add_edge(
+                    top, LeoNest(entry.chain, state, top.dot_params), top.dot_params
+                )
+                target.add(advanced)
+                return
         for s in table[state.position].find_dot(state.nonterminal):
-            dot_params = dict(s.dot_params or [])
-            s = s.next()
-            if state.nonterminal in self._rules:
-                s.append_child(
-                    ParserDerivationTree(
-                        state.nonterminal, state.children, **dot_params
-                    )
-                )
-            else:
-                if use_implicit and state.nonterminal in self._implicit_rules:
-                    s.append_child(
-                        ParserDerivationTree(
-                            NonTerminal(state.nonterminal.name()),
-                            state.children,
-                            **dict(s.dot_params or []),
-                        )
-                    )
-                else:
-                    s.extend_children(state.children)
-            table[k].add(s)
-
-    def place_repetition_shortcut(self, table: list[Column], k: int) -> None:
-        col = table[k]
-        states = col.states
-        beginner_nts = [f"<__{NodeType.PLUS}:", f"<__{NodeType.STAR}:"]
-
-        found_beginners = set()
-        for state in states:
-            if any(
-                map(
-                    lambda b: str(state.nonterminal.value()).startswith(b),
-                    beginner_nts,
-                )
-            ):
-                found_beginners.add(state.symbols[0][0])
-
-        for beginner in found_beginners:
-            current_col_state = None
-            for state in states:
-                if state.nonterminal == beginner:
-                    if state.finished():
-                        continue
-                    if len(state.symbols) == 2 and state.dot == beginner:
-                        current_col_state = state
-                        break
-            if current_col_state is None:
-                continue
-            new_state: Optional[ParseState] = current_col_state
-            origin_states = table[current_col_state.position].find_dot(
-                current_col_state.dot
-            )
-            if len(origin_states) != 1:
-                continue
-            origin_state = origin_states[0]
-            while not any(
-                map(
-                    lambda b: str(origin_state.nonterminal.value()).startswith(b),
-                    beginner_nts,
-                )
-            ):
-                assert new_state is not None
-                new_state = ParseState(
-                    new_state.nonterminal,
-                    origin_state.position,
-                    new_state.symbols,
-                    new_state._dot,
-                    [*origin_state.children, *new_state.children],
-                    new_state.is_incomplete,
-                )
-                origin_states = table[new_state.position].find_dot(new_state.dot)
-                if len(origin_states) != 1:
-                    new_state = None
-                    break
-                origin_state = origin_states[0]
-
-            if new_state is not None:
-                col.replace(current_col_state, new_state)
+            advanced = s.next()
+            advanced.add_edge(s, state, s.dot_params)
+            target.add(advanced)
 
     def new_parse(
         self,
@@ -760,15 +473,17 @@ class IterativeParser(
         if isinstance(start, str):
             start = NonTerminal(start)
         self._start = start
-        self._table_idx = (7 - starter_bit) % 8
+        self._columns_per_byte = self._compiler.columns_per_byte_for(start)
+        self._table_idx = (7 - starter_bit) % 8 if self._columns_per_byte == 8 else 0
         self._table = []
         self._table.append(Column())
         self._first_consume = True
         self._incomplete.clear()
+        self._forest.reset()
         self._max_position = -1
         self._parsing_mode = mode
         self._hookin_parent = deepcopy(hookin_parent)
-        self._clear_tmp()
+        self._compiler._clear_tmp()
 
     def consume(
         self, char: str | bytes | int
@@ -786,7 +501,8 @@ class IterativeParser(
 
         # If >= 0, indicates the next bit to be scanned (7-0)
         table = list(self._table)
-        table.extend([Column() for _ in range(len(char) * 8)])
+        per_byte = self._columns_per_byte
+        table.extend([Column() for _ in range(len(char) * per_byte)])
         # Add the start state at the first consume
         if self._first_consume:
             table[self._table_idx].add(
@@ -806,12 +522,14 @@ class IterativeParser(
             # True iff we have processed all characters
             # (or some bits of the last character)
             at_end = curr_word_idx >= len(word)
+            ambiguous_starts: list[ParseState] = []
             for state in table[curr_table_idx]:
                 if state.finished():
                     if state.nonterminal == self.implicit_start:
                         if at_end:
-                            for child in state.children:
+                            for child in self._forest.children_of(state):
                                 yield child, True
+                            ambiguous_starts.append(state)
 
                     self.complete(state, table, curr_table_idx)
                 else:
@@ -838,7 +556,6 @@ class IterativeParser(
                                     table,
                                     curr_table_idx,
                                     curr_word_idx,
-                                    self._parsing_mode,
                                 )
                             else:
                                 _ = self.scan_bytes(
@@ -851,19 +568,36 @@ class IterativeParser(
 
             if self._parsing_mode == ParsingMode.INCOMPLETE and at_end:
                 for state in table[curr_table_idx]:
-                    if len(state.children) == 0:
+                    if not state.has_children():
                         continue
                     if state.nonterminal == self.implicit_start:
-                        for child in state.children:
+                        for child in self._forest.children_of(state):
                             if child not in self._incomplete:
                                 self._incomplete.add(child)
                                 yield child, False
+                        if state not in ambiguous_starts:
+                            ambiguous_starts.append(state)
                     self.complete(state, table, curr_table_idx)
 
-            self.place_repetition_shortcut(table, curr_table_idx)
+            for state in ambiguous_starts:
+                for child in self._forest.extra_alternatives(state):
+                    if self._parsing_mode == ParsingMode.INCOMPLETE:
+                        if child in self._incomplete:
+                            continue
+                        self._incomplete.add(child)
+                        yield child, False
+                    else:
+                        yield child, True
+
             curr_table_idx += 1
-            if curr_table_idx % 8 == 0:
+            if curr_table_idx % per_byte == 0:
                 curr_word_idx += 1
+
+    def to_derivation_tree(self, tree: DerivationTree) -> DerivationTree:
+        return self._forest.to_derivation_tree(tree)
+
+    def collapse(self, tree: Optional[DerivationTree]) -> Optional[DerivationTree]:
+        return self._forest.collapse(tree)
 
     def max_position(self) -> int:
         """Return the maximum position reached during parsing."""

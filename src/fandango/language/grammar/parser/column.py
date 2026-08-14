@@ -1,17 +1,22 @@
 from collections.abc import Iterator
 from typing import Optional
 
-from fandango.language.grammar.parser.parse_state import ParseState
+from fandango.language.grammar.parser.parse_state import LeoEntry, ParseState
 from fandango.language.symbols.symbol import Symbol
 
 
 class Column:
-    def __init__(self, states: Optional[list[ParseState]] = None):
-        self.states: list[ParseState] = states or []
+
+    def __init__(self) -> None:
+        self.states: list[ParseState] = []
         self.dot_map = dict[Symbol, list[ParseState]]()
-        self.unique = set(self.states)
-        for state in self.states:
-            self.dot_map[state.nonterminal].append(state)
+        # Maps a state to the canonical object for it in this column, so a
+        # duplicate can hand its edges to the state already present instead
+        # of being dropped along with the derivation it stands for.
+        self.unique = dict[ParseState, ParseState]()
+        # Used for early deduplication in predict
+        self.predicted = set[Symbol]()
+        self.leo: dict[Symbol, Optional[LeoEntry]] = {}
 
     def __iter__(self) -> Iterator[ParseState]:
         yield from self.states
@@ -22,20 +27,9 @@ class Column:
     def __getitem__(self, item: int) -> ParseState:
         return self.states[item]
 
-    def remove(self, state: ParseState) -> Optional[bool]:
-        if state not in self.unique:
-            return False
-        self.unique.remove(state)
-        self.states.remove(state)
-        symbol = state.dot
-        assert symbol is not None
-        default_list: list[ParseState] = []
-        self.dot_map.get(symbol, default_list).remove(state)
-        return None
-
     def replace(self, old: ParseState, new: ParseState) -> None:
-        self.unique.remove(old)
-        self.unique.add(new)
+        del self.unique[old]
+        self.unique[new] = new
         i_old = self.states.index(old)
         del self.states[i_old]
         self.states.insert(i_old, new)
@@ -59,15 +53,20 @@ class Column:
         return self.dot_map.get(nt, [])
 
     def add(self, state: ParseState) -> bool:
-        if state not in self.unique:
+        existing = self.unique.get(state)
+        if existing is None:
             self.states.append(state)
-            self.unique.add(state)
+            self.unique[state] = state
             symbol = state.dot
             if symbol is not None:
                 state_list = self.dot_map.get(symbol, [])
                 state_list.append(state)
                 self.dot_map[symbol] = state_list
             return True
+        if existing is not state and state.edges:
+            # Same item, different derivation: keep it as an alternative.
+            # Predicted states carry no edges, so this is a no-op for them.
+            existing.edges.extend(state.edges)
         return False
 
     def update(self, states: set[ParseState]) -> None:
