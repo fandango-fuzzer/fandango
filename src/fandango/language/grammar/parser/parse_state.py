@@ -7,6 +7,9 @@ ParserStateSymbolContent = tuple[Symbol, frozenset[tuple[str, Any]]]
 
 
 class ParseState:
+    _prev: "Optional[ParseState]"
+    _added: list[DerivationTree]
+
     def __init__(
         self,
         nonterminal: NonTerminal,
@@ -21,7 +24,9 @@ class ParseState:
         self._position = position
         self._symbols = symbols
         self._dot = dot
-        self.children = children or []
+        self._prev = None
+        self._added: list[DerivationTree] = children if children is not None else []
+        self._children_cache: Optional[list[DerivationTree]] = None
         self.is_incomplete = is_incomplete
         self.incomplete_idx = incomplete_idx
         self._hash: Optional[int] = None
@@ -30,13 +35,44 @@ class ParseState:
     def nonterminal(self) -> NonTerminal:
         return self._nonterminal
 
+    @property
+    def children(self) -> list[DerivationTree]:
+        """The full child list, flattened from the shared chain on demand."""
+        cached = self._children_cache
+        if cached is not None:
+            return cached
+        chunks = []
+        node = self
+        while node is not None:
+            if node._added:
+                chunks.append(node._added)
+            node = node._prev
+        children: list[DerivationTree] = []
+        for chunk in reversed(chunks):
+            children.extend(chunk)
+        self._children_cache = children
+        return children
+
     def append_child(self, child: DerivationTree) -> None:
-        self.children.append(child)
-        self._hash = None
+        self._added.append(child)
+        self._children_cache = None
 
     def extend_children(self, children: list[DerivationTree]) -> None:
-        self.children.extend(children)
-        self._hash = None
+        self._added.extend(children)
+        self._children_cache = None
+
+    def replace_last_child(self, child: DerivationTree) -> None:
+        if self._added:
+            self._added[-1] = child
+        else:
+            prev = self._prev
+            assert prev is not None and len(prev._added) == 1, (
+                "replace_last_child expects the previous state to have "
+                "contributed exactly one (partial terminal) child"
+            )
+            self._prev = prev._prev
+            self._added = [child]
+        self._children_cache = None
 
     @property
     def position(self) -> int:
@@ -71,9 +107,9 @@ class ParseState:
                 (
                     self.nonterminal,
                     self.position,
-                    self.symbols,
                     self._dot,
-                    tuple(self.children),
+                    len(self.symbols),
+                    self.symbols[0][0] if self.symbols else None,
                 )
             )
         return self._hash
@@ -107,12 +143,16 @@ class ParseState:
         return next_state
 
     def copy(self) -> "ParseState":
-        return ParseState(
+        # Share this state's children rather than copying them: the copy
+        # contributes nothing of its own and chains back to us.
+        copied = ParseState(
             self.nonterminal,
             self.position,
             self.symbols,
             self._dot,
-            self.children[:],
+            None,
             self.is_incomplete,
             self.incomplete_idx,
         )
+        copied._prev = self
+        return copied

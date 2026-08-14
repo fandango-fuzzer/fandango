@@ -507,7 +507,7 @@ class IterativeParser(
             next_state.is_incomplete = True
             tree = ParserDerivationTree(Terminal(check_word[:match_length]))
             if state.is_incomplete:
-                next_state.children[-1] = tree
+                next_state.replace_last_child(tree)
             else:
                 next_state.append_child(tree)
         else:
@@ -516,7 +516,7 @@ class IterativeParser(
             next_state.incomplete_idx = 0
             tree = ParserDerivationTree(Terminal(check_word[:match_length]))
             if state.is_incomplete:
-                next_state.children[-1] = tree
+                next_state.replace_last_child(tree)
             else:
                 next_state.append_child(tree)
         table[k + ((match_length - state.incomplete_idx) * table_idx_multiplier)].add(
@@ -588,7 +588,7 @@ class IterativeParser(
             next_state.incomplete_idx = 0
             tree = ParserDerivationTree(Terminal(check_word[:match_length]))
             if state.is_incomplete:
-                next_state.children[-1] = tree
+                next_state.replace_last_child(tree)
             else:
                 next_state.append_child(tree)
             table[
@@ -600,7 +600,7 @@ class IterativeParser(
             next_state.incomplete_idx = incomplete_match_length
             tree = ParserDerivationTree(Terminal(check_word[:incomplete_match_length]))
             if state.is_incomplete:
-                next_state.children[-1] = tree
+                next_state.replace_last_child(tree)
             else:
                 next_state.append_child(tree)
             table[
