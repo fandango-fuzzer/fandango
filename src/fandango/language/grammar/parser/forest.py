@@ -43,7 +43,6 @@ class ForestBuilder:
         if cached is not None:
             return cached
 
-        local: dict[int, list[DerivationTree]] = {}
         # States whose construction has started but not finished.
         in_progress: set[int] = set()
         pending: list[tuple[ParseState, list[Edge], list[DerivationTree]]] = [
@@ -53,8 +52,6 @@ class ForestBuilder:
 
         def resolve(target: ParseState) -> list[DerivationTree]:
             found = self._children_cache.get(id(target))
-            if found is None:
-                found = local.get(id(target))
             return found if found is not None else []
 
         while pending:
@@ -75,7 +72,6 @@ class ForestBuilder:
                         s
                         for s in needed
                         if id(s) not in self._children_cache
-                        and id(s) not in local
                         and id(s) not in in_progress
                     ]
                     if missing:
@@ -93,8 +89,6 @@ class ForestBuilder:
                     continue
                 assert isinstance(filler, ParseState)
                 sub = self._children_cache.get(id(filler))
-                if sub is None:
-                    sub = local.get(id(filler))
                 if sub is None:
                     if id(filler) not in in_progress:
                         # Build the nested state first, then resume here.
@@ -116,13 +110,9 @@ class ForestBuilder:
                 continue
             pending.pop()
             in_progress.discard(id(current))
-            local[id(current)] = collected_children
-            if current.finished():
-                self._children_cache[id(current)] = collected_children
-                self._children_keepalive.append(current)
-
-        self._children_keepalive.append(state)
-        return local[id(state)]
+            self._children_cache[id(current)] = collected_children
+            self._children_keepalive.append(current)
+        return self._children_cache[id(state)]
 
     def extra_alternatives(self, state: ParseState) -> Iterator[DerivationTree]:
         """
