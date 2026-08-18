@@ -424,10 +424,12 @@ class IterativeParser:
                 entry = column.leo[current_symbol]
                 break
             waiters = column.dot_map.get(current_symbol)
+            # Ensure that we don't get a collision, from multiple states pointing to the same symbol.
             if waiters is None or len(waiters) != 1:
                 column.leo[current_symbol] = None
                 break
             waiter = waiters[0]
+            # Only expand leo path if we are at the last symbol of the rule.
             if waiter._dot != len(waiter.symbols) - 1 or waiter.is_incomplete:
                 column.leo[current_symbol] = None
                 break
