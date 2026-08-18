@@ -169,19 +169,19 @@ class ParseState:
     ) -> None:
         self.edges = [Edge(previous, filler, params)]
 
-    def derivation_chunks(self) -> list[Edge]:
+    def edge_chain(self) -> list[Edge]:
         """
         The edges along this state's first derivation. Starting from here towards edges going to previous states.
 
         Therefore, returns edges in reversed order.
         """
-        chunks: list[Edge] = []
+        chain: list[Edge] = []
         node: Optional[ParseState] = self
         while node is not None and node.edges:
             edge = node.edges[0]
-            chunks.append(edge)
+            chain.append(edge)
             node = edge.previous
-        return chunks
+        return chain
 
     def has_children(self) -> bool:
         """

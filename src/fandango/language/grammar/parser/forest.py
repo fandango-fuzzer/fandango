@@ -47,7 +47,7 @@ class ForestBuilder:
         # States whose construction has started but not finished.
         in_progress: set[int] = set()
         pending: list[tuple[ParseState, list[Edge], list[DerivationTree]]] = [
-            (state, state.derivation_chunks(), [])
+            (state, state.edge_chain(), [])
         ]
         in_progress.add(id(state))
 
@@ -58,16 +58,16 @@ class ForestBuilder:
             return found if found is not None else []
 
         while pending:
-            current, chunks, collected = pending[-1]
+            current, edge_chain, collected_children = pending[-1]
             descended = False
-            while chunks:
-                edge = chunks.pop()
+            while edge_chain:
+                edge = edge_chain.pop()
                 filler = edge.filler
                 if isinstance(filler, DerivationTree):
-                    collected.append(filler)
+                    collected_children.append(filler)
                     continue
                 if isinstance(filler, list):
-                    collected.extend(filler)
+                    collected_children.extend(filler)
                     continue
                 if isinstance(filler, LeoNest):
                     needed = filler.states()
@@ -81,15 +81,15 @@ class ForestBuilder:
                     if missing:
                         # Queue them all at once, so this chunk is retried
                         # once rather than once per chain element.
-                        chunks.append(edge)
+                        edge_chain.append(edge)
                         for missing_state in reversed(missing):
                             pending.append(
-                                (missing_state, missing_state.derivation_chunks(), [])
+                                (missing_state, missing_state.edge_chain(), [])
                             )
                             in_progress.add(id(missing_state))
                         descended = True
                         break
-                    collected.extend(self._expand_leo(filler, resolve))
+                    collected_children.extend(self._expand_leo(filler, resolve))
                     continue
                 assert isinstance(filler, ParseState)
                 sub = self._children_cache.get(id(filler))
@@ -98,27 +98,27 @@ class ForestBuilder:
                 if sub is None:
                     if id(filler) not in in_progress:
                         # Build the nested state first, then resume here.
-                        chunks.append(edge)
-                        pending.append((filler, filler.derivation_chunks(), []))
+                        edge_chain.append(edge)
+                        pending.append((filler, filler.edge_chain(), []))
                         in_progress.add(id(filler))
                         descended = True
                         break
                     sub = []
                 if filler.nonterminal in self._rules:
-                    collected.append(
+                    collected_children.append(
                         ParserDerivationTree(
                             filler.nonterminal, sub, **dict(edge.params or [])
                         )
                     )
                 else:
-                    collected.extend(sub)
+                    collected_children.extend(sub)
             if descended:
                 continue
             pending.pop()
             in_progress.discard(id(current))
-            local[id(current)] = collected
+            local[id(current)] = collected_children
             if current.finished():
-                self._children_cache[id(current)] = collected
+                self._children_cache[id(current)] = collected_children
                 self._children_keepalive.append(current)
 
         self._children_keepalive.append(state)

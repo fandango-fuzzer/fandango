@@ -449,7 +449,7 @@ class IterativeParser:
         table: list[Column],
         k: int,
     ) -> None:
-        target = table[k]
+        column = table[k]
         if state.position < k:
             entry = self._leo_entry(table, state.position, state.nonterminal)
             if entry is not None:
@@ -458,12 +458,12 @@ class IterativeParser:
                 advanced.add_edge(
                     top, LeoNest(entry.chain, state, top.dot_params), top.dot_params
                 )
-                target.add(advanced)
+                column.add(advanced)
                 return
         for s in table[state.position].find_dot(state.nonterminal):
             advanced = s.next()
             advanced.add_edge(s, state, s.dot_params)
-            target.add(advanced)
+            column.add(advanced)
 
     def new_parse(
         self,
