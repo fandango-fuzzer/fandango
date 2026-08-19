@@ -130,7 +130,7 @@ formula_conjunction
 
 formula_atom
     : formula_comparison
-    | OPEN_PAREN implies CLOSE_PAREN
+    | OPEN_PAREN quantifier_in_line CLOSE_PAREN
     | expr
     ;
 
