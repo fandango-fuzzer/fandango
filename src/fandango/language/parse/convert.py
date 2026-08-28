@@ -528,8 +528,8 @@ class ConstraintProcessor(FandangoParserVisitor):
             )
 
     def visitFormula_atom(self, ctx: FandangoParser.Formula_atomContext):
-        if ctx.implies():
-            return self.visitImplies(ctx.implies())
+        if ctx.quantifier_in_line():
+            return self.visitQuantifier_in_line(ctx.quantifier_in_line())
         elif ctx.expr():
             return self.visitExpr(ctx.expr())
         elif ctx.formula_comparison():
