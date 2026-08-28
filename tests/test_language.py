@@ -301,3 +301,42 @@ def test_parsing():
     assert isinstance(search, AnnotatedSearch)
     assert isinstance(search.inner, RuleSearch)
     assert NonTerminal("<number>") == search.inner.symbol
+
+
+@pytest.mark.parametrize(
+    "number",
+    [
+        "10_000",
+        "0_0",
+        "00_0",
+        "0x_1f",
+        "0xdead_beef",
+        "0b1_01",
+        "0o1_7",
+        "1_0.5_0",
+        "1_0.5_0e1_0",
+        "1_0e-1_0",
+        "1_0j",
+    ],
+)
+def test_underscores_in_numbers(number):
+    tokens = FandangoLexer(InputStream(number)).getAllTokens()
+    assert len(tokens) == 1
+    assert tokens[0].type == FandangoLexer.NUMBER
+    assert tokens[0].text == number
+
+
+@pytest.mark.parametrize("number", ["1_", "1__0", "0x_", "1._0", "1_0._"])
+def test_invalid_underscores_in_numbers(number):
+    tokens = FandangoLexer(InputStream(number)).getAllTokens()
+    assert not (len(tokens) == 1 and tokens[0].type == FandangoLexer.NUMBER)
+
+
+def test_underscores_in_constraints():
+    tree = get_tree("""<a> ::= "a"{1_0}
+where int(<a>) < 10_000
+""")
+    splitter = FandangoSplitter(filename="<string>", used_symbols=set())
+    splitter.visit(tree)
+    assert len(splitter.productions) == 1
+    assert len(splitter.constraints) == 1
