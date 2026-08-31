@@ -1,4 +1,6 @@
-from collections.abc import Generator
+import gc
+from collections.abc import Generator, Iterator
+from contextlib import contextmanager
 from copy import deepcopy
 from typing import Optional
 
@@ -10,6 +12,20 @@ from fandango.language.grammar.parser.iterative_parser import IterativeParser
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.utils import cache_size
+
+
+@contextmanager
+def _gc_paused() -> Iterator[None]:
+    """
+    Pause the cyclic garbage collector for the duration of the block.
+    """
+    was_enabled = gc.isenabled()
+    gc.disable()
+    try:
+        yield
+    finally:
+        if was_enabled:
+            gc.enable()
 
 
 class Parser:
@@ -72,32 +88,31 @@ class Parser:
 
         cache_key = (word, start, mode, hash(hookin_parent))
         if cache_key in self._cache:
-            for tree in self._cache[cache_key]:
-                tree = deepcopy(tree)
-                if not include_controlflow:
-                    collapsed = self.collapse(tree)
-                    if collapsed is not None:
-                        yield collapsed
-                else:
-                    yield tree
+            for cached_tree in self._cache[cache_key]:
+                with _gc_paused():
+                    tree = deepcopy(cached_tree)
+                    result = tree if include_controlflow else self.collapse(tree)
+                if result is not None:
+                    yield result
             return
 
         parsed_forest: list[DerivationTree] = []
-        for tree in self._parse_forest(
+        trees = self._parse_forest(
             word,
             start,
             mode=mode,
             hookin_parent=hookin_parent,
             starter_bit=starter_bit,
-        ):
-            tree = self._iter_parser.to_derivation_tree(tree)
-            parsed_forest.append(tree)
-            if include_controlflow:
-                yield tree
-            else:
-                collapsed = self.collapse(tree)
-                if collapsed is not None:
-                    yield collapsed
+        )
+        while True:
+            with _gc_paused():
+                tree = next(trees, None)
+                if tree is None:
+                    break
+                parsed_forest.append(tree)
+                result = tree if include_controlflow else self.collapse(tree)
+            if result is not None:
+                yield result
         self._cache[cache_key] = parsed_forest
 
     def parse_multiple(
