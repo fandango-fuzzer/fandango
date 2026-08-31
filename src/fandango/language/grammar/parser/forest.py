@@ -168,9 +168,7 @@ class ForestBuilder:
         self._children_keepalive.append(state)
         return found
 
-    def _enumerate_children(
-        self, state: ParseState
-    ) -> Iterator[list[DerivationTree]]:
+    def _enumerate_children(self, state: ParseState) -> Iterator[list[DerivationTree]]:
         """
         Every children list `state` can stand for, first one first.
 
@@ -229,9 +227,7 @@ class ForestBuilder:
         while index < len(chain):
             waiter = chain[index]
             rest_params = (
-                chain[index + 1].dot_params
-                if index + 1 < len(chain)
-                else top_params
+                chain[index + 1].dot_params if index + 1 < len(chain) else top_params
             )
             if self._is_ambiguous(waiter):
                 for waiter_children in self._enumerate_children(waiter):
@@ -240,9 +236,7 @@ class ForestBuilder:
                     yield from self._unwind_leo(
                         chain,
                         index + 1,
-                        self._wrap_completed(
-                            waiter.nonterminal, children, rest_params
-                        ),
+                        self._wrap_completed(waiter.nonterminal, children, rest_params),
                         top_params,
                     )
                 return

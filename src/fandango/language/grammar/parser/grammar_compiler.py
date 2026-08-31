@@ -85,9 +85,7 @@ class GrammarCompiler(
         self._context_rules[nonterminal] = (node, non_terminal)
         return nonterminal
 
-    def set_tmp_rule(
-        self, rule: GrammarCompilerReturnType
-    ) -> ParserStateSymbolContent:
+    def set_tmp_rule(self, rule: GrammarCompilerReturnType) -> ParserStateSymbolContent:
         nonterminal = NonTerminal(f"<*tmp_{len(self._tmp_rules)}*>")
         self._tmp_rules[nonterminal] = {tuple(a) for a in rule}
         return (nonterminal, frozenset())
@@ -247,7 +245,7 @@ class GrammarCompiler(
                 break
 
             for alternative in alternatives:
-                for entry in cast(tuple[ParserStateSymbolContent, ...], alternative):
+                for entry in alternative:
                     symbol = entry[0]
                     if symbol.is_terminal:
                         if symbol.is_type(TreeValueType.TRAILING_BITS_ONLY):

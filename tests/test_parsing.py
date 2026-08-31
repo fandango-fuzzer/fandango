@@ -221,7 +221,6 @@ class TestComplexParsing(unittest.TestCase):
 
 
 class TestAmbiguousParsing(unittest.TestCase):
-
     def _forest(self, grammar_spec: str, word: str) -> list[DerivationTree]:
         grammar, _ = parse(grammar_spec, use_stdlib=False, use_cache=False)
         assert grammar is not None
@@ -229,9 +228,7 @@ class TestAmbiguousParsing(unittest.TestCase):
         return sorted(trees, key=repr)
 
     def test_two_alternatives(self):
-        forest = self._forest(
-            "<start> ::= <b> | <a>\n<b> ::= '0'\n<a> ::= '0'\n", "0"
-        )
+        forest = self._forest("<start> ::= <b> | <a>\n<b> ::= '0'\n<a> ::= '0'\n", "0")
         self.assertEqual(2, len(forest), forest)
         self.assertEqual(
             [NonTerminal("<a>"), NonTerminal("<b>")],

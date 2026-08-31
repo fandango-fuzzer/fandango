@@ -116,7 +116,6 @@ class LeoNest:
 
 
 class ParseState:
-
     __slots__ = (
         "nonterminal",
         "position",

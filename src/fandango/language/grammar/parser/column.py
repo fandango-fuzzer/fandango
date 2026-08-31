@@ -6,7 +6,6 @@ from fandango.language.symbols.symbol import Symbol
 
 
 class Column:
-
     def __init__(self) -> None:
         self.states: list[ParseState] = []
         self.dot_map = dict[Symbol, list[ParseState]]()
