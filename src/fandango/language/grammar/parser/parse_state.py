@@ -4,7 +4,11 @@ from typing import Any, Optional, Union
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree
 
+#: One symbol of a rule, with its parameters (e.g. sender/recipient).
 ParserStateSymbolContent = tuple[Symbol, frozenset[tuple[str, Any]]]
+
+#: One alternative of a compiled rule: the symbols to match, in order.
+RuleAlternative = tuple[ParserStateSymbolContent, ...]
 
 #: What can occupy one symbol along a derivation; see `Edge.filler`.
 Filler = Union[DerivationTree, "ParseState", "LeoNest", list[DerivationTree]]
@@ -12,8 +16,9 @@ Filler = Union[DerivationTree, "ParseState", "LeoNest", list[DerivationTree]]
 
 class Edge:
     """
-    Pointer to the previous ParseState (the one .next() was called on).
-    `filler` contains the parsed value produced by advancing the PArseState 'dot' between previous and the current parse state.
+    Pointer to the previous ParseState (the one `.next()` was called on).
+    `filler` holds the parsed value produced by advancing the dot between
+    the previous and the current parse state.
     """
 
     __slots__ = ("previous", "filler", "params")
@@ -129,7 +134,7 @@ class ParseState:
         self,
         nonterminal: NonTerminal,
         position: int,
-        symbols: tuple[ParserStateSymbolContent, ...],
+        symbols: RuleAlternative,
         dot: int = 0,
         edges: Optional[list[DerivationTree]] = None,
         incomplete_idx: int = 0,
@@ -239,7 +244,6 @@ class ParseState:
                     self.symbols[0][0] if self.symbols else None,
                 )
             )
-        assert self._hash is not None
         return self._hash
 
     def __eq__(self, other: object) -> bool:

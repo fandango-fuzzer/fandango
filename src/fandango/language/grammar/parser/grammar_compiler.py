@@ -7,7 +7,10 @@ from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
-from fandango.language.grammar.parser.parse_state import ParserStateSymbolContent
+from fandango.language.grammar.parser.parse_state import (
+    ParserStateSymbolContent,
+    RuleAlternative,
+)
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.language.tree_value import TreeValueType
@@ -27,12 +30,13 @@ class GrammarCompiler(
 
     def __init__(self, grammar_rules: dict[NonTerminal, Node]):
         self.grammar_rules: dict[NonTerminal, Node] = grammar_rules
-        self._rules: dict[NonTerminal, set[ParserStateSymbolContent]] = {}
-        self._implicit_rules: dict[NonTerminal, set[ParserStateSymbolContent]] = {}
+        self._rules: dict[NonTerminal, set[RuleAlternative]] = {}
+        self._implicit_rules: dict[NonTerminal, set[RuleAlternative]] = {}
+        self._draft_implicit_rules: dict[NonTerminal, GrammarCompilerReturnType] = {}
         self._context_rules: dict[
             NonTerminal, tuple[Node, ParserStateSymbolContent]
         ] = dict()
-        self._tmp_rules: dict[NonTerminal, set[ParserStateSymbolContent]] = {}
+        self._tmp_rules: dict[NonTerminal, set[RuleAlternative]] = {}
         #: Control-flow nodes by the name of the symbol standing in for them.
         self._nodes: dict[str, Node] = {}
         self._columns_per_byte_cache: dict[NonTerminal, int] = {}
@@ -53,26 +57,25 @@ class GrammarCompiler(
     def _process(self) -> None:
         self._rules.clear()
         self._implicit_rules.clear()
+        self._draft_implicit_rules.clear()
         self._context_rules.clear()
         for nonterminal in self.grammar_rules:
             self.set_rule(nonterminal, self.visit(self.grammar_rules[nonterminal]))
 
-        for nonterminal in self._implicit_rules:
-            self._implicit_rules[nonterminal] = {
-                tuple(a)  # type: ignore[misc]
-                for a in self._implicit_rules[nonterminal]
-            }
+        for nonterminal, alternatives in self._draft_implicit_rules.items():
+            self._implicit_rules[nonterminal] = {tuple(a) for a in alternatives}
+        self._draft_implicit_rules.clear()
 
     def set_rule(
         self, nonterminal: NonTerminal, rule: GrammarCompilerReturnType
     ) -> None:
-        self._rules[nonterminal] = {tuple(a) for a in rule}  # type: ignore[misc]
+        self._rules[nonterminal] = {tuple(a) for a in rule}
 
     def set_implicit_rule(
         self, rule: GrammarCompilerReturnType
     ) -> ParserStateSymbolContent:
-        nonterminal = NonTerminal(f"<*{len(self._implicit_rules)}*>")
-        self._implicit_rules[nonterminal] = rule  # type: ignore[assignment] # TODO: this is wrong somewhere but magically works. Fix me!
+        nonterminal = NonTerminal(f"<*{len(self._draft_implicit_rules)}*>")
+        self._draft_implicit_rules[nonterminal] = rule
         return (nonterminal, frozenset())
 
     def set_context_rule(
@@ -83,15 +86,11 @@ class GrammarCompiler(
         return nonterminal
 
     def set_tmp_rule(
-        self,
-        rule: GrammarCompilerReturnType,
-        nonterminal: Optional[NonTerminal] = None,
-    ) -> tuple[ParserStateSymbolContent, str]:
-        if nonterminal is None:
-            nonterminal = NonTerminal(f"<*tmp_{len(self._tmp_rules)}*>")
-        rule_id = str(nonterminal.value())[2:-2]
-        self._tmp_rules[nonterminal] = {tuple(a) for a in rule}  # type: ignore[misc]
-        return (nonterminal, frozenset()), rule_id
+        self, rule: GrammarCompilerReturnType
+    ) -> ParserStateSymbolContent:
+        nonterminal = NonTerminal(f"<*tmp_{len(self._tmp_rules)}*>")
+        self._tmp_rules[nonterminal] = {tuple(a) for a in rule}
+        return (nonterminal, frozenset())
 
     def _clear_tmp(self) -> None:
         self._tmp_rules.clear()
@@ -163,15 +162,14 @@ class GrammarCompiler(
             if prev is not None:
                 alts.append([nt, prev])
             if is_context:
-                prev, rule_id = self.set_tmp_rule(alts)
+                prev = self.set_tmp_rule(alts)
             else:
                 prev = self.set_implicit_rule(alts)
         alts = [node_min * [nt]]
         if prev is not None:
             alts.append(node_min * [nt] + [prev])
         if is_context:
-            tmp_nt, rule_id = self.set_tmp_rule(alts)
-            return [[tmp_nt]]
+            return [[self.set_tmp_rule(alts)]]
         min_nt = self.set_implicit_rule(alts)
         self.set_rule(repetition_nt, [[min_nt]])
         return [[(repetition_nt, frozenset())]]

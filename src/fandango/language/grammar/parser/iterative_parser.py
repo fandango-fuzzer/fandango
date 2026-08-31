@@ -21,8 +21,6 @@ from fandango.language.symbols.symbol import Symbol
 from fandango.language.tree import DerivationTree
 from fandango.language.tree_value import TreeValue, TreeValueType
 
-IterativeParserVisitorReturnType = list[list[ParserStateSymbolContent]]
-
 
 class IterativeParser:
     def __init__(
@@ -54,15 +52,13 @@ class IterativeParser:
         table: list[Column] = list(self._table)
         table[self._table_idx] = deepcopy(table[self._table_idx])
 
-        for state in table[-1]:
+        for state in table[self._table_idx]:
             if state.finished():
                 self.complete(state, table, self._table_idx)
 
         return any(
-            map(
-                lambda state: state.is_incomplete or not state.finished(),
-                table[self._table_idx],
-            )
+            state.is_incomplete or not state.finished()
+            for state in table[self._table_idx]
         )
 
     def predict(
@@ -77,28 +73,22 @@ class IterativeParser:
         assert isinstance(symbol, NonTerminal)
         predicted = table[k].predicted
         if symbol in predicted:
-            # We dont add update the table, if we've already predicted the same symbol in the same column.
-            # We make an exception for context rules, as they depend on semantics.
+            # Predicting the same symbol in the same column again adds nothing
+            # new. Context rules are the exception: their expansion depends on
+            # the tree parsed so far.
             if symbol not in self._context_rules:
                 return
         else:
             predicted.add(symbol)
-        if state.dot in self._rules:
-            table[k].update(
-                {ParseState(symbol, k, rule, 0) for rule in self._rules[symbol]}  # type: ignore[arg-type] # TODO:  this is a bug!
-            )
-        elif state.dot in self._implicit_rules:
-            table[k].update(
-                {
-                    ParseState(symbol, k, rule, 0)  # type: ignore[arg-type] # TODO:  this is a bug!
-                    for rule in self._implicit_rules[symbol]
-                }
-            )
-        elif state.dot in self._tmp_rules:
-            table[k].update(
-                {ParseState(symbol, k, rule, 0) for rule in self._tmp_rules[symbol]}  # type: ignore[arg-type] # TODO:  this is a bug!
-            )
-        elif state.dot in self._context_rules:
+
+        for rules in (self._rules, self._implicit_rules, self._tmp_rules):
+            alternatives = rules.get(symbol)
+            if alternatives is not None:
+                table[k].update(
+                    {ParseState(symbol, k, alternative) for alternative in alternatives}
+                )
+                return
+        if symbol in self._context_rules:
             node, nt = self._context_rules[symbol]
             self.predict_ctx_rule(state, table, k, node, nt, hookin_parent)
 
@@ -220,26 +210,15 @@ class IterativeParser:
         byte = ord(word[w]) if isinstance(word, str) else word[w]
         bit = (byte >> bit_count) & 1
 
-        # LOGGER.debug(f"Checking {state.dot} against {bit}")
         match, match_length = state.dot.check(bit)
         if not match or match_length == 0:
-            # LOGGER.debug(f"No match")
             return False
 
-        # Found a match
-        # LOGGER.debug(f"Found bit {bit}")
         next_state = state.next()
         tree = ParserDerivationTree(Terminal(bit))
         next_state.set_edge(state, tree)
-        # LOGGER.debug(f"Added tree {tree.to_string()!r} to state {next_state!r}")
-        # Insert a new table entry with next state
-        # This is necessary, as our initial table holds one entry
-        # per input byte, yet needs to be expanded to hold the bits, too.
-
-        # Add a new table row if the bit isn't already represented
-        # by a row in the parsing table
-        # if len(table) <= k + 1:
-        #    table.insert(k + 1, Column())
+        # A bit advances the parse by exactly one column; the table holds
+        # `columns_per_byte` (8) columns per input byte for this.
         table[k + 1].add(next_state)
 
         # Save the maximum position reached, so we can report errors
@@ -270,8 +249,6 @@ class IterativeParser:
             or state.dot.is_type(TreeValueType.EMPTY)
         )
         assert not state.dot.is_regex
-
-        # LOGGER.debug(f"Checking byte(s) {state.dot!r} at position {w:#06x} ({w}) {word[w:]!r}")
 
         check_word = word[w:]
         if state.is_incomplete:
@@ -318,7 +295,6 @@ class IterativeParser:
         table[k + ((match_length - state.incomplete_idx) * table_idx_multiplier)].add(
             next_state
         )
-        # LOGGER.debug(f"Next state: {next_state} at column {k + match_length}")
         self._max_position = max(self._max_position, w + match_length)
 
         return True
@@ -332,12 +308,13 @@ class IterativeParser:
         w: int,
     ) -> bool:
         """
-        Scan a byte from the input `word`.
+        Scan a regex terminal from the input `word`.
         `state` is the current parse state.
         `table` is the parse table.
         `table[k]` is the current column.
         `word[w]` is the current byte.
-        Return (True, #bytes) if bytes were matched, (False, 0) otherwise.
+        Return True if the regex matched, completely or as an
+        extendable prefix, False otherwise.
         """
 
         assert state.dot is not None
@@ -501,7 +478,6 @@ class IterativeParser:
             char = bytes([char])
         word = char
 
-        # If >= 0, indicates the next bit to be scanned (7-0)
         table = list(self._table)
         per_byte = self._columns_per_byte
         table.extend([Column() for _ in range(len(char) * per_byte)])
@@ -518,8 +494,7 @@ class IterativeParser:
             curr_bit_position = 7 - (curr_table_idx % 8)
             if curr_table_idx == len(table) - 1:
                 self._table = list(table)
-                if len(table) > 0:
-                    self._table[-1] = deepcopy(table[-1])
+                self._table[-1] = deepcopy(table[-1])
                 self._table_idx = curr_table_idx
             # True iff we have processed all characters
             # (or some bits of the last character)

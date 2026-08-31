@@ -30,9 +30,7 @@ class Column:
     def replace(self, old: ParseState, new: ParseState) -> None:
         del self.unique[old]
         self.unique[new] = new
-        i_old = self.states.index(old)
-        del self.states[i_old]
-        self.states.insert(i_old, new)
+        self.states[self.states.index(old)] = new
 
         old_symbol = old.dot
         if old_symbol is not None:

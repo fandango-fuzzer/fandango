@@ -37,7 +37,7 @@ class Parser:
         """
         Parse a forest of input trees from `word`.
         `start` is the start symbol (default: `<start>`).
-        if `allow_incomplete` is True, the function will return trees even if the input ends prematurely.
+        In `ParsingMode.INCOMPLETE`, trees are yielded even if the input ends prematurely.
         """
         self._iter_parser.new_parse(start, mode, hookin_parent, starter_bit)
         for tree, _is_complete in self._iter_parser.consume(word):
