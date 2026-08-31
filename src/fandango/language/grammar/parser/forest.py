@@ -265,19 +265,28 @@ class ForestBuilder:
         """
         chain = nest.chain
         params = chain.head.dot_params if chain is not None else nest.top_params
-        payload = self._wrap_completed(
-            nest.inner.nonterminal, resolve(nest.inner), params
-        )
+        segments = [
+            self._wrap_completed(nest.inner.nonterminal, resolve(nest.inner), params)
+        ]
         node = chain
         while node is not None:
             waiter, rest = node.head, node.tail
-            children = list(resolve(waiter))
-            children.extend(payload)
-            parent_params = (
-                rest.head.dot_params if rest is not None else nest.top_params
-            )
-            payload = self._wrap_completed(waiter.nonterminal, children, parent_params)
+            if waiter.nonterminal in self._rules:
+                children = list(resolve(waiter))
+                for segment in reversed(segments):
+                    children.extend(segment)
+                parent_params = (
+                    rest.head.dot_params if rest is not None else nest.top_params
+                )
+                segments = [
+                    self._wrap_completed(waiter.nonterminal, children, parent_params)
+                ]
+            else:
+                segments.append(resolve(waiter))
             node = rest
+        payload: list[DerivationTree] = []
+        for segment in reversed(segments):
+            payload.extend(segment)
         return payload
 
     def to_derivation_tree(self, tree: DerivationTree) -> DerivationTree:
