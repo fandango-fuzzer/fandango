@@ -23,7 +23,8 @@ class SimpleSubtreeCrossover(CrossoverOperator):
         common_symbols = symbols1.intersection(symbols2)
         if not common_symbols:
             return None
-        symbol = random.choice(list(common_symbols))
+        # Sorted so the choice is independent of PYTHONHASHSEED.
+        symbol = random.choice(sorted(common_symbols, key=lambda s: s.name()))
         nodes1 = parent1.find_all_nodes(symbol)
         nodes2 = parent2.find_all_nodes(symbol)
         node1 = random.choice(nodes1)
