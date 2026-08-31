@@ -290,7 +290,7 @@ class ForestBuilder:
             node, reps = todo.pop()
             descent.append((node, reps))
             child_reps = self._child_repetitions(node, reps)
-            todo.extend(reversed(list(zip(node.children, child_reps))))
+            todo.extend(reversed(list(zip(node.children, child_reps, strict=False))))
 
         built: dict[int, DerivationTree] = {}
         for node, reps in reversed(descent):

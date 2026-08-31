@@ -1,4 +1,4 @@
-from typing import Optional, cast
+from typing import Optional
 
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
