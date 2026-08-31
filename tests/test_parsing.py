@@ -220,6 +220,50 @@ class TestComplexParsing(unittest.TestCase):
         )
 
 
+class TestAmbiguousParsing(unittest.TestCase):
+
+    def _forest(self, grammar_spec: str, word: str) -> list[DerivationTree]:
+        grammar, _ = parse(grammar_spec, use_stdlib=False, use_cache=False)
+        assert grammar is not None
+        trees = list(Parser(grammar.rules).parse_multiple(word))
+        return sorted(trees, key=repr)
+
+    def test_two_alternatives(self):
+        forest = self._forest(
+            "<start> ::= <b> | <a>\n<b> ::= '0'\n<a> ::= '0'\n", "0"
+        )
+        self.assertEqual(2, len(forest), forest)
+        self.assertEqual(
+            [NonTerminal("<a>"), NonTerminal("<b>")],
+            [tree.children[0].symbol for tree in forest],
+        )
+
+    def test_ambiguity_below_the_root(self):
+        forest = self._forest(
+            "<start> ::= 'x' <mid> 'y'\n"
+            "<mid> ::= <b> | <a>\n"
+            "<b> ::= '0'\n"
+            "<a> ::= '0'\n",
+            "x0y",
+        )
+        self.assertEqual(2, len(forest), forest)
+
+    def test_unambiguous_yields_one_tree(self):
+        forest = self._forest("<start> ::= <a><a>\n<a> ::= '0'\n", "00")
+        self.assertEqual(1, len(forest), forest)
+
+    def test_first_tree_is_not_truncated_by_the_cache(self):
+        grammar, _ = parse(
+            "<start> ::= <b> | <a>\n<b> ::= '0'\n<a> ::= '0'\n",
+            use_stdlib=False,
+            use_cache=False,
+        )
+        assert grammar is not None
+        parser = Parser(grammar.rules)
+        self.assertIsNotNone(parser.parse("0"))
+        self.assertEqual(2, len(list(parser.parse_multiple("0"))))
+
+
 class TestIncompleteParsing(unittest.TestCase):
     # Type annotation for instance attribute set in setUp
     grammar: Grammar
