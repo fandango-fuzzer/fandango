@@ -106,11 +106,11 @@ class Parser:
         )
         while True:
             with _gc_paused():
-                tree = next(trees, None)
-                if tree is None:
+                parsed = next(trees, None)
+                if parsed is None:
                     break
-                parsed_forest.append(tree)
-                result = tree if include_controlflow else self.collapse(tree)
+                parsed_forest.append(parsed)
+                result = parsed if include_controlflow else self.collapse(parsed)
             if result is not None:
                 yield result
         self._cache[cache_key] = parsed_forest
