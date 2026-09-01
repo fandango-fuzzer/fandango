@@ -350,6 +350,8 @@ class IterativeParser:
         incomplete_match, incomplete_match_length = state.dot.check(
             check_word, incomplete=True
         )
+        if incomplete_match_length <= prev_match_length:
+            incomplete_match = False
         incomplete_table_offset = incomplete_match_length
         if not match:
             if not incomplete_match or (incomplete_match_length + w) < len(word):
