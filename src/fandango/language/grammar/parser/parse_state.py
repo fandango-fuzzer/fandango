@@ -16,9 +16,8 @@ Filler = Union[DerivationTree, "ParseState", "LeoNest", list[DerivationTree]]
 
 class Edge:
     """
-    Pointer to the previous ParseState (the one `.next()` was called on).
-    `filler` holds the parsed value produced by advancing the dot between
-    the previous and the current parse state.
+    Pointer to the previous ParseState.
+    `filler` holds the parsed value between the previous and the current parse state.
     """
 
     __slots__ = ("previous", "filler", "params")
@@ -37,7 +36,6 @@ class Edge:
         return f"Edge({self.filler!r})"
 
 
-# You want to read LeoNest's documentation first, then LeoEntry and then ReductionChain to understand this data structure.
 class ReductionChain:
     """
     Stores the nodes Leo's shortcut jumped over. `head` is the innermost node,
@@ -177,7 +175,7 @@ class ParseState:
         """
         The edges along this state's first derivation. Starting from here towards edges going to previous states.
 
-        Therefore, returns edges in reversed order.
+        Returns edges in reversed order.
         """
         chain: list[Edge] = []
         node: Optional[ParseState] = self

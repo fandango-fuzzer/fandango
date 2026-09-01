@@ -75,7 +75,7 @@ class ForestBuilder:
                         and id(s) not in in_progress
                     ]
                     if missing:
-                        # Queue them all at once, so this chunk is retried
+                        # Queue them all at once, so this edge_chain is retried
                         # once rather than once per chain element.
                         edge_chain.append(edge)
                         for missing_state in reversed(missing):
@@ -116,11 +116,7 @@ class ForestBuilder:
 
     def extra_alternatives(self, state: ParseState) -> Iterator[DerivationTree]:
         """
-        The children of every derivation of `state` *except* the first.
-
-        The first one is what `children_of` returns, so callers yield that and
-        come back here only if someone asks for more. Nothing below is touched
-        until then -- a caller that stops after one tree pays nothing for this.
+        The children of every derivation of `state` except the first.
         """
         alternatives = self._enumerate_children(state)
         next(alternatives, None)
@@ -130,9 +126,6 @@ class ForestBuilder:
     def _is_ambiguous(self, state: ParseState) -> bool:
         """
         Whether any state reachable from `state` has more than one derivation.
-
-        Iterative, because the reachable set is as deep as the derivation and
-        this runs on arbitrary input.
         """
         cached = self._ambiguous_cache.get(id(state))
         if cached is not None:
@@ -159,10 +152,6 @@ class ForestBuilder:
                     stack.append(filler)
 
         if not found:
-            # Safe to cache: a state only gains edges while its own column is
-            # being processed, and enumeration starts once that column is done.
-            # Everything reachable from `state` points backwards, into columns
-            # that are already closed.
             for node_id in seen:
                 self._ambiguous_cache[node_id] = False
         self._children_keepalive.append(state)
@@ -171,9 +160,6 @@ class ForestBuilder:
     def _enumerate_children(self, state: ParseState) -> Iterator[list[DerivationTree]]:
         """
         Every children list `state` can stand for, first one first.
-
-        Unambiguous states short-circuit to `children_of`, so the recursion
-        only ever follows the spine along which derivations actually branch.
         """
         if not self._is_ambiguous(state):
             yield self.children_of(state)
@@ -220,9 +206,6 @@ class ForestBuilder:
     ) -> Iterator[list[DerivationTree]]:
         """
         Wrap `payload` in the skipped chain from `index` outwards.
-
-        Loops while the chain stays unambiguous -- right recursion makes it one
-        entry per input position, so recursing per entry would overflow.
         """
         while index < len(chain):
             waiter = chain[index]

@@ -9,9 +9,6 @@ class Column:
     def __init__(self) -> None:
         self.states: list[ParseState] = []
         self.dot_map = dict[Symbol, list[ParseState]]()
-        # Maps a state to the canonical object for it in this column, so a
-        # duplicate can hand its edges to the state already present instead
-        # of being dropped along with the derivation it stands for.
         self.unique = dict[ParseState, ParseState]()
         # Used for early deduplication in predict
         self.predicted = set[Symbol]()
