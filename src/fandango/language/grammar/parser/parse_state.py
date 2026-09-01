@@ -189,22 +189,18 @@ class ParseState:
         """
         Whether this state has any children.
         """
-        stack: list[ParseState] = [self]
-        while stack:
-            node: Optional[ParseState] = stack.pop()
-            while node is not None and node.edges:
-                edge = node.edges[0]
-                filler = edge.filler
-                if isinstance(filler, DerivationTree):
+        node: Optional[ParseState] = self
+        while node is not None and node.edges:
+            edge = node.edges[0]
+            filler = edge.filler
+            if isinstance(filler, list):
+                if filler:
                     return True
-                if isinstance(filler, list):
-                    if filler:
-                        return True
-                elif isinstance(filler, LeoNest):
-                    stack.extend(filler.states())
-                else:
-                    stack.append(filler)
-                node = edge.previous
+            else:
+                # A tree, a state, or a Leo nest each fill one symbol, and so
+                # become one child even when what they matched is empty.
+                return True
+            node = edge.previous
         return False
 
     @property

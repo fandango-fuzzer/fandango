@@ -59,7 +59,6 @@ class Column:
             return True
         if existing is not state and state.edges:
             # Same item, different derivation: keep it as an alternative.
-            # Predicted states carry no edges, so this is a no-op for them.
             existing.edges.extend(state.edges)
         return False
 
