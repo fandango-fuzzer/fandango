@@ -113,6 +113,7 @@ PARSE_CASES = [
 
 PARSE_LENGTHS = (10, 100, 1_000, 10_000)
 PARSE_ROUNDS = 5
+TEST_MAX_INPUT_LENGTH = 100
 
 
 def _parse_grid() -> list[Any]:
@@ -163,6 +164,8 @@ def _run_case(
     PARSE_GRID,
 )
 def test_parse(benchmark: BenchmarkFixture, case: ParseCase, length: int) -> None:
+    if benchmark.disabled and length > TEST_MAX_INPUT_LENGTH:
+        pytest.skip(f"{length:,} characters is for measuring, not for testing")
     grammar, constraints = parse(case.spec, use_stdlib=case.use_stdlib, use_cache=False)
     assert grammar is not None
     fandango = Fandango._with_parsed(grammar, constraints)
