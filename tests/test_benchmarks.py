@@ -44,6 +44,7 @@ class ParseCase(NamedTuple):
     label: str
     spec: str
     make_word: Callable[[int], str | bytes]
+    max_length: int = 10_000
     use_stdlib: bool = False
     incomplete: bool = False
     limit: int | None = None
@@ -79,6 +80,7 @@ PARSE_CASES = [
         spec=AMBIGUOUS_SPEC,
         make_word=lambda n: "+".join("1" * (n // 2 + 1)),
         limit=25,
+        max_length=1_000,
     ),
     ParseCase(
         label="right-recursion",
@@ -105,11 +107,37 @@ PARSE_CASES = [
         spec=GRAMMAR_WITH_ALL_NODE_TYPES,
         make_word=lambda n: repeat_to(NODE_TYPE_RECORD, n),
         incremental=True,
+        max_length=1_000,
     ),
 ]
 
-PARSE_LENGTHS = (10, 30, 100)
-PARSE_GRID = [(case, length) for case in PARSE_CASES for length in PARSE_LENGTHS]
+PARSE_LENGTHS = (10, 100, 1_000, 10_000)
+PARSE_ROUNDS = 5
+
+
+def _parse_grid() -> list[Any]:
+    """
+    Parsing test grid for benchmarking
+    """
+    grid = []
+    for case in PARSE_CASES:
+        for length in PARSE_LENGTHS:
+            marks = (
+                [
+                    pytest.mark.skip(
+                        reason=f"{case.label} takes minutes at {length:,} characters"
+                    )
+                ]
+                if length > case.max_length
+                else []
+            )
+            grid.append(
+                pytest.param(case, length, id=f"{case.label}-{length}", marks=marks)
+            )
+    return grid
+
+
+PARSE_GRID = _parse_grid()
 
 
 def _run_case(
@@ -133,7 +161,6 @@ def _run_case(
 @pytest.mark.parametrize(
     ("case", "length"),
     PARSE_GRID,
-    ids=[f"{case.label}-{length}" for case, length in PARSE_GRID],
 )
 def test_parse(benchmark: BenchmarkFixture, case: ParseCase, length: int) -> None:
     grammar, constraints = parse(case.spec, use_stdlib=case.use_stdlib, use_cache=False)
@@ -144,9 +171,15 @@ def test_parse(benchmark: BenchmarkFixture, case: ParseCase, length: int) -> Non
     def func():
         _run_case(case, word, fandango, grammar)
 
-    benchmark.pedantic(
-        func, setup=grammar._parser._cache.clear, rounds=25, iterations=1
-    )
+    try:
+        benchmark.pedantic(
+            func,
+            setup=grammar._parser._cache.clear,
+            rounds=PARSE_ROUNDS,
+            iterations=1,
+        )
+    except RecursionError:
+        pytest.xfail(f"{case.label} runs out of Python stack at {length:,} characters")
 
 
 def test_parse_spec(benchmark: BenchmarkFixture):
