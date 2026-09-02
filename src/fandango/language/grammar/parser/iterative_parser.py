@@ -68,7 +68,7 @@ class IterativeParser:
         k: int,
         hookin_parent: Optional[DerivationTree] = None,
     ) -> None:
-        symbol = state.dot
+        symbol = state.next_symbol
         assert symbol is not None
         assert isinstance(symbol, NonTerminal)
         predicted = table[k].predicted
@@ -112,7 +112,7 @@ class IterativeParser:
         while found_next_state:
             found_next_state = False
             for table_state in table[current_state.position].states:
-                if table_state.dot == current_state.nonterminal:
+                if table_state.next_symbol == current_state.nonterminal:
                     current_state = table_state
                     found_next_state = True
                     break
@@ -124,13 +124,13 @@ class IterativeParser:
                         *self._forest.children_of(current_state),
                         *current_tree.children,
                     ],
-                    **dict(current_state.dot_params or {}),
+                    **dict(current_state.next_params or {}),
                 )
             else:
                 current_tree = ParserDerivationTree(
                     current_state.nonterminal,
                     [*self._forest.children_of(current_state), current_tree],
-                    **dict(current_state.dot_params or {}),
+                    **dict(current_state.next_params or {}),
                 )
 
         return current_tree.children[0]
@@ -164,17 +164,17 @@ class IterativeParser:
                 hookin_parent.set_children(hookin_parent.children[:-1])
         new_symbols: list[tuple[Symbol, frozenset[tuple[str, Any]]]] = []
         placed = False
-        for symbol, dot_params in state.symbols:
-            if symbol == state.dot and not placed:
+        for symbol, params in state.symbols:
+            if symbol == state.next_symbol and not placed:
                 new_symbols.append(context_nt)
                 placed = True
             else:
-                new_symbols.append((symbol, dot_params))
+                new_symbols.append((symbol, params))
         new_state = ParseState(
             state.nonterminal,
             state.position,
             tuple(new_symbols),
-            state._dot,
+            state.dot,
             self._forest.children_of(state),
             state.matched_length,
         )
@@ -199,8 +199,8 @@ class IterativeParser:
         `bit_count` is the current bit position (7-0).
         Return True if a bit was matched, False otherwise.
         """
-        assert state.dot is not None
-        assert state.dot.is_type(TreeValueType.TRAILING_BITS_ONLY)
+        assert state.next_symbol is not None
+        assert state.next_symbol.is_type(TreeValueType.TRAILING_BITS_ONLY)
         assert 0 <= bit_count <= 7
 
         if w >= len(word):
@@ -210,7 +210,7 @@ class IterativeParser:
         byte = ord(word[w]) if isinstance(word, str) else word[w]
         bit = (byte >> bit_count) & 1
 
-        match, match_length = state.dot.check(bit)
+        match, match_length = state.next_symbol.check(bit)
         if not match or match_length == 0:
             return False
 
@@ -243,12 +243,12 @@ class IterativeParser:
         Return True if a byte was matched, False otherwise.
         """
 
-        assert state.dot is not None
+        assert state.next_symbol is not None
         assert not (
-            state.dot.is_type(TreeValueType.TRAILING_BITS_ONLY)
-            or state.dot.is_type(TreeValueType.EMPTY)
+            state.next_symbol.is_type(TreeValueType.TRAILING_BITS_ONLY)
+            or state.next_symbol.is_type(TreeValueType.EMPTY)
         )
-        assert not state.dot.is_regex
+        assert not state.next_symbol.is_regex
 
         check_word = word[w:]
         if state.is_incomplete:
@@ -264,18 +264,18 @@ class IterativeParser:
             else:
                 prev_val_raw = str(prev_val)
                 check_word = str(TreeValue(prev_val_raw).append(TreeValue(check_word)))
-        if state.dot.is_type(TreeValueType.BYTES):
-            dot_len = len(bytes(state.dot.value()))
+        if state.next_symbol.is_type(TreeValueType.BYTES):
+            dot_len = len(bytes(state.next_symbol.value()))
         else:
-            dot_len = len(str(state.dot.value()))
+            dot_len = len(str(state.next_symbol.value()))
 
-        match, match_length = state.dot.check(check_word)
+        match, match_length = state.next_symbol.check(check_word)
         table_idx_multiplier = self._columns_per_byte
 
         if not match:
             if (w + dot_len - state.matched_length) < len(word):
                 return False
-            match, match_length = state.dot.check(check_word, incomplete=True)
+            match, match_length = state.next_symbol.check(check_word, incomplete=True)
             if not match or match_length == 0:
                 return False
 
@@ -317,12 +317,12 @@ class IterativeParser:
         extendable prefix, False otherwise.
         """
 
-        assert state.dot is not None
+        assert state.next_symbol is not None
         assert not (
-            state.dot.is_type(TreeValueType.TRAILING_BITS_ONLY)
-            or state.dot.is_type(TreeValueType.EMPTY)
+            state.next_symbol.is_type(TreeValueType.TRAILING_BITS_ONLY)
+            or state.next_symbol.is_type(TreeValueType.EMPTY)
         )
-        assert state.dot.is_regex
+        assert state.next_symbol.is_regex
 
         check_word = word[w:]
         prev_match_length = 0
@@ -342,12 +342,12 @@ class IterativeParser:
             prev_match_length = len(prev_val_raw)
 
         table_idx_multiplier = self._columns_per_byte
-        match, match_length = state.dot.check(check_word)
+        match, match_length = state.next_symbol.check(check_word)
         table_offset = match_length
         if match and match_length <= prev_match_length:
             match = False
             match_length = 0
-        incomplete_match, incomplete_match_length = state.dot.check(
+        incomplete_match, incomplete_match_length = state.next_symbol.check(
             check_word, incomplete=True
         )
         if incomplete_match_length <= prev_match_length:
@@ -402,14 +402,14 @@ class IterativeParser:
             if current_symbol in column.leo:
                 entry = column.leo[current_symbol]
                 break
-            waiters = column.dot_map.get(current_symbol)
+            waiters = column.waiting.get(current_symbol)
             # Ensure that we don't get a collision, from multiple states pointing to the same symbol.
             if waiters is None or len(waiters) != 1:
                 column.leo[current_symbol] = None
                 break
             waiter = waiters[0]
             # Only expand leo path if we are at the last symbol of the rule.
-            if waiter._dot != len(waiter.symbols) - 1 or waiter.is_incomplete:
+            if waiter.dot != len(waiter.symbols) - 1 or waiter.is_incomplete:
                 column.leo[current_symbol] = None
                 break
             pending.append((current_index, current_symbol, waiter))
@@ -435,13 +435,13 @@ class IterativeParser:
                 top = entry.top
                 next_state = top.next()
                 next_state.add_edge(
-                    top, LeoNest(entry.chain, state, top.dot_params), top.dot_params
+                    top, LeoNest(entry.chain, state, top.next_params), top.next_params
                 )
                 column.add(next_state)
                 return
-        for waiter in table[state.position].find_dot(state.nonterminal):
+        for waiter in table[state.position].waiting_for(state.nonterminal):
             next_state = waiter.next()
-            next_state.add_edge(waiter, state, waiter.dot_params)
+            next_state.add_edge(waiter, state, waiter.next_params)
             column.add(next_state)
 
     def new_parse(
@@ -515,7 +515,7 @@ class IterativeParser:
                     if not state.is_incomplete and state.next_symbol_is_nonterminal():
                         self.predict(state, table, curr_table_idx, self._hookin_parent)
                     else:
-                        if state.dot is not None and state.dot.is_type(
+                        if state.next_symbol is not None and state.next_symbol.is_type(
                             TreeValueType.TRAILING_BITS_ONLY
                         ):
                             # Scan a bit
@@ -528,7 +528,10 @@ class IterativeParser:
                                 curr_bit_position,
                             )
                         else:
-                            if state.dot is not None and state.dot.is_regex:
+                            if (
+                                state.next_symbol is not None
+                                and state.next_symbol.is_regex
+                            ):
                                 _ = self.scan_regex(
                                     state,
                                     word,

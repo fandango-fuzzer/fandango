@@ -118,7 +118,7 @@ class ParseState:
         "nonterminal",
         "position",
         "symbols",
-        "_dot",
+        "dot",
         "matched_length",
         "edges",
         "_hash",
@@ -139,7 +139,7 @@ class ParseState:
         self.nonterminal = nonterminal
         self.position = position
         self.symbols = symbols
-        self._dot = dot
+        self.dot = dot
         self.matched_length = matched_length
         self.edges = []
         if children:
@@ -190,12 +190,12 @@ class ParseState:
         return False
 
     @property
-    def dot(self) -> Optional[Symbol]:
-        return self.symbols[self._dot][0] if self._dot < len(self.symbols) else None
+    def next_symbol(self) -> Optional[Symbol]:
+        return self.symbols[self.dot][0] if self.dot < len(self.symbols) else None
 
     @property
-    def dot_params(self) -> Optional[frozenset[tuple[str, Any]]]:
-        return self.symbols[self._dot][1] if self._dot < len(self.symbols) else None
+    def next_params(self) -> Optional[frozenset[tuple[str, Any]]]:
+        return self.symbols[self.dot][1] if self.dot < len(self.symbols) else None
 
     @property
     def is_incomplete(self) -> bool:
@@ -206,11 +206,11 @@ class ParseState:
 
     @property
     def is_finished(self) -> bool:
-        return self._dot >= len(self.symbols) and not self.is_incomplete
+        return self.dot >= len(self.symbols) and not self.is_incomplete
 
     def next_symbol_is_nonterminal(self) -> bool:
         return (
-            self._dot < len(self.symbols) and self.symbols[self._dot][0].is_non_terminal
+            self.dot < len(self.symbols) and self.symbols[self.dot][0].is_non_terminal
         )
 
     def __hash__(self) -> int:
@@ -219,7 +219,7 @@ class ParseState:
                 (
                     self.nonterminal,
                     self.position,
-                    self._dot,
+                    self.dot,
                     len(self.symbols),
                     self.symbols[0][0] if self.symbols else None,
                 )
@@ -232,7 +232,7 @@ class ParseState:
             and self.nonterminal == other.nonterminal
             and self.position == other.position
             and self.symbols == other.symbols
-            and self._dot == other._dot
+            and self.dot == other.dot
         )
 
     def __repr__(self) -> str:
@@ -240,7 +240,7 @@ class ParseState:
             f"({self.nonterminal.format_as_spec()} -> "
             + "".join(
                 [
-                    f"{'•' if i == self._dot else ''}{s[0]!s}"
+                    f"{'•' if i == self.dot else ''}{s[0]!s}"
                     for i, s in enumerate(self.symbols)
                 ]
             )
@@ -255,7 +255,7 @@ class ParseState:
             self.nonterminal,
             self.position,
             self.symbols,
-            self._dot + 1,
+            self.dot + 1,
             None,
             self.matched_length,
         )
@@ -268,7 +268,7 @@ class ParseState:
             self.nonterminal,
             self.position,
             self.symbols,
-            self._dot,
+            self.dot,
             None,
             self.matched_length,
         )

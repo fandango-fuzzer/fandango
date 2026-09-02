@@ -8,7 +8,7 @@ from fandango.language.symbols.symbol import Symbol
 class Column:
     def __init__(self) -> None:
         self.states: list[ParseState] = []
-        self.dot_map = dict[Symbol, list[ParseState]]()
+        self.waiting = dict[Symbol, list[ParseState]]()
         self.unique = dict[ParseState, ParseState]()
         # Used for early deduplication in predict
         self.predicted = set[Symbol]()
@@ -28,34 +28,34 @@ class Column:
         self.unique[new] = new
         self.states[self.states.index(old)] = new
 
-        old_symbol = old.dot
+        old_symbol = old.next_symbol
         if old_symbol is not None:
-            self.dot_map[old_symbol].remove(old)
+            self.waiting[old_symbol].remove(old)
 
-        new_symbol = new.dot
+        new_symbol = new.next_symbol
         if new_symbol is not None:
-            dot_list = self.dot_map.get(new_symbol, [])
-            dot_list.append(new)
-            self.dot_map[new_symbol] = dot_list
+            waiters = self.waiting.get(new_symbol, [])
+            waiters.append(new)
+            self.waiting[new_symbol] = waiters
 
     def __contains__(self, item: ParseState) -> bool:
         return item in self.unique
 
-    def find_dot(self, symbol: Optional[Symbol]) -> list[ParseState]:
+    def waiting_for(self, symbol: Optional[Symbol]) -> list[ParseState]:
         if symbol is None:
             return []
-        return self.dot_map.get(symbol, [])
+        return self.waiting.get(symbol, [])
 
     def add(self, state: ParseState) -> bool:
         existing = self.unique.get(state)
         if existing is None:
             self.states.append(state)
             self.unique[state] = state
-            symbol = state.dot
+            symbol = state.next_symbol
             if symbol is not None:
-                state_list = self.dot_map.get(symbol, [])
-                state_list.append(state)
-                self.dot_map[symbol] = state_list
+                waiters = self.waiting.get(symbol, [])
+                waiters.append(state)
+                self.waiting[symbol] = waiters
             return True
         if existing is not state and state.edges:
             # Same item, different derivation: keep it as an alternative.

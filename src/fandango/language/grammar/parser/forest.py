@@ -257,7 +257,7 @@ class ForestBuilder:
         Rebuild DerivationTrees for LeoNest optimizations.
         """
         chain = nest.chain
-        params = chain.head.dot_params if chain is not None else nest.top_params
+        params = chain.head.next_params if chain is not None else nest.top_params
         segments = [
             self._wrap_completed(nest.inner.nonterminal, resolve(nest.inner), params)
         ]
@@ -269,7 +269,7 @@ class ForestBuilder:
                 for segment in reversed(segments):
                     children.extend(segment)
                 parent_params = (
-                    rest.head.dot_params if rest is not None else nest.top_params
+                    rest.head.next_params if rest is not None else nest.top_params
                 )
                 segments = [
                     self._wrap_completed(waiter.nonterminal, children, parent_params)
