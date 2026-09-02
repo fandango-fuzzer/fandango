@@ -165,7 +165,7 @@ def _run_case(
 )
 def test_parse(benchmark: BenchmarkFixture, case: ParseCase, length: int) -> None:
     if benchmark.disabled and length > TEST_MAX_INPUT_LENGTH:
-        pytest.skip(f"{length:,} characters is for measuring, not for testing")
+        pytest.skip(f"{length:,} character-tests are for benchmarking.")
     grammar, constraints = parse(case.spec, use_stdlib=case.use_stdlib, use_cache=False)
     assert grammar is not None
     fandango = Fandango._with_parsed(grammar, constraints)
