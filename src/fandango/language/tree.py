@@ -258,15 +258,12 @@ class DerivationTree:
         return path
 
     def set_all_read_only(self, read_only: bool) -> None:
-        """
-        Sets self as well as all children and sources to read-only.
-        This signals other classes, that this subtree should not be modified.
-        """
-        self.read_only = read_only
-        for child in self._children:
-            child.set_all_read_only(read_only)
-        for child in self._sources:
-            child.set_all_read_only(read_only)
+        stack = [self]
+        while stack:
+            node = stack.pop()
+            node.read_only = read_only
+            stack.extend(node._children)
+            stack.extend(node._sources)
 
     def protocol_msgs(self) -> list[ProtocolMessage]:
         """
@@ -423,13 +420,24 @@ class DerivationTree:
         """
         Computes a hash of the derivation tree based on its structure and symbols.
         """
-        if self.hash_cache is None:
-            self.hash_cache = hash(
+        if self.hash_cache is not None:
+            return self.hash_cache
+
+        order: list[DerivationTree] = []
+        stack: list[DerivationTree] = [self]
+        while stack:
+            node = stack.pop()
+            if node.hash_cache is None:
+                order.append(node)
+                stack.extend(node._children)
+
+        for node in reversed(order):
+            node.hash_cache = hash(
                 (
-                    self.symbol,
-                    self.sender,
-                    self.recipient,
-                    tuple(hash(child) for child in self._children),
+                    node.symbol,
+                    node.sender,
+                    node.recipient,
+                    tuple(hash(child) for child in node._children),
                 )
             )
         return self.hash_cache
