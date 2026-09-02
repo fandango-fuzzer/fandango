@@ -13,6 +13,33 @@ from fandango.language.tree import DerivationTree
 Repetitions = list[tuple[str, int, int]]
 
 
+class _Choices:
+    __slots__ = ("vector", "arities")
+
+    def __init__(self, vector: list[int]) -> None:
+        self.vector = vector
+        self.arities: list[int] = []
+
+    def pick(self, node: ParseState) -> Edge:
+        edges = node.edges
+        if len(edges) == 1:
+            return edges[0]
+        index = len(self.arities)
+        self.arities.append(len(edges))
+        return edges[self.vector[index] if index < len(self.vector) else 0]
+
+
+class _Frame:
+    """One state whose children `ForestBuilder.children_of` is collecting."""
+
+    __slots__ = ("state", "chain", "children")
+
+    def __init__(self, state: ParseState) -> None:
+        self.state = state
+        self.chain: Optional[list[Edge]] = None
+        self.children: list[DerivationTree] = []
+
+
 class ForestBuilder:
     """
     Converts a parser state into the DerivationTree it represents.
@@ -35,93 +62,113 @@ class ForestBuilder:
         self._children_keepalive.clear()
         self._ambiguous_cache.clear()
 
-    def children_of(self, state: ParseState) -> list[DerivationTree]:
+    def children_of(
+        self, state: ParseState, choices: Optional[_Choices] = None
+    ) -> list[DerivationTree]:
         """
-        Constructs the DerivationTree parsed up to the given state
+        The children `state` stands for, along one derivation.
         """
-        cached = self._children_cache.get(id(state))
-        if cached is not None:
-            return cached
+        if choices is None:
+            cached = self._children_cache.get(id(state))
+            if cached is not None:
+                return cached
 
-        # States whose construction has started but not finished.
+        built = self._children_cache if choices is None else {}
         in_progress: set[int] = set()
-        pending: list[tuple[ParseState, list[Edge], list[DerivationTree]]] = [
-            (state, state.edge_chain(), [])
-        ]
-        in_progress.add(id(state))
 
-        def resolve(target: ParseState) -> list[DerivationTree]:
-            found = self._children_cache.get(id(target))
-            return found if found is not None else []
+        def available(target: ParseState) -> bool:
+            if choices is None:
+                return id(target) in built
+            return id(target) in built or not self._is_ambiguous(target)
 
+        def take(target: ParseState) -> list[DerivationTree]:
+            """The children of an available state; `[]` for one still open."""
+            if choices is None:
+                found = built.get(id(target))
+                return found if found is not None else []
+            found = built.pop(id(target), None)
+            return found if found is not None else self.children_of(target)
+
+        def open_frame(target: ParseState) -> None:
+            pending.append(_Frame(target))
+            if choices is None:
+                in_progress.add(id(target))
+
+        pending: list[_Frame] = []
+        open_frame(state)
         while pending:
-            current, edge_chain, collected_children = pending[-1]
+            frame = pending[-1]
+            if frame.chain is None:
+                frame.chain = self._chosen_chain(frame.state, choices, frame.children)
+            chain, children = frame.chain, frame.children
             descended = False
-            while edge_chain:
-                edge = edge_chain.pop()
+            while chain:
+                edge = chain.pop()
                 filler = edge.filler
                 if isinstance(filler, DerivationTree):
-                    collected_children.append(filler)
+                    children.append(filler)
                     continue
                 if isinstance(filler, list):
-                    collected_children.extend(filler)
+                    children.extend(filler)
                     continue
                 if isinstance(filler, LeoNest):
-                    needed = filler.states()
                     missing = [
                         s
-                        for s in needed
-                        if id(s) not in self._children_cache
-                        and id(s) not in in_progress
+                        for s in filler.states()
+                        if not available(s) and id(s) not in in_progress
                     ]
                     if missing:
-                        # Queue them all at once, so this edge_chain is retried
-                        # once rather than once per chain element.
-                        edge_chain.append(edge)
-                        for missing_state in reversed(missing):
-                            pending.append(
-                                (missing_state, missing_state.edge_chain(), [])
-                            )
-                            in_progress.add(id(missing_state))
+                        # Build them all before retrying this edge, innermost
+                        # first: that is the order their choices come in.
+                        chain.append(edge)
+                        for s in reversed(missing):
+                            open_frame(s)
                         descended = True
                         break
-                    collected_children.extend(self._expand_leo(filler, resolve))
+                    children.extend(self._expand_leo(filler, take))
                     continue
                 assert isinstance(filler, ParseState)
-                sub = self._children_cache.get(id(filler))
-                if sub is None:
-                    if id(filler) not in in_progress:
-                        # Build the nested state first, then resume here.
-                        edge_chain.append(edge)
-                        pending.append((filler, filler.edge_chain(), []))
-                        in_progress.add(id(filler))
-                        descended = True
-                        break
+                if available(filler):
+                    sub = take(filler)
+                elif id(filler) in in_progress:
                     sub = []
-                if filler.nonterminal in self._rules:
-                    collected_children.append(
-                        ParserDerivationTree(
-                            filler.nonterminal, sub, **dict(edge.params or [])
-                        )
-                    )
                 else:
-                    collected_children.extend(sub)
+                    # Build the nested state first, then resume here.
+                    chain.append(edge)
+                    open_frame(filler)
+                    descended = True
+                    break
+                children.extend(
+                    self._wrap_completed(filler.nonterminal, sub, edge.params)
+                )
             if descended:
                 continue
             pending.pop()
-            in_progress.discard(id(current))
-            self._children_cache[id(current)] = collected_children
-            self._children_keepalive.append(current)
-        return self._children_cache[id(state)]
+            built[id(frame.state)] = children
+            if choices is None:
+                in_progress.discard(id(frame.state))
+                self._children_keepalive.append(frame.state)
+        return take(state)
 
     def extra_alternatives(self, state: ParseState) -> Iterator[DerivationTree]:
         """
         The children of every derivation of `state` except the first.
         """
-        alternatives = self._enumerate_children(state)
-        next(alternatives, None)
-        for children in alternatives:
-            yield from children
+        if not self._is_ambiguous(state):
+            return
+
+        choices = _Choices([])
+        self.children_of(state, choices)
+        vector = [0] * len(choices.arities)
+        while True:
+            while vector and vector[-1] + 1 == choices.arities[len(vector) - 1]:
+                vector.pop()
+            if not vector:
+                return
+            vector[-1] += 1
+            choices = _Choices(vector)
+            yield from self.children_of(state, choices)
+            vector += [0] * (len(choices.arities) - len(vector))
 
     def _is_ambiguous(self, state: ParseState) -> bool:
         """
@@ -157,77 +204,28 @@ class ForestBuilder:
         self._children_keepalive.append(state)
         return found
 
-    def _enumerate_children(self, state: ParseState) -> Iterator[list[DerivationTree]]:
-        """
-        Every children list `state` can stand for, first one first.
-        """
-        if not self._is_ambiguous(state):
-            yield self.children_of(state)
-            return
-        if not state.edges:
-            yield []
-            return
-        for edge in state.edges:
-            if edge.previous is None:
-                prefixes: Iterator[list[DerivationTree]] = iter(([],))
-            else:
-                prefixes = self._enumerate_children(edge.previous)
-            for prefix in prefixes:
-                for tail in self._enumerate_filler(edge):
-                    yield prefix + tail
-
-    def _enumerate_filler(self, edge: Edge) -> Iterator[list[DerivationTree]]:
-        """What one filled symbol can contribute to its parent's children."""
-        filler = edge.filler
-        if isinstance(filler, DerivationTree):
-            yield [filler]
-        elif isinstance(filler, list):
-            yield list(filler)
-        elif isinstance(filler, LeoNest):
-            yield from self._enumerate_leo(filler)
-        else:
-            for sub in self._enumerate_children(filler):
-                yield self._wrap_completed(filler.nonterminal, sub, edge.params)
-
-    def _enumerate_leo(self, nest: LeoNest) -> Iterator[list[DerivationTree]]:
-        """`_expand_leo`, branching wherever a nested state is ambiguous."""
-        chain = list(nest.chain) if nest.chain is not None else []
-        params = chain[0].dot_params if chain else nest.top_params
-        for inner in self._enumerate_children(nest.inner):
-            payload = self._wrap_completed(nest.inner.nonterminal, inner, params)
-            yield from self._unwind_leo(chain, 0, payload, nest.top_params)
-
-    def _unwind_leo(
+    def _chosen_chain(
         self,
-        chain: list[ParseState],
-        index: int,
-        payload: list[DerivationTree],
-        top_params: Optional[frozenset[tuple[str, Any]]],
-    ) -> Iterator[list[DerivationTree]]:
+        state: ParseState,
+        choices: Optional[_Choices],
+        children: list[DerivationTree],
+    ) -> list[Edge]:
         """
-        Wrap `payload` in the skipped chain from `index` outwards.
+        The edges from `state` back to where its item began, leftmost last.
         """
-        while index < len(chain):
-            waiter = chain[index]
-            rest_params = (
-                chain[index + 1].dot_params if index + 1 < len(chain) else top_params
-            )
-            if self._is_ambiguous(waiter):
-                for waiter_children in self._enumerate_children(waiter):
-                    children = list(waiter_children)
-                    children.extend(payload)
-                    yield from self._unwind_leo(
-                        chain,
-                        index + 1,
-                        self._wrap_completed(waiter.nonterminal, children, rest_params),
-                        top_params,
-                    )
-                return
-            children = list(self.children_of(waiter))
-            children.extend(payload)
-            payload = self._wrap_completed(waiter.nonterminal, children, rest_params)
-            index += 1
-        yield payload
+        chain: list[Edge] = []
+        node: Optional[ParseState] = state
+        while node is not None and node.edges:
+            if choices is None:
+                edge = node.edges[0]
+            elif node is not state and not self._is_ambiguous(node):
+                children.extend(self.children_of(node))
+                break
+            else:
+                edge = choices.pick(node)
+            chain.append(edge)
+            node = edge.previous
+        return chain
 
     def _wrap_completed(
         self,
