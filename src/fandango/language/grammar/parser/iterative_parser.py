@@ -36,7 +36,7 @@ class IterativeParser:
         self._tmp_rules = self._compiler._tmp_rules
         self._yielded_partial: set[DerivationTree] = set()
         self._max_position = -1
-        self._table_idx = 0
+        self._column_index = 0
         self._table: list[Column] = []
         self._parsing_mode = ParsingMode.COMPLETE
         self._start: Optional[NonTerminal] = None
@@ -50,28 +50,28 @@ class IterativeParser:
             # Assume that an unstarted parse can continue
             return True
         table: list[Column] = list(self._table)
-        table[self._table_idx] = deepcopy(table[self._table_idx])
+        table[self._column_index] = deepcopy(table[self._column_index])
 
-        for state in table[self._table_idx]:
+        for state in table[self._column_index]:
             if state.is_finished:
-                self.complete(state, table, self._table_idx)
+                self.complete(state, table, self._column_index)
 
         return any(
             state.is_incomplete or not state.is_finished
-            for state in table[self._table_idx]
+            for state in table[self._column_index]
         )
 
     def predict(
         self,
         state: ParseState,
         table: list[Column],
-        k: int,
+        column_index: int,
         hookin_parent: Optional[DerivationTree] = None,
     ) -> None:
         symbol = state.next_symbol
         assert symbol is not None
         assert isinstance(symbol, NonTerminal)
-        predicted = table[k].predicted
+        predicted = table[column_index].predicted
         if symbol in predicted:
             # Predicting the same symbol in the same column again adds nothing
             # new. Context rules are the exception: their expansion depends on
@@ -84,16 +84,21 @@ class IterativeParser:
         for rules in (self._rules, self._implicit_rules, self._tmp_rules):
             alternatives = rules.get(symbol)
             if alternatives is not None:
-                table[k].update(
-                    {ParseState(symbol, k, alternative) for alternative in alternatives}
+                table[column_index].update(
+                    {
+                        ParseState(symbol, column_index, alternative)
+                        for alternative in alternatives
+                    }
                 )
                 return
         if symbol in self._context_rules:
             node, rule_symbol = self._context_rules[symbol]
-            self.predict_ctx_rule(state, table, k, node, rule_symbol, hookin_parent)
+            self.predict_ctx_rule(
+                state, table, column_index, node, rule_symbol, hookin_parent
+            )
 
     def current_tree(self) -> Optional[DerivationTree]:
-        if len(self._table[self._table_idx]) == 0:
+        if len(self._table[self._column_index]) == 0:
             return None
         for col in self._table[::-1]:
             if len(col) == 0:
@@ -139,7 +144,7 @@ class IterativeParser:
         self,
         state: ParseState,
         table: list[Column],
-        k: int,
+        column_index: int,
         node: Node,
         rule_symbol: RuleSymbol,
         hookin_parent: Optional[DerivationTree] = None,
@@ -178,37 +183,37 @@ class IterativeParser:
             self._forest.children_of(state),
             state.matched_length,
         )
-        if state in table[k]:
-            table[k].replace(state, new_state)
-        self.predict(new_state, table, k)
+        if state in table[column_index]:
+            table[column_index].replace(state, new_state)
+        self.predict(new_state, table, column_index)
 
     def scan_bit(
         self,
         state: ParseState,
         word: str | bytes,
         table: list[Column],
-        k: int,
-        w: int,
-        bit_count: int,
+        column_index: int,
+        word_index: int,
+        bit_position: int,
     ) -> bool:
         """
         Scan a bit from the input `word`.
         `table` is the parse table (may be modified by this function).
-        `table[k]` is the current column.
-        `word[w]` is the current byte.
-        `bit_count` is the current bit position (7-0).
+        `table[column_index]` is the current column.
+        `word[word_index]` is the current byte.
+        `bit_position` is the current bit position (7-0).
         Return True if a bit was matched, False otherwise.
         """
         assert state.next_symbol is not None
         assert state.next_symbol.is_type(TreeValueType.TRAILING_BITS_ONLY)
-        assert 0 <= bit_count <= 7
+        assert 0 <= bit_position <= 7
 
-        if w >= len(word):
+        if word_index >= len(word):
             return False
 
-        # Get the highest bit. If `word` is bytes, word[w] is an integer.
-        byte = ord(word[w]) if isinstance(word, str) else word[w]
-        bit = (byte >> bit_count) & 1
+        # Get the highest bit. If `word` is bytes, word[word_index] is an integer.
+        byte = ord(word[word_index]) if isinstance(word, str) else word[word_index]
+        bit = (byte >> bit_position) & 1
 
         match, match_length = state.next_symbol.check(bit)
         if not match or match_length == 0:
@@ -219,10 +224,10 @@ class IterativeParser:
         next_state.set_edge(state, tree)
         # A bit advances the parse by exactly one column; the table holds
         # `columns_per_byte` (8) columns per input byte for this.
-        table[k + 1].add(next_state)
+        table[column_index + 1].add(next_state)
 
         # Save the maximum position reached, so we can report errors
-        self._max_position = max(self._max_position, w)
+        self._max_position = max(self._max_position, word_index)
 
         return True
 
@@ -231,15 +236,15 @@ class IterativeParser:
         state: ParseState,
         word: str | bytes,
         table: list[Column],
-        k: int,
-        w: int,
+        column_index: int,
+        word_index: int,
     ) -> bool:
         """
         Scan a byte from the input `word`.
         `state` is the current parse state.
         `table` is the parse table.
-        `table[k]` is the current column.
-        `word[w]` is the current byte.
+        `table[column_index]` is the current column.
+        `word[word_index]` is the current byte.
         Return True if a byte was matched, False otherwise.
         """
 
@@ -250,7 +255,7 @@ class IterativeParser:
         )
         assert not state.next_symbol.is_regex
 
-        check_word = word[w:]
+        check_word = word[word_index:]
         if state.is_incomplete:
             prev_terminal = state.last_filler()
             assert isinstance(prev_terminal, DerivationTree)
@@ -270,10 +275,10 @@ class IterativeParser:
             dot_len = len(str(state.next_symbol.value()))
 
         match, match_length = state.next_symbol.check(check_word)
-        table_idx_multiplier = self._columns_per_byte
+        columns_per_byte = self._columns_per_byte
 
         if not match:
-            if (w + dot_len - state.matched_length) < len(word):
+            if (word_index + dot_len - state.matched_length) < len(word):
                 return False
             match, match_length = state.next_symbol.check(check_word, incomplete=True)
             if not match or match_length == 0:
@@ -292,10 +297,10 @@ class IterativeParser:
             next_state.set_edge(
                 state.predecessor() if state.is_incomplete else state, tree
             )
-        table[k + ((match_length - state.matched_length) * table_idx_multiplier)].add(
-            next_state
-        )
-        self._max_position = max(self._max_position, w + match_length)
+        table[
+            column_index + ((match_length - state.matched_length) * columns_per_byte)
+        ].add(next_state)
+        self._max_position = max(self._max_position, word_index + match_length)
 
         return True
 
@@ -304,15 +309,15 @@ class IterativeParser:
         state: ParseState,
         word: str | bytes,
         table: list[Column],
-        k: int,
-        w: int,
+        column_index: int,
+        word_index: int,
     ) -> bool:
         """
         Scan a regex terminal from the input `word`.
         `state` is the current parse state.
         `table` is the parse table.
-        `table[k]` is the current column.
-        `word[w]` is the current byte.
+        `table[column_index]` is the current column.
+        `word[word_index]` is the current byte.
         Return True if the regex matched, completely or as an
         extendable prefix, False otherwise.
         """
@@ -324,7 +329,7 @@ class IterativeParser:
         )
         assert state.next_symbol.is_regex
 
-        check_word = word[w:]
+        check_word = word[word_index:]
         prev_match_length = 0
         if state.is_incomplete:
             prev_terminal = state.last_filler()
@@ -341,7 +346,7 @@ class IterativeParser:
                 check_word = str(TreeValue(prev_val_raw).append(TreeValue(check_word)))
             prev_match_length = len(prev_val_raw)
 
-        table_idx_multiplier = self._columns_per_byte
+        columns_per_byte = self._columns_per_byte
         match, match_length = state.next_symbol.check(check_word)
         table_offset = match_length
         if match and match_length <= prev_match_length:
@@ -354,7 +359,9 @@ class IterativeParser:
             incomplete_match = False
         incomplete_table_offset = incomplete_match_length
         if not match:
-            if not incomplete_match or (incomplete_match_length + w) < len(word):
+            if not incomplete_match or (incomplete_match_length + word_index) < len(
+                word
+            ):
                 return False
 
         if match:
@@ -367,7 +374,8 @@ class IterativeParser:
                 state.predecessor() if state.is_incomplete else state, tree
             )
             table[
-                k + ((table_offset - state.matched_length) * table_idx_multiplier)
+                column_index
+                + ((table_offset - state.matched_length) * columns_per_byte)
             ].add(next_state)
         if incomplete_match:
             next_state = state.copy()
@@ -377,18 +385,15 @@ class IterativeParser:
                 state.predecessor() if state.is_incomplete else state, tree
             )
             table[
-                k
-                + (
-                    (incomplete_table_offset - state.matched_length)
-                    * table_idx_multiplier
-                )
+                column_index
+                + ((incomplete_table_offset - state.matched_length) * columns_per_byte)
             ].add(next_state)
 
-        self._max_position = max(self._max_position, w + match_length)
+        self._max_position = max(self._max_position, word_index + match_length)
         return True
 
     def _leo_entry(
-        self, table: list[Column], index: int, symbol: Symbol
+        self, table: list[Column], column_index: int, symbol: Symbol
     ) -> Optional[LeoEntry]:
         """
         When only one way to reduce upwards from `symbol` exists, returns the
@@ -396,7 +401,7 @@ class IterativeParser:
         """
         pending: list[tuple[int, Symbol, ParseState]] = []
         entry: Optional[LeoEntry] = None
-        current_index, current_symbol = index, symbol
+        current_index, current_symbol = column_index, symbol
         while True:
             column = table[current_index]
             if current_symbol in column.leo:
@@ -414,7 +419,7 @@ class IterativeParser:
                 break
             pending.append((current_index, current_symbol, waiter))
             current_index, current_symbol = waiter.position, waiter.nonterminal
-            if current_index > index:
+            if current_index > column_index:
                 break
 
         for cached_index, cached_symbol, waiter in reversed(pending):
@@ -426,10 +431,10 @@ class IterativeParser:
         self,
         state: ParseState,
         table: list[Column],
-        k: int,
+        column_index: int,
     ) -> None:
-        column = table[k]
-        if state.position < k:
+        column = table[column_index]
+        if state.position < column_index:
             entry = self._leo_entry(table, state.position, state.nonterminal)
             if entry is not None:
                 top = entry.top
@@ -455,7 +460,7 @@ class IterativeParser:
             start = NonTerminal(start)
         self._start = start
         self._columns_per_byte = self._compiler.columns_per_byte_for(start)
-        self._table_idx = (7 - starter_bit) % 8 if self._columns_per_byte == 8 else 0
+        self._column_index = (7 - starter_bit) % 8 if self._columns_per_byte == 8 else 0
         self._table = []
         self._table.append(Column())
         self._first_consume = True
@@ -481,28 +486,28 @@ class IterativeParser:
         word = char
 
         table = list(self._table)
-        per_byte = self._columns_per_byte
-        table.extend([Column() for _ in range(len(char) * per_byte)])
+        columns_per_byte = self._columns_per_byte
+        table.extend([Column() for _ in range(len(char) * columns_per_byte)])
         # Add the start state at the first consume
         if self._first_consume:
-            table[self._table_idx].add(
+            table[self._column_index].add(
                 ParseState(self.implicit_start, 0, ((self._start, frozenset()),))
             )
             self._first_consume = False
-        curr_table_idx = self._table_idx
-        curr_word_idx = 0
+        column_index = self._column_index
+        word_index = 0
 
-        while curr_table_idx < len(table):
-            curr_bit_position = 7 - (curr_table_idx % 8)
-            if curr_table_idx == len(table) - 1:
+        while column_index < len(table):
+            bit_position = 7 - (column_index % 8)
+            if column_index == len(table) - 1:
                 self._table = list(table)
                 self._table[-1] = deepcopy(table[-1])
-                self._table_idx = curr_table_idx
+                self._column_index = column_index
             # True iff we have processed all characters
             # (or some bits of the last character)
-            at_end = curr_word_idx >= len(word)
+            at_end = word_index >= len(word)
             finished_starts: list[ParseState] = []
-            for state in table[curr_table_idx]:
+            for state in table[column_index]:
                 if state.is_finished:
                     if state.nonterminal == self.implicit_start:
                         if at_end:
@@ -510,10 +515,10 @@ class IterativeParser:
                                 yield child, True
                             finished_starts.append(state)
 
-                    self.complete(state, table, curr_table_idx)
+                    self.complete(state, table, column_index)
                 else:
                     if not state.is_incomplete and state.next_symbol_is_nonterminal():
-                        self.predict(state, table, curr_table_idx, self._hookin_parent)
+                        self.predict(state, table, column_index, self._hookin_parent)
                     else:
                         if state.next_symbol is not None and state.next_symbol.is_type(
                             TreeValueType.TRAILING_BITS_ONLY
@@ -523,9 +528,9 @@ class IterativeParser:
                                 state,
                                 word,
                                 table,
-                                curr_table_idx,
-                                curr_word_idx,
-                                curr_bit_position,
+                                column_index,
+                                word_index,
+                                bit_position,
                             )
                         else:
                             if (
@@ -536,20 +541,20 @@ class IterativeParser:
                                     state,
                                     word,
                                     table,
-                                    curr_table_idx,
-                                    curr_word_idx,
+                                    column_index,
+                                    word_index,
                                 )
                             else:
                                 _ = self.scan_bytes(
                                     state,
                                     word,
                                     table,
-                                    curr_table_idx,
-                                    curr_word_idx,
+                                    column_index,
+                                    word_index,
                                 )
 
             if self._parsing_mode == ParsingMode.INCOMPLETE and at_end:
-                for state in table[curr_table_idx]:
+                for state in table[column_index]:
                     if not state.has_children():
                         continue
                     if state.nonterminal == self.implicit_start:
@@ -559,7 +564,7 @@ class IterativeParser:
                                 yield child, False
                         if state not in finished_starts:
                             finished_starts.append(state)
-                    self.complete(state, table, curr_table_idx)
+                    self.complete(state, table, column_index)
 
             for state in finished_starts:
                 for child in self._forest.extra_alternatives(state):
@@ -571,9 +576,9 @@ class IterativeParser:
                     else:
                         yield child, True
 
-            curr_table_idx += 1
-            if curr_table_idx % per_byte == 0:
-                curr_word_idx += 1
+            column_index += 1
+            if column_index % columns_per_byte == 0:
+                word_index += 1
 
     def to_derivation_tree(self, tree: DerivationTree) -> DerivationTree:
         return self._forest.to_derivation_tree(tree)
