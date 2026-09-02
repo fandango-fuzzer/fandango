@@ -8,20 +8,20 @@ from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.grammar.parser.parse_state import (
-    ParserStateSymbolContent,
     RuleAlternative,
+    RuleSymbol,
 )
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.language.tree_value import TreeValueType
 
-GrammarCompilerReturnType = list[list[ParserStateSymbolContent]]
+DraftAlternatives = list[list[RuleSymbol]]
 
 
 class GrammarCompiler(
     NodeVisitor[
-        GrammarCompilerReturnType,
-        GrammarCompilerReturnType,
+        DraftAlternatives,
+        DraftAlternatives,
     ]
 ):
     """
@@ -32,10 +32,8 @@ class GrammarCompiler(
         self.grammar_rules: dict[NonTerminal, Node] = grammar_rules
         self._rules: dict[NonTerminal, set[RuleAlternative]] = {}
         self._implicit_rules: dict[NonTerminal, set[RuleAlternative]] = {}
-        self._draft_implicit_rules: dict[NonTerminal, GrammarCompilerReturnType] = {}
-        self._context_rules: dict[
-            NonTerminal, tuple[Node, ParserStateSymbolContent]
-        ] = dict()
+        self._draft_implicit_rules: dict[NonTerminal, DraftAlternatives] = {}
+        self._context_rules: dict[NonTerminal, tuple[Node, RuleSymbol]] = dict()
         self._tmp_rules: dict[NonTerminal, set[RuleAlternative]] = {}
         #: Control-flow nodes by the name of the symbol standing in for them.
         self._nodes: dict[str, Node] = {}
@@ -45,13 +43,13 @@ class GrammarCompiler(
     def compile_bounded_repetition(
         self,
         node: Repetition,
-        nonterminal: ParserStateSymbolContent,
+        rule_symbol: RuleSymbol,
         tree: DerivationTree,
-    ) -> ParserStateSymbolContent:
+    ) -> RuleSymbol:
         """
         Recompile a repetition whose bounds depend on the context of the already parsed tree.
         """
-        [[symbol]] = self.visitRepetition(node, nonterminal, tree)
+        [[symbol]] = self.visitRepetition(node, rule_symbol, tree)
         return symbol
 
     def _process(self) -> None:
@@ -66,26 +64,20 @@ class GrammarCompiler(
             self._implicit_rules[nonterminal] = {tuple(a) for a in alternatives}
         self._draft_implicit_rules.clear()
 
-    def set_rule(
-        self, nonterminal: NonTerminal, rule: GrammarCompilerReturnType
-    ) -> None:
+    def set_rule(self, nonterminal: NonTerminal, rule: DraftAlternatives) -> None:
         self._rules[nonterminal] = {tuple(a) for a in rule}
 
-    def set_implicit_rule(
-        self, rule: GrammarCompilerReturnType
-    ) -> ParserStateSymbolContent:
+    def set_implicit_rule(self, rule: DraftAlternatives) -> RuleSymbol:
         nonterminal = NonTerminal(f"<*{len(self._draft_implicit_rules)}*>")
         self._draft_implicit_rules[nonterminal] = rule
         return (nonterminal, frozenset())
 
-    def set_context_rule(
-        self, node: Node, non_terminal: ParserStateSymbolContent
-    ) -> NonTerminal:
+    def set_context_rule(self, node: Node, rule_symbol: RuleSymbol) -> NonTerminal:
         nonterminal = NonTerminal(f"<*ctx_{len(self._context_rules)}*>")
-        self._context_rules[nonterminal] = (node, non_terminal)
+        self._context_rules[nonterminal] = (node, rule_symbol)
         return nonterminal
 
-    def set_tmp_rule(self, rule: GrammarCompilerReturnType) -> ParserStateSymbolContent:
+    def set_tmp_rule(self, rule: DraftAlternatives) -> RuleSymbol:
         nonterminal = NonTerminal(f"<*tmp_{len(self._tmp_rules)}*>")
         self._tmp_rules[nonterminal] = {tuple(a) for a in rule}
         return (nonterminal, frozenset())
@@ -93,28 +85,28 @@ class GrammarCompiler(
     def _clear_tmp(self) -> None:
         self._tmp_rules.clear()
 
-    def default_result(self) -> GrammarCompilerReturnType:
+    def default_result(self) -> DraftAlternatives:
         return []
 
     def aggregate_results(
         self,
-        aggregate: GrammarCompilerReturnType,
-        result: GrammarCompilerReturnType,
-    ) -> GrammarCompilerReturnType:
+        aggregate: DraftAlternatives,
+        result: DraftAlternatives,
+    ) -> DraftAlternatives:
         aggregate.extend(result)
         return aggregate
 
-    def visitAlternative(self, node: Alternative) -> GrammarCompilerReturnType:
+    def visitAlternative(self, node: Alternative) -> DraftAlternatives:
         intermediate_nt = NonTerminal(f"<__{node.id}>")
         self._nodes[intermediate_nt.name()] = node
         result = self.visitChildren(node)
         self.set_rule(intermediate_nt, result)
         return [[(intermediate_nt, frozenset())]]
 
-    def visitConcatenation(self, node: Concatenation) -> GrammarCompilerReturnType:
+    def visitConcatenation(self, node: Concatenation) -> DraftAlternatives:
         intermediate_nt = NonTerminal(f"<__{node.id}>")
         self._nodes[intermediate_nt.name()] = node
-        result: GrammarCompilerReturnType = [[]]
+        result: DraftAlternatives = [[]]
         for child in node.children():
             to_add = self.visit(child)
             new_result = []
@@ -128,54 +120,54 @@ class GrammarCompiler(
     def visitRepetition(
         self,
         node: Repetition,
-        nt: Optional[ParserStateSymbolContent] = None,
+        element: Optional[RuleSymbol] = None,
         tree: Optional[DerivationTree] = None,
-    ) -> GrammarCompilerReturnType:
+    ) -> DraftAlternatives:
         repetition_nt = NonTerminal(f"<__{node.id}>")
         self._nodes[repetition_nt.name()] = node
         is_context = node.bounds_constraint is not None
 
-        if nt is None:
+        if element is None:
             alternatives = self.visit(node.node)
-            nt = self.set_implicit_rule(alternatives)
+            element = self.set_implicit_rule(alternatives)
 
             if is_context:
-                i_nt = self.set_context_rule(node, nt)
-                self.set_rule(repetition_nt, [[(i_nt, frozenset())]])
+                context_nt = self.set_context_rule(node, element)
+                self.set_rule(repetition_nt, [[(context_nt, frozenset())]])
                 return [[(repetition_nt, frozenset())]]
 
-        prev = None
+        more = None
         if node.bounds_constraint is not None:
             assert tree is not None
-            right_most_node = tree
-            while len(right_most_node.children) != 0:
-                right_most_node = right_most_node.children[-1]
-            node_min, _ = node.bounds_constraint.min(right_most_node)
-            node_max, _ = node.bounds_constraint.max(right_most_node)
+            rightmost_leaf = tree
+            while len(rightmost_leaf.children) != 0:
+                rightmost_leaf = rightmost_leaf.children[-1]
+            node_min, _ = node.bounds_constraint.min(rightmost_leaf)
+            node_max, _ = node.bounds_constraint.max(rightmost_leaf)
         else:
             node_min = node.min
             node_max = node.max
         for _rep in range(node_min, node_max):
-            alts = [[nt]]
-            if prev is not None:
-                alts.append([nt, prev])
+            alts = [[element]]
+            if more is not None:
+                alts.append([element, more])
             if is_context:
-                prev = self.set_tmp_rule(alts)
+                more = self.set_tmp_rule(alts)
             else:
-                prev = self.set_implicit_rule(alts)
-        alts = [node_min * [nt]]
-        if prev is not None:
-            alts.append(node_min * [nt] + [prev])
+                more = self.set_implicit_rule(alts)
+        alts = [node_min * [element]]
+        if more is not None:
+            alts.append(node_min * [element] + [more])
         if is_context:
             return [[self.set_tmp_rule(alts)]]
-        min_nt = self.set_implicit_rule(alts)
-        self.set_rule(repetition_nt, [[min_nt]])
+        min_symbol = self.set_implicit_rule(alts)
+        self.set_rule(repetition_nt, [[min_symbol]])
         return [[(repetition_nt, frozenset())]]
 
-    def visitStar(self, node: Star) -> GrammarCompilerReturnType:
+    def visitStar(self, node: Star) -> DraftAlternatives:
         intermediate_nt = NonTerminal(f"<__{node.id}>")
         self._nodes[intermediate_nt.name()] = node
-        alternatives: GrammarCompilerReturnType = [[]]
+        alternatives: DraftAlternatives = [[]]
         nt = self.set_implicit_rule(alternatives)
         for r in self.visit(node.node):
             alternatives.append(r + [nt])
@@ -183,10 +175,10 @@ class GrammarCompiler(
         self.set_rule(intermediate_nt, result)
         return [[(intermediate_nt, frozenset())]]
 
-    def visitPlus(self, node: Plus) -> GrammarCompilerReturnType:
+    def visitPlus(self, node: Plus) -> DraftAlternatives:
         intermediate_nt = NonTerminal(f"<__{node.id}>")
         self._nodes[intermediate_nt.name()] = node
-        alternatives: GrammarCompilerReturnType = []
+        alternatives: DraftAlternatives = []
         nt = self.set_implicit_rule(alternatives)
         for r in self.visit(node.node):
             alternatives.append(r)
@@ -195,14 +187,14 @@ class GrammarCompiler(
         self.set_rule(intermediate_nt, result)
         return [[(intermediate_nt, frozenset())]]
 
-    def visitOption(self, node: Option) -> GrammarCompilerReturnType:
+    def visitOption(self, node: Option) -> DraftAlternatives:
         intermediate_nt = NonTerminal(f"<__{node.id}>")
         self._nodes[intermediate_nt.name()] = node
-        result: GrammarCompilerReturnType = [[]] + self.visit(node.node)
+        result: DraftAlternatives = [[]] + self.visit(node.node)
         self.set_rule(intermediate_nt, result)
         return [[(intermediate_nt, frozenset())]]
 
-    def visitNonTerminalNode(self, node: NonTerminalNode) -> GrammarCompilerReturnType:
+    def visitNonTerminalNode(self, node: NonTerminalNode) -> DraftAlternatives:
         params = dict()
         if node.sender is not None:
             params["sender"] = node.sender
@@ -211,7 +203,7 @@ class GrammarCompiler(
         parameters = frozenset(params.items())
         return [[(node.symbol, parameters)]]
 
-    def visitTerminalNode(self, node: TerminalNode) -> GrammarCompilerReturnType:
+    def visitTerminalNode(self, node: TerminalNode) -> DraftAlternatives:
         return [[(node.symbol, frozenset())]]
 
     def columns_per_byte_for(self, start: NonTerminal) -> int:
@@ -245,8 +237,8 @@ class GrammarCompiler(
                 break
 
             for alternative in alternatives:
-                for entry in alternative:
-                    symbol = entry[0]
+                for rule_symbol in alternative:
+                    symbol = rule_symbol[0]
                     if symbol.is_terminal:
                         if symbol.is_type(TreeValueType.TRAILING_BITS_ONLY):
                             result = 8

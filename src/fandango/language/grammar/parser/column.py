@@ -41,10 +41,10 @@ class Column:
     def __contains__(self, item: ParseState) -> bool:
         return item in self.unique
 
-    def find_dot(self, nt: Optional[Symbol]) -> list[ParseState]:
-        if nt is None:
+    def find_dot(self, symbol: Optional[Symbol]) -> list[ParseState]:
+        if symbol is None:
             return []
-        return self.dot_map.get(nt, [])
+        return self.dot_map.get(symbol, [])
 
     def add(self, state: ParseState) -> bool:
         existing = self.unique.get(state)

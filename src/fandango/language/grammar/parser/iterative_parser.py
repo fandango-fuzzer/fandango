@@ -12,8 +12,8 @@ from fandango.language.grammar.parser.grammar_compiler import GrammarCompiler
 from fandango.language.grammar.parser.parse_state import (
     LeoEntry,
     LeoNest,
-    ParserStateSymbolContent,
     ParseState,
+    RuleSymbol,
 )
 from fandango.language.grammar.parser.parser_tree import ParserDerivationTree
 from fandango.language.symbols import NonTerminal, Terminal
@@ -34,7 +34,7 @@ class IterativeParser:
         self._implicit_rules = self._compiler._implicit_rules
         self._context_rules = self._compiler._context_rules
         self._tmp_rules = self._compiler._tmp_rules
-        self._incomplete: set[DerivationTree] = set()
+        self._yielded_partial: set[DerivationTree] = set()
         self._max_position = -1
         self._table_idx = 0
         self._table: list[Column] = []
@@ -53,11 +53,11 @@ class IterativeParser:
         table[self._table_idx] = deepcopy(table[self._table_idx])
 
         for state in table[self._table_idx]:
-            if state.finished():
+            if state.is_finished:
                 self.complete(state, table, self._table_idx)
 
         return any(
-            state.is_incomplete or not state.finished()
+            state.is_incomplete or not state.is_finished
             for state in table[self._table_idx]
         )
 
@@ -89,8 +89,8 @@ class IterativeParser:
                 )
                 return
         if symbol in self._context_rules:
-            node, nt = self._context_rules[symbol]
-            self.predict_ctx_rule(state, table, k, node, nt, hookin_parent)
+            node, rule_symbol = self._context_rules[symbol]
+            self.predict_ctx_rule(state, table, k, node, rule_symbol, hookin_parent)
 
     def current_tree(self) -> Optional[DerivationTree]:
         if len(self._table[self._table_idx]) == 0:
@@ -141,7 +141,7 @@ class IterativeParser:
         table: list[Column],
         k: int,
         node: Node,
-        nt_rule: ParserStateSymbolContent,
+        rule_symbol: RuleSymbol,
         hookin_parent: Optional[DerivationTree] = None,
     ) -> None:
         if not isinstance(node, Repetition):
@@ -155,7 +155,7 @@ class IterativeParser:
             hookin_parent.set_children(hookin_parent.children + [tree])
         try:
             context_nt = self._compiler.compile_bounded_repetition(
-                node, nt_rule, tree if hookin_parent is None else hookin_parent
+                node, rule_symbol, tree if hookin_parent is None else hookin_parent
             )
         except (ValueError, FandangoValueError):
             return
@@ -176,7 +176,7 @@ class IterativeParser:
             tuple(new_symbols),
             state._dot,
             self._forest.children_of(state),
-            state.incomplete_idx,
+            state.matched_length,
         )
         if state in table[k]:
             table[k].replace(state, new_state)
@@ -273,26 +273,26 @@ class IterativeParser:
         table_idx_multiplier = self._columns_per_byte
 
         if not match:
-            if (w + dot_len - state.incomplete_idx) < len(word):
+            if (w + dot_len - state.matched_length) < len(word):
                 return False
             match, match_length = state.dot.check(check_word, incomplete=True)
             if not match or match_length == 0:
                 return False
 
             next_state = state.copy()
-            next_state.incomplete_idx = match_length
+            next_state.matched_length = match_length
             tree = ParserDerivationTree(Terminal(check_word[:match_length]))
             next_state.set_edge(
                 state.predecessor() if state.is_incomplete else state, tree
             )
         else:
             next_state = state.next()
-            next_state.incomplete_idx = 0
+            next_state.matched_length = 0
             tree = ParserDerivationTree(Terminal(check_word[:match_length]))
             next_state.set_edge(
                 state.predecessor() if state.is_incomplete else state, tree
             )
-        table[k + ((match_length - state.incomplete_idx) * table_idx_multiplier)].add(
+        table[k + ((match_length - state.matched_length) * table_idx_multiplier)].add(
             next_state
         )
         self._max_position = max(self._max_position, w + match_length)
@@ -359,7 +359,7 @@ class IterativeParser:
 
         if match:
             next_state = state.next()
-            next_state.incomplete_idx = 0
+            next_state.matched_length = 0
             tree = ParserDerivationTree(Terminal(check_word[:match_length]))
             # Growing a partial match replaces the previous partial
             # terminal rather than adding a child, so step back over it.
@@ -367,11 +367,11 @@ class IterativeParser:
                 state.predecessor() if state.is_incomplete else state, tree
             )
             table[
-                k + ((table_offset - state.incomplete_idx) * table_idx_multiplier)
+                k + ((table_offset - state.matched_length) * table_idx_multiplier)
             ].add(next_state)
         if incomplete_match:
             next_state = state.copy()
-            next_state.incomplete_idx = incomplete_match_length
+            next_state.matched_length = incomplete_match_length
             tree = ParserDerivationTree(Terminal(check_word[:incomplete_match_length]))
             next_state.set_edge(
                 state.predecessor() if state.is_incomplete else state, tree
@@ -379,7 +379,7 @@ class IterativeParser:
             table[
                 k
                 + (
-                    (incomplete_table_offset - state.incomplete_idx)
+                    (incomplete_table_offset - state.matched_length)
                     * table_idx_multiplier
                 )
             ].add(next_state)
@@ -433,16 +433,16 @@ class IterativeParser:
             entry = self._leo_entry(table, state.position, state.nonterminal)
             if entry is not None:
                 top = entry.top
-                advanced = top.next()
-                advanced.add_edge(
+                next_state = top.next()
+                next_state.add_edge(
                     top, LeoNest(entry.chain, state, top.dot_params), top.dot_params
                 )
-                column.add(advanced)
+                column.add(next_state)
                 return
-        for s in table[state.position].find_dot(state.nonterminal):
-            advanced = s.next()
-            advanced.add_edge(s, state, s.dot_params)
-            column.add(advanced)
+        for waiter in table[state.position].find_dot(state.nonterminal):
+            next_state = waiter.next()
+            next_state.add_edge(waiter, state, waiter.dot_params)
+            column.add(next_state)
 
     def new_parse(
         self,
@@ -459,7 +459,7 @@ class IterativeParser:
         self._table = []
         self._table.append(Column())
         self._first_consume = True
-        self._incomplete.clear()
+        self._yielded_partial.clear()
         self._forest.reset()
         self._max_position = -1
         self._parsing_mode = mode
@@ -501,14 +501,14 @@ class IterativeParser:
             # True iff we have processed all characters
             # (or some bits of the last character)
             at_end = curr_word_idx >= len(word)
-            ambiguous_starts: list[ParseState] = []
+            finished_starts: list[ParseState] = []
             for state in table[curr_table_idx]:
-                if state.finished():
+                if state.is_finished:
                     if state.nonterminal == self.implicit_start:
                         if at_end:
                             for child in self._forest.children_of(state):
                                 yield child, True
-                            ambiguous_starts.append(state)
+                            finished_starts.append(state)
 
                     self.complete(state, table, curr_table_idx)
                 else:
@@ -551,19 +551,19 @@ class IterativeParser:
                         continue
                     if state.nonterminal == self.implicit_start:
                         for child in self._forest.children_of(state):
-                            if child not in self._incomplete:
-                                self._incomplete.add(child)
+                            if child not in self._yielded_partial:
+                                self._yielded_partial.add(child)
                                 yield child, False
-                        if state not in ambiguous_starts:
-                            ambiguous_starts.append(state)
+                        if state not in finished_starts:
+                            finished_starts.append(state)
                     self.complete(state, table, curr_table_idx)
 
-            for state in ambiguous_starts:
+            for state in finished_starts:
                 for child in self._forest.extra_alternatives(state):
                     if self._parsing_mode == ParsingMode.INCOMPLETE:
-                        if child in self._incomplete:
+                        if child in self._yielded_partial:
                             continue
-                        self._incomplete.add(child)
+                        self._yielded_partial.add(child)
                         yield child, False
                     else:
                         yield child, True

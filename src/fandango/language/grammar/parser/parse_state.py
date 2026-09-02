@@ -5,10 +5,10 @@ from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree
 
 #: One symbol of a rule, with its parameters (e.g. sender/recipient).
-ParserStateSymbolContent = tuple[Symbol, frozenset[tuple[str, Any]]]
+RuleSymbol = tuple[Symbol, frozenset[tuple[str, Any]]]
 
 #: One alternative of a compiled rule: the symbols to match, in order.
-RuleAlternative = tuple[ParserStateSymbolContent, ...]
+RuleAlternative = tuple[RuleSymbol, ...]
 
 #: What can occupy one symbol along a derivation; see `Edge.filler`.
 Filler = Union[DerivationTree, "ParseState", "LeoNest", list[DerivationTree]]
@@ -51,10 +51,10 @@ class ReductionChain:
         self.tail = tail
 
     def __iter__(self) -> Iterator["ParseState"]:
-        node: Optional[ReductionChain] = self
-        while node is not None:
-            yield node.head
-            node = node.tail
+        link: Optional[ReductionChain] = self
+        while link is not None:
+            yield link.head
+            link = link.tail
 
     def __repr__(self) -> str:
         return f"ReductionChain({list(self)!r})"
@@ -119,7 +119,7 @@ class ParseState:
         "position",
         "symbols",
         "_dot",
-        "incomplete_idx",
+        "matched_length",
         "edges",
         "_hash",
     )
@@ -133,17 +133,17 @@ class ParseState:
         position: int,
         symbols: RuleAlternative,
         dot: int = 0,
-        edges: Optional[list[DerivationTree]] = None,
-        incomplete_idx: int = 0,
+        children: Optional[list[DerivationTree]] = None,
+        matched_length: int = 0,
     ):
         self.nonterminal = nonterminal
         self.position = position
         self.symbols = symbols
         self._dot = dot
-        self.incomplete_idx = incomplete_idx
+        self.matched_length = matched_length
         self.edges = []
-        if edges:
-            self.edges.append(Edge(None, list(edges), None))
+        if children:
+            self.edges.append(Edge(None, list(children), None))
         self._hash: Optional[int] = None
 
     def add_edge(
@@ -175,9 +175,9 @@ class ParseState:
         """
         Whether this state has any children.
         """
-        node: Optional[ParseState] = self
-        while node is not None and node.edges:
-            edge = node.edges[0]
+        current: Optional[ParseState] = self
+        while current is not None and current.edges:
+            edge = current.edges[0]
             filler = edge.filler
             if isinstance(filler, list):
                 if filler:
@@ -186,7 +186,7 @@ class ParseState:
                 # A tree, a state, or a Leo nest each fill one symbol, and so
                 # become one child even when what they matched is empty.
                 return True
-            node = edge.previous
+            current = edge.previous
         return False
 
     @property
@@ -202,9 +202,10 @@ class ParseState:
         """
         Whether the terminal under the dot is only partially matched.
         """
-        return self.incomplete_idx > 0
+        return self.matched_length > 0
 
-    def finished(self) -> bool:
+    @property
+    def is_finished(self) -> bool:
         return self._dot >= len(self.symbols) and not self.is_incomplete
 
     def next_symbol_is_nonterminal(self) -> bool:
@@ -243,7 +244,7 @@ class ParseState:
                     for i, s in enumerate(self.symbols)
                 ]
             )
-            + ("•" if self.finished() else "")
+            + ("•" if self.is_finished else "")
             + f", column {self.position}"
             + ")"
         )
@@ -256,7 +257,7 @@ class ParseState:
             self.symbols,
             self._dot + 1,
             None,
-            self.incomplete_idx,
+            self.matched_length,
         )
 
     def __deepcopy__(self, memo: dict[int, Any]) -> "ParseState":
@@ -269,7 +270,7 @@ class ParseState:
             self.symbols,
             self._dot,
             None,
-            self.incomplete_idx,
+            self.matched_length,
         )
         copied.edges = list(self.edges)
         memo[id(self)] = copied
