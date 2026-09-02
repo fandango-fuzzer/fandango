@@ -14,30 +14,41 @@ Repetitions = list[tuple[str, int, int]]
 
 
 class _Choices:
-    __slots__ = ("vector", "arities")
+    __slots__ = ("picks", "edge_counts")
 
-    def __init__(self, vector: list[int]) -> None:
-        self.vector = vector
-        self.arities: list[int] = []
+    def __init__(self, picks: list[int]) -> None:
+        self.picks = picks
+        self.edge_counts: list[int] = []
 
-    def pick(self, node: ParseState) -> Edge:
-        edges = node.edges
+    def __repr__(self) -> str:
+        return f"_Choices(picks={self.picks!r}, edge_counts={self.edge_counts!r})"
+
+    def pick(self, state: ParseState) -> Edge:
+        edges = state.edges
         if len(edges) == 1:
             return edges[0]
-        index = len(self.arities)
-        self.arities.append(len(edges))
-        return edges[self.vector[index] if index < len(self.vector) else 0]
+        fork = len(self.edge_counts)
+        self.edge_counts.append(len(edges))
+        return edges[self.picks[fork] if fork < len(self.picks) else 0]
 
 
 class _Frame:
     """One state whose children `ForestBuilder.children_of` is collecting."""
 
-    __slots__ = ("state", "chain", "children")
+    __slots__ = ("state", "path", "children")
 
     def __init__(self, state: ParseState) -> None:
         self.state = state
-        self.chain: Optional[list[Edge]] = None
+        self.path: Optional[list[Edge]] = None
         self.children: list[DerivationTree] = []
+
+    def __repr__(self) -> str:
+        progress = (
+            "not started"
+            if self.path is None
+            else f"{len(self.path)} edges left, {len(self.children)} children"
+        )
+        return f"_Frame({self.state!r}, {progress})"
 
 
 class ForestBuilder:
@@ -76,13 +87,13 @@ class ForestBuilder:
         built = self._children_cache if choices is None else {}
         in_progress: set[int] = set()
 
-        def available(target: ParseState) -> bool:
+        def is_ready(target: ParseState) -> bool:
             if choices is None:
                 return id(target) in built
             return id(target) in built or not self._is_ambiguous(target)
 
-        def take(target: ParseState) -> list[DerivationTree]:
-            """The children of an available state; `[]` for one still open."""
+        def resolve(target: ParseState) -> list[DerivationTree]:
+            """The children of a ready state; `[]` for one still open."""
             if choices is None:
                 found = built.get(id(target))
                 return found if found is not None else []
@@ -98,12 +109,12 @@ class ForestBuilder:
         open_frame(state)
         while pending:
             frame = pending[-1]
-            if frame.chain is None:
-                frame.chain = self._chosen_chain(frame.state, choices, frame.children)
-            chain, children = frame.chain, frame.children
+            if frame.path is None:
+                frame.path, frame.children = self._path(frame.state, choices)
+            path, children = frame.path, frame.children
             descended = False
-            while chain:
-                edge = chain.pop()
+            while path:
+                edge = path.pop()
                 filler = edge.filler
                 if isinstance(filler, DerivationTree):
                     children.append(filler)
@@ -113,33 +124,35 @@ class ForestBuilder:
                     continue
                 if isinstance(filler, LeoNest):
                     missing = [
-                        s
-                        for s in filler.states()
-                        if not available(s) and id(s) not in in_progress
+                        needed
+                        for needed in filler.states()
+                        if not is_ready(needed) and id(needed) not in in_progress
                     ]
                     if missing:
                         # Build them all before retrying this edge, innermost
                         # first: that is the order their choices come in.
-                        chain.append(edge)
-                        for s in reversed(missing):
-                            open_frame(s)
+                        path.append(edge)
+                        for needed in reversed(missing):
+                            open_frame(needed)
                         descended = True
                         break
-                    children.extend(self._expand_leo(filler, take))
+                    children.extend(self._expand_leo(filler, resolve))
                     continue
                 assert isinstance(filler, ParseState)
-                if available(filler):
-                    sub = take(filler)
+                if is_ready(filler):
+                    filler_children = resolve(filler)
                 elif id(filler) in in_progress:
-                    sub = []
+                    filler_children = []
                 else:
                     # Build the nested state first, then resume here.
-                    chain.append(edge)
+                    path.append(edge)
                     open_frame(filler)
                     descended = True
                     break
                 children.extend(
-                    self._wrap_completed(filler.nonterminal, sub, edge.params)
+                    self._wrap_completed(
+                        filler.nonterminal, filler_children, edge.params
+                    )
                 )
             if descended:
                 continue
@@ -148,7 +161,7 @@ class ForestBuilder:
             if choices is None:
                 in_progress.discard(id(frame.state))
                 self._children_keepalive.append(frame.state)
-        return take(state)
+        return resolve(state)
 
     def extra_alternatives(self, state: ParseState) -> Iterator[DerivationTree]:
         """
@@ -159,16 +172,16 @@ class ForestBuilder:
 
         choices = _Choices([])
         self.children_of(state, choices)
-        vector = [0] * len(choices.arities)
+        picks = [0] * len(choices.edge_counts)
         while True:
-            while vector and vector[-1] + 1 == choices.arities[len(vector) - 1]:
-                vector.pop()
-            if not vector:
+            while picks and picks[-1] + 1 == choices.edge_counts[len(picks) - 1]:
+                picks.pop()
+            if not picks:
                 return
-            vector[-1] += 1
-            choices = _Choices(vector)
+            picks[-1] += 1
+            choices = _Choices(picks)
             yield from self.children_of(state, choices)
-            vector += [0] * (len(choices.arities) - len(vector))
+            picks += [0] * (len(choices.edge_counts) - len(picks))
 
     def _is_ambiguous(self, state: ParseState) -> bool:
         """
@@ -182,14 +195,14 @@ class ForestBuilder:
         stack: list[ParseState] = [state]
         found = False
         while stack:
-            node = stack.pop()
-            if id(node) in seen:
+            current = stack.pop()
+            if id(current) in seen:
                 continue
-            seen.add(id(node))
-            if len(node.edges) > 1:
+            seen.add(id(current))
+            if len(current.edges) > 1:
                 found = True
                 break
-            for edge in node.edges:
+            for edge in current.edges:
                 if edge.previous is not None:
                     stack.append(edge.previous)
                 filler = edge.filler
@@ -199,33 +212,32 @@ class ForestBuilder:
                     stack.append(filler)
 
         if not found:
-            for node_id in seen:
-                self._ambiguous_cache[node_id] = False
+            for state_id in seen:
+                self._ambiguous_cache[state_id] = False
         self._children_keepalive.append(state)
         return found
 
-    def _chosen_chain(
-        self,
-        state: ParseState,
-        choices: Optional[_Choices],
-        children: list[DerivationTree],
-    ) -> list[Edge]:
+    def _path(
+        self, state: ParseState, choices: Optional[_Choices]
+    ) -> tuple[list[Edge], list[DerivationTree]]:
         """
-        The edges from `state` back to where its item began, leftmost last.
+        The edges from `state` back to where its item began, leftmost last,
+        and the children already known before the path starts.
         """
-        chain: list[Edge] = []
-        node: Optional[ParseState] = state
-        while node is not None and node.edges:
+        path: list[Edge] = []
+        prefix: list[DerivationTree] = []
+        current: Optional[ParseState] = state
+        while current is not None and current.edges:
             if choices is None:
-                edge = node.edges[0]
-            elif node is not state and not self._is_ambiguous(node):
-                children.extend(self.children_of(node))
+                edge = current.edges[0]
+            elif current is not state and not self._is_ambiguous(current):
+                prefix = self.children_of(current)
                 break
             else:
-                edge = choices.pick(node)
-            chain.append(edge)
-            node = edge.previous
-        return chain
+                edge = choices.pick(current)
+            path.append(edge)
+            current = edge.previous
+        return path, prefix
 
     def _wrap_completed(
         self,
