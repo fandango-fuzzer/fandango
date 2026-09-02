@@ -231,7 +231,7 @@ class ForestBuilder:
             if choices is None:
                 edge = current.edges[0]
             elif current is not state and not self._is_ambiguous(current):
-                prefix = self.children_of(current)
+                prefix = list(self.children_of(current))
                 break
             else:
                 edge = choices.pick(current)
