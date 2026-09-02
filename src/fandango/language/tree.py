@@ -431,8 +431,9 @@ class DerivationTree:
                 order.append(node)
                 stack.extend(node._children)
 
+        result = 0
         for node in reversed(order):
-            node.hash_cache = hash(
+            result = node.hash_cache = hash(
                 (
                     node.symbol,
                     node.sender,
@@ -440,7 +441,7 @@ class DerivationTree:
                     tuple(hash(child) for child in node._children),
                 )
             )
-        return self.hash_cache
+        return result
 
     def __tree__(self) -> TreeTuple[Symbol]:
         return self.symbol, [child.__tree__() for child in self._children]
