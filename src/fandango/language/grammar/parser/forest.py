@@ -196,7 +196,7 @@ class ForestBuilder:
         found = False
         while stack:
             current = stack.pop()
-            if id(current) in seen:
+            if id(current) in seen or self._ambiguous_cache.get(id(current)) is False:
                 continue
             seen.add(id(current))
             if len(current.edges) > 1:
