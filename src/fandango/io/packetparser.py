@@ -106,31 +106,33 @@ def parse_next_remote_packet(
             break
 
         assert pending is not None
-        next_fragment = pending[consumed_nr : consumed_nr + 1]
-        consumed_nr += 1
+        next_fragment = pending[consumed_nr:]
+        consumed_nr = len(pending)
 
         for non_terminal in set(available_non_terminals):
             parser = nt_parsers[non_terminal]
-            parse_tree, is_complete = next(parser.consume(next_fragment), (None, None))
-            if parse_tree is not None:
+            # Longest first: the first packet end whose parameters can be
+            # derived is this non-terminal's best answer for the stream so far.
+            for packet_end in reversed(parser.consume_positions(next_fragment)):
+                parse_tree = next(parser.tree_at(packet_end), None)
+                if parse_tree is None:
+                    continue
                 parse_tree = parser.collapse(parse_tree)
                 assert parse_tree is not None
                 forecast_packet = forecast_non_terminals[non_terminal]
                 parse_tree.sender = forecast_packet.node.sender
                 parse_tree.recipient = forecast_packet.node.recipient
-                if is_complete:
-                    try:
-                        grammar.populate_sources(parse_tree)
-                        complete_parses[non_terminal] = (
-                            consumed_nr,
-                            parse_tree,
-                        )
-                    except FandangoParseError as e:
-                        parameter_parsing_exception_tuple = (
-                            non_terminal,
-                            e,
-                            parse_tree,
-                        )
+                try:
+                    grammar.populate_sources(parse_tree)
+                except FandangoParseError as e:
+                    parameter_parsing_exception_tuple = (
+                        non_terminal,
+                        e,
+                        parse_tree,
+                    )
+                    continue
+                complete_parses[non_terminal] = (packet_end, parse_tree)
+                break
             if not parser.can_continue():
                 available_non_terminals.remove(non_terminal)
         continue_parse = len(available_non_terminals) > 0

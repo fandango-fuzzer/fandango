@@ -903,12 +903,7 @@ class FandangoIO(object):
         :param message: The message received from the sender.
         """
         with self.receive_lock:
-            if isinstance(message, bytes):
-                for fragment_int in message:
-                    self.receive.append((sender, receiver, bytes([fragment_int])))
-            else:
-                for fragment_str in message:
-                    self.receive.append((sender, receiver, fragment_str))
+            self.receive.append((sender, receiver, message))
 
     def received_msg(self) -> bool:
         """
@@ -972,15 +967,41 @@ class FandangoIO(object):
         with self.receive_lock:
             self.receive.clear()
 
-    def clear_by_party(self, party_name: str, to_idx: int) -> None:
-        """Clears all received messages from a specific party up to a given index."""
-
+    def pending_from(self, party_name: str) -> Optional[str | bytes]:
+        """
+        Everything received from `party_name` and not consumed yet, as one
+        block. Stops at a change of message type, so a run of text is never
+        joined to a run of bytes.
+        """
         with self.receive_lock:
-            self.receive = [
-                (sender, receiver, msg)
-                for idx, (sender, receiver, msg) in enumerate(self.receive)
-                if not (sender == party_name and idx <= to_idx)
-            ]
+            parts = [msg for sender, _, msg in self.receive if sender == party_name]
+        if not parts:
+            return None
+        run = []
+        for part in parts:
+            if type(part) is not type(parts[0]):
+                break
+            run.append(part)
+        if isinstance(parts[0], bytes):
+            return b"".join(run)  # type: ignore[arg-type]
+        return "".join(run)  # type: ignore[arg-type]
+
+    def consume_received(self, party_name: str, count: int) -> None:
+        """
+        Drops the first `count` units received from `party_name`.
+        """
+        with self.receive_lock:
+            remaining = count
+            kept: list[tuple[str, str, str | bytes]] = []
+            for sender, receiver, msg in self.receive:
+                if sender != party_name or remaining <= 0:
+                    kept.append((sender, receiver, msg))
+                elif len(msg) <= remaining:
+                    remaining -= len(msg)
+                else:
+                    kept.append((sender, receiver, msg[remaining:]))
+                    remaining = 0
+            self.receive = kept
 
     def transmit(
         self, sender: str, recipient: Optional[str], message: DerivationTree
