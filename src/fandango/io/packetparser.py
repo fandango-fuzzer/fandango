@@ -1,10 +1,9 @@
-import random
 import time
-from collections.abc import Generator
 
 from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.io import FandangoIO
 from fandango.io.navigation.graph.packetforecaster import (
+    ForecastingNonTerminals,
     ForecastingPacket,
     ForecastingResult,
 )
@@ -12,14 +11,19 @@ from fandango.language import DerivationTree, Grammar, NonTerminal
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.parser.iterative_parser import IterativeParser
 
+WAIT_FOR_EXPECTED_PARTY_TIME = 10
+POLL_INTERVAL = 0.025
+
+ReceivedMessages = list[tuple[str, str, str | bytes]]
+
 
 def parse_next_remote_packet(
     grammar: Grammar,
     forecast: ForecastingResult,
     io_instance: FandangoIO,
     *,
-    wait_for_completion_time: float = 1,
-) -> Generator[tuple[ForecastingPacket, DerivationTree], None, None]:
+    wait_for_completion_time: float = 1.0,
+) -> list[tuple[ForecastingPacket, DerivationTree]]:
     """
     Parse the next packet a remote party sent, as one of the forecast
     non-terminals.
@@ -30,175 +34,151 @@ def parse_next_remote_packet(
     that long. It is paid per packet, so a caller that knows its packets
     cannot grow can turn it down.
     """
-    if len(io_instance.get_received_msgs()) == 0:
-        return None
+    if not io_instance.received_msg():
+        return []
 
-    wait_for_expected_party_time = 10
-    received_parties = list(map(lambda x: x[0], io_instance.get_received_msgs()))
-    start_time = time.time()
-    while not forecast.contains_any_party(received_parties):
-        if time.time() - start_time > wait_for_expected_party_time:
-            if len(received_parties) == 0:
+    sender = _wait_for_expected_sender(forecast, io_instance)
+    candidates = _PacketCandidates(grammar, forecast[sender])
+    fed_blocks_nr = 0
+    while candidates.open:
+        fresh_blocks = _wait_for_new_blocks(
+            io_instance, sender, fed_blocks_nr, wait_for_completion_time
+        )
+        if not fresh_blocks:
+            if not candidates.found:
+                raise FandangoFailedError(
+                    f"Timeout while waiting for next message fragment from {sender}. \n"
+                    + candidates.describe(io_instance.get_full_fragments())
+                )
+            break
+        fed_blocks_nr += len(fresh_blocks)
+        candidates.feed(fresh_blocks)
+
+    if not candidates.found:
+        raise candidates.failure(io_instance.get_full_fragments())
+
+    packet_end, packets = candidates.longest()
+    io_instance.drop_received(sender, packet_end)
+    return packets
+
+
+def _wait_for_expected_sender(
+    forecast: ForecastingResult, io_instance: FandangoIO
+) -> str:
+    """The first party in the forecast that sent something, waiting a while for one."""
+    started = time.time()
+    while True:
+        senders = [sender for sender, _, _ in io_instance.get_received_msgs()]
+        for sender in senders:
+            if sender in forecast:
+                return sender
+        if time.time() - started > WAIT_FOR_EXPECTED_PARTY_TIME:
+            if not senders:
                 raise FandangoFailedError(
                     "Timeout while waiting for message. No message has been received."
                 )
-            else:
-                raise FandangoValueError(
-                    "Unexpected party sent message. Expected: "
-                    + " | ".join(forecast.get_msg_parties())
-                    + f". Received: {set(received_parties)}."
-                    + f" Messages: {io_instance.get_full_fragments()}"
-                )
-        time.sleep(0.025)
-        received_parties = list(map(lambda x: x[0], io_instance.get_received_msgs()))
+            raise FandangoValueError(
+                "Unexpected party sent message. Expected: "
+                + " | ".join(forecast.get_msg_parties())
+                + f". Received: {set(senders)}."
+                + f" Messages: {io_instance.get_full_fragments()}"
+            )
+        time.sleep(POLL_INTERVAL)
 
-    msg_sender = None
-    # We might have received messages from different parties. Select a party that sent a message and is
-    # in the current forecast.
-    for msg_sender, _msg_recipient, _ in io_instance.get_received_msgs():
-        if msg_sender in forecast.get_msg_parties():
-            break
 
-    assert msg_sender is not None
+def _wait_for_new_blocks(
+    io_instance: FandangoIO, sender: str, nr_fed_blocks: int, timeout: float
+) -> list[str | bytes]:
+    """The blocks from `sender` after the first `fed_blocks`, empty once `timeout` passes without any."""
+    started = time.time()
+    while True:
+        blocks = io_instance.pending_blocks(sender)
+        if len(blocks) > nr_fed_blocks:
+            return blocks[nr_fed_blocks:]
+        if time.time() - started > timeout:
+            return []
+        time.sleep(POLL_INTERVAL)
 
-    forecast_non_terminals = forecast[msg_sender]
-    available_non_terminals = set(forecast_non_terminals.get_non_terminals())
 
-    # Initialize parsers for each non-terminal in the forecast applicable for the sender
-    nt_parsers: dict[NonTerminal, IterativeParser] = dict()
-    for non_terminal in available_non_terminals:
-        forecast_packet = forecast_non_terminals[non_terminal]
-        hookin_data = random.choice(list(forecast_packet.paths))
-        hookin_tree = hookin_data.tree
-        assert hookin_tree is not None
-        path = list(map(lambda x: x[0], filter(lambda x: not x[1], hookin_data.path)))
-        hookin_point = hookin_tree.get_last_by_path(path)
-        nt_parsers[non_terminal] = IterativeParser(grammar.rules)
-        nt_parsers[non_terminal].new_parse(
-            start=non_terminal, mode=ParsingMode.COMPLETE, hookin_parent=hookin_point
-        )
+class _PacketCandidates:
+    """One parser per forecast non-terminal, and the longest packet each has found so far."""
 
-    continue_parse = True
-    complete_parses: dict[NonTerminal, tuple[int, DerivationTree]] = dict()
-    # Blocks of `msg_sender`'s stream already handed to the parsers.
-    fed_blocks: int = 0
-    parameter_parsing_exception_tuple = None
-    while continue_parse:
-        # Find the next message fragment sent by the selected sender
-        start_time = time.time()
-        blocks = io_instance.pending_blocks(msg_sender)
-        while len(blocks) <= fed_blocks:
-            blocks = io_instance.pending_blocks(msg_sender)
-            if time.time() - start_time > wait_for_completion_time:
-                if len(complete_parses) == 0:
-                    current_parse_str = "Incompletely parsed NonTerminals:"
-                    for incomplete_nt in available_non_terminals:
-                        nt_parser = nt_parsers[incomplete_nt]
-                        current_parse = nt_parser.collapse(nt_parser.current_tree())
-                        current_parse_str += (
-                            f"\n{str(incomplete_nt)}: {str(current_parse)}"
-                        )
+    def __init__(self, grammar: Grammar, expected: ForecastingNonTerminals):
+        self._grammar = grammar
+        self._expected = expected
+        self.parsers: dict[NonTerminal, IterativeParser] = {}
+        for non_terminal in expected.get_non_terminals():
+            mounting_path = next(iter(expected[non_terminal].paths))
+            hookin_path = [nt for nt, is_new in mounting_path.path if not is_new]
+            hookin_parent = mounting_path.tree.get_last_by_path(hookin_path)
+            parser = IterativeParser(grammar.rules)
+            parser.new_parse(
+                start=non_terminal,
+                mode=ParsingMode.COMPLETE,
+                hookin_parent=hookin_parent,
+            )
+            self.parsers[non_terminal] = parser
+        self.open: set[NonTerminal] = set(self.parsers)
+        self.found: dict[NonTerminal, tuple[int, DerivationTree]] = {}
+        self.last_parameter_error: (
+            tuple[NonTerminal, FandangoParseError, DerivationTree] | None
+        ) = None
 
-                    raise FandangoFailedError(
-                        f"Timeout while waiting for next message fragment from {msg_sender}. \n"
-                        + generate_parsing_error_msg_information(
-                            forecast_non_terminals.get_non_terminals(),
-                            available_non_terminals,
-                            nt_parsers,
-                            io_instance.get_full_fragments(),
-                        )
-                    )
-                else:
-                    continue_parse = False
-                    break
-            time.sleep(0.025)
-        if not continue_parse:
-            break
-
-        fresh_blocks = blocks[fed_blocks:]
-        fed_blocks = len(blocks)
-
-        for non_terminal in set(available_non_terminals):
-            parser = nt_parsers[non_terminal]
-            for block in fresh_blocks:
+    def feed(self, blocks: list[str | bytes]) -> None:
+        for non_terminal in list(self.open):
+            parser = self.parsers[non_terminal]
+            for block in blocks:
                 for _ in parser.consume(block, build_trees=False):
                     pass
-            packet_ends = [end for end in parser.parsed_positions() if end > 0]
-            # Longest first: the first packet end whose parameters can be
-            # derived is this non-terminal's best answer for the stream so far.
-            for packet_end in reversed(packet_ends):
-                parse_tree = next(parser.tree_at(packet_end), None)
-                if parse_tree is None:
-                    continue
-                parse_tree = parser.collapse(parse_tree)
-                assert parse_tree is not None
-                forecast_packet = forecast_non_terminals[non_terminal]
-                parse_tree.sender = forecast_packet.node.sender
-                parse_tree.recipient = forecast_packet.node.recipient
-                try:
-                    grammar.populate_sources(parse_tree)
-                except FandangoParseError as e:
-                    parameter_parsing_exception_tuple = (
-                        non_terminal,
-                        e,
-                        parse_tree,
-                    )
-                    continue
-                complete_parses[non_terminal] = (packet_end, parse_tree)
-                break
+            self._take_longest_packet(non_terminal)
             if not parser.can_continue():
-                available_non_terminals.remove(non_terminal)
-        continue_parse = len(available_non_terminals) > 0
+                self.open.remove(non_terminal)
 
-    if len(complete_parses) == 0:
-        if parameter_parsing_exception_tuple is not None:
-            applicable_nt, parameter_parsing_exception, complete_msg = (
-                parameter_parsing_exception_tuple
+    def _take_longest_packet(self, non_terminal: NonTerminal) -> None:
+        parser = self.parsers[non_terminal]
+        packet = self._expected[non_terminal]
+        packet_ends = [end for end in parser.parsed_positions() if end > 0]
+        # Longest first
+        for packet_end in reversed(packet_ends):
+            tree = next(parser.tree_at(packet_end), None)
+            if tree is None:
+                continue
+            tree = parser.collapse(tree)
+            assert tree is not None
+            tree.sender = packet.node.sender
+            tree.recipient = packet.node.recipient
+            try:
+                self._grammar.populate_sources(tree)
+            except FandangoParseError as e:
+                self.last_parameter_error = (non_terminal, e, tree)
+                continue
+            self.found[non_terminal] = (packet_end, tree)
+            return
+
+    def longest(self) -> tuple[int, list[tuple[ForecastingPacket, DerivationTree]]]:
+        packet_end = max(end for end, _ in self.found.values())
+        packets = [
+            (self._expected[non_terminal], tree)
+            for non_terminal, (end, tree) in self.found.items()
+            if end == packet_end
+        ]
+        return packet_end, packets
+
+    def failure(self, received: ReceivedMessages) -> FandangoFailedError:
+        if self.last_parameter_error is not None:
+            non_terminal, error, tree = self.last_parameter_error
+            return FandangoFailedError(
+                f"Couldn't derive parameters for received packet or timed out while waiting for remaining packet. Applicable NonTerminal: {non_terminal} Received part: {tree!r}. Exception: {error}"
             )
-            raise FandangoFailedError(
-                f"Couldn't derive parameters for received packet or timed out while waiting for remaining packet. Applicable NonTerminal: {applicable_nt} Received part: {complete_msg!r}. Exception: {str(parameter_parsing_exception)}"
-            )
-        else:
-            raise FandangoFailedError(
-                "Could not parse received message fragments into predicted NonTerminals.\n"
-                + generate_parsing_error_msg_information(
-                    forecast_non_terminals.get_non_terminals(),
-                    available_non_terminals,
-                    nt_parsers,
-                    io_instance.get_full_fragments(),
-                )
-            )
+        return FandangoFailedError(
+            "Could not parse received message fragments into predicted NonTerminals.\n"
+            + self.describe(received)
+        )
 
-    max_parse_end = 0
-    yield_items: set[tuple[NonTerminal, DerivationTree]] = set()
-    for non_terminal, (parse_end, parse_tree) in complete_parses.items():
-        if parse_end < max_parse_end:
-            continue
-        if parse_end > max_parse_end:
-            yield_items.clear()
-        max_parse_end = parse_end
-        yield_items.add((non_terminal, parse_tree))
-
-    assert len(yield_items) != 0
-
-    io_instance.drop_received(msg_sender, max_parse_end)
-    for non_terminal, parse_tree in yield_items:
-        yield forecast_non_terminals[non_terminal], parse_tree
-    return None
-
-
-def generate_parsing_error_msg_information(
-    allowed_nts: set[NonTerminal],
-    remaining_nts: set[NonTerminal],
-    parsers: dict[NonTerminal, IterativeParser],
-    received_fragments: list[tuple[str, str, str | bytes]],
-) -> str:
-    nt_list = map(lambda x: str(x), allowed_nts)
-    applicable_nt_str = "Applicable NonTerminals: " + str(" | ".join(nt_list))
-    current_parse_str = "Incompletely parsed NonTerminals:"
-    for incomplete_nt in remaining_nts:
-        nt_parser = parsers[incomplete_nt]
-        current_parse = nt_parser.collapse(nt_parser.current_tree())
-        current_parse_str += f"\n{str(incomplete_nt)}: {str(current_parse)}"
-    received_msgs = f"Received messages: {received_fragments}"
-    return f"{current_parse_str}\n{applicable_nt_str}\n{received_msgs}"
+    def describe(self, received: ReceivedMessages) -> str:
+        unfinished = "Incompletely parsed NonTerminals:"
+        for non_terminal in self.open:
+            parser = self.parsers[non_terminal]
+            unfinished += f"\n{non_terminal}: {parser.collapse(parser.current_tree())}"
+        applicable = "Applicable NonTerminals: " + " | ".join(map(str, self.parsers))
+        return f"{unfinished}\n{applicable}\nReceived messages: {received}"
