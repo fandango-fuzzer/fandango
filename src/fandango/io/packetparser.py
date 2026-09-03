@@ -17,16 +17,27 @@ def parse_next_remote_packet(
     grammar: Grammar,
     forecast: ForecastingResult,
     io_instance: FandangoIO,
+    *,
+    wait_for_completion_time: float = 1,
 ) -> Generator[tuple[ForecastingPacket, DerivationTree], None, None]:
+    """
+    Parse the next packet a remote party sent, as one of the forecast
+    non-terminals.
+
+    `wait_for_completion_time` bounds the wait once a packet has parsed: a
+    candidate that can still grow may yet become a longer packet, so a
+    complete parse is only handed back after no more data has arrived for
+    that long. It is paid per packet, so a caller that knows its packets
+    cannot grow can turn it down.
+    """
     if len(io_instance.get_received_msgs()) == 0:
         return None
 
-    # Wait till we receive a message from one of the parties in the forecast
+    wait_for_expected_party_time = 10
     received_parties = list(map(lambda x: x[0], io_instance.get_received_msgs()))
-    wait_for_msg_time = 10
     start_time = time.time()
     while not forecast.contains_any_party(received_parties):
-        if time.time() - start_time > wait_for_msg_time:
+        if time.time() - start_time > wait_for_expected_party_time:
             if len(received_parties) == 0:
                 raise FandangoFailedError(
                     "Timeout while waiting for message. No message has been received."
@@ -72,7 +83,6 @@ def parse_next_remote_packet(
     # Units of `msg_sender`'s stream already handed to the parsers.
     consumed_nr: int = 0
     parameter_parsing_exception_tuple = None
-    wait_for_completion_time = 1
     while continue_parse:
         # Find the next message fragment sent by the selected sender
         start_time = time.time()
