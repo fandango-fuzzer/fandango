@@ -498,7 +498,6 @@ class TestCanContinueParsing(unittest.TestCase):
 
 
 class TestIncrementalParsing(unittest.TestCase):
-
     REPEATING = "<start> ::= 'a'+\n"
     PACKETS = "<start> ::= <msg>\n<msg> ::= 'ping\\n' | 'pong\\n'\n"
     AMBIGUOUS = "<start> ::= <x>\n<x> ::= 'ab' | <a> <b>\n<a> ::= 'a'\n<b> ::= 'b'\n"
@@ -519,7 +518,7 @@ class TestIncrementalParsing(unittest.TestCase):
         for _ in parser.consume(word, build_trees=False):
             pass
 
-    def _bytewise(self, spec: str, word: str | bytes) -> list[tuple[int, list[DerivationTree]]]:
+    def _bytewise(self, spec: str, word: str | bytes) -> list[tuple[int, list[str]]]:
         """Consume given input one byte/char at a time."""
         parser = self._parser(spec)
         found = []
@@ -535,13 +534,13 @@ class TestIncrementalParsing(unittest.TestCase):
 
     def _blockwise(
         self, spec: str, word: str | bytes, sizes: Optional[list[int]] = None
-    ) -> list[tuple[int, list[DerivationTree]]]:
+    ) -> list[tuple[int, list[str]]]:
         """The same, fed in blocks and read back with `tree_at`."""
         parser = self._parser(spec)
         found = []
         start = 0
         for size in sizes or [len(word)]:
-            self._consume_no_yield(parser, word[start: start + size])
+            self._consume_no_yield(parser, word[start : start + size])
             start += size
         for offset in parser.parsed_positions():
             found.append(
