@@ -80,15 +80,15 @@ def parse_next_remote_packet(
 
     continue_parse = True
     complete_parses: dict[NonTerminal, tuple[int, DerivationTree]] = dict()
-    # Units of `msg_sender`'s stream already handed to the parsers.
-    consumed_nr: int = 0
+    # Blocks of `msg_sender`'s stream already handed to the parsers.
+    fed_blocks: int = 0
     parameter_parsing_exception_tuple = None
     while continue_parse:
         # Find the next message fragment sent by the selected sender
         start_time = time.time()
-        pending = io_instance.pending_from(msg_sender)
-        while pending is None or len(pending) <= consumed_nr:
-            pending = io_instance.pending_from(msg_sender)
+        blocks = io_instance.pending_blocks(msg_sender)
+        while len(blocks) <= fed_blocks:
+            blocks = io_instance.pending_blocks(msg_sender)
             if time.time() - start_time > wait_for_completion_time:
                 if len(complete_parses) == 0:
                     current_parse_str = "Incompletely parsed NonTerminals:"
@@ -115,15 +115,17 @@ def parse_next_remote_packet(
         if not continue_parse:
             break
 
-        assert pending is not None
-        next_fragment = pending[consumed_nr:]
-        consumed_nr = len(pending)
+        fresh_blocks = blocks[fed_blocks:]
+        fed_blocks = len(blocks)
 
         for non_terminal in set(available_non_terminals):
             parser = nt_parsers[non_terminal]
+            packet_ends: list[int] = []
+            for block in fresh_blocks:
+                packet_ends.extend(parser.consume_positions(block))
             # Longest first: the first packet end whose parameters can be
             # derived is this non-terminal's best answer for the stream so far.
-            for packet_end in reversed(parser.consume_positions(next_fragment)):
+            for packet_end in reversed(packet_ends):
                 parse_tree = next(parser.tree_at(packet_end), None)
                 if parse_tree is None:
                     continue
@@ -178,7 +180,7 @@ def parse_next_remote_packet(
 
     assert len(yield_items) != 0
 
-    io_instance.consume_received(msg_sender, max_parse_end)
+    io_instance.drop_received(msg_sender, max_parse_end)
     for non_terminal, parse_tree in yield_items:
         yield forecast_non_terminals[non_terminal], parse_tree
     return None

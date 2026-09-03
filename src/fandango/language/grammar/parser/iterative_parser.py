@@ -537,7 +537,9 @@ class IterativeParser:
             for state in table[column_index]:
                 if state.is_finished:
                     if state.nonterminal == self.implicit_start:
-                        self._completed[consumed + word_index] = state
+                        # Only store completed parses for entire bytes parsed.
+                        if column_index % columns_per_byte == 0:
+                            self._completed[consumed + word_index] = state
                         if at_end and build_trees:
                             for child in self._forest.children_of(state):
                                 yield child, True

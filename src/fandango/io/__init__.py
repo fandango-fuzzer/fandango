@@ -967,26 +967,25 @@ class FandangoIO(object):
         with self.receive_lock:
             self.receive.clear()
 
-    def pending_from(self, party_name: str) -> Optional[str | bytes]:
+    def pending_blocks(self, party_name: str) -> list[str | bytes]:
         """
-        Everything received from `party_name` and not consumed yet, as one
-        block. Stops at a change of message type, so a run of text is never
-        joined to a run of bytes.
+        What `party_name` sent and nobody dropped yet, as it arrived.
+
+        Stops at a change of message type, so a run of text is never handed
+        out together with a run of bytes. Blocks are not joined: a reader
+        feeds them one by one, and `get_full_fragments` is the one place that
+        puts a stream back together, for error messages.
         """
         with self.receive_lock:
             parts = [msg for sender, _, msg in self.receive if sender == party_name]
-        if not parts:
-            return None
-        run = []
+        blocks: list[str | bytes] = []
         for part in parts:
-            if type(part) is not type(parts[0]):
+            if blocks and type(part) is not type(blocks[0]):
                 break
-            run.append(part)
-        if isinstance(parts[0], bytes):
-            return b"".join(run)  # type: ignore[arg-type]
-        return "".join(run)  # type: ignore[arg-type]
+            blocks.append(part)
+        return blocks
 
-    def consume_received(self, party_name: str, count: int) -> None:
+    def drop_received(self, party_name: str, count: int) -> None:
         """
         Drops the first `count` units received from `party_name`.
         """
