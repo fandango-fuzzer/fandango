@@ -497,6 +497,138 @@ class TestCanContinueParsing(unittest.TestCase):
         next(self.iter_parser.consume(b"rgbd;"), (None, None))
 
 
+class TestIncrementalParsing(unittest.TestCase):
+
+    REPEATING = "<start> ::= 'a'+\n"
+    PACKETS = "<start> ::= <msg>\n<msg> ::= 'ping\\n' | 'pong\\n'\n"
+    AMBIGUOUS = "<start> ::= <x>\n<x> ::= 'ab' | <a> <b>\n<a> ::= 'a'\n<b> ::= 'b'\n"
+    BINARY = "<start> ::= <byte>+\n<byte> ::= b'\\x01' | b'\\x02'\n"
+    BITS = "<start> ::= <bit>+\n<bit> ::= 0 | 1\n"
+    WIDE = "<start> ::= <c>+\n<c> ::= '\u00e4' | 'b'\n"
+    NULLABLE = "<start> ::= <a>*\n<a> ::= 'x'\n"
+
+    def _parser(self, spec: str) -> IterativeParser:
+        grammar, _ = parse(spec, use_stdlib=False, use_cache=False)
+        assert grammar is not None
+        parser = IterativeParser(grammar.rules)
+        parser.new_parse(NonTerminal("<start>"), ParsingMode.COMPLETE)
+        return parser
+
+    def _consume_no_yield(self, parser: IterativeParser, word: str | bytes) -> None:
+        """Consume given input without yielding any trees."""
+        for _ in parser.consume(word, build_trees=False):
+            pass
+
+    def _bytewise(self, spec: str, word: str | bytes) -> list[tuple[int, list[DerivationTree]]]:
+        """Consume given input one byte/char at a time."""
+        parser = self._parser(spec)
+        found = []
+        for index in range(len(word)):
+            trees = [
+                str(parser.collapse(tree))
+                for tree, is_complete in parser.consume(word[index : index + 1])
+                if is_complete
+            ]
+            if trees:
+                found.append((index + 1, trees))
+        return found
+
+    def _blockwise(
+        self, spec: str, word: str | bytes, sizes: Optional[list[int]] = None
+    ) -> list[tuple[int, list[DerivationTree]]]:
+        """The same, fed in blocks and read back with `tree_at`."""
+        parser = self._parser(spec)
+        found = []
+        start = 0
+        for size in sizes or [len(word)]:
+            self._consume_no_yield(parser, word[start: start + size])
+            start += size
+        for offset in parser.parsed_positions():
+            found.append(
+                (
+                    offset,
+                    [str(parser.collapse(tree)) for tree in parser.tree_at(offset)],
+                )
+            )
+        return found
+
+    CASES: list[tuple[str, str, str | bytes]] = [
+        ("repeating", REPEATING, "aaaa"),
+        ("packets", PACKETS, "ping\n"),
+        ("ambiguous", AMBIGUOUS, "ab"),
+        ("binary", BINARY, b"\x01\x02\x01"),
+        ("bits", BITS, b"\x01\x02"),
+        ("wide characters", WIDE, "\u00e4b\u00e4"),
+    ]
+
+    def test_blockwise_matches_bytewise(self):
+        for label, spec, word in self.CASES:
+            with self.subTest(label):
+                self.assertEqual(
+                    self._bytewise(spec, word), self._blockwise(spec, word)
+                )
+
+    def test_block_sizes_do_not_matter(self):
+        expected = self._bytewise(self.REPEATING, "aaaa")
+        for sizes in ([1, 3], [2, 2], [3, 1], [1, 1, 1, 1]):
+            with self.subTest(sizes=sizes):
+                self.assertEqual(
+                    expected, self._blockwise(self.REPEATING, "aaaa", sizes)
+                )
+
+    def test_an_offset_is_the_length_of_its_parse(self):
+        for label, spec, word in self.CASES:
+            with self.subTest(label):
+                parser = self._parser(spec)
+                self._consume_no_yield(parser, word)
+                for offset in parser.parsed_positions():
+                    for tree in parser.tree_at(offset):
+                        self.assertEqual(offset, len(str(parser.collapse(tree))))
+
+    def test_nullable_grammar_empty_parse(self):
+        parser = self._parser(self.NULLABLE)
+        self._consume_no_yield(parser, "xx")
+        self.assertEqual([0, 1, 2], parser.parsed_positions())
+        self.assertEqual([""], [str(parser.collapse(t)) for t in parser.tree_at(0)])
+
+    def test_parsing_on_overshooting_input(self):
+        parser = self._parser(self.PACKETS)
+        self._consume_no_yield(parser, "ping\npong\n")
+        self.assertEqual([5], parser.parsed_positions())
+        self.assertEqual(
+            ["ping\n"], [str(parser.collapse(tree)) for tree in parser.tree_at(5)]
+        )
+
+    def test_parse_multiple_consumes(self):
+        parser = self._parser(self.REPEATING)
+        self._consume_no_yield(parser, "aa")
+        self.assertEqual([1, 2], parser.parsed_positions())
+        self._consume_no_yield(parser, "aa")
+        self.assertEqual([1, 2, 3, 4], parser.parsed_positions())
+        self.assertEqual(
+            ["a"], [str(parser.collapse(tree)) for tree in parser.tree_at(1)]
+        )
+        self.assertEqual(
+            ["aaaa"], [str(parser.collapse(tree)) for tree in parser.tree_at(4)]
+        )
+
+    def test_tree_emit_at_no_parse_position(self):
+        parser = self._parser(self.PACKETS)
+        self._consume_no_yield(parser, "ping\n")
+        self.assertEqual([], list(parser.tree_at(3)))
+
+    def test_a_bit_grammar_reports_whole_bytes_only(self):
+        parser = self._parser(self.BITS)
+        self._consume_no_yield(parser, b"\x01\x02")
+        self.assertEqual([1, 2], parser.parsed_positions())
+        self.assertEqual(
+            ["\x01"], [str(parser.collapse(tree)) for tree in parser.tree_at(1)]
+        )
+        self.assertEqual(
+            ["\x01\x02"], [str(parser.collapse(tree)) for tree in parser.tree_at(2)]
+        )
+
+
 class TestCLIParsing(unittest.TestCase):
     pass
 
