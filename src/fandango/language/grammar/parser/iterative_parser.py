@@ -59,7 +59,7 @@ class IterativeParser:
                 self.complete(state, table, self._column_index)
 
         return any(
-            state.is_incomplete or not state.is_finished
+            state.is_terminal_partial_match or not state.is_finished
             for state in table[self._column_index]
         )
 
@@ -184,7 +184,7 @@ class IterativeParser:
             state.dot,
             self._forest.children_of(state),
             state.matched_length,
-            state.forced,
+            state.force_completed,
         )
         if state in table[column_index]:
             table[column_index].replace(state, new_state)
@@ -259,7 +259,7 @@ class IterativeParser:
         assert not state.next_symbol.is_regex
 
         check_word = word[word_index:]
-        if state.is_incomplete:
+        if state.is_terminal_partial_match:
             prev_terminal = state.last_filler()
             assert isinstance(prev_terminal, DerivationTree)
             prev_val = prev_terminal.symbol.value()
@@ -291,14 +291,14 @@ class IterativeParser:
             next_state.matched_length = match_length
             tree = ParserDerivationTree(Terminal(check_word[:match_length]))
             next_state.set_edge(
-                state.predecessor() if state.is_incomplete else state, tree
+                state.predecessor() if state.is_terminal_partial_match else state, tree
             )
         else:
             next_state = state.next()
             next_state.matched_length = 0
             tree = ParserDerivationTree(Terminal(check_word[:match_length]))
             next_state.set_edge(
-                state.predecessor() if state.is_incomplete else state, tree
+                state.predecessor() if state.is_terminal_partial_match else state, tree
             )
         table[
             column_index + ((match_length - state.matched_length) * columns_per_byte)
@@ -334,7 +334,7 @@ class IterativeParser:
 
         check_word = word[word_index:]
         prev_match_length = 0
-        if state.is_incomplete:
+        if state.is_terminal_partial_match:
             prev_terminal = state.last_filler()
             assert isinstance(prev_terminal, DerivationTree)
             prev_val = prev_terminal.symbol.value()
@@ -374,7 +374,7 @@ class IterativeParser:
             # Growing a partial match replaces the previous partial
             # terminal rather than adding a child, so step back over it.
             next_state.set_edge(
-                state.predecessor() if state.is_incomplete else state, tree
+                state.predecessor() if state.is_terminal_partial_match else state, tree
             )
             table[
                 column_index
@@ -385,7 +385,7 @@ class IterativeParser:
             next_state.matched_length = incomplete_match_length
             tree = ParserDerivationTree(Terminal(check_word[:incomplete_match_length]))
             next_state.set_edge(
-                state.predecessor() if state.is_incomplete else state, tree
+                state.predecessor() if state.is_terminal_partial_match else state, tree
             )
             table[
                 column_index
@@ -417,7 +417,7 @@ class IterativeParser:
                 break
             waiter = waiters[0]
             # Only expand leo path if we are at the last symbol of the rule.
-            if waiter.dot != len(waiter.symbols) - 1 or waiter.is_incomplete:
+            if waiter.dot != len(waiter.symbols) - 1 or waiter.is_terminal_partial_match:
                 column.leo[current_symbol] = None
                 break
             pending.append((current_index, current_symbol, waiter))
@@ -437,8 +437,8 @@ class IterativeParser:
         column_index: int,
     ) -> None:
         column = table[column_index]
-        forced = not state.is_finished
-        if forced and state.position == column_index:
+        force_completed = not state.is_finished
+        if force_completed and state.position == column_index:
             # Spans no input, so it would hand a waiter of the same column
             # its own children as the filler's derivation.
             return
@@ -446,14 +446,14 @@ class IterativeParser:
             entry = self._leo_entry(table, state.position, state.nonterminal)
             if entry is not None:
                 top = entry.top
-                next_state = top.next(forced)
+                next_state = top.next(force_completed)
                 next_state.add_edge(
                     top, LeoNest(entry.chain, state, top.next_params), top.next_params
                 )
                 column.add(next_state)
                 return
         for waiter in table[state.position].waiting_for(state.nonterminal):
-            next_state = waiter.next(forced)
+            next_state = waiter.next(force_completed)
             next_state.add_edge(waiter, state, waiter.next_params)
             column.add(next_state)
 
@@ -551,7 +551,7 @@ class IterativeParser:
 
                     self.complete(state, table, column_index)
                 else:
-                    if not state.is_incomplete and state.next_symbol_is_nonterminal():
+                    if not state.is_terminal_partial_match and state.next_symbol_is_nonterminal():
                         self.predict(state, table, column_index, self._hookin_parent)
                     else:
                         if state.next_symbol is not None and state.next_symbol.is_type(
