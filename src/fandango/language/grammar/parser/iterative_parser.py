@@ -34,7 +34,7 @@ class IterativeParser:
         self._implicit_rules = self._compiler._implicit_rules
         self._context_rules = self._compiler._context_rules
         self._tmp_rules = self._compiler._tmp_rules
-        self._yielded_partial: set[DerivationTree] = set()
+        self._yielded_incomplete: set[DerivationTree] = set()
         self._max_position = -1
         self._column_index = 0
         self._table: list[Column] = []
@@ -466,7 +466,7 @@ class IterativeParser:
         self._table = []
         self._table.append(Column())
         self._first_consume = True
-        self._yielded_partial.clear()
+        self._yielded_incomplete.clear()
         self._forest.reset()
         self._max_position = -1
         self._consumed = 0
@@ -499,9 +499,7 @@ class IterativeParser:
         state = self._completed.get(offset)
         if state is None:
             return
-        for child in self._forest.children_of(state):
-            yield self.to_derivation_tree(child)
-        for child in self._forest.extra_alternatives(state):
+        for child in self._forest.all_children_of(state):
             yield self.to_derivation_tree(child)
 
     def _consume(
@@ -535,17 +533,15 @@ class IterativeParser:
             # True iff we have processed all characters
             # (or some bits of the last character)
             at_end = word_index >= len(word)
-            finished_starts: list[ParseState] = []
+            starts_to_yield: list[ParseState] = []
             for state in table[column_index]:
                 if state.is_finished:
                     if state.nonterminal == self.implicit_start:
                         # Only store completed parses for entire bytes parsed.
                         if column_index % columns_per_byte == 0:
                             self._completed[consumed + word_index] = state
-                        if at_end and build_trees:
-                            for child in self._forest.children_of(state):
-                                yield child, True
-                            finished_starts.append(state)
+                        if at_end:
+                            starts_to_yield.append(state)
 
                     self.complete(state, table, column_index)
                 else:
@@ -589,24 +585,21 @@ class IterativeParser:
                 for state in table[column_index]:
                     if not state.has_children():
                         continue
-                    if state.nonterminal == self.implicit_start and build_trees:
-                        for child in self._forest.children_of(state):
-                            if child not in self._yielded_partial:
-                                self._yielded_partial.add(child)
-                                yield child, False
-                        if state not in finished_starts:
-                            finished_starts.append(state)
+                    if (
+                        state.nonterminal == self.implicit_start
+                        and state not in starts_to_yield
+                    ):
+                        starts_to_yield.append(state)
                     self.complete(state, table, column_index)
 
-            for state in finished_starts:
-                for child in self._forest.extra_alternatives(state):
-                    if self._parsing_mode == ParsingMode.INCOMPLETE:
-                        if child in self._yielded_partial:
-                            continue
-                        self._yielded_partial.add(child)
-                        yield child, False
-                    else:
-                        yield child, True
+            if build_trees:
+                for state in starts_to_yield:
+                    for child in self._forest.all_children_of(state):
+                        if self._parsing_mode == ParsingMode.INCOMPLETE:
+                            if child in self._yielded_incomplete:
+                                continue
+                            self._yielded_incomplete.add(child)
+                        yield child, state.is_finished
 
             column_index += 1
             if column_index % columns_per_byte == 0:

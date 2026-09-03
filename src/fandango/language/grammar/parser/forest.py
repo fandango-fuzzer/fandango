@@ -77,7 +77,7 @@ class ForestBuilder:
         self, state: ParseState, choices: Optional[_Choices] = None
     ) -> list[DerivationTree]:
         """
-        The children `state` stands for, along one derivation.
+        The children `state` stands for, along one path of edges.
         """
         if choices is None:
             cached = self._children_cache.get(id(state))
@@ -163,15 +163,12 @@ class ForestBuilder:
                 self._children_keepalive.append(frame.state)
         return resolve(state)
 
-    def extra_alternatives(self, state: ParseState) -> Iterator[DerivationTree]:
+    def all_children_of(self, state: ParseState) -> Iterator[DerivationTree]:
         """
-        The children of every derivation of `state` except the first.
+        The children of `state` in every derivation, the first derivation first.
         """
-        if not self._is_ambiguous(state):
-            return
-
         choices = _Choices([])
-        self.children_of(state, choices)
+        yield from self.children_of(state, choices)
         picks = [0] * len(choices.edge_counts)
         while True:
             while picks and picks[-1] + 1 == choices.edge_counts[len(picks) - 1]:
