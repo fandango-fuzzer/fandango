@@ -499,8 +499,8 @@ class IterativeParser:
         state = self._completed.get(offset)
         if state is None:
             return
-        for child in self._forest.all_children_of(state):
-            yield self.to_derivation_tree(child)
+        for tree in self._forest.derivations_of(state):
+            yield self.to_derivation_tree(tree)
 
     def _consume(
         self, char: str | bytes | int, *, build_trees: bool = True
@@ -594,12 +594,12 @@ class IterativeParser:
 
             if build_trees:
                 for state in starts_to_yield:
-                    for child in self._forest.all_children_of(state):
+                    for tree in self._forest.derivations_of(state):
                         if self._parsing_mode == ParsingMode.INCOMPLETE:
-                            if child in self._yielded_incomplete:
+                            if tree in self._yielded_incomplete:
                                 continue
-                            self._yielded_incomplete.add(child)
-                        yield child, state.is_finished
+                            self._yielded_incomplete.add(tree)
+                        yield tree, state.is_finished
 
             column_index += 1
             if column_index % columns_per_byte == 0:

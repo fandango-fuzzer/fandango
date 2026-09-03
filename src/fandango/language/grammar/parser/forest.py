@@ -163,22 +163,22 @@ class ForestBuilder:
                 self._children_keepalive.append(frame.state)
         return resolve(state)
 
-    def all_children_of(self, state: ParseState) -> Iterator[DerivationTree]:
+    def derivations_of(self, state: ParseState) -> Iterator[DerivationTree]:
         """
-        The children of `state` in every derivation, the first derivation first.
+        The trees for all derivations of `state` on-demand.
         """
-        choices = _Choices([])
-        yield from self.children_of(state, choices)
-        picks = [0] * len(choices.edge_counts)
+        picks: list[int] = []
         while True:
+            choices = _Choices(picks)
+            # Returns a list with exactly one element. We take it.
+            (tree,) = self.children_of(state, choices)
+            yield tree
+            picks += [0] * (len(choices.edge_counts) - len(picks))
             while picks and picks[-1] + 1 == choices.edge_counts[len(picks) - 1]:
                 picks.pop()
             if not picks:
                 return
             picks[-1] += 1
-            choices = _Choices(picks)
-            yield from self.children_of(state, choices)
-            picks += [0] * (len(choices.edge_counts) - len(picks))
 
     def _is_ambiguous(self, state: ParseState) -> bool:
         """
