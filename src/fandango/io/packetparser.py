@@ -120,9 +120,10 @@ def parse_next_remote_packet(
 
         for non_terminal in set(available_non_terminals):
             parser = nt_parsers[non_terminal]
-            packet_ends: list[int] = []
             for block in fresh_blocks:
-                packet_ends.extend(parser.consume_positions(block))
+                for _ in parser.consume(block, build_trees=False):
+                    pass
+            packet_ends = [end for end in parser.parsed_positions() if end > 0]
             # Longest first: the first packet end whose parameters can be
             # derived is this non-terminal's best answer for the stream so far.
             for packet_end in reversed(packet_ends):

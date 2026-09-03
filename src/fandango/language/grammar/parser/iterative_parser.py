@@ -476,23 +476,25 @@ class IterativeParser:
         self._compiler._clear_tmp()
 
     def consume(
-        self, char: str | bytes | int
+        self, char: str | bytes | int, *, build_trees: bool = True
     ) -> Generator[tuple[DerivationTree, bool], None, None]:
-        for tree, is_complete in self._consume(char):
+        """
+        Continues the current parse by adding `char` to the stream.
+        `build_trees`= False prevents the parser from yielding any trees.
+        The generator still needs to be called to process the given input.
+        """
+        for tree, is_complete in self._consume(char, build_trees=build_trees):
             yield self.to_derivation_tree(tree), is_complete
 
-    def consume_positions(self, word: str | bytes | int) -> list[int]:
+    def parsed_positions(self) -> list[int]:
         """
-        Feed `word` and report where the start symbol has a complete parse.
+        Every offset since `new_parse` at which the start symbol has a complete parse.
         """
-        start = self._consumed
-        for _ in self._consume(word, build_trees=False):
-            pass
-        return [offset for offset in sorted(self._completed) if offset > start]
+        return list(self._completed)
 
     def tree_at(self, offset: int) -> Generator[DerivationTree, None, None]:
         """
-        Every tree the start symbol stands for after `offset` bytes.
+        Every complete parse, parsable with `offset` given bytes.
         """
         state = self._completed.get(offset)
         if state is None:
