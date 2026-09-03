@@ -120,6 +120,7 @@ class ParseState:
         "symbols",
         "dot",
         "matched_length",
+        "forced",
         "edges",
         "_hash",
     )
@@ -135,12 +136,16 @@ class ParseState:
         dot: int = 0,
         children: Optional[list[DerivationTree]] = None,
         matched_length: int = 0,
+        forced: bool = False,
     ):
         self.nonterminal = nonterminal
         self.position = position
         self.symbols = symbols
         self.dot = dot
         self.matched_length = matched_length
+        # Completed although its rule was not matched to the end; only an
+        # incomplete parse does that, to see how the input could go on.
+        self.forced = forced
         self.edges = []
         if children:
             self.edges.append(Edge(None, list(children), None))
@@ -206,7 +211,9 @@ class ParseState:
 
     @property
     def is_finished(self) -> bool:
-        return self.dot >= len(self.symbols) and not self.is_incomplete
+        return (
+            self.dot >= len(self.symbols) and not self.is_incomplete and not self.forced
+        )
 
     def next_symbol_is_nonterminal(self) -> bool:
         return (
@@ -222,6 +229,7 @@ class ParseState:
                     self.dot,
                     len(self.symbols),
                     self.symbols[0][0] if self.symbols else None,
+                    self.forced,
                 )
             )
         return self._hash
@@ -233,6 +241,7 @@ class ParseState:
             and self.position == other.position
             and self.symbols == other.symbols
             and self.dot == other.dot
+            and self.forced == other.forced
         )
 
     def __repr__(self) -> str:
@@ -246,10 +255,11 @@ class ParseState:
             )
             + ("•" if self.is_finished else "")
             + f", column {self.position}"
+            + (", forced" if self.forced else "")
             + ")"
         )
 
-    def next(self) -> "ParseState":
+    def next(self, forced: bool = False) -> "ParseState":
         """Returns self rule, with 'dot' advanced by one position. (edges not copied)"""
         return ParseState(
             self.nonterminal,
@@ -258,6 +268,7 @@ class ParseState:
             self.dot + 1,
             None,
             self.matched_length,
+            self.forced or forced,
         )
 
     def __deepcopy__(self, memo: dict[int, Any]) -> "ParseState":
@@ -271,6 +282,7 @@ class ParseState:
             self.dot,
             None,
             self.matched_length,
+            self.forced,
         )
         copied.edges = list(self.edges)
         memo[id(self)] = copied

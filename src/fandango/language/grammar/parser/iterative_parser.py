@@ -184,6 +184,7 @@ class IterativeParser:
             state.dot,
             self._forest.children_of(state),
             state.matched_length,
+            state.forced,
         )
         if state in table[column_index]:
             table[column_index].replace(state, new_state)
@@ -436,18 +437,23 @@ class IterativeParser:
         column_index: int,
     ) -> None:
         column = table[column_index]
+        forced = not state.is_finished
+        if forced and state.position == column_index:
+            # Spans no input, so it would hand a waiter of the same column
+            # its own children as the filler's derivation.
+            return
         if state.position < column_index:
             entry = self._leo_entry(table, state.position, state.nonterminal)
             if entry is not None:
                 top = entry.top
-                next_state = top.next()
+                next_state = top.next(forced)
                 next_state.add_edge(
                     top, LeoNest(entry.chain, state, top.next_params), top.next_params
                 )
                 column.add(next_state)
                 return
         for waiter in table[state.position].waiting_for(state.nonterminal):
-            next_state = waiter.next()
+            next_state = waiter.next(forced)
             next_state.add_edge(waiter, state, waiter.next_params)
             column.add(next_state)
 
@@ -533,7 +539,7 @@ class IterativeParser:
             # True iff we have processed all characters
             # (or some bits of the last character)
             at_end = word_index >= len(word)
-            starts_to_yield: list[ParseState] = []
+            starts: list[ParseState] = []
             for state in table[column_index]:
                 if state.is_finished:
                     if state.nonterminal == self.implicit_start:
@@ -541,7 +547,7 @@ class IterativeParser:
                         if column_index % columns_per_byte == 0:
                             self._completed[consumed + word_index] = state
                         if at_end:
-                            starts_to_yield.append(state)
+                            starts.append(state)
 
                     self.complete(state, table, column_index)
                 else:
@@ -583,17 +589,14 @@ class IterativeParser:
 
             if self._parsing_mode == ParsingMode.INCOMPLETE and at_end:
                 for state in table[column_index]:
-                    if not state.has_children():
+                    if state.is_finished or not state.has_children():
                         continue
-                    if (
-                        state.nonterminal == self.implicit_start
-                        and state not in starts_to_yield
-                    ):
-                        starts_to_yield.append(state)
+                    if state.nonterminal == self.implicit_start:
+                        starts.append(state)
                     self.complete(state, table, column_index)
 
             if build_trees:
-                for state in starts_to_yield:
+                for state in starts:
                     for tree in self._forest.derivations_of(state):
                         if self._parsing_mode == ParsingMode.INCOMPLETE:
                             if tree in self._yielded_incomplete:
