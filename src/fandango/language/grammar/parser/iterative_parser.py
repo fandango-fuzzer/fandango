@@ -417,7 +417,10 @@ class IterativeParser:
                 break
             waiter = waiters[0]
             # Only expand leo path if we are at the last symbol of the rule.
-            if waiter.dot != len(waiter.symbols) - 1 or waiter.is_terminal_partial_match:
+            if (
+                waiter.dot != len(waiter.symbols) - 1
+                or waiter.is_terminal_partial_match
+            ):
                 column.leo[current_symbol] = None
                 break
             pending.append((current_index, current_symbol, waiter))
@@ -551,7 +554,10 @@ class IterativeParser:
 
                     self.complete(state, table, column_index)
                 else:
-                    if not state.is_terminal_partial_match and state.next_symbol_is_nonterminal():
+                    if (
+                        not state.is_terminal_partial_match
+                        and state.next_symbol_is_nonterminal()
+                    ):
                         self.predict(state, table, column_index, self._hookin_parent)
                     else:
                         if state.next_symbol is not None and state.next_symbol.is_type(
