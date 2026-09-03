@@ -44,6 +44,8 @@ class IterativeParser:
         self._hookin_parent: Optional[DerivationTree] = None
         self._columns_per_byte = 8
         self._forest = ForestBuilder(self._rules, self._compiler._nodes)
+        self._consumed = 0
+        self._completed: dict[int, ParseState] = {}
 
     def can_continue(self) -> bool:
         if len(self._table) <= 1:
@@ -467,6 +469,8 @@ class IterativeParser:
         self._yielded_partial.clear()
         self._forest.reset()
         self._max_position = -1
+        self._consumed = 0
+        self._completed = {}
         self._parsing_mode = mode
         self._hookin_parent = deepcopy(hookin_parent)
         self._compiler._clear_tmp()
@@ -477,14 +481,37 @@ class IterativeParser:
         for tree, is_complete in self._consume(char):
             yield self.to_derivation_tree(tree), is_complete
 
+    def consume_positions(self, word: str | bytes | int) -> list[int]:
+        """
+        Feed `word` and report where the start symbol has a complete parse.
+        """
+        start = self._consumed
+        for _ in self._consume(word, build_trees=False):
+            pass
+        return [offset for offset in sorted(self._completed) if offset > start]
+
+    def tree_at(self, offset: int) -> Generator[DerivationTree, None, None]:
+        """
+        Every tree the start symbol stands for after `offset` bytes.
+        """
+        state = self._completed.get(offset)
+        if state is None:
+            return
+        for child in self._forest.children_of(state):
+            yield self.to_derivation_tree(child)
+        for child in self._forest.extra_alternatives(state):
+            yield self.to_derivation_tree(child)
+
     def _consume(
-        self, char: str | bytes | int
+        self, char: str | bytes | int, *, build_trees: bool = True
     ) -> Generator[tuple[DerivationTree, bool], None, None]:
         assert self._start is not None, "Call new_parse() before consume()"
         if isinstance(char, int):
             char = bytes([char])
         word = char
 
+        consumed = self._consumed
+        self._consumed = consumed + len(word)
         table = list(self._table)
         columns_per_byte = self._columns_per_byte
         table.extend([Column() for _ in range(len(char) * columns_per_byte)])
@@ -510,7 +537,8 @@ class IterativeParser:
             for state in table[column_index]:
                 if state.is_finished:
                     if state.nonterminal == self.implicit_start:
-                        if at_end:
+                        self._completed[consumed + word_index] = state
+                        if at_end and build_trees:
                             for child in self._forest.children_of(state):
                                 yield child, True
                             finished_starts.append(state)
@@ -557,7 +585,7 @@ class IterativeParser:
                 for state in table[column_index]:
                     if not state.has_children():
                         continue
-                    if state.nonterminal == self.implicit_start:
+                    if state.nonterminal == self.implicit_start and build_trees:
                         for child in self._forest.children_of(state):
                             if child not in self._yielded_partial:
                                 self._yielded_partial.add(child)

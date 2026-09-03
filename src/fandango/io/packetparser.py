@@ -1,7 +1,6 @@
 import random
 import time
 from collections.abc import Generator
-from typing import Optional
 
 from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.io import FandangoIO
@@ -12,20 +11,6 @@ from fandango.io.navigation.graph.packetforecaster import (
 from fandango.language import DerivationTree, Grammar, NonTerminal
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.parser.iterative_parser import IterativeParser
-
-
-def _find_next_fragment(
-    role_sender: str, messages: list[tuple[str, str, str | bytes]], start_idx: int = 0
-) -> tuple[int, Optional[str | bytes]]:
-    """
-    Find the next message fragment sent by the specified sender in the list of messages.
-    Returns the index of the message and the message fragment.
-    """
-    for idx in range(start_idx, len(messages)):
-        sender, recipient, msg_fragment = messages[idx]
-        if sender == role_sender:
-            return idx, msg_fragment
-    return -1, None
 
 
 def parse_next_remote_packet(
@@ -84,19 +69,16 @@ def parse_next_remote_packet(
 
     continue_parse = True
     complete_parses: dict[NonTerminal, tuple[int, DerivationTree]] = dict()
-    current_fragment_idx: int = -1
+    # Units of `msg_sender`'s stream already handed to the parsers.
+    consumed_nr: int = 0
     parameter_parsing_exception_tuple = None
     wait_for_completion_time = 1
     while continue_parse:
         # Find the next message fragment sent by the selected sender
         start_time = time.time()
-        next_fragment_idx, next_fragment = _find_next_fragment(
-            msg_sender, io_instance.get_received_msgs(), current_fragment_idx + 1
-        )
-        while next_fragment is None:
-            next_fragment_idx, next_fragment = _find_next_fragment(
-                msg_sender, io_instance.get_received_msgs(), current_fragment_idx + 1
-            )
+        pending = io_instance.pending_from(msg_sender)
+        while pending is None or len(pending) <= consumed_nr:
+            pending = io_instance.pending_from(msg_sender)
             if time.time() - start_time > wait_for_completion_time:
                 if len(complete_parses) == 0:
                     current_parse_str = "Incompletely parsed NonTerminals:"
@@ -123,8 +105,9 @@ def parse_next_remote_packet(
         if not continue_parse:
             break
 
-        assert next_fragment is not None
-        current_fragment_idx = next_fragment_idx
+        assert pending is not None
+        next_fragment = pending[consumed_nr : consumed_nr + 1]
+        consumed_nr += 1
 
         for non_terminal in set(available_non_terminals):
             parser = nt_parsers[non_terminal]
@@ -139,7 +122,7 @@ def parse_next_remote_packet(
                     try:
                         grammar.populate_sources(parse_tree)
                         complete_parses[non_terminal] = (
-                            current_fragment_idx,
+                            consumed_nr,
                             parse_tree,
                         )
                     except FandangoParseError as e:
@@ -171,19 +154,19 @@ def parse_next_remote_packet(
                 )
             )
 
-    max_parse_idx = -1
+    max_parse_end = 0
     yield_items: set[tuple[NonTerminal, DerivationTree]] = set()
-    for non_terminal, (parse_idx, parse_tree) in complete_parses.items():
-        if parse_idx < max_parse_idx:
+    for non_terminal, (parse_end, parse_tree) in complete_parses.items():
+        if parse_end < max_parse_end:
             continue
-        if parse_idx > max_parse_idx:
+        if parse_end > max_parse_end:
             yield_items.clear()
-        max_parse_idx = parse_idx
+        max_parse_end = parse_end
         yield_items.add((non_terminal, parse_tree))
 
     assert len(yield_items) != 0
 
-    io_instance.clear_by_party(msg_sender, max_parse_idx)
+    io_instance.consume_received(msg_sender, max_parse_end)
     for non_terminal, parse_tree in yield_items:
         yield forecast_non_terminals[non_terminal], parse_tree
     return None
