@@ -676,6 +676,32 @@ class TestRegexParsing(TestCLIParsing):
         out, err, code = run_command(command)
         self.assertEqual(1, code, code)
 
+    REGEX_STAR_SPEC = "<start> ::= '220 ' <rest> '\\r\\n'\n<rest> ::= r'.*'\n"
+    WORD = "220 mail.example.com ESMTP\r\n"
+
+    def test_a_later_terminal_wins_against_a_greedy_regex(self):
+        grammar, _ = parse(self.REGEX_STAR_SPEC, use_stdlib=False, use_cache=False)
+        assert grammar is not None
+        parser = Parser(grammar.rules)
+        tree = parser.parse(self.WORD)
+        self.assertIsNotNone(tree)
+        self.assertEqual(self.WORD, str(tree))
+
+    def test_one_block_parses_like_unit_by_unit(self):
+        grammar, _ = parse(self.REGEX_STAR_SPEC, use_stdlib=False, use_cache=False)
+        assert grammar is not None
+        parser = IterativeParser(grammar.rules)
+        parser.new_parse()
+        next(parser.consume(self.WORD, build_trees=False), (None, None))
+        self.assertEqual([len(self.WORD)], parser.parsed_positions())
+
+        half = len(self.WORD) // 2
+        parser.new_parse()
+        next(parser.consume(self.WORD[:half], build_trees=False), (None, None))
+        next(parser.consume(self.WORD[half:], build_trees=False), (None, None))
+        self.assertEqual([len(self.WORD)], parser.parsed_positions())
+
+
 
 class TestBitParsing(TestCLIParsing):
     def _test(self, example, tree, parsers, start_symbol="<start>"):
