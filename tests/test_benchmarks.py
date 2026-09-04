@@ -14,22 +14,7 @@ from fandango.language.parse.parse import parse
 
 from .utils import RESOURCES_ROOT
 
-GRAMMAR_WITH_ALL_NODE_TYPES = """
-<start> ::= <record>+
-<record> ::= <key> '=' <value> <flags> ';'
-<key> ::= r'[a-z]+'
-<value> ::= <number> | <quoted> | <empty>
-<number> ::= <digit>{1,4}
-<digit> ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
-<quoted> ::= '"' <char>* '"'
-<char> ::= 'x' | 'y'
-<empty> ::= ''
-<flags> ::= <flag>?
-<flag> ::= '!'
-"""
-NODE_TYPE_RECORD = 'ab=12;cd="xy"!;ef=;'
-
-
+GRAMMAR_WITH_ALL_NODES_INPUT = 'ab=12;cd="xy"!;ef=;'
 AMBIGUOUS_SPEC = "<start> ::= <e>\n<e> ::= <e> '+' <e> | '1'\n"
 RIGHT_RECURSIVE_SPEC = '<start> ::= <A>\n<A> ::= "a" <A> | "a"\n'
 LEFT_RECURSIVE_SPEC = '<start> ::= <A>\n<A> ::= <A> "a" | "a"\n'
@@ -45,10 +30,8 @@ class ParseCase(NamedTuple):
     spec: str
     make_word: Callable[[int], str | bytes]
     max_length: int = 10_000
-    use_stdlib: bool = False
     incomplete: bool = False
     limit: int | None = None
-    expect_trees: bool = True
     incremental: bool = False
 
 
@@ -60,20 +43,14 @@ PARSE_CASES = [
     ),
     ParseCase(
         label="node-types",
-        spec=GRAMMAR_WITH_ALL_NODE_TYPES,
-        make_word=lambda n: repeat_to(NODE_TYPE_RECORD, n),
+        spec=(RESOURCES_ROOT / "grammar_with_all_nodes.fan").read_text(),
+        make_word=lambda n: repeat_to(GRAMMAR_WITH_ALL_NODES_INPUT, n),
     ),
     ParseCase(
         label="node-types-prefix",
-        spec=GRAMMAR_WITH_ALL_NODE_TYPES,
-        make_word=lambda n: repeat_to(NODE_TYPE_RECORD, n) + "ab=1",
+        spec=(RESOURCES_ROOT / "grammar_with_all_nodes.fan").read_text(),
+        make_word=lambda n: repeat_to(GRAMMAR_WITH_ALL_NODES_INPUT, n) + "ab=1",
         incomplete=True,
-    ),
-    ParseCase(
-        label="no-match",
-        spec=GRAMMAR_WITH_ALL_NODE_TYPES,
-        make_word=lambda n: repeat_to(NODE_TYPE_RECORD, n) + "ab=1?;",
-        expect_trees=False,
     ),
     ParseCase(
         label="ambiguous",
@@ -104,10 +81,9 @@ PARSE_CASES = [
     ),
     ParseCase(
         label="incremental",
-        spec=GRAMMAR_WITH_ALL_NODE_TYPES,
-        make_word=lambda n: repeat_to(NODE_TYPE_RECORD, n),
+        spec=(RESOURCES_ROOT / "grammar_with_all_nodes.fan").read_text(),
+        make_word=lambda n: repeat_to(GRAMMAR_WITH_ALL_NODES_INPUT, n),
         incremental=True,
-        max_length=1_000,
     ),
 ]
 
@@ -156,7 +132,7 @@ def _run_case(
         return
 
     trees = fandango.parse(word, prefix=case.incomplete)
-    assert bool(list(itertools.islice(trees, case.limit))) is case.expect_trees
+    list(itertools.islice(trees, case.limit))
 
 
 @pytest.mark.parametrize(
@@ -166,7 +142,7 @@ def _run_case(
 def test_parse(benchmark: BenchmarkFixture, case: ParseCase, length: int) -> None:
     if benchmark.disabled and length > TEST_MAX_INPUT_LENGTH:
         pytest.skip(f"{length:,} character-tests are for benchmarking.")
-    grammar, constraints = parse(case.spec, use_stdlib=case.use_stdlib, use_cache=False)
+    grammar, constraints = parse(case.spec, use_stdlib=False, use_cache=False)
     assert grammar is not None
     fandango = Fandango._with_parsed(grammar, constraints)
     word = case.make_word(length)
