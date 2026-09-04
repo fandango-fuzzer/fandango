@@ -702,7 +702,6 @@ class TestRegexParsing(TestCLIParsing):
         self.assertEqual([len(self.WORD)], parser.parsed_positions())
 
 
-
 class TestBitParsing(TestCLIParsing):
     def _test(self, example, tree, parsers, start_symbol="<start>"):
         for parser in parsers:
