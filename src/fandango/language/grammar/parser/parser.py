@@ -2,7 +2,7 @@ import gc
 from collections.abc import Generator, Iterator
 from contextlib import contextmanager
 from copy import deepcopy
-from typing import Optional
+from typing import Optional, NamedTuple
 
 from cachetools import LRUCache
 
@@ -28,6 +28,10 @@ def _gc_paused() -> Iterator[None]:
             gc.enable()
 
 
+class ParserCacheItem(NamedTuple):
+    forest: set[DerivationTree]
+    complete: bool
+
 class Parser:
     def __init__(self, grammar_rules: dict[NonTerminal, Node]):
         self._iter_parser = IterativeParser(grammar_rules)
@@ -38,7 +42,7 @@ class Parser:
                 ParsingMode,
                 int,
             ],
-            list[DerivationTree],
+            ParserCacheItem,
         ] = LRUCache(maxsize=cache_size())
 
     def _parse_forest(
@@ -92,15 +96,17 @@ class Parser:
 
         cache_key = (word, start, mode, hash(hookin_parent))
         if cache_key in self._cache:
-            for cached_tree in self._cache[cache_key]:
-                with _gc_paused():
-                    tree = deepcopy(cached_tree)
-                    result = tree if include_controlflow else self.collapse(tree)
-                if result is not None:
-                    yield result
-            return
+            cached_forest = self._cache[cache_key]
+            for cached_tree in cached_forest.forest:
+                tree = deepcopy(cached_tree)
+                result = tree if include_controlflow else self.collapse(tree)
+                assert result is not None
+                yield tree
+            if cached_forest.complete:
+                return
 
-        parsed_forest: list[DerivationTree] = []
+        parsed_forest: ParserCacheItem = ParserCacheItem(set(), False)
+        self._cache[cache_key] = parsed_forest
         trees = self._parse_forest(
             word,
             start,
@@ -113,11 +119,13 @@ class Parser:
                 parsed = next(trees, None)
                 if parsed is None:
                     break
-                parsed_forest.append(parsed)
+                if parsed in parsed_forest.forest:
+                    continue
+                parsed_forest.forest.add(parsed)
                 result = parsed if include_controlflow else self.collapse(parsed)
             if result is not None:
                 yield result
-        self._cache[cache_key] = parsed_forest
+        parsed_forest.complete = True
 
     def parse_multiple(
         self,
