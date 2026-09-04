@@ -186,7 +186,7 @@ class IterativeParser:
             tuple(new_symbols),
             state.dot,
             self._forest.children_of(state),
-            state.matched_length,
+            state.partial_matched_length,
             state.force_completed,
         )
         if state in table[column_index]:
@@ -284,27 +284,28 @@ class IterativeParser:
         columns_per_byte = self._columns_per_byte
 
         if not match:
-            if (word_index + dot_len - state.matched_length) < len(word):
+            if (word_index + dot_len - state.partial_matched_length) < len(word):
                 return False
             match, match_length = state.next_symbol.check(check_word, incomplete=True)
             if not match or match_length == 0:
                 return False
 
             next_state = state.copy()
-            next_state.matched_length = match_length
+            next_state.partial_matched_length = match_length
             tree = ParserDerivationTree(Terminal(check_word[:match_length]))
             next_state.set_edge(
                 state.predecessor() if state.is_terminal_partial_match else state, tree
             )
         else:
             next_state = state.next()
-            next_state.matched_length = 0
+            next_state.partial_matched_length = 0
             tree = ParserDerivationTree(Terminal(check_word[:match_length]))
             next_state.set_edge(
                 state.predecessor() if state.is_terminal_partial_match else state, tree
             )
         table[
-            column_index + ((match_length - state.matched_length) * columns_per_byte)
+            column_index
+            + ((match_length - state.partial_matched_length) * columns_per_byte)
         ].add(next_state)
         self._max_position = max(self._max_position, word_index + match_length)
 
@@ -366,12 +367,12 @@ class IterativeParser:
             match, match_length = state.next_symbol.check(prefix)
             if match and match_length > taken:
                 next_state = state.next()
-                next_state.matched_length = 0
+                next_state.partial_matched_length = 0
                 tree = ParserDerivationTree(Terminal(check_word[:match_length]))
                 next_state.set_edge(predecessor, tree)
                 table[
                     column_index
-                    + ((match_length - state.matched_length) * columns_per_byte)
+                    + ((match_length - state.partial_matched_length) * columns_per_byte)
                 ].add(next_state)
                 self._max_position = max(self._max_position, word_index + match_length)
                 scanned = True
@@ -385,7 +386,7 @@ class IterativeParser:
                 break
             if prefix_length == len(check_word):
                 next_state = state.copy()
-                next_state.matched_length = incomplete_match_length
+                next_state.partial_matched_length = incomplete_match_length
                 tree = ParserDerivationTree(
                     Terminal(check_word[:incomplete_match_length])
                 )
@@ -393,7 +394,7 @@ class IterativeParser:
                 table[
                     column_index
                     + (
-                        (incomplete_match_length - state.matched_length)
+                        (incomplete_match_length - state.partial_matched_length)
                         * columns_per_byte
                     )
                 ].add(next_state)

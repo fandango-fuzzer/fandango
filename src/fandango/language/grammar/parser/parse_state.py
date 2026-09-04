@@ -119,7 +119,7 @@ class ParseState:
         "position",
         "symbols",
         "dot",
-        "matched_length",
+        "partial_matched_length",
         "force_completed",
         "edges",
         "_hash",
@@ -142,7 +142,7 @@ class ParseState:
         self.position = position
         self.symbols = symbols
         self.dot = dot
-        self.matched_length = matched_length
+        self.partial_matched_length = matched_length
         # Completed although its rule was not matched to the end; only an
         # incomplete parse does that, to see how the input could go on.
         self.force_completed = force_completed
@@ -207,7 +207,7 @@ class ParseState:
         """
         Whether the terminal under the dot is only partially matched.
         """
-        return self.matched_length > 0
+        return self.partial_matched_length > 0
 
     @property
     def is_finished(self) -> bool:
@@ -269,7 +269,7 @@ class ParseState:
             self.symbols,
             self.dot + 1,
             None,
-            self.matched_length,
+            self.partial_matched_length,
             self.force_completed or force_completed,
         )
 
@@ -283,7 +283,7 @@ class ParseState:
             self.symbols,
             self.dot,
             None,
-            self.matched_length,
+            self.partial_matched_length,
             self.force_completed,
         )
         copied.edges = list(self.edges)
