@@ -667,6 +667,12 @@ class TestIncompleteFlag(unittest.TestCase):
             self._flagged("<start> ::= <a>*\n<a> ::= ''\n", ""),
         )
 
+    def test_empty_parse_that_is_incomplete(self):
+        self.assertEqual(
+            [("", True)],
+            self._flagged("<start> ::= <a>*\n<a> ::= 'a'\n", ""),
+        )
+
     def test_parse_that_can_grow(self):
         self.assertEqual(
             [("00", False), ("00", True)],
