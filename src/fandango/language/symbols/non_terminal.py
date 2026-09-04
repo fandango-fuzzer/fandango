@@ -5,14 +5,13 @@ class NonTerminal(Symbol):
     def __init__(self, symbol: str) -> None:
         assert isinstance(symbol, str)
         super().__init__(symbol, SymbolType.NON_TERMINAL)
-        self._name = symbol
         self._hash = hash((self._value, self._type))
 
     def name(self) -> str:
         """
         Return the name of the non-terminal symbol.
         """
-        return self._name
+        return str(self._value)
 
     def __hash__(self) -> int:
         return self._hash
