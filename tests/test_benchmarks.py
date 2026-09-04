@@ -88,7 +88,6 @@ PARSE_CASES = [
 ]
 
 PARSE_LENGTHS = (10, 100, 1_000, 10_000)
-PARSE_ROUNDS = 5
 TEST_MAX_INPUT_LENGTH = 100
 
 
@@ -128,10 +127,9 @@ def _run_case(
         )
         for index in range(len(word)):
             iter_parser.consume(word[index : index + 1])
-            list(iter_parser.tree_at(index + 1, incomplete=case.incomplete))
-        return
-
-    trees = fandango.parse(word, prefix=case.incomplete)
+        trees = iter_parser.tree_at(len(word), incomplete=case.incomplete)
+    else:
+        trees = fandango.parse(word, prefix=case.incomplete)
     list(itertools.islice(trees, case.limit))
 
 
@@ -154,7 +152,6 @@ def test_parse(benchmark: BenchmarkFixture, case: ParseCase, length: int) -> Non
         benchmark.pedantic(
             func,
             setup=grammar._parser._cache.clear,
-            rounds=PARSE_ROUNDS,
             iterations=1,
         )
     except RecursionError:
