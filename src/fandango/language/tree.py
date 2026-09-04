@@ -144,7 +144,7 @@ class DerivationTree:
         )
 
         self.hash_cache: Optional[int] = None
-        self._parent = parent
+        self._parent: Optional[DerivationTree] = None
         self._sender = sender
         self._recipient = recipient
         self._symbol = symbol
@@ -158,6 +158,7 @@ class DerivationTree:
         self.read_only = read_only
         self._size: Optional[int] = None
         self.set_children(children or [])
+        self._parent = parent
 
     def __len__(self) -> int:
         return len(self._children)
@@ -222,11 +223,13 @@ class DerivationTree:
         return self.symbol.is_non_terminal
 
     def invalidate_hash(self, update_size: bool = True) -> None:
-        self.hash_cache = None
-        if update_size:
-            self._size = None
-        if self._parent is not None:
-            self._parent.invalidate_hash(update_size=update_size)
+        # invalidate hash from self to root node iteratively
+        node: Optional[DerivationTree] = self
+        while node is not None:
+            node.hash_cache = None
+            if update_size:
+                node._size = None
+            node = node._parent
 
     @property
     def sender(self) -> Optional[str]:
@@ -259,11 +262,12 @@ class DerivationTree:
         Sets self as well as all children and sources to read-only.
         This signals other classes, that this subtree should not be modified.
         """
-        self.read_only = read_only
-        for child in self._children:
-            child.set_all_read_only(read_only)
-        for child in self._sources:
-            child.set_all_read_only(read_only)
+        stack = [self]
+        while stack:
+            node = stack.pop()
+            node.read_only = read_only
+            stack.extend(node._children)
+            stack.extend(node._sources)
 
     def protocol_msgs(self) -> list[ProtocolMessage]:
         """
@@ -420,16 +424,22 @@ class DerivationTree:
         """
         Computes a hash of the derivation tree based on its structure and symbols.
         """
-        if self.hash_cache is None:
-            self.hash_cache = hash(
+        if self.hash_cache is not None:
+            return self.hash_cache
+
+        flatted = self.flatten()
+
+        result = 0
+        for node in reversed(flatted):
+            result = node.hash_cache = hash(
                 (
-                    self.symbol,
-                    self.sender,
-                    self.recipient,
-                    tuple(hash(child) for child in self._children),
+                    node.symbol,
+                    node.sender,
+                    node.recipient,
+                    tuple(hash(child) for child in node._children),
                 )
             )
-        return self.hash_cache
+        return result
 
     def __tree__(self) -> TreeTuple[Symbol]:
         return self.symbol, [child.__tree__() for child in self._children]
@@ -485,11 +495,34 @@ class DerivationTree:
         )
         memo[id(self)] = copied
 
-        # Deepcopy the children
+        # Deepcopy the children.
         if copy_children:
-            copied.set_children(
-                [copy.deepcopy(child, memo) for child in self._children]
-            )
+            todo = [self]
+            copied_nodes = [self]
+            while todo:
+                node = todo.pop()
+                for child in node._children:
+                    if id(child) not in memo:
+                        memo[id(child)] = DerivationTree(
+                            child.symbol,
+                            [],
+                            sender=child.sender,
+                            recipient=child.recipient,
+                            sources=[],
+                            read_only=child.read_only,
+                            origin_repetitions=list(child.origin_repetitions),
+                        )
+                        todo.append(child)
+                        copied_nodes.append(child)
+            for node in copied_nodes:
+                node_copy = memo[id(node)]
+                assert isinstance(node_copy, DerivationTree)
+                kids = [memo[id(c)] for c in node._children]
+                node_copy._children = kids
+                for kid in kids:
+                    kid._parent = node_copy
+                if node is not self:
+                    node_copy.sources = copy.deepcopy(node.sources, memo)
 
         # Set the parent to None or update if necessary
         if copy_parent:
@@ -928,9 +961,12 @@ class DerivationTree:
         """
         Flatten the derivation tree into a list of DerivationTrees.
         """
-        flat = [self]
-        for child in self._children:
-            flat.extend(child.flatten())
+        flat: list[DerivationTree] = []
+        remaining: list[DerivationTree] = [self]
+        while remaining:
+            node = remaining.pop()
+            flat.append(node)
+            remaining.extend(reversed(node._children))
         return flat
 
     def descendants(self) -> list["DerivationTree"]:
