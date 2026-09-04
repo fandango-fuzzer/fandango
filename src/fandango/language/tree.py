@@ -258,6 +258,10 @@ class DerivationTree:
         return path
 
     def set_all_read_only(self, read_only: bool) -> None:
+        """
+        Sets self as well as all children and sources to read-only.
+        This signals other classes, that this subtree should not be modified.
+        """
         stack = [self]
         while stack:
             node = stack.pop()
@@ -423,16 +427,10 @@ class DerivationTree:
         if self.hash_cache is not None:
             return self.hash_cache
 
-        order: list[DerivationTree] = []
-        stack: list[DerivationTree] = [self]
-        while stack:
-            node = stack.pop()
-            if node.hash_cache is None:
-                order.append(node)
-                stack.extend(node._children)
+        flatted = self.flatten()
 
         result = 0
-        for node in reversed(order):
+        for node in reversed(flatted):
             result = node.hash_cache = hash(
                 (
                     node.symbol,
@@ -963,9 +961,11 @@ class DerivationTree:
         """
         Flatten the derivation tree into a list of DerivationTrees.
         """
-        flat = [self]
-        for child in self._children:
-            flat.extend(child.flatten())
+        flat: list[DerivationTree] = []
+        remaining: list[DerivationTree] = [self]
+        while remaining:
+            node = remaining.pop()
+            flat.extend(node._children)
         return flat
 
     def descendants(self) -> list["DerivationTree"]:
