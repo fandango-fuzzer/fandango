@@ -424,9 +424,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
                 new_population = self._perform_destruction(new_population)
 
             # Ensure Uniqueness & Fill Population
-            # dict.fromkeys keeps the population order independent of
-            # PYTHONHASHSEED, so a fixed --random-seed stays reproducible.
-            new_population = list(dict.fromkeys(new_population))
+            new_population = list(set(new_population))
             yield from self.population_manager.refill_population(
                 new_population,
                 self.evaluator.evaluate_individual,
