@@ -228,11 +228,7 @@ class IterativeParser:
         next_state = state.next()
         tree = ParserDerivationTree(Terminal(bit))
         next_state.set_edge(state, tree)
-        # A bit advances the parse by exactly one column; the table holds
-        # `columns_per_byte` (8) columns per input byte for this.
         table[column_index + 1].add(next_state)
-
-        # Save the maximum position reached, so we can report errors
         self._max_position = max(self._max_position, word_index)
 
         return True
@@ -481,13 +477,7 @@ class IterativeParser:
     ) -> bool:
         """
         Whether an edge from `sources` into `next_state` would make a
-        derivation contain itself.
-
-        `next_state` merges with an equal state already in `column`, so the
-        edge really lands on that one; it closes a cycle when the derivation
-        of a source already passes through it. Forcing a state to complete
-        is the only way to get there: a state that spans no input completes
-        into a waiter of its own column, and that waiter may be itself.
+        loop between states.
         """
         target = column.unique.get(next_state)
         if target is None:
