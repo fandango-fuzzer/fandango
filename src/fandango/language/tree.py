@@ -965,7 +965,8 @@ class DerivationTree:
         remaining: list[DerivationTree] = [self]
         while remaining:
             node = remaining.pop()
-            flat.extend(node._children)
+            flat.append(node)
+            remaining.extend(reversed(node._children))
         return flat
 
     def descendants(self) -> list["DerivationTree"]:
