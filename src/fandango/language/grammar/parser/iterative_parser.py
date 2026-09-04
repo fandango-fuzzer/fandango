@@ -34,7 +34,7 @@ class IterativeParser:
         self._implicit_rules = self._compiler._implicit_rules
         self._context_rules = self._compiler._context_rules
         self._tmp_rules = self._compiler._tmp_rules
-        self._yielded_incomplete: set[DerivationTree] = set()
+        self._yielded_incomplete: set[tuple[DerivationTree, bool]] = set()
         self._max_position = -1
         self._column_index = 0
         self._table: list[Column] = []
@@ -609,9 +609,10 @@ class IterativeParser:
                 for state in starts:
                     for tree in self._forest.derivations_of(state):
                         if self._parsing_mode == ParsingMode.INCOMPLETE:
-                            if tree in self._yielded_incomplete:
+                            seen = (tree, state.is_finished)
+                            if seen in self._yielded_incomplete:
                                 continue
-                            self._yielded_incomplete.add(tree)
+                            self._yielded_incomplete.add(seen)
                         yield tree, state.is_finished
 
             column_index += 1
