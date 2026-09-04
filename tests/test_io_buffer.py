@@ -42,6 +42,17 @@ def test_unknown_sender_has_no_blocks() -> None:
     assert io_with(("Extern", "Fuzzer", "ab")).pending_blocks("Nobody") == []
 
 
+def test_an_empty_message_is_no_block() -> None:
+    io = io_with(("Extern", "Fuzzer", "ab"), ("Extern", "Fuzzer", ""))
+    assert io.pending_blocks("Extern") == ["ab"]
+
+
+def test_empty_messages_alone_leave_nothing_received() -> None:
+    io = io_with(("Extern", "Fuzzer", ""), ("Extern", "Fuzzer", b""))
+    assert io.pending_blocks("Extern") == []
+    assert io.received_msg() is False
+
+
 def test_blocks_do_not_mix_text_and_bytes() -> None:
     io = io_with(("Extern", "Fuzzer", "ab"), ("Extern", "Fuzzer", b"\x01"))
     assert io.pending_blocks("Extern") == ["ab"]
