@@ -34,7 +34,6 @@ class IterativeParser:
         self._implicit_rules = self._compiler._implicit_rules
         self._context_rules = self._compiler._context_rules
         self._tmp_rules = self._compiler._tmp_rules
-        self._yielded_incomplete: set[tuple[DerivationTree, bool]] = set()
         self._max_position = -1
         self._column_index = 0
         self._table: list[Column] = []
@@ -44,8 +43,26 @@ class IterativeParser:
         self._hookin_parent: Optional[DerivationTree] = None
         self._columns_per_byte = 8
         self._forest = ForestBuilder(self._rules, self._compiler._nodes)
-        self._consumed = 0
-        self._completed: dict[int, ParseState] = {}
+        self._consumed_length = 0
+        # Per offset, the start states finished there: the complete parses.
+        self._completed: dict[int, list[ParseState]] = {}
+        # Per offset, the start states cut short there at the end of a
+        # `consume`: the incomplete parses. INCOMPLETE mode only.
+        self._incomplete: dict[int, list[ParseState]] = {}
+        # Per offset, whether the input could go on. INCOMPLETE mode only.
+        self._grows: dict[int, bool] = {}
+
+    @staticmethod
+    def waits_for_input(column: Column) -> bool:
+        """Whether any state in `column` still has input to match."""
+        return any(
+            state.is_terminal_partial_match
+            # A force-completed state was cut short to report a partial parse,
+            # so it waits for nothing; counting it would make every column that
+            # holds one look as if the parse could grow.
+            or (not state.is_finished and not state.force_completed)
+            for state in column
+        )
 
     def can_continue(self) -> bool:
         if len(self._table) <= 1:
@@ -479,52 +496,28 @@ class IterativeParser:
         self._table = []
         self._table.append(Column())
         self._first_consume = True
-        self._yielded_incomplete.clear()
         self._forest.reset()
         self._max_position = -1
-        self._consumed = 0
+        self._consumed_length = 0
         self._completed = {}
+        self._incomplete = {}
+        self._grows = {}
         self._parsing_mode = mode
         self._hookin_parent = deepcopy(hookin_parent)
         self._compiler._clear_tmp()
 
-    def consume(
-        self, char: str | bytes | int, *, build_trees: bool = True
-    ) -> Generator[tuple[DerivationTree, bool], None, None]:
+    def consume(self, char: str | bytes | int) -> None:
         """
         Continues the current parse by adding `char` to the stream.
-        `build_trees`= False prevents the parser from yielding any trees.
-        The generator still needs to be called to process the given input.
+        Read the parses back with `parsed_positions` and `tree_at`.
         """
-        for tree, is_complete in self._consume(char, build_trees=build_trees):
-            yield self.to_derivation_tree(tree), is_complete
-
-    def parsed_positions(self) -> list[int]:
-        """
-        Every offset since `new_parse` at which the start symbol has a complete parse.
-        """
-        return list(self._completed)
-
-    def tree_at(self, offset: int) -> Generator[DerivationTree, None, None]:
-        """
-        Every complete parse, parsable with `offset` given bytes.
-        """
-        state = self._completed.get(offset)
-        if state is None:
-            return
-        for tree in self._forest.derivations_of(state):
-            yield self.to_derivation_tree(tree)
-
-    def _consume(
-        self, char: str | bytes | int, *, build_trees: bool = True
-    ) -> Generator[tuple[DerivationTree, bool], None, None]:
         assert self._start is not None, "Call new_parse() before consume()"
         if isinstance(char, int):
             char = bytes([char])
         word = char
 
-        consumed = self._consumed
-        self._consumed = consumed + len(word)
+        consumed = self._consumed_length
+        self._consumed_length = consumed + len(word)
         table = list(self._table)
         columns_per_byte = self._columns_per_byte
         table.extend([Column() for _ in range(len(char) * columns_per_byte)])
@@ -546,15 +539,15 @@ class IterativeParser:
             # True iff we have processed all characters
             # (or some bits of the last character)
             at_end = word_index >= len(word)
-            starts: list[ParseState] = []
+            offset = consumed + word_index
             for state in table[column_index]:
                 if state.is_finished:
-                    if state.nonterminal == self.implicit_start:
-                        # Only store completed parses for entire bytes parsed.
-                        if column_index % columns_per_byte == 0:
-                            self._completed[consumed + word_index] = state
-                        if at_end:
-                            starts.append(state)
+                    # A parse counts at whole bytes, and at the end of the
+                    # input even when that falls within a byte.
+                    if state.nonterminal == self.implicit_start and (
+                        column_index % columns_per_byte == 0 or at_end
+                    ):
+                        self._remember(self._completed, offset, state)
 
                     self.complete(state, table, column_index)
                 else:
@@ -602,22 +595,65 @@ class IterativeParser:
                     if state.is_finished or not state.has_children():
                         continue
                     if state.nonterminal == self.implicit_start:
-                        starts.append(state)
+                        self._remember(self._incomplete, offset, state)
                     self.complete(state, table, column_index)
-
-            if build_trees:
-                for state in starts:
-                    for tree in self._forest.derivations_of(state):
-                        if self._parsing_mode == ParsingMode.INCOMPLETE:
-                            seen = (tree, state.is_finished)
-                            if seen in self._yielded_incomplete:
-                                continue
-                            self._yielded_incomplete.add(seen)
-                        yield tree, state.is_finished
+                # Whether the parse could grow is a property of the parse, not
+                # of the state a tree came from: an empty parse has no state
+                # to cut short, yet more input may well extend it.
+                self._grows[offset] = self.waits_for_input(table[column_index])
 
             column_index += 1
             if column_index % columns_per_byte == 0:
                 word_index += 1
+
+    @staticmethod
+    def _remember(
+        found: dict[int, list[ParseState]], offset: int, state: ParseState
+    ) -> None:
+        """Files `state` under `offset`, in place of an equal one filed before."""
+        states = found.setdefault(offset, [])
+        for index, known in enumerate(states):
+            if known == state:
+                states[index] = state
+                return
+        states.append(state)
+
+    def consumed_length(self) -> int:
+        """How many units of input `consume` has taken since `new_parse`."""
+        return self._consumed_length
+
+    def parsed_positions(self) -> list[int]:
+        """
+        Every offset since `new_parse` at which the start symbol has a complete parse.
+        """
+        return list(self._completed)
+
+    def tree_at(
+        self, offset: int, *, incomplete: bool = False
+    ) -> Generator[tuple[DerivationTree, bool], None, None]:
+        """
+        Every parse parsable with `offset` given bytes, as `(tree, is_complete)`.
+
+        Without `incomplete`, only the complete parses. With it, each of those
+        once more as incomplete when the input could go on, and the parses
+        cut short at the end of a `consume`.
+        """
+        complete_flags = [True]
+        if incomplete and self._grows.get(offset):
+            complete_flags.append(False)
+        flagged = [(state, complete_flags) for state in self._completed.get(offset, [])]
+        if incomplete:
+            flagged.extend(
+                (state, [False]) for state in self._incomplete.get(offset, [])
+            )
+        seen: set[tuple[DerivationTree, bool]] = set()
+        for state, flags in flagged:
+            for tree in self._forest.derivations_of(state):
+                for flag in flags:
+                    if (tree, flag) in seen:
+                        continue
+                    seen.add((tree, flag))
+                    yield self.to_derivation_tree(tree), flag
 
     def to_derivation_tree(self, tree: DerivationTree) -> DerivationTree:
         return self._forest.to_derivation_tree(tree)

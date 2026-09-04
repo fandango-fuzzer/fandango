@@ -56,7 +56,10 @@ class Parser:
         In `ParsingMode.INCOMPLETE`, trees are yielded even if the input ends prematurely.
         """
         self._iter_parser.new_parse(start, mode, hookin_parent, starter_bit)
-        for tree, _is_complete in self._iter_parser.consume(word):
+        self._iter_parser.consume(word)
+        for tree, _is_complete in self._iter_parser.tree_at(
+            self._iter_parser.consumed_length(), incomplete=mode == ParsingMode.INCOMPLETE
+        ):
             yield tree
 
     def parse_forest(

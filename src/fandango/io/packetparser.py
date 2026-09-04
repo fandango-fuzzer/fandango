@@ -52,7 +52,7 @@ def parse_next_remote_packet(
                 )
             break
         fed_blocks_nr += len(fresh_blocks)
-        candidates.feed(fresh_blocks)
+        candidates.consume(fresh_blocks)
 
     if not candidates.found:
         raise candidates.failure(io_instance.get_full_fragments())
@@ -124,12 +124,11 @@ class _PacketCandidates:
             tuple[NonTerminal, FandangoParseError, DerivationTree] | None
         ) = None
 
-    def feed(self, blocks: list[str | bytes]) -> None:
+    def consume(self, blocks: list[str | bytes]) -> None:
         for non_terminal in list(self.open):
             parser = self.parsers[non_terminal]
             for block in blocks:
-                for _ in parser.consume(block, build_trees=False):
-                    pass
+                parser.consume(block)
             self._take_longest_packet(non_terminal)
             if not parser.can_continue():
                 self.open.remove(non_terminal)
@@ -140,10 +139,10 @@ class _PacketCandidates:
         packet_ends = [end for end in parser.parsed_positions() if end > 0]
         # Longest first
         for packet_end in reversed(packet_ends):
-            tree = next(parser.tree_at(packet_end), None)
-            if tree is None:
+            parsed, _ = next(parser.tree_at(packet_end), (None, None))
+            if parsed is None:
                 continue
-            tree = parser.collapse(tree)
+            tree = parser.collapse(parsed)
             assert tree is not None
             tree.sender = packet.node.sender
             tree.recipient = packet.node.recipient

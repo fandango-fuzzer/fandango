@@ -151,8 +151,8 @@ def _run_case(
             mode=ParsingMode.INCOMPLETE if case.incomplete else ParsingMode.COMPLETE,
         )
         for index in range(len(word)):
-            for _ in iter_parser.consume(word[index : index + 1]):
-                pass
+            iter_parser.consume(word[index : index + 1])
+            list(iter_parser.tree_at(index + 1, incomplete=case.incomplete))
         return
 
     trees = fandango.parse(word, prefix=case.incomplete)
