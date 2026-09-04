@@ -58,7 +58,8 @@ class Parser:
         self._iter_parser.new_parse(start, mode, hookin_parent, starter_bit)
         self._iter_parser.consume(word)
         for tree, _is_complete in self._iter_parser.tree_at(
-            self._iter_parser.consumed_length(), incomplete=mode == ParsingMode.INCOMPLETE
+            self._iter_parser.consumed_length(),
+            incomplete=mode == ParsingMode.INCOMPLETE,
         ):
             yield tree
 
