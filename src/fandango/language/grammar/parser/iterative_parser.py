@@ -544,7 +544,7 @@ class IterativeParser:
                     if state.nonterminal == self.implicit_start and (
                         column_index % columns_per_byte == 0 or at_end
                     ):
-                        self._store_state_at(self._completed, offset, state)
+                        self._store_emittable_state(self._completed, offset, state)
 
                     self.complete(state, table, column_index)
                 else:
@@ -592,21 +592,21 @@ class IterativeParser:
                     if state.is_finished or not state.has_children():
                         continue
                     if state.nonterminal == self.implicit_start:
-                        self._store_state_at(self._incomplete, offset, state)
+                        self._store_emittable_state(self._incomplete, offset, state)
                     self.complete(state, table, column_index)
                 # A complete parse the input could still extend is an
                 # incomplete parse as well: an empty parse has no state to cut
                 # short, yet more input may well extend it.
                 if self.has_unfinished_states(table[column_index]):
                     for state in self._completed.get(offset, []):
-                        self._store_state_at(self._incomplete, offset, state)
+                        self._store_emittable_state(self._incomplete, offset, state)
 
             column_index += 1
             if column_index % columns_per_byte == 0:
                 word_index += 1
 
     @staticmethod
-    def _store_state_at(
+    def _store_emittable_state(
         states_by_offset: dict[int, list[ParseState]], offset: int, state: ParseState
     ) -> None:
         """Stores `state` under `offset`, replacing an equal one stored before."""
