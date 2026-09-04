@@ -50,18 +50,6 @@ class IterativeParser:
         # are at the end of one given input from consume
         self._incomplete: dict[int, list[ParseState]] = {}
 
-    @staticmethod
-    def has_unfinished_states(column: Column) -> bool:
-        """Whether any state in `column` still has input to match."""
-        return any(
-            state.is_terminal_partial_match
-            # A force-completed state was cut short to report a partial parse,
-            # so it waits for nothing; counting it would make every column that
-            # holds one look as if the parse could grow.
-            or (not state.is_finished and not state.force_completed)
-            for state in column
-        )
-
     def can_continue(self) -> bool:
         if len(self._table) <= 1:
             # Assume that an unstarted parse can continue
@@ -460,24 +448,66 @@ class IterativeParser:
     ) -> None:
         column = table[column_index]
         force_completed = not state.is_finished
-        if force_completed and state.position == column_index:
-            # Spans no input, so it would hand a waiter of the same column
-            # its own children as the filler's derivation.
-            return
         if state.position < column_index:
             entry = self._leo_entry(table, state.position, state.nonterminal)
             if entry is not None:
                 top = entry.top
                 next_state = top.next(force_completed)
+                if force_completed and self._closes_cycle(
+                    column, next_state, state, top
+                ):
+                    return
                 next_state.add_edge(
                     top, LeoNest(entry.chain, state, top.next_params), top.next_params
                 )
                 column.add(next_state)
                 return
         for waiter in table[state.position].waiting_for(state.nonterminal):
+            if waiter is state:
+                # Only forcing gets here: a state cannot fill its own symbol.
+                continue
             next_state = waiter.next(force_completed)
+            if force_completed and self._closes_cycle(
+                column, next_state, state, waiter
+            ):
+                continue
             next_state.add_edge(waiter, state, waiter.next_params)
             column.add(next_state)
+
+    @staticmethod
+    def _closes_cycle(
+        column: Column, next_state: ParseState, *sources: ParseState
+    ) -> bool:
+        """
+        Whether an edge from `sources` into `next_state` would make a
+        derivation contain itself.
+
+        `next_state` merges with an equal state already in `column`, so the
+        edge really lands on that one; it closes a cycle when the derivation
+        of a source already passes through it. Forcing a state to complete
+        is the only way to get there: a state that spans no input completes
+        into a waiter of its own column, and that waiter may be itself.
+        """
+        target = column.unique.get(next_state)
+        if target is None:
+            return False
+        seen: set[int] = set()
+        pending = list(sources)
+        while pending:
+            current = pending.pop()
+            if current is target:
+                return True
+            if id(current) in seen:
+                continue
+            seen.add(id(current))
+            for edge in current.edges:
+                if edge.previous is not None:
+                    pending.append(edge.previous)
+                if isinstance(edge.filler, ParseState):
+                    pending.append(edge.filler)
+                elif isinstance(edge.filler, LeoNest):
+                    pending.extend(edge.filler.states())
+        return False
 
     def new_parse(
         self,
@@ -589,17 +619,16 @@ class IterativeParser:
 
             if self._parsing_mode == ParsingMode.INCOMPLETE and at_end:
                 for state in table[column_index]:
-                    if state.is_finished or not state.has_children():
+                    if state.is_finished:
                         continue
                     if state.nonterminal == self.implicit_start:
-                        self._store_emittable_state(self._incomplete, offset, state)
-                    self.complete(state, table, column_index)
-                # A complete parse the input could still extend is an
-                # incomplete parse as well: an empty parse has no state to cut
-                # short, yet more input may well extend it.
-                if self.has_unfinished_states(table[column_index]):
-                    for state in self._completed.get(offset, []):
-                        self._store_emittable_state(self._incomplete, offset, state)
+                        if state.has_children():
+                            self._store_emittable_state(self._incomplete, offset, state)
+                        continue
+                    if state.has_children() or (
+                        offset == 0 and not state.next_symbol_is_nonterminal()
+                    ):
+                        self.complete(state, table, column_index)
 
             column_index += 1
             if column_index % columns_per_byte == 0:
@@ -632,10 +661,6 @@ class IterativeParser:
     ) -> Generator[tuple[DerivationTree, bool], None, None]:
         """
         Every parse parsable with `offset` given bytes, as `(tree, is_complete)`.
-
-        Without `incomplete`, only the complete parses. With it also the
-        incomplete ones: those cut short at the end of a `consume`, and the
-        complete ones once more when the input could go on.
         """
         flagged = [(state, True) for state in self._completed.get(offset, [])]
         if incomplete:
@@ -646,10 +671,7 @@ class IterativeParser:
                 if (tree, flag) in seen:
                     continue
                 seen.add((tree, flag))
-                yield self.to_derivation_tree(tree), flag
-
-    def to_derivation_tree(self, tree: DerivationTree) -> DerivationTree:
-        return self._forest.to_derivation_tree(tree)
+                yield self._forest.to_derivation_tree(tree), flag
 
     def collapse(self, tree: Optional[DerivationTree]) -> Optional[DerivationTree]:
         return self._forest.collapse(tree)

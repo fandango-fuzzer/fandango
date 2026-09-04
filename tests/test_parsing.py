@@ -28,9 +28,14 @@ class IterParsingTester(Parser):
         starter_bit=-1,
     ):
         self._iter_parser.new_parse(start, mode, hookin_parent, starter_bit)
-        for char in word[:-1]:
-            next(self._iter_parser.consume(char), None)
-        for tree, _is_complete in self._iter_parser.consume(word[-1]):
+        for char in word:
+            self._iter_parser.consume(char)
+        if not word:
+            self._iter_parser.consume(word)
+        for tree, _is_complete in self._iter_parser.tree_at(
+            self._iter_parser.consumed_length(),
+            incomplete=mode == ParsingMode.INCOMPLETE,
+        ):
             yield tree
 
 
@@ -482,19 +487,19 @@ class TestCanContinueParsing(unittest.TestCase):
 
     def test_1(self):
         self.iter_parser.new_parse()
-        next(self.iter_parser.consume(b"r"), (None, None))
+        self.iter_parser.consume(b"r")
         self.assertTrue(self.iter_parser.can_continue())
-        next(self.iter_parser.consume(b"g"), (None, None))
+        self.iter_parser.consume(b"g")
         self.assertTrue(self.iter_parser.can_continue())
-        next(self.iter_parser.consume(b"b"), (None, None))
+        self.iter_parser.consume(b"b")
         self.assertTrue(self.iter_parser.can_continue())
-        next(self.iter_parser.consume(b"d"), (None, None))
+        self.iter_parser.consume(b"d")
         self.assertTrue(self.iter_parser.can_continue())
-        next(self.iter_parser.consume(b";"), (None, None))
+        self.iter_parser.consume(b";")
         self.assertFalse(self.iter_parser.can_continue())
 
         self.iter_parser.new_parse()
-        next(self.iter_parser.consume(b"rgbd;"), (None, None))
+        self.iter_parser.consume(b"rgbd;")
 
 
 class TestIncrementalParsing(unittest.TestCase):
@@ -513,20 +518,14 @@ class TestIncrementalParsing(unittest.TestCase):
         parser.new_parse(NonTerminal("<start>"), ParsingMode.COMPLETE)
         return parser
 
-    def _consume_no_yield(self, parser: IterativeParser, word: str | bytes) -> None:
-        """Consume given input without yielding any trees."""
-        for _ in parser.consume(word, build_trees=False):
-            pass
-
     def _bytewise(self, spec: str, word: str | bytes) -> list[tuple[int, list[str]]]:
         """Consume given input one byte/char at a time."""
         parser = self._parser(spec)
         found = []
         for index in range(len(word)):
+            parser.consume(word[index : index + 1])
             trees = [
-                str(parser.collapse(tree))
-                for tree, is_complete in parser.consume(word[index : index + 1])
-                if is_complete
+                str(parser.collapse(tree)) for tree, _ in parser.tree_at(index + 1)
             ]
             if trees:
                 found.append((index + 1, trees))
@@ -540,13 +539,13 @@ class TestIncrementalParsing(unittest.TestCase):
         found = []
         start = 0
         for size in sizes or [len(word)]:
-            self._consume_no_yield(parser, word[start : start + size])
+            parser.consume(word[start : start + size])
             start += size
         for offset in parser.parsed_positions():
             found.append(
                 (
                     offset,
-                    [str(parser.collapse(tree)) for tree in parser.tree_at(offset)],
+                    [str(parser.collapse(tree)) for tree, _ in parser.tree_at(offset)],
                 )
             )
         return found
@@ -579,53 +578,106 @@ class TestIncrementalParsing(unittest.TestCase):
         for label, spec, word in self.CASES:
             with self.subTest(label):
                 parser = self._parser(spec)
-                self._consume_no_yield(parser, word)
+                parser.consume(word)
                 for offset in parser.parsed_positions():
-                    for tree in parser.tree_at(offset):
+                    for tree, _ in parser.tree_at(offset):
                         self.assertEqual(offset, len(str(parser.collapse(tree))))
 
     def test_nullable_grammar_empty_parse(self):
         parser = self._parser(self.NULLABLE)
-        self._consume_no_yield(parser, "xx")
+        parser.consume("xx")
         self.assertEqual([0, 1, 2], parser.parsed_positions())
-        self.assertEqual([""], [str(parser.collapse(t)) for t in parser.tree_at(0)])
+        self.assertEqual([""], [str(parser.collapse(t)) for t, _ in parser.tree_at(0)])
 
     def test_parsing_on_overshooting_input(self):
         parser = self._parser(self.PACKETS)
-        self._consume_no_yield(parser, "ping\npong\n")
+        parser.consume("ping\npong\n")
         self.assertEqual([5], parser.parsed_positions())
         self.assertEqual(
-            ["ping\n"], [str(parser.collapse(tree)) for tree in parser.tree_at(5)]
+            ["ping\n"], [str(parser.collapse(tree)) for tree, _ in parser.tree_at(5)]
         )
 
     def test_parse_multiple_consumes(self):
         parser = self._parser(self.REPEATING)
-        self._consume_no_yield(parser, "aa")
+        parser.consume("aa")
         self.assertEqual([1, 2], parser.parsed_positions())
-        self._consume_no_yield(parser, "aa")
+        parser.consume("aa")
         self.assertEqual([1, 2, 3, 4], parser.parsed_positions())
         self.assertEqual(
-            ["a"], [str(parser.collapse(tree)) for tree in parser.tree_at(1)]
+            ["a"], [str(parser.collapse(tree)) for tree, _ in parser.tree_at(1)]
         )
         self.assertEqual(
-            ["aaaa"], [str(parser.collapse(tree)) for tree in parser.tree_at(4)]
+            ["aaaa"], [str(parser.collapse(tree)) for tree, _ in parser.tree_at(4)]
         )
 
     def test_tree_emit_at_no_parse_position(self):
         parser = self._parser(self.PACKETS)
-        self._consume_no_yield(parser, "ping\n")
+        parser.consume("ping\n")
         self.assertEqual([], list(parser.tree_at(3)))
 
     def test_a_bit_grammar_reports_whole_bytes_only(self):
         parser = self._parser(self.BITS)
-        self._consume_no_yield(parser, b"\x01\x02")
+        parser.consume(b"\x01\x02")
         self.assertEqual([1, 2], parser.parsed_positions())
         self.assertEqual(
-            ["\x01"], [str(parser.collapse(tree)) for tree in parser.tree_at(1)]
+            ["\x01"], [str(parser.collapse(tree)) for tree, _ in parser.tree_at(1)]
         )
         self.assertEqual(
-            ["\x01\x02"], [str(parser.collapse(tree)) for tree in parser.tree_at(2)]
+            ["\x01\x02"], [str(parser.collapse(tree)) for tree, _ in parser.tree_at(2)]
         )
+
+
+class TestIncompleteFlag(unittest.TestCase):
+    """
+    What `consume` reports as `is_complete` in INCOMPLETE mode.
+
+    A tree that completes the input and could still grow comes out once under
+    each flag; one that cannot grow only as complete; one that is not yet a
+    parse only as incomplete. The empty parse follows the same rule.
+    """
+
+    def _flagged(self, spec: str, word: str) -> list[tuple[str, bool]]:
+        grammar, _ = parse(spec, use_stdlib=False, use_cache=False)
+        assert grammar is not None
+        parser = IterativeParser(grammar.rules)
+        parser.new_parse(NonTerminal("<start>"), ParsingMode.INCOMPLETE)
+        parser.consume(word)
+        return sorted(
+            {
+                (str(parser.collapse(tree)), is_complete)
+                for tree, is_complete in parser.tree_at(len(word), incomplete=True)
+            }
+        )
+
+    def test_empty_parse_that_can_grow(self):
+        self.assertEqual(
+            [("", False), ("", True)],
+            self._flagged("<start> ::= <a>*\n<a> ::= '0'\n", ""),
+        )
+
+    def test_empty_parse_from_an_empty_alternative(self):
+        self.assertEqual(
+            [("", False), ("", True)],
+            self._flagged("<start> ::= <a>\n<a> ::= '' | 'a'\n", ""),
+        )
+
+    def test_empty_parse_from_an_empty_repetition(self):
+        self.assertEqual(
+            [("", False), ("", True)],
+            self._flagged("<start> ::= <a>*\n<a> ::= ''\n", ""),
+        )
+
+    def test_parse_that_can_grow(self):
+        self.assertEqual(
+            [("00", False), ("00", True)],
+            self._flagged("<start> ::= <a>*\n<a> ::= '0'\n", "00"),
+        )
+
+    def test_parse_that_cannot_grow(self):
+        self.assertEqual([("a", True)], self._flagged("<start> ::= 'a'\n", "a"))
+
+    def test_prefix_of_a_parse(self):
+        self.assertEqual([("a", False)], self._flagged("<start> ::= 'ab'\n", "a"))
 
 
 class TestCLIParsing(unittest.TestCase):
@@ -692,13 +744,13 @@ class TestRegexParsing(TestCLIParsing):
         assert grammar is not None
         parser = IterativeParser(grammar.rules)
         parser.new_parse()
-        next(parser.consume(self.WORD, build_trees=False), (None, None))
+        parser.consume(self.WORD)
         self.assertEqual([len(self.WORD)], parser.parsed_positions())
 
         half = len(self.WORD) // 2
         parser.new_parse()
-        next(parser.consume(self.WORD[:half], build_trees=False), (None, None))
-        next(parser.consume(self.WORD[half:], build_trees=False), (None, None))
+        parser.consume(self.WORD[:half])
+        parser.consume(self.WORD[half:])
         self.assertEqual([len(self.WORD)], parser.parsed_positions())
 
 
