@@ -902,6 +902,8 @@ class FandangoIO(object):
         :param receiver: The receiver of the message.
         :param message: The message received from the sender.
         """
+        if not message:
+            return
         with self.receive_lock:
             self.receive.append((sender, receiver, message))
 

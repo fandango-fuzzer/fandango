@@ -350,50 +350,54 @@ class IterativeParser:
             prev_match_length = len(prev_val_raw)
 
         columns_per_byte = self._columns_per_byte
-        match, match_length = state.next_symbol.check(check_word)
-        table_offset = match_length
-        if match and match_length <= prev_match_length:
-            match = False
-            match_length = 0
-        incomplete_match, incomplete_match_length = state.next_symbol.check(
-            check_word, incomplete=True
-        )
-        if incomplete_match_length <= prev_match_length:
-            incomplete_match = False
-        incomplete_table_offset = incomplete_match_length
-        if not match:
-            if not incomplete_match or (incomplete_match_length + word_index) < len(
-                word
-            ):
-                return False
+        # A growing a partial match replaces the previous partial terminal
+        predecessor = state.predecessor() if state.is_terminal_partial_match else state
+        # A regex accepts prefixes of the remaining input in several lengths,
+        # and only the grammar around it decides which one carries the parse.
+        # We walk the prefixes one by one and store a state at every length the regex
+        # accepts.
+        scanned = False
+        taken = prev_match_length
+        for prefix_length in range(prev_match_length + 1, len(check_word) + 1):
+            prefix = check_word[:prefix_length]
+            match, match_length = state.next_symbol.check(prefix)
+            if match and match_length > taken:
+                next_state = state.next()
+                next_state.matched_length = 0
+                tree = ParserDerivationTree(Terminal(check_word[:match_length]))
+                next_state.set_edge(predecessor, tree)
+                table[
+                    column_index
+                    + ((match_length - state.matched_length) * columns_per_byte)
+                ].add(next_state)
+                self._max_position = max(self._max_position, word_index + match_length)
+                scanned = True
 
-        if match:
-            next_state = state.next()
-            next_state.matched_length = 0
-            tree = ParserDerivationTree(Terminal(check_word[:match_length]))
-            # Growing a partial match replaces the previous partial
-            # terminal rather than adding a child, so step back over it.
-            next_state.set_edge(
-                state.predecessor() if state.is_terminal_partial_match else state, tree
+            incomplete_match, incomplete_match_length = state.next_symbol.check(
+                prefix, incomplete=True
             )
-            table[
-                column_index
-                + ((table_offset - state.matched_length) * columns_per_byte)
-            ].add(next_state)
-        if incomplete_match:
-            next_state = state.copy()
-            next_state.matched_length = incomplete_match_length
-            tree = ParserDerivationTree(Terminal(check_word[:incomplete_match_length]))
-            next_state.set_edge(
-                state.predecessor() if state.is_terminal_partial_match else state, tree
-            )
-            table[
-                column_index
-                + ((incomplete_table_offset - state.matched_length) * columns_per_byte)
-            ].add(next_state)
+            if incomplete_match_length <= taken:
+                incomplete_match = False
+            if not incomplete_match:
+                break
+            if prefix_length == len(check_word):
+                next_state = state.copy()
+                next_state.matched_length = incomplete_match_length
+                tree = ParserDerivationTree(
+                    Terminal(check_word[:incomplete_match_length])
+                )
+                next_state.set_edge(predecessor, tree)
+                table[
+                    column_index
+                    + (
+                        (incomplete_match_length - state.matched_length)
+                        * columns_per_byte
+                    )
+                ].add(next_state)
+                scanned = True
+            taken = incomplete_match_length
 
-        self._max_position = max(self._max_position, word_index + match_length)
-        return True
+        return scanned
 
     def _leo_entry(
         self, table: list[Column], column_index: int, symbol: Symbol
