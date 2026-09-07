@@ -427,11 +427,11 @@ class DerivationTree:
         if self.hash_cache is not None:
             return self.hash_cache
 
-        flatted = self.flatten()
+        flatted = self.flattened()
 
         result = 0
         for node in reversed(flatted):
-            result = node.hash_cache = hash(
+            node.hash_cache = hash(
                 (
                     node.symbol,
                     node.sender,
@@ -439,6 +439,7 @@ class DerivationTree:
                     tuple(hash(child) for child in node._children),
                 )
             )
+            result = node.hash_cache
         return result
 
     def __tree__(self) -> TreeTuple[Symbol]:
@@ -957,7 +958,7 @@ class DerivationTree:
         """
         return [node.value() for node in self.children]
 
-    def flatten(self) -> list["DerivationTree"]:
+    def flattened(self) -> list["DerivationTree"]:
         """
         Flatten the derivation tree into a list of DerivationTrees.
         """
@@ -973,7 +974,7 @@ class DerivationTree:
         """
         Return all descendants of the current node
         """
-        return self.flatten()[1:]
+        return self.flattened()[1:]
 
     def descendant_values(self) -> list[TreeValue]:
         """
@@ -986,7 +987,7 @@ class DerivationTree:
         """
         Get the index of the target node in the tree.
         """
-        flat = self.flatten()
+        flat = self.flattened()
         try:
             return flat.index(target)
         except ValueError:
