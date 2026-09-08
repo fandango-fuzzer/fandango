@@ -353,51 +353,34 @@ class IterativeParser:
         # A growing a partial match replaces the previous partial terminal
         predecessor = state.predecessor() if state.is_terminal_partial_match else state
         # A regex accepts prefixes of the remaining input in several lengths,
-        # and only the grammar around it decides which one carries the parse.
-        # We walk the prefixes one by one and store a state at every length the regex
-        # accepts.
-        scanned = False
-        taken = prev_match_length
-        for prefix_length in range(prev_match_length + 1, len(check_word) + 1):
-            prefix = check_word[:prefix_length]
-            match, match_length = state.next_symbol.check(prefix)
-            if match and match_length > taken:
-                next_state = state.next()
-                next_state.partial_matched_length = 0
-                tree = ParserDerivationTree(Terminal(check_word[:match_length]))
-                next_state.set_edge(predecessor, tree)
-                table[
-                    column_index
-                    + ((match_length - state.partial_matched_length) * columns_per_byte)
-                ].add(next_state)
-                self._max_position = max(self._max_position, word_index + match_length)
-                scanned = True
+        # and only the grammar around it decides which one carries the parse,
+        # so we store a state at every length the regex accepts.
+        assert isinstance(state.next_symbol, Terminal)
+        lengths, can_continue = state.next_symbol.regex_check_multiple_lengths(
+            check_word, prev_match_length + 1
+        )
+        for length in lengths:
+            next_state = state.next()
+            next_state.partial_matched_length = 0
+            tree = ParserDerivationTree(Terminal(check_word[:length]))
+            next_state.set_edge(predecessor, tree)
+            table[
+                column_index
+                + ((length - state.partial_matched_length) * columns_per_byte)
+            ].add(next_state)
+            self._max_position = max(self._max_position, word_index + length)
+        if can_continue:
+            # The input ends inside the regex; keep it open for the next chunk.
+            next_state = state.copy()
+            next_state.partial_matched_length = len(check_word)
+            tree = ParserDerivationTree(Terminal(check_word))
+            next_state.set_edge(predecessor, tree)
+            table[
+                column_index
+                + ((len(check_word) - state.partial_matched_length) * columns_per_byte)
+            ].add(next_state)
 
-            incomplete_match, incomplete_match_length = state.next_symbol.check(
-                prefix, incomplete=True
-            )
-            if incomplete_match_length <= taken:
-                incomplete_match = False
-            if not incomplete_match:
-                break
-            if prefix_length == len(check_word):
-                next_state = state.copy()
-                next_state.partial_matched_length = incomplete_match_length
-                tree = ParserDerivationTree(
-                    Terminal(check_word[:incomplete_match_length])
-                )
-                next_state.set_edge(predecessor, tree)
-                table[
-                    column_index
-                    + (
-                        (incomplete_match_length - state.partial_matched_length)
-                        * columns_per_byte
-                    )
-                ].add(next_state)
-                scanned = True
-            taken = incomplete_match_length
-
-        return scanned
+        return can_continue or bool(lengths)
 
     def _leo_entry(
         self, table: list[Column], column_index: int, symbol: Symbol
