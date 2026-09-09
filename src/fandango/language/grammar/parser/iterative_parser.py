@@ -1,4 +1,4 @@
-from collections.abc import Generator
+from collections.abc import Generator, Iterable
 from copy import deepcopy
 from typing import Any, Optional
 
@@ -76,15 +76,18 @@ class IterativeParser:
         symbol = state.next_symbol
         assert symbol is not None
         assert isinstance(symbol, NonTerminal)
-        predicted = table[column_index].predicted
-        if symbol in predicted:
+        column = table[column_index]
+        if symbol in column.predicted:
             # Predicting the same symbol in the same column again adds nothing
-            # new. Context rules are the exception: their expansion depends on
-            # the tree parsed so far.
+            # new, but the symbol may have completed empty here since, which
+            # `state` was not yet waiting for. Context rules are the other
+            # exception: their expansion depends on the tree parsed so far.
+            for completion in column.empty_completions.get(symbol, ()):
+                self.complete(completion, table, column_index, late_waiters=(state,))
             if symbol not in self._context_rules:
                 return
         else:
-            predicted.add(symbol)
+            column.predicted.add(symbol)
 
         for rules in (self._rules, self._implicit_rules, self._tmp_rules):
             alternatives = rules.get(symbol)
@@ -425,7 +428,15 @@ class IterativeParser:
         state: ParseState,
         table: list[Column],
         column_index: int,
+        late_waiters: Optional[Iterable[ParseState]] = None,
     ) -> None:
+        """
+        Take the items waiting for `state`'s symbol past it.
+
+        An empty completion is filled in the column it starts in, while that
+        column is still being built: items predicted after it never waited for
+        it. `predict` hands those in as `late_waiters`.
+        """
         column = table[column_index]
         force_completed = not state.is_finished
         if state.position < column_index:
@@ -442,12 +453,24 @@ class IterativeParser:
                 )
                 column.add(next_state)
                 return
-        for waiter in table[state.position].waiting_for(state.nonterminal):
+        is_empty_completion = state.is_finished and state.position == column_index
+        waiters: Iterable[ParseState]
+        if late_waiters is None:
+            if is_empty_completion:
+                column.empty_completions.setdefault(state.nonterminal, []).append(state)
+            waiters = table[state.position].waiting_for(state.nonterminal)
+        else:
+            waiters = late_waiters
+        for waiter in waiters:
             if waiter is state:
                 # Only forcing gets here: a state cannot fill its own symbol.
                 continue
             next_state = waiter.next(force_completed)
-            if force_completed and self._closes_cycle(
+            if late_waiters is not None and column.has_edge(next_state, waiter, state):
+                # Waiting when the completion happened, predicted after it.
+                continue
+            # Both can add an edge that stays in this column and loops back.
+            if (force_completed or is_empty_completion) and self._closes_cycle(
                 column, next_state, state, waiter
             ):
                 continue

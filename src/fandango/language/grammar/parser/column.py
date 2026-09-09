@@ -13,6 +13,8 @@ class Column:
         # Used for early deduplication in predict
         self.predicted = set[Symbol]()
         self.leo: dict[Symbol, Optional[LeoEntry]] = {}
+        # Finished items that consumed no input, by the symbol they complete.
+        self.empty_completions = dict[Symbol, list[ParseState]]()
 
     def __iter__(self) -> Iterator[ParseState]:
         yield from self.states
@@ -40,6 +42,15 @@ class Column:
 
     def __contains__(self, item: ParseState) -> bool:
         return item in self.unique
+
+    def has_edge(
+        self, state: ParseState, previous: ParseState, filler: ParseState
+    ) -> bool:
+        """Whether the item equal to `state` here already came from `previous` via `filler`."""
+        known = self.unique.get(state)
+        return known is not None and any(
+            edge.previous is previous and edge.filler is filler for edge in known.edges
+        )
 
     def waiting_for(self, symbol: Optional[Symbol]) -> list[ParseState]:
         if symbol is None:
