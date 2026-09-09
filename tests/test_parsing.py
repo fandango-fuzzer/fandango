@@ -476,6 +476,13 @@ class TestEmptyParsing(unittest.TestCase):
             ),
         )
 
+    def test_empty_completion_with_late_waiter(self):
+        grammar, _ = parse(
+            "<start> ::= <e> '' <e>\n<e> ::= ''\n", use_stdlib=False, use_cache=False
+        )
+        assert grammar is not None
+        self.assertEqual(1, len(list(grammar.parse_forest(""))))
+
 
 class TestCanContinueParsing(unittest.TestCase):
     def setUp(self):
