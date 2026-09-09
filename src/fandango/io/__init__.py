@@ -902,13 +902,10 @@ class FandangoIO(object):
         :param receiver: The receiver of the message.
         :param message: The message received from the sender.
         """
+        if not message:
+            return
         with self.receive_lock:
-            if isinstance(message, bytes):
-                for fragment_int in message:
-                    self.receive.append((sender, receiver, bytes([fragment_int])))
-            else:
-                for fragment_str in message:
-                    self.receive.append((sender, receiver, fragment_str))
+            self.receive.append((sender, receiver, message))
 
     def received_msg(self) -> bool:
         """
@@ -972,15 +969,40 @@ class FandangoIO(object):
         with self.receive_lock:
             self.receive.clear()
 
-    def clear_by_party(self, party_name: str, to_idx: int) -> None:
-        """Clears all received messages from a specific party up to a given index."""
+    def pending_blocks(self, party_name: str) -> list[str | bytes]:
+        """
+        What `party_name` sent and nobody dropped yet, as it arrived.
 
+        Stops at a change of message type, so a run of text is never handed
+        out together with a run of bytes. Blocks are not joined: a reader
+        feeds them one by one, and `get_full_fragments` is the one place that
+        puts a stream back together, for error messages.
+        """
         with self.receive_lock:
-            self.receive = [
-                (sender, receiver, msg)
-                for idx, (sender, receiver, msg) in enumerate(self.receive)
-                if not (sender == party_name and idx <= to_idx)
-            ]
+            parts = [msg for sender, _, msg in self.receive if sender == party_name]
+        blocks: list[str | bytes] = []
+        for part in parts:
+            if blocks and type(part) is not type(blocks[0]):
+                break
+            blocks.append(part)
+        return blocks
+
+    def drop_received(self, party_name: str, count: int) -> None:
+        """
+        Drops the first `count` units received from `party_name`.
+        """
+        with self.receive_lock:
+            remaining = count
+            kept: list[tuple[str, str, str | bytes]] = []
+            for sender, receiver, msg in self.receive:
+                if sender != party_name or remaining <= 0:
+                    kept.append((sender, receiver, msg))
+                elif len(msg) <= remaining:
+                    remaining -= len(msg)
+                else:
+                    kept.append((sender, receiver, msg[remaining:]))
+                    remaining = 0
+            self.receive = kept
 
     def transmit(
         self, sender: str, recipient: Optional[str], message: DerivationTree

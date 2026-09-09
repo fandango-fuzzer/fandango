@@ -166,18 +166,22 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         self._populate_sources(tree)
 
     def _populate_sources(self, tree: DerivationTree) -> None:
-        if self.is_use_generator(tree):
-            tree.sources = self.derive_sources(tree)
-            for child in tree.children:
-                child.set_all_read_only(True)
-            return
-        for child in tree.children:
-            self._populate_sources(child)
+        stack = [tree]
+        while stack:
+            node = stack.pop()
+            if self.is_use_generator(node):
+                node.sources = self.derive_sources(node)
+                for child in node.children:
+                    child.set_all_read_only(True)
+                continue
+            stack.extend(reversed(node.children))
 
     def _rec_remove_sources(self, tree: DerivationTree) -> None:
-        tree.sources = []
-        for child in tree.children:
-            self._rec_remove_sources(child)
+        stack = [tree]
+        while stack:
+            node = stack.pop()
+            node.sources = []
+            stack.extend(node.children)
 
     def generate_string(
         self,
