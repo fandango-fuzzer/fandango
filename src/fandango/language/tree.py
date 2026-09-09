@@ -783,9 +783,7 @@ class DerivationTree:
             and self.symbol == path_to_replacement[current_path].symbol
             and not self.read_only
         ):
-            new_subtree = path_to_replacement[current_path].deepcopy(
-                copy_children=True, copy_params=False, copy_parent=False
-            )
+            new_subtree = path_to_replacement[current_path].deepcopy(copy_parent=False)
             new_subtree._parent = self.parent
             new_subtree.origin_repetitions = list(self.origin_repetitions)
             new_children = []

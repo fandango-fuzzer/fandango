@@ -136,6 +136,12 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                 )
 
             dependent_generators[val.symbol] = self.generator_dependencies(val.symbol)
+        for symbol, dependencies in dependent_generators.items():
+            underivable = dependencies - dependent_generators.keys()
+            if underivable:
+                raise FandangoValueError(
+                    f"{symbol.format_as_spec()}: cannot be derived from {gen_symbol.format_as_spec()}, its generator needs {', '.join(s.format_as_spec() for s in underivable)}"
+                )
         dependent_gens = self._topological_sort(dependent_generators)
         dependent_gens.remove(gen_symbol)
 
@@ -162,22 +168,15 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         return generated.children
 
     def populate_sources(self, tree: DerivationTree) -> None:
-        self._rec_remove_sources(tree)
-        self._populate_sources(tree)
-
-    def _populate_sources(self, tree: DerivationTree) -> None:
         if self.is_use_generator(tree):
-            tree.sources = self.derive_sources(tree)
+            if not tree.sources:
+                tree.sources = self.derive_sources(tree)
             for child in tree.children:
                 child.set_all_read_only(True)
             return
-        for child in tree.children:
-            self._populate_sources(child)
-
-    def _rec_remove_sources(self, tree: DerivationTree) -> None:
         tree.sources = []
         for child in tree.children:
-            self._rec_remove_sources(child)
+            self.populate_sources(child)
 
     def generate_string(
         self,
