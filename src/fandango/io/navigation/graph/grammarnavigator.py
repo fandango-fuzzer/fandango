@@ -67,6 +67,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         self._ref_fwd: Optional[dict[str, set[str]]] = None
 
     _SUB_UNREACHABLE = 100_000
+    ANCESTOR_LOOKBACK = 6
 
     def _reference_graph(self) -> dict[str, set[str]]:
         """symbol -> set of non-terminals it directly references in its rule body."""
@@ -197,6 +198,14 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         strict = self._live_suffix_len(current_chain)
         if strict == search_len:
             return 0
+
+        # Inside an exchange the chain ends with symbols below the state, so the
+        # suffix no longer matches the k-path and every transition looks like a
+        # step back. Rate the node by the best match among its nearest ancestors.
+        # The goal test above stays exact.
+        for j in range(len(current_chain) - 1, max(len(current_chain) - self.ANCESTOR_LOOKBACK, 0), -1):
+            strict = max(strict, self._live_suffix_len(current_chain[:j]))
+        strict = min(strict, search_len - 1)
 
         chain_strs = [str(s) for s in current_chain]
 
