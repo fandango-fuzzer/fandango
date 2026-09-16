@@ -208,7 +208,10 @@ class PacketForecaster:
         else:
             self._parser.reference_tree = tree
             self._parser.new_parse(NonTerminal("<start>"), ParsingMode.INCOMPLETE)
-            for suggested_tree, is_complete in self._parser.consume(history_nts):
+            self._parser.consume(history_nts)
+            for suggested_tree, is_complete in self._parser.tree_at(
+                self._parser.consumed_length(), incomplete=True
+            ):
                 for orig_r_msg, r_msg in zip(
                     tree.protocol_msgs(), suggested_tree.protocol_msgs(), strict=False
                 ):

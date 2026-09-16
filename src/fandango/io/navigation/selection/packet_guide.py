@@ -48,6 +48,27 @@ class PacketGuide:
     def is_guide_to_end(self) -> bool:
         return self._guide_to_end
 
+    @property
+    def max_messages_per_tree(self) -> int:
+        return self._max_messages_per_tree
+
+    @max_messages_per_tree.setter
+    def max_messages_per_tree(self, count: int) -> None:
+        self._max_messages_per_tree = count
+
+    def reset(self) -> None:
+        """Forget the current guide target and the per-run k-path bookkeeping,
+        as after construction. find_packets() filters candidates by the
+        per-run set, so a stale set would leave only <end> as a candidate."""
+        self._history_tree = DerivationTree(NonTerminal("<start>"))
+        self._last_completed_tree = None
+        self._prev_completed_count = 0
+        self._guide_to_end = False
+        self._guide_target = None
+        self._guide_path = []
+        self._prev_session_msgs = []
+        self._session_covered_k_paths.clear()
+
     def select_next_packet(
         self,
         history_tree: DerivationTree,
@@ -133,7 +154,16 @@ class PacketGuide:
                 destination_k_path=self._guide_target,
                 included_k_paths=self._session_covered_k_paths,
             )
-            assert found_guide_path is not None
+            if found_guide_path is None:
+                # The target is not reachable from this tree; finish the run,
+                # the next one starts from scratch.
+                log_guidance_hint(
+                    "No path from the current tree to the selected k-path. Guiding to end of tree."
+                )
+                self._guide_target = None
+                self._guide_path = []
+                self._guide_to_end = True
+                return self._get_guide_to_end_packet()
             self._guide_path = found_guide_path
         self._guide_to_end = (
             len(list(filter(lambda p: p is None, self._guide_path))) > 0
