@@ -203,7 +203,11 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         # suffix no longer matches the k-path and every transition looks like a
         # step back. Rate the node by the best match among its nearest ancestors.
         # The goal test above stays exact.
-        for j in range(len(current_chain) - 1, max(len(current_chain) - self.ANCESTOR_LOOKBACK, 0), -1):
+        for j in range(
+            len(current_chain) - 1,
+            max(len(current_chain) - self.ANCESTOR_LOOKBACK, 0),
+            -1,
+        ):
             strict = max(strict, self._live_suffix_len(current_chain[:j]))
         strict = min(strict, search_len - 1)
 
