@@ -24,7 +24,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self,
         packet_algorithm: SimpleGeneticAlgorithm,
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS,
-        remote_response_timeout: int = 15,
+        remote_response_timeout: float = 15,
+        max_messages_per_tree: int = 200,
     ):
         self.CLEAR_CONSTRAINT_CACHE_INTERVAL = 100
         self.RANDOM_END_PROBABILITY = 0.5
@@ -44,6 +45,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             self._io_instance,
             self._protocol_tree,
             self._packet_algorithm.diversity_k,
+            max_messages_per_tree=max_messages_per_tree,
         )
         self._packet_selector.set_coverage_goal(self._coverage_goal)
         self._packet_coverage_filter = PacketCoverageFilter(
@@ -51,6 +53,40 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         )
         self.violations: list[tuple[DerivationTree, Exception]] = []
         self.throw_on_violation = False
+
+    @property
+    def coverage_goal(self) -> CoverageGoal:
+        return self._coverage_goal
+
+    def set_coverage_goal(self, goal: CoverageGoal) -> None:
+        """Switch the guidance mode, e.g. to CoverageGoal.RANDOM once every
+        k-path is covered. Takes effect with the next protocol run."""
+        self._coverage_goal = goal
+        self._packet_selector.set_coverage_goal(goal)
+
+    def coverage_percent(self) -> Optional[float]:
+        """Share of k-paths covered so far, in [0, 1]; None in RANDOM mode,
+        which does not track coverage."""
+        if self._coverage_goal == CoverageGoal.RANDOM:
+            return None
+        return self._packet_selector.coverage_percent()
+
+    @property
+    def max_messages_per_tree(self) -> int:
+        """Messages after which a protocol run is guided to its end."""
+        return self._packet_selector.max_messages_per_tree
+
+    @max_messages_per_tree.setter
+    def max_messages_per_tree(self, count: int) -> None:
+        self._packet_selector.max_messages_per_tree = count
+
+    @property
+    def remote_response_timeout(self) -> float:
+        return self._remote_response_timeout
+
+    @remote_response_timeout.setter
+    def remote_response_timeout(self, seconds: float) -> None:
+        self._remote_response_timeout = seconds
 
     def _is_protocol_run_complete(self) -> bool:
         if not self._packet_selector.is_complete():

@@ -24,6 +24,7 @@ class PacketSelector:
         io_instance: FandangoIO,
         history_tree: DerivationTree,
         diversity_k: int,
+        max_messages_per_tree: int = 200,
     ):
         self.start_symbol = NonTerminal("<start>")
         self.grammar = grammar
@@ -36,7 +37,7 @@ class PacketSelector:
             self._forecast,
             PacketNavigator(grammar, self.start_symbol),
             self._target_selector,
-            max_messages_per_tree=200,
+            max_messages_per_tree=max_messages_per_tree,
         )
         self.history_tree: DerivationTree = DerivationTree(NonTerminal("<start>"))
         self._last_completed_tree: Optional[DerivationTree] = None
@@ -77,6 +78,7 @@ class PacketSelector:
 
     def reset_coverage(self) -> None:
         self._coverage_tracker.reset()
+        self._guide.reset()
         self._last_completed_tree = None
         self._completed_count = 0
 
@@ -129,6 +131,14 @@ class PacketSelector:
 
     def coverage_percent(self) -> float:
         return self._coverage_tracker.coverage_percent()
+
+    @property
+    def max_messages_per_tree(self) -> int:
+        return self._guide.max_messages_per_tree
+
+    @max_messages_per_tree.setter
+    def max_messages_per_tree(self, count: int) -> None:
+        self._guide.max_messages_per_tree = count
 
     def set_coverage_goal(self, goal: CoverageGoal) -> None:
         self._coverage_goal = goal
