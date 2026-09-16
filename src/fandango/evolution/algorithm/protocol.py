@@ -27,7 +27,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         remote_response_timeout: int = 15,
     ):
         self.CLEAR_CONSTRAINT_CACHE_INTERVAL = 100
-        self.SINGLE_DERIVATION_END_PROBABILITY = 0.5
+        self.RANDOM_END_PROBABILITY = 0.5
         self._start_symbol = NonTerminal("<start>")
         self._packet_algorithm = packet_algorithm
         self.grammar = packet_algorithm.grammar
@@ -57,8 +57,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             return False
         if len(self._packet_selector.get_next_parties()) == 0:
             return True
-        if self._coverage_goal == CoverageGoal.SINGLE_DERIVATION:
-            return random.random() < self.SINGLE_DERIVATION_END_PROBABILITY
+        if self._coverage_goal == CoverageGoal.RANDOM:
+            return random.random() < self.RANDOM_END_PROBABILITY
         return self._packet_selector.is_guide_to_end()
 
     def _wait_for_remote_message(self, timeout: int) -> bool:
@@ -210,7 +210,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             ):
                 self._clear_constraint_caches()
             self._packet_selector.compute(self._protocol_tree)
-            if self._coverage_goal != CoverageGoal.SINGLE_DERIVATION:
+            if self._coverage_goal != CoverageGoal.RANDOM:
                 LOGGER.info(
                     f"Current coverage: {self._packet_selector.coverage_percent() * 100:.2f}%"
                 )
@@ -226,7 +226,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 self._packet_coverage_filter.add_completed_tree(final_tree)
                 yield final_tree
                 if (
-                    self._coverage_goal != CoverageGoal.SINGLE_DERIVATION
+                    self._coverage_goal != CoverageGoal.RANDOM
                     and self._packet_selector.coverage_percent() == 1.0
                 ):
                     log_guidance_hint("Full coverage reached, stopping evolution.")

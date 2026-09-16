@@ -86,7 +86,7 @@ class PacketSelector:
 
     def _ensure_next_packets(self) -> list[ForecastingPacket]:
         if self._next_packets is None:
-            if self._coverage_goal == CoverageGoal.SINGLE_DERIVATION:
+            if self._coverage_goal == CoverageGoal.RANDOM:
                 self._next_packets = self._guide.find_packets()
                 return self._next_packets
             self._next_packets = self._guide.select_next_packet(
