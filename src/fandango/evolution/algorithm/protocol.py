@@ -27,6 +27,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         remote_response_timeout: int = 15,
     ):
         self.CLEAR_CONSTRAINT_CACHE_INTERVAL = 100
+        self.SINGLE_DERIVATION_END_PROBABILITY = 0.5
         self._start_symbol = NonTerminal("<start>")
         self._packet_algorithm = packet_algorithm
         self.grammar = packet_algorithm.grammar
@@ -52,11 +53,13 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self.throw_on_violation = False
 
     def _is_protocol_run_complete(self) -> bool:
-        return (
-            len(self._packet_selector.get_next_parties()) == 0
-            or self._packet_selector.is_guide_to_end()
-            or self._coverage_goal == CoverageGoal.SINGLE_DERIVATION
-        ) and self._packet_selector.is_complete()
+        if not self._packet_selector.is_complete():
+            return False
+        if len(self._packet_selector.get_next_parties()) == 0:
+            return True
+        if self._coverage_goal == CoverageGoal.SINGLE_DERIVATION:
+            return random.random() < self.SINGLE_DERIVATION_END_PROBABILITY
+        return self._packet_selector.is_guide_to_end()
 
     def _wait_for_remote_message(self, timeout: int) -> bool:
         wait_start = time.time()
@@ -207,9 +210,10 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             ):
                 self._clear_constraint_caches()
             self._packet_selector.compute(self._protocol_tree)
-            LOGGER.info(
-                f"Current coverage: {self._packet_selector.coverage_percent() * 100:.2f}%"
-            )
+            if self._coverage_goal != CoverageGoal.SINGLE_DERIVATION:
+                LOGGER.info(
+                    f"Current coverage: {self._packet_selector.coverage_percent() * 100:.2f}%"
+                )
 
             if self._is_failed_forecast():
                 raise FandangoFailedError("Could not forecast next packet")
@@ -221,9 +225,10 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 self._packet_selector.add_completed_tree(final_tree)
                 self._packet_coverage_filter.add_completed_tree(final_tree)
                 yield final_tree
-                if self._coverage_goal == CoverageGoal.SINGLE_DERIVATION:
-                    return None
-                if self._packet_selector.coverage_percent() == 1.0:
+                if (
+                    self._coverage_goal != CoverageGoal.SINGLE_DERIVATION
+                    and self._packet_selector.coverage_percent() == 1.0
+                ):
                     log_guidance_hint("Full coverage reached, stopping evolution.")
                     return None
                 log_guidance_hint("Starting new protocol run.")
