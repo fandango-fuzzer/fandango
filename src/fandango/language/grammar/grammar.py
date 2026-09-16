@@ -1,5 +1,4 @@
 import itertools
-import random
 import warnings
 from collections import defaultdict
 from collections.abc import Generator, Iterator, Sequence
@@ -37,8 +36,6 @@ KPath = tuple[Symbol, ...]
 class Grammar(NodeVisitor[list[Node], list[Node]]):
     """Represent a grammar."""
 
-    use_message_k_path_cache = True
-
     def __init__(
         self,
         grammar_settings: Sequence[HasSettings],
@@ -57,11 +54,8 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         self._k_path_cache: LRUCache[
             tuple[NonTerminal, bool, CoverageGoal], list[set[tuple[Symbol, ...]]]
         ] = LRUCache(maxsize=cache_size())
-        self._tree_k_path_cache: LRUCache[int, set[tuple[Symbol, ...]]] = LRUCache(
-            maxsize=cache_size()
-        )
-        self._message_k_path_cache: LRUCache[int, set[tuple[Symbol, ...]]] = LRUCache(
-            maxsize=cache_size()
+        self._tree_k_path_cache: LRUCache[int, tuple[set[KPath], set[KPath]]] = (
+            LRUCache(maxsize=cache_size())
         )
 
     @property
@@ -810,216 +804,104 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         overlap_to_root: bool = False,
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
         input_parties: Optional[set[str]] = None,
-    ) -> set[tuple[Symbol, ...]]:
+    ) -> set[KPath]:
         """
         Extracts all k-length paths (k-paths) from a derivation tree.
         """
-        if input_parties is None:
-            input_parties = set()
-
-        if (
-            self.use_message_k_path_cache
-            and not overlap_to_root
-            and coverage_goal != CoverageGoal.INPUTS
-        ):
-            return self._k_paths_at_or_below(
-                tree, None, k, coverage_goal, frozenset(input_parties), cacheable=False
-            )
-
-        overlap_parent = tree
-        if overlap_to_root:
-            for _ in range(k - 1):
-                if overlap_parent.parent is not None:
-                    overlap_parent = overlap_parent.parent
-
-        hash_key = hash((tree, overlap_parent, k, overlap_to_root, coverage_goal))
-        if hash_key in self._tree_k_path_cache:
-            k_paths = self._tree_k_path_cache[hash_key]
-            return k_paths
-
-        start_nodes: list[tuple[Optional[NonTerminal], DerivationTree]] = []
-
-        def collect_start_nodes(tree_root: DerivationTree) -> None:
-            if not isinstance(tree_root.symbol, NonTerminal):
-                return
-            for child in tree_root.children:
-                if coverage_goal == CoverageGoal.INPUTS:
-                    if child.sender is not None and child.sender not in input_parties:
-                        continue
-                start_nodes.append((tree_root.symbol, child))
-                collect_start_nodes(child)
-
-        collect_start_nodes(tree)
-        start_nodes.append((None, tree))
-
+        parties = frozenset(input_parties or set())
         if coverage_goal == CoverageGoal.INPUTS:
-            input_symbol_starters = [
-                (parent, child)
-                for parent, child in start_nodes
-                if isinstance(child.symbol, NonTerminal)
-                and child.sender in input_parties
+            start_nodes = [
+                record.msg
+                for record in tree.protocol_msgs()
+                if record.sender in parties
             ]
-            start_nodes.clear()
-            for parent, child in input_symbol_starters:
-                collect_start_nodes(child)
-                start_nodes.append((parent, child))
+        else:
+            start_nodes = [tree]
 
-        paths: list[set[tuple[Symbol, ...]]] = [set() for _ in range(k)]
-
-        def traverse(
-            parent_symbol: Optional[NonTerminal],
-            tree_node: DerivationTree,
-            path: tuple[Symbol, ...],
-        ) -> None:
-            tree_symbol = tree_node.symbol
-            assert isinstance(tree_symbol, (Terminal, NonTerminal))
-            if isinstance(tree_symbol, Terminal):
-                if parent_symbol is None:
-                    raise RuntimeError(
-                        "Received a Terminal with no parent symbol when computing k-path!"
-                    )
-                symbol_value: str | bytes | int
-                if tree_symbol.value().is_type(TreeValueType.STRING):
-                    symbol_value = tree_symbol.value().to_string()
-                elif tree_symbol.value().is_type(TreeValueType.BYTES):
-                    symbol_value = tree_symbol.value().to_bytes()
-                else:
-                    symbol_value = tree_symbol.value().to_int()
-
-                parent_rule_nodes = NonTerminalNode(
-                    parent_symbol, self.grammar_settings
-                ).descendents(self, filter_controlflow=True)
-                parent_rule_terminals = [
-                    x for x in parent_rule_nodes if isinstance(x, TerminalNode)
-                ]
-                random.shuffle(parent_rule_terminals)
-                for rule_node in parent_rule_terminals:
-                    if rule_node.symbol.check(symbol_value, False)[0]:
-                        paths[len(path)].add(path + (rule_node.symbol,))
-                return
-            new_path = path + (tree_symbol,)
-            if len(new_path) <= k:
-                paths[len(new_path) - 1].add(new_path)
-                if len(new_path) == k:
-                    return
-            for child in tree_node.children:
-                if coverage_goal == CoverageGoal.STATE_INPUTS:
-                    if child.sender is not None and child.sender not in input_parties:
-                        continue
-                traverse(tree_symbol, child, new_path)
-
-        for parent, node in start_nodes:
-            traverse(parent, node, tuple())
-
-        k_paths = set()
-        for path_set in paths:
-            k_paths.update(path_set)
+        k_paths: set[KPath] = set()
+        for start_node in start_nodes:
+            _, at_or_below = self._k_paths_at_or_below(
+                start_node, None, k, coverage_goal, parties
+            )
+            k_paths |= at_or_below
 
         if overlap_to_root:
+            ancestor = tree
+            for _ in range(k - 1):
+                if ancestor.parent is not None:
+                    ancestor = ancestor.parent
             for path in self._extract_k_paths_from_tree(
-                overlap_parent,
-                k,
-                False,
-                coverage_goal=coverage_goal,
-                input_parties=input_parties,
+                ancestor, k, False, coverage_goal, input_parties
             ):
                 if tree.symbol in path:
                     k_paths.add(path)
-
-        self._tree_k_path_cache[hash_key] = k_paths
         return k_paths
 
     def _k_paths_at_or_below(
         self,
-        node: DerivationTree,
+        tree: DerivationTree,
         parent_symbol: Optional[NonTerminal],
         k: int,
         coverage_goal: CoverageGoal,
         input_parties: frozenset[str],
-        cacheable: bool,
-    ) -> set[tuple[Symbol, ...]]:
-        """k-paths starting at `node` or at any node below it."""
-        key = 0
-        if cacheable:
-            key = hash((node, parent_symbol, k, coverage_goal, input_parties))
-            cached = self._message_k_path_cache.get(key)
-            if cached is not None:
-                return cached
-        paths = self._k_paths_at(node, parent_symbol, k, coverage_goal, input_parties)
-        parent = node.symbol if isinstance(node.symbol, NonTerminal) else None
-        for child in node.children:
-            paths.update(
-                self._k_paths_at_or_below(
-                    child,
-                    parent,
-                    k,
-                    coverage_goal,
-                    input_parties,
-                    cacheable=child.sender is not None,
-                )
+    ) -> tuple[set[KPath], set[KPath]]:
+        """Returns the k-paths starting at `node` and the k-paths starting at or below `node`."""
+        symbol = tree.symbol
+        if isinstance(symbol, Terminal):
+            if parent_symbol is None:
+                return set(), set()
+            matching_paths: set[KPath] = {
+                (terminal,)
+                for terminal in self._rule_terminals_matching(parent_symbol, symbol)
+            }
+            return matching_paths, matching_paths
+        assert isinstance(symbol, NonTerminal)
+
+        cache_key = None
+        if tree.sender is not None or tree.parent is None:
+            cache_key = hash((tree, parent_symbol, k, coverage_goal, input_parties))
+            if cache_key in self._tree_k_path_cache:
+                return self._tree_k_path_cache[cache_key]
+
+        starting_here: set[KPath] = {(symbol,)}
+        at_or_below: set[KPath] = set()
+        for child in tree.children:
+            if coverage_goal == CoverageGoal.STATE_INPUTS:
+                if child.sender is not None and child.sender not in input_parties:
+                    continue
+            starting_at_child, at_or_below_child = self._k_paths_at_or_below(
+                child, symbol, k, coverage_goal, input_parties
             )
-        if cacheable:
-            self._message_k_path_cache[key] = paths
-        return paths
+            for path in starting_at_child:
+                if len(path) < k:
+                    starting_here.add((symbol,) + path)
+            at_or_below |= at_or_below_child
+        at_or_below |= starting_here
 
-    def _k_paths_at(
-        self,
-        node: DerivationTree,
-        parent_symbol: Optional[NonTerminal],
-        k: int,
-        coverage_goal: CoverageGoal,
-        input_parties: frozenset[str],
-    ) -> set[tuple[Symbol, ...]]:
-        """k-paths that start at `node` and run downwards."""
-        if isinstance(node.symbol, Terminal) and parent_symbol is None:
-            return set()
-        paths: list[set[tuple[Symbol, ...]]] = [set() for _ in range(k)]
+        if cache_key is not None:
+            self._tree_k_path_cache[cache_key] = (starting_here, at_or_below)
+        return starting_here, at_or_below
 
-        def traverse(
-            parent: Optional[NonTerminal],
-            tree_node: DerivationTree,
-            path: tuple[Symbol, ...],
-        ) -> None:
-            tree_symbol = tree_node.symbol
-            assert isinstance(tree_symbol, (Terminal, NonTerminal))
-            if isinstance(tree_symbol, Terminal):
-                if parent is None:
-                    raise RuntimeError(
-                        "Received a Terminal with no parent symbol when computing k-path!"
-                    )
-                symbol_value: str | bytes | int
-                if tree_symbol.value().is_type(TreeValueType.STRING):
-                    symbol_value = tree_symbol.value().to_string()
-                elif tree_symbol.value().is_type(TreeValueType.BYTES):
-                    symbol_value = tree_symbol.value().to_bytes()
-                else:
-                    symbol_value = tree_symbol.value().to_int()
-                parent_rule_nodes = NonTerminalNode(
-                    parent, self.grammar_settings
-                ).descendents(self, filter_controlflow=True)
-                for rule_node in parent_rule_nodes:
-                    if not isinstance(rule_node, TerminalNode):
-                        continue
-                    if rule_node.symbol.check(symbol_value, False)[0]:
-                        paths[len(path)].add(path + (rule_node.symbol,))
-                return
-            new_path = path + (tree_symbol,)
-            if len(new_path) <= k:
-                paths[len(new_path) - 1].add(new_path)
-                if len(new_path) == k:
-                    return
-            for child in tree_node.children:
-                if coverage_goal == CoverageGoal.STATE_INPUTS:
-                    if child.sender is not None and child.sender not in input_parties:
-                        continue
-                traverse(tree_symbol, child, new_path)
-
-        traverse(parent_symbol, node, tuple())
-        k_paths: set[tuple[Symbol, ...]] = set()
-        for path_set in paths:
-            k_paths.update(path_set)
-        return k_paths
-
+    def _rule_terminals_matching(
+        self, non_terminal: NonTerminal, terminal: Terminal
+    ) -> set[Terminal]:
+        """Returns the terminals in the rule of `non_terminal` that accept the value of `terminal`."""
+        value = terminal.value()
+        word: str | bytes | int
+        if value.is_type(TreeValueType.STRING):
+            word = value.to_string()
+        elif value.is_type(TreeValueType.BYTES):
+            word = value.to_bytes()
+        else:
+            word = value.to_int()
+        rule_nodes = NonTerminalNode(non_terminal, self.grammar_settings).descendents(
+            self, filter_controlflow=True
+        )
+        return {
+            rule_node.symbol
+            for rule_node in rule_nodes
+            if isinstance(rule_node, TerminalNode) and rule_node.symbol.check(word)[0]
+        }
 
     def prime(self) -> None:
         LOGGER.debug("Priming grammar")
