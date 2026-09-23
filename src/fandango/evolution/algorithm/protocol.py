@@ -97,7 +97,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             return random.random() < self.RANDOM_END_PROBABILITY
         return self._packet_selector.is_guide_to_end()
 
-    def _wait_for_remote_message(self, timeout: int) -> bool:
+    def _wait_for_remote_message(self, timeout: float) -> bool:
         wait_start = time.time()
         while not self._io_instance.received_msg():
             if time.time() - wait_start > timeout and timeout >= 0:
