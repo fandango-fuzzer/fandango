@@ -1,0 +1,142 @@
+FROM ubuntu:22.04 AS peach-fetch
+RUN apt-get -y update && apt-get -y install --no-install-recommends wget ca-certificates && \
+    wget -q https://software.intel.com/sites/landingpage/pintool/downloads/pin-3.20-98437-gf02b61307-gcc-linux.tar.gz -O /pin.tgz
+
+FROM debian:stretch AS peach-build
+ARG DEBIAN_FRONTEND=noninteractive
+RUN echo "deb http://archive.debian.org/debian/ stretch main" > /etc/apt/sources.list && \
+    echo "deb http://archive.debian.org/debian-security/ stretch/updates main" >> /etc/apt/sources.list && \
+    apt-get update -y && \
+    apt-get install -y git build-essential wget curl ca-certificates python ruby nodejs node-typescript \
+        apt-transport-https dirmngr gnupg
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF && \
+    echo "deb https://download.mono-project.com/repo/debian stable-stretch main" > /etc/apt/sources.list.d/mono-official-stable.list && \
+    apt-get update -y && apt-get install -y mono-devel && \
+    (mozroots --import --sync || true)
+RUN git clone https://gitlab.com/gitlab-org/security-products/protocol-fuzzer-ce.git /pfce && \
+    cd /pfce && git checkout 047a581e670169de6c65bba88afde6d9dd897bf6
+WORKDIR /pfce
+RUN cd paket/.paket && \
+    for f in paket.bootstrapper.exe paket.targets paket.exe Paket.Restore.targets; do \
+        wget -q https://github.com/fsprojects/Paket/releases/download/5.257.0/$f; done
+COPY --from=peach-fetch /pin.tgz /tmp/pin.tgz
+RUN tar -xzf /tmp/pin.tgz -C 3rdParty/pin && rm /tmp/pin.tgz && \
+    sed -i s/pin-3.19-98425-gcc-linux/pin-3.20-98437-gf02b61307-gcc-linux/g build/config/linux.py
+# patches:
+#  - bblocks.cpp: build fix from vanhauser-thc/peachpro.
+#  - BaseProgram.cs: accept mono 6.
+#  - ObjectCopier.cs: mono >= 5 marks the certain fields as readonly.
+#  - NLog 4.3.2 -> 4.5.11.
+RUN python - <<'PY'
+import io, re
+def patch(path, old, new, regex=False):
+    with io.open(path, encoding="utf-8-sig", newline="") as f:
+        src = f.read()
+    out = re.sub(old, new, src, count=1) if regex else src.replace(old, new, 1)
+    assert out != src, "patch failed: " + path
+    with io.open(path, "w", encoding="utf-8", newline="") as f:
+        f.write(out)
+
+patch("core/BasicBlocks/bblocks.cpp",
+      "STATIC_ASSERT(sizeof(size_t) == sizeof(ADDRINT));",
+      "static_assert(sizeof(size_t) == sizeof(ADDRINT), \"\");")
+patch("pro/Core/Runtime/BaseProgram.cs",
+      "var maxVer = new Version(5, 0, 0);", "var maxVer = new Version(7, 0, 0);")
+patch("core/Core/ObjectCopier.cs",
+      r"(\t+)else if \(fieldType\.IsValueType\)",
+      r"\1else if (fieldType.IsValueType && Array.Exists(fieldType.GetFields("
+      r"BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic), f => f.IsInitOnly))\n"
+      r"\1\texprs.Add(AssignField(fieldInfo, clone, Expression.Field(original, fieldInfo)));\n"
+      r"\g<0>", regex=True)
+patch("core/Core/ObjectCopier.cs",
+      r"(?s)var getType = typeof\(object\)\.GetMethod\(\"GetType\"\);\s*var getField = [^;]*;\s*(var setValue = [^;]*;)"
+      r".*?Expression\.Call\(\s*Expression\.Call\(\s*Expression\.Call\(clone, getType\),.*?\),\s*setValue,\s*clone,",
+      r"\1\n\t\t\tvar expr = Expression.Call(Expression.Constant(fieldInfo), setValue, Expression.Convert(clone, typeof(object)),",
+      regex=True)
+patch("paket/paket.dependencies", "nuget NLog 4.3.2", "nuget NLog 4.5.11")
+patch("paket/paket.lock", "    NLog (4.3.2)", "    NLog (4.5.11)")
+PY
+RUN (cd paket && (mono .paket/paket.exe restore || mono .paket/paket.exe restore)) && \
+    ./waf configure && ./waf build install --variant=linux_x86_64_release >/tmp/waf.log 2>&1 || (tail -60 /tmp/waf.log; exit 1)
+
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get -y update && \
+    apt-get -y install sudo \
+    apt-utils \
+    build-essential \
+    openssl \
+    git \
+    autoconf \
+    libgnutls28-dev \
+    libssl-dev \
+    python3.11 python3.11-dev python3-pip \
+    net-tools \
+    netcat \
+    ca-certificates \
+    wget
+
+RUN groupadd ubuntu && \
+    useradd -rm -d /home/ubuntu -s /bin/bash -g ubuntu -G sudo -u 1000 ubuntu -p "$(openssl passwd -1 ubuntu)"
+
+RUN chmod 777 /tmp
+
+RUN python3.11 -m pip install -U pip setuptools wheel
+
+RUN python3.11 -m pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org gcovr==8.6
+
+RUN apt-get -y install --no-install-recommends gnupg dirmngr && \
+    gpg --homedir /tmp --no-default-keyring --keyring /usr/share/keyrings/mono-official-archive-keyring.gpg \
+        --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF && \
+    echo "deb [signed-by=/usr/share/keyrings/mono-official-archive-keyring.gpg] https://download.mono-project.com/repo/ubuntu stable-focal main" \
+        > /etc/apt/sources.list.d/mono-official-stable.list && \
+    apt-get -y update && apt-get -y install --no-install-recommends mono-complete
+COPY --from=peach-build /pfce/output/linux_x86_64_release/bin /opt/peach
+RUN chown -R 1000:1000 /opt/peach
+
+ENV WORKDIR="/home/ubuntu"
+ENV LIGHTFTP_SRC="/home/ubuntu/LightFTP-fandango"
+
+COPY --chown=ubuntu:ubuntu gcov-flush-snippet.c ${WORKDIR}/gcov-flush-snippet.c
+
+RUN cd ${WORKDIR} && \
+    git clone https://github.com/hfiref0x/LightFTP.git LightFTP-fandango && \
+    cd LightFTP-fandango && \
+    git checkout c1732efe14884bfc3eb0736d19fe685318cc681f && \
+    LAST_INC=$(grep -n '^#include' src/main.c | tail -1 | cut -d: -f1) && \
+    head -n "$LAST_INC" src/main.c > src/main.c.new && \
+    cat ${WORKDIR}/gcov-flush-snippet.c >> src/main.c.new && \
+    tail -n +"$((LAST_INC + 1))" src/main.c >> src/main.c.new && \
+    mv src/main.c.new src/main.c && \
+    grep -q "_fandango_gcov_setup" src/main.c || (echo "ERROR: gcov hook injection failed" && exit 1) && \
+    cd src/Release && \
+    make CC=gcc CXX=g++ \
+        CFLAGS="-fprofile-arcs -ftest-coverage -O0 -g" \
+        CPPFLAGS="-fprofile-arcs -ftest-coverage" \
+        CXXFLAGS="-fprofile-arcs -ftest-coverage" \
+        LDFLAGS="-fprofile-arcs -ftest-coverage" clean all
+
+COPY --chown=ubuntu:ubuntu fftp.conf ${LIGHTFTP_SRC}/src/Release/fftp.conf
+
+RUN mkdir -p /home/ubuntu/ftpshare/dir_1/dir_2 && \
+    echo "I'm a file" > /home/ubuntu/ftpshare/exist_append.txt && \
+    echo "I'm a file" > /home/ubuntu/ftpshare/dir_1/dir_2/rn_1.txt && \
+    echo "I'm a file" > /home/ubuntu/ftpshare/dir_1/dir_2/rn_2.txt
+
+RUN mkdir -p /home/ubuntu/certificate && \
+    openssl req -x509 -newkey rsa:2048 \
+        -keyout /home/ubuntu/certificate/my.key \
+        -out /home/ubuntu/certificate/my.crt \
+        -days 3650 -subj "/CN=localhost" -passout pass:ubuntu
+
+COPY --chown=ubuntu:ubuntu peach-scripts/ /home/ubuntu/peach/
+
+RUN chown -R ubuntu:ubuntu ${LIGHTFTP_SRC} /home/ubuntu/ftpshare /home/ubuntu/certificate /home/ubuntu/peach && \
+    chmod -R u+rwX ${LIGHTFTP_SRC} && \
+    mkdir -p /home/ubuntu/cov_out && \
+    chown -R ubuntu:ubuntu /home/ubuntu/cov_out && \
+    chmod +x /home/ubuntu/peach/run_peach.sh
+
+USER ubuntu
+WORKDIR /home/ubuntu

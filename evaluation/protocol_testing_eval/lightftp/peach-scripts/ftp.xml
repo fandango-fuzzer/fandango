@@ -1,0 +1,969 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--Peach translation of fandango-scripts/ftp.fan (+ ftp_client.fan).-->
+<Peach xmlns="http://peachfuzzer.com/2012/Peach"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://peachfuzzer.com/2012/Peach peach.xsd">
+
+	<Import import="random"/>
+
+
+	<!-- <response_tail> ::= <space> <text> <crlf> -->
+	<DataModel name="response_tail">
+		<String name="space" value=" " token="true"/>
+		<String name="text"/>
+		<String name="crlf" value="&#13;&#10;" token="true"/>
+	</DataModel>
+
+	<!-- <file> ::= <filesystem_name> ('.' <filesystem_name>)?
+	     for APPE/RETR, where str(<file>) == "exist_append.txt" makes the extension mandatory.
+	     (Peach emits an element with minOccurs="0" zero times unless mutated.) -->
+	<DataModel name="file_exist_append">
+		<String name="filesystem_name" value="exist_append"/>
+		<Block name="extension">
+			<String name="dot" value="."/>
+			<String name="filesystem_name" value="txt"/>
+		</Block>
+	</DataModel>
+
+
+	<!-- <QUIT> ::= "QUIT" <crlf> -->
+	<DataModel name="QUIT">
+		<String name="verb" value="QUIT"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <USER> ::= "USER" <space> <word> <crlf>;  where str(<USER>.<word>) == "webadmin" -->
+	<DataModel name="USER">
+		<String name="verb" value="USER"/>
+		<String name="space" value=" "/>
+		<String name="word" value="webadmin"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <PASS> ::= "PASS" <space> <text> <crlf>;  where str(<PASS>.<text>) == "ubuntu" -->
+	<DataModel name="PASS">
+		<String name="verb" value="PASS"/>
+		<String name="space" value=" "/>
+		<String name="text" value="ubuntu"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <PORT> ::= "PORT" <space> <ip_6_tuple> <crlf>
+	     <ip_6_tuple> ::= <ip_number_1> "," <ip_number> "," <ip_number> "," <ip_number> "," <port_nr_1> "," <port_nr_2>
+	     where ip_number < 256, ip_number_1 > 0, 1023 < port_nr_1 * 256 + port_nr_2 < 65536 -->
+	<DataModel name="PORT">
+		<String name="verb" value="PORT"/>
+		<String name="space" value=" "/>
+		<Block name="ip_6_tuple">
+			<String name="ip_number_1" value="127"/>
+			<String name="comma1" value=","/>
+			<String name="ip_number2" value="0"/>
+			<String name="comma2" value=","/>
+			<String name="ip_number3" value="0"/>
+			<String name="comma3" value=","/>
+			<String name="ip_number4" value="1"/>
+			<String name="comma4" value=","/>
+			<String name="port_nr_1" value="195"/>
+			<String name="comma5" value=","/>
+			<String name="port_nr_2" value="80"/>
+		</Block>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <RNFR> ::= "RNFR" <space> <dir_file> <crlf>
+	     where str(<RNFR>.<dir_file>) == "dir_1/dir_2/rn_1.txt" or ... == "dir_1/dir_2/rn_2.txt" -->
+	<DataModel name="RNFR">
+		<String name="verb" value="RNFR"/>
+		<String name="space" value=" "/>
+		<Choice name="dir_file">
+			<String name="rn_1" value="dir_1/dir_2/rn_1.txt"/>
+			<String name="rn_2" value="dir_1/dir_2/rn_2.txt"/>
+		</Choice>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <RNTO> ::= "RNTO" <space> <dir_file> <crlf>
+	     where str(<RNTO>.<dir_file>) == "dir_1/dir_2/rn_1.txt" or ... == "dir_1/dir_2/rn_2.txt" -->
+	<DataModel name="RNTO">
+		<String name="verb" value="RNTO"/>
+		<String name="space" value=" "/>
+		<Choice name="dir_file">
+			<String name="rn_2" value="dir_1/dir_2/rn_2.txt"/>
+			<String name="rn_1" value="dir_1/dir_2/rn_1.txt"/>
+		</Choice>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <DELE> ::= "DELE" <space> <file> <crlf>;  where str(<DELE>.<file>) != "exist_append.txt" -->
+	<DataModel name="DELE">
+		<String name="verb" value="DELE"/>
+		<String name="space" value=" "/>
+		<Block name="file">
+			<String name="filesystem_name" value="deleted"/>
+			<Block name="extension" minOccurs="0" maxOccurs="1">
+				<String name="dot" value="."/>
+				<String name="filesystem_name" value="txt"/>
+			</Block>
+		</Block>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <CDUP> ::= "CDUP" <crlf> -->
+	<DataModel name="CDUP">
+		<String name="verb" value="CDUP"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <CWD> ::= "CWD" <space> <directory> <crlf>
+	     <directory> ::= "/" | "/"? <filesystem_name> ("/" <filesystem_name>)* "/"? -->
+	<DataModel name="CWD">
+		<String name="verb" value="CWD"/>
+		<String name="space" value=" "/>
+		<Choice name="directory">
+			<Block name="path">
+				<String name="leading_slash" value="/" minOccurs="0" maxOccurs="1"/>
+				<String name="filesystem_name" value="dir_1"/>
+				<Block name="subdirectory" minOccurs="0" maxOccurs="-1">
+					<String name="slash" value="/"/>
+					<String name="filesystem_name" value="dir_2"/>
+				</Block>
+				<String name="trailing_slash" value="/" minOccurs="0" maxOccurs="1"/>
+			</Block>
+			<String name="root" value="/"/>
+		</Choice>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <PWD> ::= "PWD" <crlf> -->
+	<DataModel name="PWD">
+		<String name="verb" value="PWD"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <MKD> ::= "MKD" <space> <filesystem_name> <crlf> -->
+	<DataModel name="MKD">
+		<String name="verb" value="MKD"/>
+		<String name="space" value=" "/>
+		<String name="filesystem_name" value="dir_3"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <RMD> ::= "RMD" <space> <filesystem_name> <crlf> -->
+	<DataModel name="RMD">
+		<String name="verb" value="RMD"/>
+		<String name="space" value=" "/>
+		<String name="filesystem_name" value="dir_3"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <SYST> ::= "SYST" <crlf> -->
+	<DataModel name="SYST">
+		<String name="verb" value="SYST"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <HELP> ::= "HELP" <crlf> -->
+	<DataModel name="HELP">
+		<String name="verb" value="HELP"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <NOOP> ::= "NOOP" <crlf> -->
+	<DataModel name="NOOP">
+		<String name="verb" value="NOOP"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <SITE> ::= "SITE" <space> <text> <crlf>;  where str(<SITE>.<text>) == "HELP" -->
+	<DataModel name="SITE">
+		<String name="verb" value="SITE"/>
+		<String name="space" value=" "/>
+		<String name="text" value="HELP"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <TYPE> ::= "TYPE" <space> ("A" (<space> "N")? | "I") <crlf> -->
+	<DataModel name="TYPE">
+		<String name="verb" value="TYPE"/>
+		<String name="space" value=" "/>
+		<Choice name="type">
+			<Block name="ascii">
+				<String name="A" value="A"/>
+				<Block name="non_print" minOccurs="0" maxOccurs="1">
+					<String name="space" value=" "/>
+					<String name="N" value="N"/>
+				</Block>
+			</Block>
+			<String name="I" value="I"/>
+		</Choice>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <PASV> ::= "PASV" <crlf> -->
+	<DataModel name="PASV">
+		<String name="verb" value="PASV"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <ABOR> ::= "ABOR" <crlf> -->
+	<DataModel name="ABOR">
+		<String name="verb" value="ABOR"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <APPE> ::= "APPE" <space> <file> <crlf>;  where str(<APPE>.<file>) == "exist_append.txt" -->
+	<DataModel name="APPE">
+		<String name="verb" value="APPE"/>
+		<String name="space" value=" "/>
+		<Block name="file" ref="file_exist_append"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <LIST> ::= "LIST" (<space> <directory>)? <crlf>
+	     where str(<LIST>.<directory>) == "dir_1" or str(<LIST>.<directory>) == "dir_1/dir_2" -->
+	<DataModel name="LIST">
+		<String name="verb" value="LIST"/>
+		<Block name="argument" minOccurs="0" maxOccurs="1">
+			<String name="space" value=" "/>
+			<Choice name="directory">
+				<String name="dir_1" value="dir_1"/>
+				<String name="dir_1_dir_2" value="dir_1/dir_2"/>
+			</Choice>
+		</Block>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <REST> ::= "REST" <space> <marker> <crlf>;  <marker> ::= r"[a-zA-Z0-9\-\.]+" -->
+	<DataModel name="REST">
+		<String name="verb" value="REST"/>
+		<String name="space" value=" "/>
+		<String name="marker" value="0"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <RETR> ::= "RETR" <space> <file> <crlf>;  where str(<RETR>.<file>) == "exist_append.txt" -->
+	<DataModel name="RETR">
+		<String name="verb" value="RETR"/>
+		<String name="space" value=" "/>
+		<Block name="file" ref="file_exist_append"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <STOR> ::= "STOR" <space> <file> <crlf> -->
+	<DataModel name="STOR">
+		<String name="verb" value="STOR"/>
+		<String name="space" value=" "/>
+		<Block name="file">
+			<String name="filesystem_name" value="stored"/>
+			<Block name="extension" minOccurs="0" maxOccurs="1">
+				<String name="dot" value="."/>
+				<String name="filesystem_name" value="txt"/>
+			</Block>
+		</Block>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <FEAT> ::= "FEAT" <crlf> -->
+	<DataModel name="FEAT">
+		<String name="verb" value="FEAT"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <SIZE> ::= "SIZE" <space> <dir_file> <crlf>;  <dir_file> ::= (<directory> '/')? <file> -->
+	<DataModel name="SIZE">
+		<String name="verb" value="SIZE"/>
+		<String name="space" value=" "/>
+		<Block name="dir_file">
+			<Block name="dir" minOccurs="0" maxOccurs="1">
+				<String name="directory" value="dir_1/dir_2"/>
+				<String name="slash" value="/"/>
+			</Block>
+			<Block name="file">
+				<String name="filesystem_name" value="rn_1"/>
+				<Block name="extension" minOccurs="0" maxOccurs="1">
+					<String name="dot" value="."/>
+					<String name="filesystem_name" value="txt"/>
+				</Block>
+			</Block>
+		</Block>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <OPTS> ::= "OPTS" <space> <text> <crlf> -->
+	<DataModel name="OPTS">
+		<String name="verb" value="OPTS"/>
+		<String name="space" value=" "/>
+		<String name="text" value="UTF8 ON"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <MLSD> ::= "MLSD" (<space> <directory>)? <crlf>
+	     where str(<MLSD>.<directory>) == "dir_1" or str(<MLSD>.<directory>) == "dir_1/dir_2" -->
+	<DataModel name="MLSD">
+		<String name="verb" value="MLSD"/>
+		<Block name="argument" minOccurs="0" maxOccurs="1">
+			<String name="space" value=" "/>
+			<Choice name="directory">
+				<String name="dir_1" value="dir_1"/>
+				<String name="dir_1_dir_2" value="dir_1/dir_2"/>
+			</Choice>
+		</Block>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <AUTH_TLS> ::= "AUTH" <space> "TLS" <crlf> -->
+	<DataModel name="AUTH_TLS">
+		<String name="verb" value="AUTH"/>
+		<String name="space" value=" "/>
+		<String name="TLS" value="TLS"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <PBSZ> ::= "PBSZ" <space> <number> <crlf>;  <number> ::= r"(0|[1-9][0-9]*)" -->
+	<DataModel name="PBSZ">
+		<String name="verb" value="PBSZ"/>
+		<String name="space" value=" "/>
+		<String name="number" value="0"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <PROT> ::= "PROT" <space> ("C" | "P") <crlf> -->
+	<DataModel name="PROT">
+		<String name="verb" value="PROT"/>
+		<String name="space" value=" "/>
+		<Choice name="level">
+			<String name="P" value="P"/>
+			<String name="C" value="C"/>
+		</Choice>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <EPSV> ::= "EPSV" <crlf> -->
+	<DataModel name="EPSV">
+		<String name="verb" value="EPSV"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <APPE_data> ::= r"[\s\S]*" := 'appended by fandango\r\n' -->
+	<DataModel name="APPE_data">
+		<String name="data" value="appended by fandango&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <STOR_data> ::= r"[\s\S]*" := 'stored by fandango\r\n' -->
+	<DataModel name="STOR_data">
+		<String name="data" value="stored by fandango&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <greeting_block> ::= '220' <response_tail> -->
+	<DataModel name="greeting_block">
+		<String name="code" value="220" token="true"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <USER_response> ::= '331' <response_tail> -->
+	<DataModel name="USER_response">
+		<String name="code" value="331" token="true"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <PASS_response> ::= '230' <response_tail> -->
+	<DataModel name="PASS_response">
+		<String name="code" value="230" token="true"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <QUIT_response> ::= '221' <response_tail> -->
+	<DataModel name="QUIT_response">
+		<String name="code" value="221" token="true"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <CDUP_response> ::= r'(200|250)' <response_tail> -->
+	<DataModel name="CDUP_response">
+		<String name="code" length="3" constraint="value in ('200', '250')"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <PWD_response> ::= '257' <response_tail> -->
+	<DataModel name="PWD_response">
+		<String name="code" value="257" token="true"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <SYST_response> ::= '215' <response_tail> -->
+	<DataModel name="SYST_response">
+		<String name="code" value="215" token="true"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <NOOP_response> ::= '200' <response_tail> -->
+	<DataModel name="NOOP_response">
+		<String name="code" value="200" token="true"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <SITE_response> ::= '200' <response_tail> -->
+	<DataModel name="SITE_response">
+		<String name="code" value="200" token="true"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <TYPE_response> ::= '200' <response_tail> -->
+	<DataModel name="TYPE_response">
+		<String name="code" value="200" token="true"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <ABOR_response> ::= r'(225|226)' <response_tail> -->
+	<DataModel name="ABOR_response">
+		<String name="code" length="3" constraint="value in ('225', '226')"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <AUTH_TLS_response> ::= '234' <response_tail> -->
+	<DataModel name="AUTH_TLS_response">
+		<String name="code" value="234" token="true"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <PBSZ_response> ::= r'(200|500|501|503|421|530)' <response_tail> -->
+	<DataModel name="PBSZ_response">
+		<String name="code" length="3" constraint="value in ('200', '500', '501', '503', '421', '530')"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <RNFR_response> ::= r'(350|450|550|500|501|502|421|530)' <response_tail> -->
+	<DataModel name="RNFR_response">
+		<String name="code" length="3" constraint="value in ('350', '450', '550', '500', '501', '502', '421', '530')"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <RNTO_response> ::= r'(250|532|553|500|501|502|503|421|530)' <response_tail> -->
+	<DataModel name="RNTO_response">
+		<String name="code" length="3" constraint="value in ('250', '532', '553', '500', '501', '502', '503', '421', '530')"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <DELE_response> ::= r'(250|450|550|500|501|502|421|530)' <response_tail> -->
+	<DataModel name="DELE_response">
+		<String name="code" length="3" constraint="value in ('250', '450', '550', '500', '501', '502', '421', '530')"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <CWD_response> ::= r'(250|500|501|502|421|530|550)' <response_tail> -->
+	<DataModel name="CWD_response">
+		<String name="code" length="3" constraint="value in ('250', '500', '501', '502', '421', '530', '550')"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <MKD_response> ::= r'(257|500|501|502|421|530|550)' <response_tail> -->
+	<DataModel name="MKD_response">
+		<String name="code" length="3" constraint="value in ('257', '500', '501', '502', '421', '530', '550')"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <RMD_response> ::= r'(250|500|501|502|421|530|550)' <response_tail> -->
+	<DataModel name="RMD_response">
+		<String name="code" length="3" constraint="value in ('250', '500', '501', '502', '421', '530', '550')"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <SIZE_response> ::= r'(213|550|500|501|421|530)' <response_tail> -->
+	<DataModel name="SIZE_response">
+		<String name="code" length="3" constraint="value in ('213', '550', '500', '501', '421', '530')"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <OPTS_response> ::= r'(200|451|500|501|502|421)' <response_tail> -->
+	<DataModel name="OPTS_response">
+		<String name="code" length="3" constraint="value in ('200', '451', '500', '501', '502', '421')"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <PORT_response> ::= r'(200|500|501|421|530)' <response_tail> -->
+	<DataModel name="PORT_response">
+		<String name="code" length="3" constraint="value in ('200', '500', '501', '421', '530')"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <PROT_response> ::= r'(200|536|534|504|503|431|500|501|421|530)' <response_tail> -->
+	<DataModel name="PROT_response">
+		<String name="code" length="3" constraint="value in ('200', '536', '534', '504', '503', '431', '500', '501', '421', '530')"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <REST_response> ::= r'(350|500|501|502|421|530)' <response_tail> -->
+	<DataModel name="REST_response">
+		<String name="code" length="3" constraint="value in ('350', '500', '501', '502', '421', '530')"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <Response_150> ::= r'(125|150)' <response_tail> -->
+	<DataModel name="Response_150">
+		<String name="code" length="3" constraint="value in ('125', '150')"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <Response_226> ::= r'(226|250)' <response_tail> -->
+	<DataModel name="Response_226">
+		<String name="code" length="3" constraint="value in ('226', '250')"/>
+		<Block name="response_tail" ref="response_tail"/>
+	</DataModel>
+
+	<!-- <FEAT_response> ::= r"211[\s\S]*" -->
+	<DataModel name="FEAT_response">
+		<String name="code" value="211" token="true"/>
+		<Blob name="rest"/>
+	</DataModel>
+
+	<!-- <HELP_response> ::= r"(211|214)[\s\S]*" -->
+	<DataModel name="HELP_response">
+		<String name="code" length="3" constraint="value in ('211', '214')"/>
+		<Blob name="rest"/>
+	</DataModel>
+
+	<!-- <PASV_response> ::= '227 Entering Passive Mode (' <pasv_socket> ').' <crlf>
+	     <socket_addr> ::= <pasv_ip_1> "," <pasv_ip_2> "," <pasv_ip_3> "," <pasv_ip_4> "," <pasv_port_hi> "," <pasv_port_lo> -->
+	<DataModel name="PASV_response">
+		<String name="prefix" value="227 Entering Passive Mode (" token="true"/>
+		<Block name="pasv_socket">
+			<String name="pasv_ip_1"/>
+			<String name="comma1" value="," token="true"/>
+			<String name="pasv_ip_2"/>
+			<String name="comma2" value="," token="true"/>
+			<String name="pasv_ip_3"/>
+			<String name="comma3" value="," token="true"/>
+			<String name="pasv_ip_4"/>
+			<String name="comma4" value="," token="true"/>
+			<String name="pasv_port_hi"/>
+			<String name="comma5" value="," token="true"/>
+			<String name="pasv_port_lo"/>
+		</Block>
+		<String name="suffix" value=")." token="true"/>
+		<String name="crlf" value="&#13;&#10;" token="true"/>
+	</DataModel>
+
+	<!-- <EPSV_response> ::= '229 Entering Extended Passive Mode (|||' <open_port> '|)\r\n' -->
+	<DataModel name="EPSV_response">
+		<String name="prefix" value="229 Entering Extended Passive Mode (|||" token="true"/>
+		<String name="open_port"/>
+		<String name="suffix" value="|)&#13;&#10;" token="true"/>
+	</DataModel>
+
+	<!-- <LIST_data> / <RETR_data> / <MLSD_data> ::= r"[\s\S]*" -->
+	<DataModel name="LIST_data">
+		<Blob name="data"/>
+	</DataModel>
+	<DataModel name="RETR_data">
+		<Blob name="data"/>
+	</DataModel>
+	<DataModel name="MLSD_data">
+		<Blob name="data"/>
+	</DataModel>
+
+	<StateModel name="start" initialState="banner_exchange">
+
+		<!-- <start> ::= <banner_exchange> <unauthenticated_state>
+		     <banner_exchange> ::= <ServerControl:greeting_block> -->
+		<State name="banner_exchange">
+			<Action type="input" publisher="Control"><DataModel ref="greeting_block"/></Action>
+			<Action type="changeState" ref="unauthenticated_state"/>
+		</State>
+
+		<!-- <unauthenticated_exchanges> ::= <AUTH_exchange> <authenticated_state>
+		                                  | <AUTH_TLS_upgrade> <unauthenticated_tls_state> -->
+		<State name="unauthenticated_state">
+			<Action type="changeState" ref="AUTH_exchange" when="random.randrange(2) == 0"/>
+			<Action type="changeState" ref="AUTH_TLS_upgrade"/>
+		</State>
+
+		<!-- <AUTH_TLS_upgrade> ::= <ClientControl:AUTH_TLS> <ServerControl:AUTH_TLS_response> <SocketControlClient:AUTH_TLS_negotiate>
+		     <unauthenticated_tls_state> ::= <AUTH_exchange> <authenticated_state>
+		     (AUTH_TLS_negotiate is done by ftp_proxy.py once it relays the 234.) -->
+		<State name="AUTH_TLS_upgrade">
+			<Action type="output" publisher="Control"><DataModel ref="AUTH_TLS"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="AUTH_TLS_response"/></Action>
+			<Action type="changeState" ref="AUTH_exchange"/>
+		</State>
+
+		<!-- <AUTH_exchange> ::= <ClientControl:USER> <ServerControl:USER_response> <ClientControl:PASS> <ServerControl:PASS_response> -->
+		<State name="AUTH_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="USER"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="USER_response"/></Action>
+			<Action type="output" publisher="Control"><DataModel ref="PASS"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="PASS_response"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+
+		<!-- <authenticated_state> ::= (<control_exchanges> <authenticated_state>)
+		                             | ((<PASV_exchange> | <EPSV_exchange>) <data_exchanges> <authenticated_state>)
+		                             | <QUIT_exchange> -->
+		<State name="authenticated_state">
+			<Action type="changeState" ref="control_exchanges" when="random.randrange(3) == 0"/>
+			<Action type="changeState" ref="passive_exchanges" when="random.randrange(2) == 0"/>
+			<Action type="changeState" ref="QUIT_exchange"/>
+		</State>
+
+		<!-- <control_exchanges> ::= (<PROT_exchange> | <PBSZ_exchange> | <OPTS_exchange> | <FEAT_exchange>
+		                         | <SIZE_exchange> | <REST_exchange> | <TYPE_exchange> | <SITE_exchange>
+		                         | <NOOP_exchange> | <SYST_exchange> | <PORT_exchange> | <HELP_exchange>
+		                         | (<RNFR_exchange> <RNTO_exchange>?) | <RMD_exchange> | <MKD_exchange>
+		                         | <PWD_exchange> | <CWD_exchange> | <CDUP_exchange> | <DELE_exchange>) -->
+		<State name="control_exchanges">
+			<Action type="changeState" ref="PROT_exchange" when="random.randrange(19) == 0"/>
+			<Action type="changeState" ref="PBSZ_exchange" when="random.randrange(18) == 0"/>
+			<Action type="changeState" ref="OPTS_exchange" when="random.randrange(17) == 0"/>
+			<Action type="changeState" ref="FEAT_exchange" when="random.randrange(16) == 0"/>
+			<Action type="changeState" ref="SIZE_exchange" when="random.randrange(15) == 0"/>
+			<Action type="changeState" ref="REST_exchange" when="random.randrange(14) == 0"/>
+			<Action type="changeState" ref="TYPE_exchange" when="random.randrange(13) == 0"/>
+			<Action type="changeState" ref="SITE_exchange" when="random.randrange(12) == 0"/>
+			<Action type="changeState" ref="NOOP_exchange" when="random.randrange(11) == 0"/>
+			<Action type="changeState" ref="SYST_exchange" when="random.randrange(10) == 0"/>
+			<Action type="changeState" ref="PORT_exchange" when="random.randrange(9) == 0"/>
+			<Action type="changeState" ref="HELP_exchange" when="random.randrange(8) == 0"/>
+			<Action type="changeState" ref="RNFR_exchange" when="random.randrange(7) == 0"/>
+			<Action type="changeState" ref="RMD_exchange" when="random.randrange(6) == 0"/>
+			<Action type="changeState" ref="MKD_exchange" when="random.randrange(5) == 0"/>
+			<Action type="changeState" ref="PWD_exchange" when="random.randrange(4) == 0"/>
+			<Action type="changeState" ref="CWD_exchange" when="random.randrange(3) == 0"/>
+			<Action type="changeState" ref="CDUP_exchange" when="random.randrange(2) == 0"/>
+			<Action type="changeState" ref="DELE_exchange"/>
+		</State>
+
+		<!-- <PROT_exchange> ::= <ClientControl:PROT> <ServerControl:PROT_response> -->
+		<State name="PROT_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="PROT"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="PROT_response"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+
+		<!-- <PBSZ_exchange> ::= <ClientControl:PBSZ> <ServerControl:PBSZ_response> -->
+		<State name="PBSZ_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="PBSZ"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="PBSZ_response"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+
+		<!-- <OPTS_exchange> ::= <ClientControl:OPTS> <ServerControl:OPTS_response> -->
+		<State name="OPTS_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="OPTS"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="OPTS_response"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+
+		<!-- <FEAT_exchange> ::= <ClientControl:FEAT> <ServerControl:FEAT_response> -->
+		<State name="FEAT_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="FEAT"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="FEAT_response"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+
+		<!-- <SIZE_exchange> ::= <ClientControl:SIZE> <ServerControl:SIZE_response> -->
+		<State name="SIZE_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="SIZE"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="SIZE_response"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+
+		<!-- <REST_exchange> ::= <ClientControl:REST> <ServerControl:REST_response> -->
+		<State name="REST_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="REST"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="REST_response"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+
+		<!-- <TYPE_exchange> ::= <ClientControl:TYPE> <ServerControl:TYPE_response> -->
+		<State name="TYPE_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="TYPE"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="TYPE_response"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+
+		<!-- <SITE_exchange> ::= <ClientControl:SITE> <ServerControl:SITE_response> -->
+		<State name="SITE_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="SITE"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="SITE_response"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+
+		<!-- <NOOP_exchange> ::= <ClientControl:NOOP> <ServerControl:NOOP_response> -->
+		<State name="NOOP_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="NOOP"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="NOOP_response"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+
+		<!-- <SYST_exchange> ::= <ClientControl:SYST> <ServerControl:SYST_response> -->
+		<State name="SYST_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="SYST"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="SYST_response"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+
+		<!-- <PORT_exchange> ::= <ClientControl:PORT> <ServerControl:PORT_response> -->
+		<State name="PORT_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="PORT"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="PORT_response"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+
+		<!-- <HELP_exchange> ::= <ClientControl:HELP> <ServerControl:HELP_response> -->
+		<State name="HELP_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="HELP"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="HELP_response"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+
+		<!-- (<RNFR_exchange> <RNTO_exchange>?)
+		     <RNFR_exchange> ::= <ClientControl:RNFR> <ServerControl:RNFR_response> -->
+		<State name="RNFR_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="RNFR"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="RNFR_response"/></Action>
+			<Action type="changeState" ref="RNTO_exchange" when="random.randrange(2) == 0"/>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+
+		<!-- <RNTO_exchange> ::= <ClientControl:RNTO> <ServerControl:RNTO_response> -->
+		<State name="RNTO_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="RNTO"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="RNTO_response"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+
+		<!-- <RMD_exchange> ::= <ClientControl:RMD> <ServerControl:RMD_response> -->
+		<State name="RMD_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="RMD"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="RMD_response"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+
+		<!-- <MKD_exchange> ::= <ClientControl:MKD> <ServerControl:MKD_response> -->
+		<State name="MKD_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="MKD"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="MKD_response"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+
+		<!-- <PWD_exchange> ::= <ClientControl:PWD> <ServerControl:PWD_response> -->
+		<State name="PWD_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="PWD"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="PWD_response"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+
+		<!-- <CWD_exchange> ::= <ClientControl:CWD> <ServerControl:CWD_response> -->
+		<State name="CWD_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="CWD"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="CWD_response"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+
+		<!-- <CDUP_exchange> ::= <ClientControl:CDUP> <ServerControl:CDUP_response> -->
+		<State name="CDUP_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="CDUP"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="CDUP_response"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+
+		<!-- <DELE_exchange> ::= <ClientControl:DELE> <ServerControl:DELE_response> -->
+		<State name="DELE_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="DELE"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="DELE_response"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+
+		<!-- (<PASV_exchange> | <EPSV_exchange>) <data_exchanges> <authenticated_state> -->
+		<State name="passive_exchanges">
+			<Action type="changeState" ref="PASV_exchange" when="random.randrange(2) == 0"/>
+			<Action type="changeState" ref="EPSV_exchange"/>
+		</State>
+
+		<!-- <PASV_exchange> ::= <ClientControl:PASV> <ServerControl:PASV_response>
+		     The data connection is opened once the reply names the port (set_pasv_socket). -->
+		<State name="PASV_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="PASV"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="PASV_response"/></Action>
+			<Action type="open" publisher="Data"/>
+			<Action type="changeState" ref="data_exchanges"/>
+		</State>
+
+		<!-- <EPSV_exchange> ::= <ClientControl:EPSV> <ServerControl:EPSV_response>
+		     The data connection is opened once the reply names the port (open_data_port). -->
+		<State name="EPSV_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="EPSV"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="EPSV_response"/></Action>
+			<Action type="open" publisher="Data"/>
+			<Action type="changeState" ref="data_exchanges"/>
+		</State>
+
+		<!-- <data_exchanges> ::= <STOR_exchange> | <LIST_exchange> | <ABOR_exchange>
+		                        | <APPE_exchange> | <RETR_exchange> | <MLSD_exchange> -->
+		<State name="data_exchanges">
+			<Action type="changeState" ref="STOR_exchange" when="random.randrange(6) == 0"/>
+			<Action type="changeState" ref="LIST_exchange" when="random.randrange(5) == 0"/>
+			<Action type="changeState" ref="ABOR_exchange" when="random.randrange(4) == 0"/>
+			<Action type="changeState" ref="APPE_exchange" when="random.randrange(3) == 0"/>
+			<Action type="changeState" ref="RETR_exchange" when="random.randrange(2) == 0"/>
+			<Action type="changeState" ref="MLSD_exchange"/>
+		</State>
+
+		<!-- <STOR_exchange> ::= <ClientControl:STOR> <ServerControl:Response_150> <ClientData:STOR_data>*
+		                         (<close_data_either> <ServerControl:Response_226>
+		                          | <ServerControl:Response_226> <ClientData:STOR_data>* <close_data_either>) -->
+		<State name="STOR_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="STOR"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="Response_150"/></Action>
+			<Action type="changeState" ref="STOR_data"/>
+		</State>
+		<!-- <ClientData:STOR_data>* -->
+		<State name="STOR_data">
+			<Action type="changeState" ref="STOR_data_item" when="random.randrange(2) == 0"/>
+			<Action type="changeState" ref="STOR_close_then_226" when="random.randrange(2) == 0"/>
+			<Action type="changeState" ref="STOR_226_then_close"/>
+		</State>
+		<State name="STOR_data_item">
+			<Action type="output" publisher="Data"><DataModel ref="STOR_data"/></Action>
+			<Action type="changeState" ref="STOR_data"/>
+		</State>
+		<!-- <close_data_either> <ServerControl:Response_226> -->
+		<State name="STOR_close_then_226">
+			<Action type="close" publisher="Data"/>
+			<Action type="input" publisher="Control"><DataModel ref="Response_226"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+		<!-- <ServerControl:Response_226> <ClientData:STOR_data>* <close_data_either> -->
+		<State name="STOR_226_then_close">
+			<Action type="input" publisher="Control"><DataModel ref="Response_226"/></Action>
+			<Action type="changeState" ref="STOR_data_after_226"/>
+		</State>
+		<State name="STOR_data_after_226">
+			<Action type="changeState" ref="STOR_data_after_226_item" when="random.randrange(2) == 0"/>
+			<Action type="close" publisher="Data"/>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+		<State name="STOR_data_after_226_item">
+			<Action type="output" publisher="Data"><DataModel ref="STOR_data"/></Action>
+			<Action type="changeState" ref="STOR_data_after_226"/>
+		</State>
+
+		<!-- <APPE_exchange> ::= <ClientControl:APPE> <ServerControl:Response_150> <ClientData:APPE_data>*
+		                         (<close_data_either> <ServerControl:Response_226>
+		                          | <ServerControl:Response_226> <ClientData:APPE_data>* <close_data_either>) -->
+		<State name="APPE_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="APPE"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="Response_150"/></Action>
+			<Action type="changeState" ref="APPE_data"/>
+		</State>
+		<!-- <ClientData:APPE_data>* -->
+		<State name="APPE_data">
+			<Action type="changeState" ref="APPE_data_item" when="random.randrange(2) == 0"/>
+			<Action type="changeState" ref="APPE_close_then_226" when="random.randrange(2) == 0"/>
+			<Action type="changeState" ref="APPE_226_then_close"/>
+		</State>
+		<State name="APPE_data_item">
+			<Action type="output" publisher="Data"><DataModel ref="APPE_data"/></Action>
+			<Action type="changeState" ref="APPE_data"/>
+		</State>
+		<!-- <close_data_either> <ServerControl:Response_226> -->
+		<State name="APPE_close_then_226">
+			<Action type="close" publisher="Data"/>
+			<Action type="input" publisher="Control"><DataModel ref="Response_226"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+		<!-- <ServerControl:Response_226> <ClientData:APPE_data>* <close_data_either> -->
+		<State name="APPE_226_then_close">
+			<Action type="input" publisher="Control"><DataModel ref="Response_226"/></Action>
+			<Action type="changeState" ref="APPE_data_after_226"/>
+		</State>
+		<State name="APPE_data_after_226">
+			<Action type="changeState" ref="APPE_data_after_226_item" when="random.randrange(2) == 0"/>
+			<Action type="close" publisher="Data"/>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+		<State name="APPE_data_after_226_item">
+			<Action type="output" publisher="Data"><DataModel ref="APPE_data"/></Action>
+			<Action type="changeState" ref="APPE_data_after_226"/>
+		</State>
+
+		<!-- <LIST_exchange> ::= <ClientControl:LIST> <ServerControl:Response_150> <ServerData:LIST_data>?
+		                         (<SocketControlServer:close_data> <ServerControl:Response_226>
+		                          | <ServerControl:Response_226> <ServerData:LIST_data>? <SocketControlServer:close_data>)
+		     The server decides the interleaving; the data and control channels are read separately. -->
+		<State name="LIST_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="LIST"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="Response_150"/></Action>
+			<Action type="input" publisher="Data"><DataModel ref="LIST_data"/></Action>
+			<Action type="close" publisher="Data"/>
+			<Action type="input" publisher="Control"><DataModel ref="Response_226"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+
+		<!-- <RETR_exchange> ::= <ClientControl:RETR> <ServerControl:Response_150> <ServerData:RETR_data>?
+		                         (<SocketControlServer:close_data> <ServerControl:Response_226>
+		                          | <ServerControl:Response_226> <ServerData:RETR_data>? <SocketControlServer:close_data>) -->
+		<State name="RETR_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="RETR"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="Response_150"/></Action>
+			<Action type="input" publisher="Data"><DataModel ref="RETR_data"/></Action>
+			<Action type="close" publisher="Data"/>
+			<Action type="input" publisher="Control"><DataModel ref="Response_226"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+
+		<!-- <MLSD_exchange> ::= <ClientControl:MLSD> <ServerControl:Response_150> <ServerData:MLSD_data>?
+		                         (<SocketControlServer:close_data> <ServerControl:Response_226>
+		                          | <ServerControl:Response_226> <ServerData:MLSD_data>? <SocketControlServer:close_data>) -->
+		<State name="MLSD_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="MLSD"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="Response_150"/></Action>
+			<Action type="input" publisher="Data"><DataModel ref="MLSD_data"/></Action>
+			<Action type="close" publisher="Data"/>
+			<Action type="input" publisher="Control"><DataModel ref="Response_226"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+
+		<!-- <ABOR_exchange> ::= <ClientControl:ABOR> (<ServerControl:ABOR_response> <close_data_either>
+		                                             | <close_data_either> <ServerControl:ABOR_response>) -->
+		<State name="ABOR_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="ABOR"/></Action>
+			<Action type="changeState" ref="ABOR_response_then_close" when="random.randrange(2) == 0"/>
+			<Action type="changeState" ref="ABOR_close_then_response"/>
+		</State>
+		<State name="ABOR_response_then_close">
+			<Action type="input" publisher="Control"><DataModel ref="ABOR_response"/></Action>
+			<Action type="close" publisher="Data"/>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+		<State name="ABOR_close_then_response">
+			<Action type="close" publisher="Data"/>
+			<Action type="input" publisher="Control"><DataModel ref="ABOR_response"/></Action>
+			<Action type="changeState" ref="authenticated_state"/>
+		</State>
+
+		<!-- <QUIT_exchange> ::= <ClientControl:QUIT> <ServerControl:QUIT_response> -->
+		<State name="QUIT_exchange">
+			<Action type="output" publisher="Control"><DataModel ref="QUIT"/></Action>
+			<Action type="input" publisher="Control"><DataModel ref="QUIT_response"/></Action>
+		</State>
+	</StateModel>
+
+	<Test name="Default" nonDeterministicActions="true">
+		<StateModel ref="start"/>
+		<Publisher class="Tcp" name="Control">
+			<Param name="Host" value="127.0.0.1"/>
+			<Param name="Port" value="2121"/>
+			<Param name="Timeout" value="2000"/>
+			<Param name="ReadAvailableTimeout" value="100"/>
+			<Param name="FaultOnConnectionFailure" value="false"/>
+		</Publisher>
+		<Publisher class="Tcp" name="Data">
+			<Param name="Host" value="127.0.0.1"/>
+			<Param name="Port" value="50100"/>
+			<Param name="Timeout" value="2000"/>
+			<Param name="ReadAvailableTimeout" value="100"/>
+			<Param name="FaultOnConnectionFailure" value="false"/>
+		</Publisher>
+		<Strategy class="Random"/>
+	</Test>
+</Peach>
