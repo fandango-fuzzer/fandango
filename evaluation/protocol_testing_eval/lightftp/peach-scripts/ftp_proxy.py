@@ -183,9 +183,10 @@ def main():
     p.add_argument("--server-port", type=int, default=2200)
     p.add_argument("--control-port", type=int, default=2121)
     p.add_argument("--data-port", type=int, default=50100)
+    p.add_argument("--announce-data-port", type=int)
     args = p.parse_args()
     threading.Thread(target=listen, args=(args.data_port, serve_data), daemon=True).start()
-    listen(args.control_port, serve_control, args.server_port, args.data_port)
+    listen(args.control_port, serve_control, args.server_port, args.announce_data_port or args.data_port)
 
 
 if __name__ == "__main__":

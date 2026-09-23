@@ -54,6 +54,11 @@ done
 [ "$ready" = 1 ] && echo "named is listening on ${PORT}/udp" \
                  || echo "named not confirmed ready; proceeding anyway" >&2
 
+echo "starting traffic_recorder.py (25567 -> 25566/udp)"
+python3.11 "${PEACH_DIR}/traffic_recorder.py" --out "${COV_OUT_DIR}traffic.jsonl" \
+  --udp 25567:25566:dns > "${COV_OUT_DIR}traffic_recorder.log" 2>&1 &
+recorder=$!
+
 mkdir -p "${COV_OUT_DIR}peach"
 rm -rf /opt/peach/Logs && ln -s "${COV_OUT_DIR}peach" /opt/peach/Logs
 cd "${COV_OUT_DIR}peach"
@@ -68,6 +73,7 @@ else
     mono /opt/peach/Peach.exe --noweb --polite --duration="$duration" "${PEACH_DIR}/dns.xml" \
     > "${COV_OUT_DIR}peach.log" 2>&1 || true
 fi
+kill "$recorder" 2>/dev/null || true
 
 if kill -0 "$server" 2>/dev/null; then
   echo "stopping named (pid $server)"

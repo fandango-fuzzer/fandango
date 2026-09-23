@@ -819,7 +819,7 @@
 		<!-- <ClientData:STOR_data>* -->
 		<State name="STOR_data">
 			<Action type="changeState" ref="STOR_data_item" when="random.randrange(2) == 0"/>
-			<Action type="changeState" ref="STOR_close_then_226" when="random.randrange(2) == 0"/>
+			<Action type="changeState" ref="STOR_close_then_226" when="random.randrange(2) == 0 or context.controlRecordingIteration"/>
 			<Action type="changeState" ref="STOR_226_then_close"/>
 		</State>
 		<State name="STOR_data_item">
@@ -858,7 +858,7 @@
 		<!-- <ClientData:APPE_data>* -->
 		<State name="APPE_data">
 			<Action type="changeState" ref="APPE_data_item" when="random.randrange(2) == 0"/>
-			<Action type="changeState" ref="APPE_close_then_226" when="random.randrange(2) == 0"/>
+			<Action type="changeState" ref="APPE_close_then_226" when="random.randrange(2) == 0 or context.controlRecordingIteration"/>
 			<Action type="changeState" ref="APPE_226_then_close"/>
 		</State>
 		<State name="APPE_data_item">

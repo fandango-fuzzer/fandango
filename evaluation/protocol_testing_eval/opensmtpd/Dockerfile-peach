@@ -202,6 +202,7 @@ RUN useradd -ms /bin/bash the_user && echo "the_user:the_password" | chpasswd &&
 RUN mkdir -p /etc/mail && touch /etc/mail/aliases
 
 COPY --chown=ubuntu:ubuntu peach-scripts/ /home/ubuntu/peach/
+COPY --from=peach --chown=ubuntu:ubuntu traffic_recorder.py /home/ubuntu/peach/traffic_recorder.py
 RUN chmod +x /home/ubuntu/peach/run_peach.sh
 
 RUN mkdir -p /home/ubuntu/cov_out && chown -R ubuntu:ubuntu /home/ubuntu/cov_out

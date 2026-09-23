@@ -131,6 +131,7 @@ RUN mkdir -p /home/ubuntu/certificate && \
         -days 3650 -subj "/CN=localhost" -passout pass:ubuntu
 
 COPY --chown=ubuntu:ubuntu peach-scripts/ /home/ubuntu/peach/
+COPY --from=peach --chown=ubuntu:ubuntu traffic_recorder.py /home/ubuntu/peach/traffic_recorder.py
 
 RUN chown -R ubuntu:ubuntu ${LIGHTFTP_SRC} /home/ubuntu/ftpshare /home/ubuntu/certificate /home/ubuntu/peach && \
     chmod -R u+rwX ${LIGHTFTP_SRC} && \

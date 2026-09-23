@@ -40,9 +40,15 @@ echo "starting fftp on ${PORT}/tcp"
 ./fftp fftp.conf "$PORT" > "${COV_OUT_DIR}fftp.log" 2>&1 &
 server=$!
 
-echo "starting ftp_proxy.py (control 2121, data 50100)"
-python3.11 "${PEACH_DIR}/ftp_proxy.py" --server-port "$PORT" > "${COV_OUT_DIR}ftp_proxy.log" 2>&1 &
+echo "starting ftp_proxy.py (control 2122, data 50101)"
+python3.11 "${PEACH_DIR}/ftp_proxy.py" --server-port "$PORT" --control-port 2122 --data-port 50101 \
+  --announce-data-port 50100 > "${COV_OUT_DIR}ftp_proxy.log" 2>&1 &
 proxy=$!
+
+echo "starting traffic_recorder.py (control 2121 -> 2122, data 50100 -> 50101)"
+python3.11 "${PEACH_DIR}/traffic_recorder.py" --out "${COV_OUT_DIR}traffic.jsonl" \
+  --tcp 2121:2122:control --tcp 50100:50101:data > "${COV_OUT_DIR}traffic_recorder.log" 2>&1 &
+recorder=$!
 
 ready=0
 for _ in $(seq 1 20); do
@@ -73,7 +79,7 @@ else
     > "${COV_OUT_DIR}peach.log" 2>&1 || true
 fi
 
-kill "$proxy" 2>/dev/null || true
+kill "$recorder" "$proxy" 2>/dev/null || true
 
 if kill -0 "$server" 2>/dev/null; then
   echo "flushing fftp gcov (SIGUSR1, pid $server)"

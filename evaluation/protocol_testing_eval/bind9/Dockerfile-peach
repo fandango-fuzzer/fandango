@@ -154,6 +154,7 @@ COPY cache/example.com /var/cache/bind/example.com
 COPY cache/0.0.127.in-addr.arpa /var/cache/bind/0.0.127.in-addr.arpa
 
 COPY peach-scripts/ /home/ubuntu/peach/
+COPY --from=peach traffic_recorder.py /home/ubuntu/peach/traffic_recorder.py
 
 ENV WORKDIR="/home/ubuntu"
 

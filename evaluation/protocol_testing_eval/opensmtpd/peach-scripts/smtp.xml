@@ -763,7 +763,7 @@
 		<StateModel ref="start"/>
 		<Publisher class="Tcp">
 			<Param name="Host" value="127.0.0.1"/>
-			<Param name="Port" value="8025"/>
+			<Param name="Port" value="8024"/>
 			<Param name="Timeout" value="2000"/>
 			<Param name="ReadAvailableTimeout" value="100"/>
 			<Param name="FaultOnConnectionFailure" value="false"/>

@@ -64,6 +64,11 @@ else
   echo "Ports 8026 and 8025 are ready"
 fi
 
+echo "Starting traffic_recorder.py (8024 -> 8025)"
+python3.11 "${PEACH_DIR}/traffic_recorder.py" --out "${COV_OUT_DIR}traffic.jsonl" \
+  --tcp 8024:8025:smtp > "${COV_OUT_DIR}traffic_recorder.log" 2>&1 &
+RECORDER_PID=$!
+
 mkdir -p "${COV_OUT_DIR}peach"
 rm -rf /opt/peach/Logs && ln -s "${COV_OUT_DIR}peach" /opt/peach/Logs
 cd "${COV_OUT_DIR}peach"
@@ -79,6 +84,7 @@ else
     > "${COV_OUT_DIR}peach.log" 2>&1 || true
   echo "Peach run finished"
 fi
+kill "${RECORDER_PID}" 2>/dev/null || true
 
 COV_RAW="/cov_raw"
 sudo rm -rf "$COV_RAW" 2>/dev/null || true

@@ -381,7 +381,7 @@
 		<StateModel ref="start"/>
 		<Publisher class="Udp">
 			<Param name="Host" value="127.0.0.1"/>
-			<Param name="Port" value="25566"/>
+			<Param name="Port" value="25567"/>
 			<Param name="Timeout" value="2000"/>
 		</Publisher>
 		<Strategy class="Random"/>
