@@ -1,0 +1,17 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get -y update && \
+    apt-get -y install build-essential git python3.11 python3.11-dev python3-pip
+
+RUN python3.11 -m pip install -U pip setuptools wheel
+
+ARG CACHEBUST=0
+RUN echo "fandango build ref: ${CACHEBUST}"
+COPY _fandango_src /fandango
+RUN cd /fandango && python3.11 -m pip install --no-cache-dir . faker
+
+COPY analyze_traffic.py /home/ubuntu/analyze_traffic.py
+
+WORKDIR /home/ubuntu
+ENTRYPOINT ["python3.11", "/home/ubuntu/analyze_traffic.py"]
