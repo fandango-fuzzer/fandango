@@ -73,6 +73,11 @@ class PacketSelector:
         self._last_completed_tree = tree
         self._completed_count += 1
 
+    def abort_run(self, tree: DerivationTree) -> None:
+        """Add `tree` to the current tracked grammar coverage and abort the current guide."""
+        self.record_coverage(tree)
+        self._guide.abort_run()
+
     def record_coverage(self, tree: DerivationTree) -> None:
         self._coverage_tracker.add_completed_tree(tree)
 

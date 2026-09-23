@@ -57,12 +57,14 @@ class PacketGuide:
         self._max_messages_per_tree = count
 
     def reset(self) -> None:
-        """Forget the current guide target and the per-run k-path bookkeeping,
-        as after construction. find_packets() filters candidates by the
-        per-run set, so a stale set would leave only <end> as a candidate."""
-        self._history_tree = DerivationTree(NonTerminal("<start>"))
+        """Forget everything about previous runs, as after construction."""
+        self.abort_run()
         self._last_completed_tree = None
         self._prev_completed_count = 0
+
+    def abort_run(self) -> None:
+        """Forget the current guide target and start with a new DerivationTree."""
+        self._history_tree = DerivationTree(NonTerminal("<start>"))
         self._guide_to_end = False
         self._guide_target = None
         self._guide_path = []

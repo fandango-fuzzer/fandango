@@ -223,6 +223,12 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 f"Couldn't find solution for any packet: {nonterminals_str}"
             ) from None
 
+    def _is_coverage_complete(self) -> bool:
+        return (
+            self._coverage_goal != CoverageGoal.RANDOM
+            and self._packet_selector.coverage_percent() == 1.0
+        )
+
     def _is_failed_forecast(self) -> bool:
         return (
             len(self._packet_selector.get_next_parties()) == 0
@@ -261,10 +267,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 self._packet_selector.add_completed_tree(final_tree)
                 self._packet_coverage_filter.add_completed_tree(final_tree)
                 yield final_tree
-                if (
-                    self._coverage_goal != CoverageGoal.RANDOM
-                    and self._packet_selector.coverage_percent() == 1.0
-                ):
+                if self._is_coverage_complete():
                     log_guidance_hint("Full coverage reached, stopping evolution.")
                     return None
                 log_guidance_hint("Starting new protocol run.")
@@ -306,15 +309,19 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     FandangoParseError,
                     FandangoValueError,
                 ) as exc:
-                    self._packet_selector.record_coverage(self._protocol_tree)
+                    self._packet_selector.abort_run(self._protocol_tree)
                     self._packet_coverage_filter.add_completed_tree(self._protocol_tree)
                     self.violations.append((self._protocol_tree, exc))
                     if self.throw_on_violation:
                         raise exc
                     LOGGER.warning(
                         f"Discarding remote response that could not be handled. "
-                        f"Recording violation and starting a new protocol run: {exc}"
+                        f"Recording violation: {exc}"
                     )
+                    if self._is_coverage_complete():
+                        log_guidance_hint("Full coverage reached, stopping evolution.")
+                        return None
+                    log_guidance_hint("Starting new protocol run.")
                     self._io_instance.reset_parties()
                     self._protocol_tree = DerivationTree(self._start_symbol, [])
                     continue
