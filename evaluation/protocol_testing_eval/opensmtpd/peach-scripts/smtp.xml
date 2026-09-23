@@ -1,0 +1,773 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--Peach translation of fandango-scripts/smtp.fan.-->
+<Peach xmlns="http://peachfuzzer.com/2012/Peach"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://peachfuzzer.com/2012/Peach peach.xsd">
+
+	<Import import="random"/>
+
+
+	<!-- <email_address> ::= r'[a-z]+@[a-z]+\.de' -->
+
+	<!-- <request_ehlo> ::= r'(?i:EHLO)' ' ' <client_identifier> '\r\n'
+	     <client_identifier> ::= r'([a-zA-Z0-9\-\.]+[ ]?)+' := 'io.fandango.local' -->
+	<DataModel name="request_ehlo">
+		<String name="verb" value="EHLO"/>
+		<String name="space" value=" "/>
+		<String name="client_identifier" value="io.fandango.local"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <request_helo> ::= r'(?i:HELO)' ' ' <client_identifier> '\r\n' -->
+	<DataModel name="request_helo">
+		<String name="verb" value="HELO"/>
+		<String name="space" value=" "/>
+		<String name="client_identifier" value="io.fandango.local"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <request_auth_login> ::= 'AUTH LOGIN\r\n' -->
+	<DataModel name="request_auth_login">
+		<String name="command" value="AUTH LOGIN"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <request_auth_user_correct> ::= <user_correct_64> '\r\n'
+	     <user_correct_64> ::= r'[a-zA-Z0-9\+/\\\=]+' := encode64('the_user') -->
+	<DataModel name="request_auth_user_correct">
+		<String name="user_correct_64" value="the_user">
+			<Transformer class="Base64Encode"/>
+		</String>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <request_auth_user_incorrect> ::= <user_incorrect_64> '\r\n'
+	     <user_incorrect_64> ::= r'[a-zA-Z0-9\+/\\\=]+' := encode64(<user_incorrect>)
+	     <user_incorrect> ::= r'^(?!the_user$)([a-zA-Z0-9_]+)' -->
+	<DataModel name="request_auth_user_incorrect">
+		<String name="user_incorrect_64" value="wrong_user">
+			<Transformer class="Base64Encode"/>
+		</String>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <request_auth_pass_correct> ::= <pass_correct_64> '\r\n'
+	     <pass_correct_64> ::= r'[a-zA-Z0-9\+/\\\=]+' := encode64('the_password') -->
+	<DataModel name="request_auth_pass_correct">
+		<String name="pass_correct_64" value="the_password">
+			<Transformer class="Base64Encode"/>
+		</String>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <request_auth_pass_incorrect> ::= <pass_incorrect_64> '\r\n'
+	     <pass_incorrect_64> ::= r'[a-zA-Z0-9\+/\\\=]+' := encode64(<pass_incorrect>)
+	     <pass_incorrect> ::= r'^(?!the_password$)([a-zA-Z0-9_]+)' -->
+	<DataModel name="request_auth_pass_incorrect">
+		<String name="pass_incorrect_64" value="wrong_pass">
+			<Transformer class="Base64Encode"/>
+		</String>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <request_auth_plain> ::= 'AUTH PLAIN\r\n' -->
+	<DataModel name="request_auth_plain">
+		<String name="command" value="AUTH PLAIN"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <plain_correct_64> ::= r'[a-zA-Z0-9\+/\\\=]+' := plain64('the_user', 'the_password')
+	     plain64(user, password) = base64('\x00' + user + '\x00' + password) -->
+	<DataModel name="plain_correct_64">
+		<Block name="plain_correct_64">
+			<Transformer class="Base64Encode"/>
+			<String name="nul1" valueType="hex" value="00"/>
+			<String name="user" value="the_user"/>
+			<String name="nul2" valueType="hex" value="00"/>
+			<String name="password" value="the_password"/>
+		</Block>
+	</DataModel>
+
+	<!-- <plain_incorrect_64> ::= r'[a-zA-Z0-9\+/\\\=]+' := plain64('wrong_user', 'wrong_pass') -->
+	<DataModel name="plain_incorrect_64">
+		<Block name="plain_incorrect_64">
+			<Transformer class="Base64Encode"/>
+			<String name="nul1" valueType="hex" value="00"/>
+			<String name="user" value="wrong_user"/>
+			<String name="nul2" valueType="hex" value="00"/>
+			<String name="password" value="wrong_pass"/>
+		</Block>
+	</DataModel>
+
+	<!-- <request_auth_plain_correct> ::= <plain_correct_64> '\r\n' -->
+	<DataModel name="request_auth_plain_correct">
+		<Block name="plain_correct_64" ref="plain_correct_64"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <request_auth_plain_incorrect> ::= <plain_incorrect_64> '\r\n' -->
+	<DataModel name="request_auth_plain_incorrect">
+		<Block name="plain_incorrect_64" ref="plain_incorrect_64"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <request_auth_plain_initial_correct> ::= 'AUTH PLAIN ' <plain_correct_64> '\r\n' -->
+	<DataModel name="request_auth_plain_initial_correct">
+		<String name="command" value="AUTH PLAIN "/>
+		<Block name="plain_correct_64" ref="plain_correct_64"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <request_auth_plain_initial_incorrect> ::= 'AUTH PLAIN ' <plain_incorrect_64> '\r\n' -->
+	<DataModel name="request_auth_plain_initial_incorrect">
+		<String name="command" value="AUTH PLAIN "/>
+		<Block name="plain_incorrect_64" ref="plain_incorrect_64"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <request_quit> ::= r'(?i:QUIT)' '\r\n' -->
+	<DataModel name="request_quit">
+		<String name="verb" value="QUIT"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <request_noop> ::= 'NOOP' (' ' r'[^ \r\n]*')? '\r\n' -->
+	<DataModel name="request_noop">
+		<String name="verb" value="NOOP"/>
+		<Block name="argument" minOccurs="0" maxOccurs="1">
+			<String name="space" value=" "/>
+			<String name="text" value="fandango"/>
+		</Block>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <request_help> ::= 'HELP\r\n' -->
+	<DataModel name="request_help">
+		<String name="verb" value="HELP"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <request_rset> ::= 'RSET\r\n' -->
+	<DataModel name="request_rset">
+		<String name="verb" value="RSET"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <request_vrfy> ::= 'VRFY ' <email_address> '\r\n' -->
+	<DataModel name="request_vrfy">
+		<String name="verb" value="VRFY "/>
+		<String name="email_address" value="theuser@example.de"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <request_expn> ::= 'EXPN ' r'[a-zA-Z0-9_\-]+' '\r\n' -->
+	<DataModel name="request_expn">
+		<String name="verb" value="EXPN "/>
+		<String name="name" value="the_user"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <request_bad_command> ::= ('XYZZY' | 'FOOBAR' | 'WTF') (' ' r'[^\r\n]*')? '\r\n' -->
+	<DataModel name="request_bad_command">
+		<Choice name="verb">
+			<String name="XYZZY" value="XYZZY"/>
+			<String name="FOOBAR" value="FOOBAR"/>
+			<String name="WTF" value="WTF"/>
+		</Choice>
+		<Block name="argument" minOccurs="0" maxOccurs="1">
+			<String name="space" value=" "/>
+			<String name="text" value="fandango"/>
+		</Block>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <request_mail_from> ::= r'(?i:MAIL FROM:)' '<' <email_address> '>' <mail_params>? '\r\n'
+	     <mail_params> ::= (' SIZE=' r'[1-9][0-9]{0,6}')? (' BODY=' ('7BIT' | '8BITMIME'))? -->
+	<DataModel name="request_mail_from">
+		<String name="verb" value="MAIL FROM:"/>
+		<String name="open" value="&lt;"/>
+		<String name="email_address" value="theuser@example.de"/>
+		<String name="close" value="&gt;"/>
+		<Block name="mail_params" minOccurs="0" maxOccurs="1">
+			<Block name="size" minOccurs="0" maxOccurs="1">
+				<String name="key" value=" SIZE="/>
+				<String name="value" value="1024"/>
+			</Block>
+			<Block name="body" minOccurs="0" maxOccurs="1">
+				<String name="key" value=" BODY="/>
+				<Choice name="value">
+					<String name="bit7" value="7BIT"/>
+					<String name="bit8" value="8BITMIME"/>
+				</Choice>
+			</Block>
+		</Block>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <request_mail_to> ::= r'(?i:RCPT TO:)' '<' <email_address> '>' <rcpt_params>? '\r\n'
+	     <rcpt_params> ::= (' ORCPT=rfc822;' <email_address>)? -->
+	<DataModel name="request_mail_to">
+		<String name="verb" value="RCPT TO:"/>
+		<String name="open" value="&lt;"/>
+		<String name="email_address" value="recipient@example.de"/>
+		<String name="close" value="&gt;"/>
+		<Block name="rcpt_params" minOccurs="0" maxOccurs="1">
+			<Block name="orcpt" minOccurs="0" maxOccurs="1">
+				<String name="key" value=" ORCPT=rfc822;"/>
+				<String name="email_address" value="recipient@example.de"/>
+			</Block>
+		</Block>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <request_mail_data> ::= r'(?i:DATA)' '\r\n' -->
+	<DataModel name="request_mail_data">
+		<String name="verb" value="DATA"/>
+		<String name="crlf" value="&#13;&#10;"/>
+	</DataModel>
+
+	<!-- <mail_data> ::= <mail_header> <mail_body>
+	     <mail_header> ::= <mail_header_subject> <mail_header_from> <mail_header_to> <mail_header_date>
+	                       <mail_header_optional>* <mail_header_end>
+	     <mail_body> ::= <mail_contents_64> <mail_body_end> -->
+	<DataModel name="mail_data">
+		<Block name="mail_header">
+			<!-- <mail_header_subject> ::= 'subject: ' r'[^\r\n]*' '\r\n' -->
+			<Block name="mail_header_subject">
+				<String name="key" value="subject: "/>
+				<String name="text" value="TestmailFandango"/>
+				<String name="crlf" value="&#13;&#10;"/>
+			</Block>
+			<!-- <mail_header_from> ::= 'from: ' <email_address> '\r\n' -->
+			<Block name="mail_header_from">
+				<String name="key" value="from: "/>
+				<String name="email_address" value="theuser@example.de"/>
+				<String name="crlf" value="&#13;&#10;"/>
+			</Block>
+			<!-- <mail_header_to> ::= 'to: ' <email_address> '\r\n' -->
+			<Block name="mail_header_to">
+				<String name="key" value="to: "/>
+				<String name="email_address" value="recipient@example.de"/>
+				<String name="crlf" value="&#13;&#10;"/>
+			</Block>
+			<!-- <mail_header_date> ::= 'date: ' <unix_time_formatted> '\r\n'
+			     <unix_time_formatted> ::= r'[a-zA-Z0-9\:\+\, ]+' := format_unix_time(int(<unix_time>)) -->
+			<Block name="mail_header_date">
+				<String name="key" value="date: "/>
+				<String name="unix_time_formatted" value="Wed, 23 Sep 2026 12:00:00 +0000"/>
+				<String name="crlf" value="&#13;&#10;"/>
+			</Block>
+			<!-- <mail_header_optional> ::= <mail_header_message_id> | <mail_header_mailer> | <mail_header_reply_to>
+			                              | <mail_header_mime> | <mail_header_content_type> | <mail_header_encoding>
+			                              | <mail_header_other> -->
+			<Choice name="mail_header_optional" minOccurs="0" maxOccurs="-1">
+				<!-- <mail_header_message_id> ::= 'message-id: <' r'[a-zA-Z0-9]+' '@' r'[a-z]+\.[a-z]+' '>\r\n' -->
+				<Block name="mail_header_message_id">
+					<String name="key" value="message-id: &lt;"/>
+					<String name="id" value="fandango"/>
+					<String name="at" value="@"/>
+					<String name="domain" value="example.de"/>
+					<String name="close" value="&gt;&#13;&#10;"/>
+				</Block>
+				<!-- <mail_header_mailer> ::= 'x-mailer: ' r'[^\r\n]*' '\r\n' -->
+				<Block name="mail_header_mailer">
+					<String name="key" value="x-mailer: "/>
+					<String name="text" value="fandango"/>
+					<String name="crlf" value="&#13;&#10;"/>
+				</Block>
+				<!-- <mail_header_reply_to> ::= 'reply-to: ' <email_address> '\r\n' -->
+				<Block name="mail_header_reply_to">
+					<String name="key" value="reply-to: "/>
+					<String name="email_address" value="theuser@example.de"/>
+					<String name="crlf" value="&#13;&#10;"/>
+				</Block>
+				<!-- <mail_header_mime> ::= 'mime-version: 1.0\r\n' -->
+				<String name="mail_header_mime" value="mime-version: 1.0&#13;&#10;"/>
+				<!-- <mail_header_content_type> ::= 'content-type: text/plain; charset=utf-8\r\n' -->
+				<String name="mail_header_content_type" value="content-type: text/plain; charset=utf-8&#13;&#10;"/>
+				<!-- <mail_header_encoding> ::= 'content-transfer-encoding: base64\r\n' -->
+				<String name="mail_header_encoding" value="content-transfer-encoding: base64&#13;&#10;"/>
+				<!-- <mail_header_other> ::= r'[A-Za-z][A-Za-z0-9\-]*' ': ' r'[^\r\n]*' '\r\n' -->
+				<Block name="mail_header_other">
+					<String name="key" value="x-fandango"/>
+					<String name="separator" value=": "/>
+					<String name="text" value="fandango"/>
+					<String name="crlf" value="&#13;&#10;"/>
+				</Block>
+			</Choice>
+			<!-- <mail_header_end> ::= '\r\n' -->
+			<String name="mail_header_end" value="&#13;&#10;"/>
+		</Block>
+		<Block name="mail_body">
+			<!-- <mail_contents_64> ::= r'[a-zA-Z0-9\+/\\\=]+' := encode64(<mail_contents>)
+			     <mail_contents> ::= r'([a-zA-Z0-9\r\n]+)' -->
+			<String name="mail_contents_64" value="TestmailFandango">
+				<Transformer class="Base64Encode"/>
+			</String>
+			<!-- <mail_body_end> ::= '\r\n\r\n.\r\n' -->
+			<String name="mail_body_end" value="&#13;&#10;&#13;&#10;.&#13;&#10;"/>
+		</Block>
+	</DataModel>
+
+
+	<!-- <response_setup> ::= '220 ' r'[a-zA-Z0-9\-\. ]+' '\r\n' -->
+	<DataModel name="response_setup">
+		<String name="code" value="220 " token="true"/>
+		<String name="text"/>
+		<String name="crlf" value="&#13;&#10;" token="true"/>
+	</DataModel>
+
+	<!-- <response_ehlo> ::= <response_ehlo_param>+ <response_ehlo_end>
+	     <response_ehlo_param> ::= '250-' r'[a-zA-Z0-9\-\.=\[\]\, ]+' '\r\n'
+	     <response_ehlo_end> ::= '250 ' r'[a-zA-Z0-9\-\.=\[\]\, ]+' '\r\n' -->
+	<DataModel name="response_ehlo">
+		<Block name="response_ehlo_param" minOccurs="1" maxOccurs="-1">
+			<String name="code" value="250-" token="true"/>
+			<String name="text"/>
+			<String name="crlf" value="&#13;&#10;" token="true"/>
+		</Block>
+		<Block name="response_ehlo_end">
+			<String name="code" value="250 " token="true"/>
+			<String name="text"/>
+			<String name="crlf" value="&#13;&#10;" token="true"/>
+		</Block>
+	</DataModel>
+
+	<!-- <response_helo> ::= '250 ' r'[a-zA-Z0-9\-\.=\[\]\, ]+' '\r\n' -->
+	<DataModel name="response_helo">
+		<String name="code" value="250 " token="true"/>
+		<String name="text"/>
+		<String name="crlf" value="&#13;&#10;" token="true"/>
+	</DataModel>
+
+	<!-- <response_auth_expect_user> ::= '334 ' r'[a-zA-Z0-9\+/\\\=]+' '\r\n' -->
+	<DataModel name="response_auth_expect_user">
+		<String name="code" value="334 " token="true"/>
+		<String name="text"/>
+		<String name="crlf" value="&#13;&#10;" token="true"/>
+	</DataModel>
+
+	<!-- <response_auth_expect_pass> ::= '334 ' r'[a-zA-Z0-9\+/\\\=]+' '\r\n' -->
+	<DataModel name="response_auth_expect_pass">
+		<String name="code" value="334 " token="true"/>
+		<String name="text"/>
+		<String name="crlf" value="&#13;&#10;" token="true"/>
+	</DataModel>
+
+	<!-- <response_auth_continue> ::= r'334 [A-Za-z0-9+/=\\]*\r\n' -->
+	<DataModel name="response_auth_continue">
+		<String name="code" value="334 " token="true"/>
+		<String name="text"/>
+		<String name="crlf" value="&#13;&#10;" token="true"/>
+	</DataModel>
+
+	<!-- <response_auth_success> ::= '235 ' r'[a-zA-Z0-9\-\. ]+' '\r\n' -->
+	<DataModel name="response_auth_success">
+		<String name="code" value="235 " token="true"/>
+		<String name="text"/>
+		<String name="crlf" value="&#13;&#10;" token="true"/>
+	</DataModel>
+
+	<!-- <response_auth_fail> ::= r'5\d\d' ' ' r'[a-zA-Z0-9\-\.:\(\)/ ]+' '\r\n' -->
+	<DataModel name="response_auth_fail">
+		<String name="code" length="3" constraint="value[0] == '5' and value.isdigit()"/>
+		<String name="space" value=" " token="true"/>
+		<String name="text"/>
+		<String name="crlf" value="&#13;&#10;" token="true"/>
+	</DataModel>
+
+	<!-- <response_quit> ::= '221 ' r'[a-zA-Z0-9\-\. ]+' '\r\n' -->
+	<DataModel name="response_quit">
+		<String name="code" value="221 " token="true"/>
+		<String name="text"/>
+		<String name="crlf" value="&#13;&#10;" token="true"/>
+	</DataModel>
+
+	<!-- <positive_response> ::= '250 ' r'[a-zA-Z0-9\-\.: ]+' '\r\n' -->
+	<DataModel name="positive_response">
+		<String name="code" value="250 " token="true"/>
+		<String name="text"/>
+		<String name="crlf" value="&#13;&#10;" token="true"/>
+	</DataModel>
+
+	<!-- <response_vrfy_expn> ::= r'[2-5]\d\d' ' ' r'[a-zA-Z0-9\-\.:@<>\(\) ]+' '\r\n' -->
+	<DataModel name="response_vrfy_expn">
+		<String name="code" length="3" constraint="value[0] in '2345' and value.isdigit()"/>
+		<String name="space" value=" " token="true"/>
+		<String name="text"/>
+		<String name="crlf" value="&#13;&#10;" token="true"/>
+	</DataModel>
+
+	<!-- <response_help> ::= (r'2\d\d' '-' r'[^\r\n\x80-\xFF]+' '\r\n')+ r'2\d\d' ' ' r'[^\r\n\x80-\xFF]+' '\r\n' -->
+	<DataModel name="response_help">
+		<Block name="line" minOccurs="1" maxOccurs="-1">
+			<String name="code" length="3" constraint="value[0] == '2' and value.isdigit()"/>
+			<String name="dash" value="-" token="true"/>
+			<String name="text"/>
+			<String name="crlf" value="&#13;&#10;" token="true"/>
+		</Block>
+		<Block name="last_line">
+			<String name="code" length="3" constraint="value[0] == '2' and value.isdigit()"/>
+			<String name="space" value=" " token="true"/>
+			<String name="text"/>
+			<String name="crlf" value="&#13;&#10;" token="true"/>
+		</Block>
+	</DataModel>
+
+	<!-- <response_command_error> ::= r'5\d\d' ' ' r'[a-zA-Z0-9\-\.:\(\) ]+' '\r\n' -->
+	<DataModel name="response_command_error">
+		<String name="code" length="3" constraint="value[0] == '5' and value.isdigit()"/>
+		<String name="space" value=" " token="true"/>
+		<String name="text"/>
+		<String name="crlf" value="&#13;&#10;" token="true"/>
+	</DataModel>
+
+	<!-- <response_mail_denied> ::= r'5(30|03|07|54)' ' ' r'[a-zA-Z0-9\-\.:\(\) ]+' '\r\n' -->
+	<DataModel name="response_mail_denied">
+		<String name="code" length="3" constraint="value in ('530', '503', '507', '554')"/>
+		<String name="space" value=" " token="true"/>
+		<String name="text"/>
+		<String name="crlf" value="&#13;&#10;" token="true"/>
+	</DataModel>
+
+	<!-- <response_mail_from> ::= '250 ' r'[a-zA-Z0-9\-\. ]+' '\r\n' -->
+	<DataModel name="response_mail_from">
+		<String name="code" value="250 " token="true"/>
+		<String name="text"/>
+		<String name="crlf" value="&#13;&#10;" token="true"/>
+	</DataModel>
+
+	<!-- <response_mail_to> ::= '250 ' r'[a-zA-Z0-9\-\.\: ]+' '\r\n' -->
+	<DataModel name="response_mail_to">
+		<String name="code" value="250 " token="true"/>
+		<String name="text"/>
+		<String name="crlf" value="&#13;&#10;" token="true"/>
+	</DataModel>
+
+	<!-- <response_mail_data> ::= '354 ' r'[a-zA-Z0-9\-\.\,\"\:\<\> ]+' '\r\n' -->
+	<DataModel name="response_mail_data">
+		<String name="code" value="354 " token="true"/>
+		<String name="text"/>
+		<String name="crlf" value="&#13;&#10;" token="true"/>
+	</DataModel>
+
+
+	<StateModel name="start" initialState="state_setup">
+
+		<!-- <start> ::= <state_setup>
+		     <state_setup> ::= <Server:response_setup> <greeting> <state_logged_out>
+		     <greeting> ::= <greeting_ehlo> | <greeting_helo> -->
+		<State name="state_setup">
+			<Action type="input"><DataModel ref="response_setup"/></Action>
+			<Action type="changeState" ref="greeting_ehlo" when="random.randrange(2) == 0"/>
+			<Action type="changeState" ref="greeting_helo"/>
+		</State>
+
+		<!-- <greeting_ehlo> ::= <Client:request_ehlo> <Server:response_ehlo> -->
+		<State name="greeting_ehlo">
+			<Action type="output"><DataModel ref="request_ehlo"/></Action>
+			<Action type="input"><DataModel ref="response_ehlo"/></Action>
+			<Action type="changeState" ref="state_logged_out"/>
+		</State>
+
+		<!-- <greeting_helo> ::= <Client:request_helo> <Server:response_helo> -->
+		<State name="greeting_helo">
+			<Action type="output"><DataModel ref="request_helo"/></Action>
+			<Action type="input"><DataModel ref="response_helo"/></Action>
+			<Action type="changeState" ref="state_logged_out"/>
+		</State>
+
+		<!-- <state_logged_out> ::= <exchange_login_valid>
+		                          | <exchange_login_invalid>
+		                          | (<exchange_pre_auth_cmd> <state_logged_out>)
+		                          | (<exchange_mail_unauth> <state_logged_out>)
+		                          | <exchange_quit> -->
+		<State name="state_logged_out">
+			<Action type="changeState" ref="exchange_login_valid" when="random.randrange(5) == 0"/>
+			<Action type="changeState" ref="exchange_login_invalid" when="random.randrange(4) == 0"/>
+			<Action type="changeState" ref="exchange_pre_auth_cmd" when="random.randrange(3) == 0"/>
+			<Action type="changeState" ref="exchange_mail_unauth" when="random.randrange(2) == 0"/>
+			<Action type="changeState" ref="exchange_quit"/>
+		</State>
+
+		<!-- <exchange_login_valid> ::= (<login_plain_initial_valid> <state_logged_in>)
+		                              | (<login_plain_multiline_valid> <state_logged_in>)
+		                              | (<login_login_valid> <state_logged_in>) -->
+		<State name="exchange_login_valid">
+			<Action type="changeState" ref="login_plain_initial_valid" when="random.randrange(3) == 0"/>
+			<Action type="changeState" ref="login_plain_multiline_valid" when="random.randrange(2) == 0"/>
+			<Action type="changeState" ref="login_login_valid"/>
+		</State>
+
+		<!-- <login_plain_initial_valid> ::= <Client:request_auth_plain_initial_correct> <Server:response_auth_success> -->
+		<State name="login_plain_initial_valid">
+			<Action type="output"><DataModel ref="request_auth_plain_initial_correct"/></Action>
+			<Action type="input"><DataModel ref="response_auth_success"/></Action>
+			<Action type="changeState" ref="state_logged_in"/>
+		</State>
+
+		<!-- <login_plain_multiline_valid> ::= <Client:request_auth_plain> <Server:response_auth_continue>
+		                                     <Client:request_auth_plain_correct> <Server:response_auth_success> -->
+		<State name="login_plain_multiline_valid">
+			<Action type="output"><DataModel ref="request_auth_plain"/></Action>
+			<Action type="input"><DataModel ref="response_auth_continue"/></Action>
+			<Action type="output"><DataModel ref="request_auth_plain_correct"/></Action>
+			<Action type="input"><DataModel ref="response_auth_success"/></Action>
+			<Action type="changeState" ref="state_logged_in"/>
+		</State>
+
+		<!-- <login_login_valid> ::= <Client:request_auth_login> <Server:response_auth_expect_user>
+		                           <Client:request_auth_user_correct> <Server:response_auth_expect_pass>
+		                           <Client:request_auth_pass_correct> <Server:response_auth_success> -->
+		<State name="login_login_valid">
+			<Action type="output"><DataModel ref="request_auth_login"/></Action>
+			<Action type="input"><DataModel ref="response_auth_expect_user"/></Action>
+			<Action type="output"><DataModel ref="request_auth_user_correct"/></Action>
+			<Action type="input"><DataModel ref="response_auth_expect_pass"/></Action>
+			<Action type="output"><DataModel ref="request_auth_pass_correct"/></Action>
+			<Action type="input"><DataModel ref="response_auth_success"/></Action>
+			<Action type="changeState" ref="state_logged_in"/>
+		</State>
+
+		<!-- <exchange_login_invalid> ::= (<login_plain_initial_invalid> <state_logged_out>)
+		                                | (<login_plain_multiline_invalid> <state_logged_out>)
+		                                | (<login_login_invalid> <state_logged_out>) -->
+		<State name="exchange_login_invalid">
+			<Action type="changeState" ref="login_plain_initial_invalid" when="random.randrange(3) == 0"/>
+			<Action type="changeState" ref="login_plain_multiline_invalid" when="random.randrange(2) == 0"/>
+			<Action type="changeState" ref="login_login_invalid"/>
+		</State>
+
+		<!-- <login_plain_initial_invalid> ::= <Client:request_auth_plain_initial_incorrect> <Server:response_auth_fail> -->
+		<State name="login_plain_initial_invalid">
+			<Action type="output"><DataModel ref="request_auth_plain_initial_incorrect"/></Action>
+			<Action type="input"><DataModel ref="response_auth_fail"/></Action>
+			<Action type="changeState" ref="state_logged_out"/>
+		</State>
+
+		<!-- <login_plain_multiline_invalid> ::= <Client:request_auth_plain> <Server:response_auth_continue>
+		                                       <Client:request_auth_plain_incorrect> <Server:response_auth_fail> -->
+		<State name="login_plain_multiline_invalid">
+			<Action type="output"><DataModel ref="request_auth_plain"/></Action>
+			<Action type="input"><DataModel ref="response_auth_continue"/></Action>
+			<Action type="output"><DataModel ref="request_auth_plain_incorrect"/></Action>
+			<Action type="input"><DataModel ref="response_auth_fail"/></Action>
+			<Action type="changeState" ref="state_logged_out"/>
+		</State>
+
+		<!-- <login_login_invalid> ::= <Client:request_auth_login> <Server:response_auth_expect_user>
+		       ((<Client:request_auth_user_correct> <Server:response_auth_expect_pass> <Client:request_auth_pass_incorrect>)
+		        | (<Client:request_auth_user_incorrect> <Server:response_auth_expect_pass>
+		           (<Client:request_auth_pass_incorrect> | <Client:request_auth_pass_correct>)))
+		       <Server:response_auth_fail> -->
+		<State name="login_login_invalid">
+			<Action type="output"><DataModel ref="request_auth_login"/></Action>
+			<Action type="input"><DataModel ref="response_auth_expect_user"/></Action>
+			<Action type="changeState" ref="login_login_invalid_user_correct" when="random.randrange(2) == 0"/>
+			<Action type="changeState" ref="login_login_invalid_user_incorrect"/>
+		</State>
+		<State name="login_login_invalid_user_correct">
+			<Action type="output"><DataModel ref="request_auth_user_correct"/></Action>
+			<Action type="input"><DataModel ref="response_auth_expect_pass"/></Action>
+			<Action type="output"><DataModel ref="request_auth_pass_incorrect"/></Action>
+			<Action type="changeState" ref="login_login_invalid_fail"/>
+		</State>
+		<State name="login_login_invalid_user_incorrect">
+			<Action type="output"><DataModel ref="request_auth_user_incorrect"/></Action>
+			<Action type="input"><DataModel ref="response_auth_expect_pass"/></Action>
+			<Action type="changeState" ref="login_login_invalid_pass_incorrect" when="random.randrange(2) == 0"/>
+			<Action type="changeState" ref="login_login_invalid_pass_correct"/>
+		</State>
+		<State name="login_login_invalid_pass_incorrect">
+			<Action type="output"><DataModel ref="request_auth_pass_incorrect"/></Action>
+			<Action type="changeState" ref="login_login_invalid_fail"/>
+		</State>
+		<State name="login_login_invalid_pass_correct">
+			<Action type="output"><DataModel ref="request_auth_pass_correct"/></Action>
+			<Action type="changeState" ref="login_login_invalid_fail"/>
+		</State>
+		<State name="login_login_invalid_fail">
+			<Action type="input"><DataModel ref="response_auth_fail"/></Action>
+			<Action type="changeState" ref="state_logged_out"/>
+		</State>
+
+		<!-- <exchange_pre_auth_cmd> ::= <exchange_noop> | <exchange_help> | <exchange_rset>
+		                               | <exchange_vrfy> | <exchange_expn> | <exchange_bad_command>
+		     (reached from <state_logged_out>, returns there) -->
+		<State name="exchange_pre_auth_cmd">
+			<Action type="changeState" ref="exchange_noop" when="random.randrange(6) == 0"/>
+			<Action type="changeState" ref="exchange_help" when="random.randrange(5) == 0"/>
+			<Action type="changeState" ref="exchange_rset" when="random.randrange(4) == 0"/>
+			<Action type="changeState" ref="exchange_vrfy" when="random.randrange(3) == 0"/>
+			<Action type="changeState" ref="exchange_expn" when="random.randrange(2) == 0"/>
+			<Action type="changeState" ref="exchange_bad_command"/>
+		</State>
+
+		<!-- <exchange_noop> ::= <Client:request_noop> <Server:positive_response> -->
+		<State name="exchange_noop">
+			<Action type="output"><DataModel ref="request_noop"/></Action>
+			<Action type="input"><DataModel ref="positive_response"/></Action>
+			<Action type="changeState" ref="state_logged_out"/>
+		</State>
+
+		<!-- <exchange_help> ::= <Client:request_help> <Server:response_help> -->
+		<State name="exchange_help">
+			<Action type="output"><DataModel ref="request_help"/></Action>
+			<Action type="input"><DataModel ref="response_help"/></Action>
+			<Action type="changeState" ref="state_logged_out"/>
+		</State>
+
+		<!-- <exchange_rset> ::= <Client:request_rset> <Server:positive_response> -->
+		<State name="exchange_rset">
+			<Action type="output"><DataModel ref="request_rset"/></Action>
+			<Action type="input"><DataModel ref="positive_response"/></Action>
+			<Action type="changeState" ref="state_logged_out"/>
+		</State>
+
+		<!-- <exchange_vrfy> ::= <Client:request_vrfy> <Server:response_vrfy_expn> -->
+		<State name="exchange_vrfy">
+			<Action type="output"><DataModel ref="request_vrfy"/></Action>
+			<Action type="input"><DataModel ref="response_vrfy_expn"/></Action>
+			<Action type="changeState" ref="state_logged_out"/>
+		</State>
+
+		<!-- <exchange_expn> ::= <Client:request_expn> <Server:response_vrfy_expn> -->
+		<State name="exchange_expn">
+			<Action type="output"><DataModel ref="request_expn"/></Action>
+			<Action type="input"><DataModel ref="response_vrfy_expn"/></Action>
+			<Action type="changeState" ref="state_logged_out"/>
+		</State>
+
+		<!-- <exchange_bad_command> ::= <Client:request_bad_command> <Server:response_command_error> -->
+		<State name="exchange_bad_command">
+			<Action type="output"><DataModel ref="request_bad_command"/></Action>
+			<Action type="input"><DataModel ref="response_command_error"/></Action>
+			<Action type="changeState" ref="state_logged_out"/>
+		</State>
+
+		<!-- <exchange_mail_unauth> ::= <Client:request_mail_from> <Server:response_mail_denied> -->
+		<State name="exchange_mail_unauth">
+			<Action type="output"><DataModel ref="request_mail_from"/></Action>
+			<Action type="input"><DataModel ref="response_mail_denied"/></Action>
+			<Action type="changeState" ref="state_logged_out"/>
+		</State>
+
+		<!-- <state_logged_in> ::= ((<exchange_mail> | <exchange_pre_auth_cmd>) <state_logged_in>)
+		                         | <exchange_quit> -->
+		<State name="state_logged_in">
+			<Action type="changeState" ref="state_logged_in_exchange" when="random.randrange(2) == 0"/>
+			<Action type="changeState" ref="exchange_quit"/>
+		</State>
+		<State name="state_logged_in_exchange">
+			<Action type="changeState" ref="exchange_mail" when="random.randrange(2) == 0"/>
+			<Action type="changeState" ref="exchange_pre_auth_cmd_logged_in"/>
+		</State>
+
+		<!-- <exchange_pre_auth_cmd>, reached from <state_logged_in>, returns there -->
+		<State name="exchange_pre_auth_cmd_logged_in">
+			<Action type="changeState" ref="exchange_noop_logged_in" when="random.randrange(6) == 0"/>
+			<Action type="changeState" ref="exchange_help_logged_in" when="random.randrange(5) == 0"/>
+			<Action type="changeState" ref="exchange_rset_logged_in" when="random.randrange(4) == 0"/>
+			<Action type="changeState" ref="exchange_vrfy_logged_in" when="random.randrange(3) == 0"/>
+			<Action type="changeState" ref="exchange_expn_logged_in" when="random.randrange(2) == 0"/>
+			<Action type="changeState" ref="exchange_bad_command_logged_in"/>
+		</State>
+		<State name="exchange_noop_logged_in">
+			<Action type="output"><DataModel ref="request_noop"/></Action>
+			<Action type="input"><DataModel ref="positive_response"/></Action>
+			<Action type="changeState" ref="state_logged_in"/>
+		</State>
+		<State name="exchange_help_logged_in">
+			<Action type="output"><DataModel ref="request_help"/></Action>
+			<Action type="input"><DataModel ref="response_help"/></Action>
+			<Action type="changeState" ref="state_logged_in"/>
+		</State>
+		<State name="exchange_rset_logged_in">
+			<Action type="output"><DataModel ref="request_rset"/></Action>
+			<Action type="input"><DataModel ref="positive_response"/></Action>
+			<Action type="changeState" ref="state_logged_in"/>
+		</State>
+		<State name="exchange_vrfy_logged_in">
+			<Action type="output"><DataModel ref="request_vrfy"/></Action>
+			<Action type="input"><DataModel ref="response_vrfy_expn"/></Action>
+			<Action type="changeState" ref="state_logged_in"/>
+		</State>
+		<State name="exchange_expn_logged_in">
+			<Action type="output"><DataModel ref="request_expn"/></Action>
+			<Action type="input"><DataModel ref="response_vrfy_expn"/></Action>
+			<Action type="changeState" ref="state_logged_in"/>
+		</State>
+		<State name="exchange_bad_command_logged_in">
+			<Action type="output"><DataModel ref="request_bad_command"/></Action>
+			<Action type="input"><DataModel ref="response_command_error"/></Action>
+			<Action type="changeState" ref="state_logged_in"/>
+		</State>
+
+		<!-- <exchange_mail> ::= <Client:request_mail_from> <Server:response_mail_from> <transaction_after_from> -->
+		<State name="exchange_mail">
+			<Action type="output"><DataModel name="envelope_from" ref="request_mail_from"/></Action>
+			<Action type="input"><DataModel ref="response_mail_from"/></Action>
+			<Action type="changeState" ref="transaction_after_from"/>
+		</State>
+
+		<!-- <transaction_after_from> ::= (<rcpt_ok> <transaction_after_rcpt>) | <exchange_rset> -->
+		<State name="transaction_after_from">
+			<Action type="changeState" ref="rcpt_ok" when="random.randrange(2) == 0"/>
+			<Action type="changeState" ref="transaction_rset"/>
+		</State>
+
+		<!-- <rcpt_ok> ::= <Client:request_mail_to> <Server:response_mail_to> -->
+		<State name="rcpt_ok">
+			<Action type="output"><DataModel name="envelope_to" ref="request_mail_to"/></Action>
+			<Action type="input"><DataModel ref="response_mail_to"/></Action>
+			<Action type="changeState" ref="transaction_after_rcpt"/>
+		</State>
+
+		<!-- <transaction_after_rcpt> ::= (<rcpt_ok> <transaction_after_rcpt>) | <transaction_data> | <exchange_rset> -->
+		<State name="transaction_after_rcpt">
+			<Action type="changeState" ref="rcpt_ok" when="random.randrange(3) == 0"/>
+			<Action type="changeState" ref="transaction_data" when="random.randrange(2) == 0"/>
+			<Action type="changeState" ref="transaction_rset"/>
+		</State>
+
+		<!-- <exchange_rset> inside a mail transaction, returns to <state_logged_in> -->
+		<State name="transaction_rset">
+			<Action type="output"><DataModel ref="request_rset"/></Action>
+			<Action type="input"><DataModel ref="positive_response"/></Action>
+			<Action type="changeState" ref="state_logged_in"/>
+		</State>
+
+		<!-- <transaction_data> ::= <Client:request_mail_data> <Server:response_mail_data>
+		                          <Client:Server:mail_data> <Server:positive_response>
+		     where forall <mail> in <mail_data>:
+		         str(<mail>..<request_mail_from>.<email_address>) == str(<mail>..<mail_header_from>.<email_address>)
+		         and str(<mail>..<request_mail_to>.<email_address>) == str(<mail>..<mail_header_to>.<email_address>) -->
+		<State name="transaction_data">
+			<Action type="output"><DataModel ref="request_mail_data"/></Action>
+			<Action type="input"><DataModel ref="response_mail_data"/></Action>
+			<Action type="slurp" valueXpath="//envelope_from/email_address" setXpath="//mail/mail_header/mail_header_from/email_address"/>
+			<Action type="slurp" valueXpath="//envelope_to/email_address" setXpath="//mail/mail_header/mail_header_to/email_address"/>
+			<Action type="output"><DataModel name="mail" ref="mail_data"/></Action>
+			<Action type="input"><DataModel ref="positive_response"/></Action>
+			<Action type="changeState" ref="state_logged_in"/>
+		</State>
+
+		<!-- <exchange_quit> ::= <Client:request_quit> <Server:response_quit> -->
+		<State name="exchange_quit">
+			<Action type="output"><DataModel ref="request_quit"/></Action>
+			<Action type="input"><DataModel ref="response_quit"/></Action>
+		</State>
+	</StateModel>
+
+	<Test name="Default" nonDeterministicActions="true">
+		<StateModel ref="start"/>
+		<Publisher class="Tcp">
+			<Param name="Host" value="127.0.0.1"/>
+			<Param name="Port" value="8025"/>
+			<Param name="Timeout" value="2000"/>
+			<Param name="ReadAvailableTimeout" value="100"/>
+			<Param name="FaultOnConnectionFailure" value="false"/>
+		</Publisher>
+		<Strategy class="Random"/>
+	</Test>
+</Peach>

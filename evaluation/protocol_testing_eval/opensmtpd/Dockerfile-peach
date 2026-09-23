@@ -1,0 +1,217 @@
+FROM ubuntu:22.04 AS peach-fetch
+RUN apt-get -y update && apt-get -y install --no-install-recommends wget ca-certificates && \
+    wget -q https://software.intel.com/sites/landingpage/pintool/downloads/pin-3.20-98437-gf02b61307-gcc-linux.tar.gz -O /pin.tgz
+
+FROM debian:stretch AS peach-build
+ARG DEBIAN_FRONTEND=noninteractive
+RUN echo "deb http://archive.debian.org/debian/ stretch main" > /etc/apt/sources.list && \
+    echo "deb http://archive.debian.org/debian-security/ stretch/updates main" >> /etc/apt/sources.list && \
+    apt-get update -y && \
+    apt-get install -y git build-essential wget curl ca-certificates python ruby nodejs node-typescript \
+        apt-transport-https dirmngr gnupg
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF && \
+    echo "deb https://download.mono-project.com/repo/debian stable-stretch main" > /etc/apt/sources.list.d/mono-official-stable.list && \
+    apt-get update -y && apt-get install -y mono-devel && \
+    (mozroots --import --sync || true)
+RUN git clone https://gitlab.com/gitlab-org/security-products/protocol-fuzzer-ce.git /pfce && \
+    cd /pfce && git checkout 047a581e670169de6c65bba88afde6d9dd897bf6
+WORKDIR /pfce
+RUN cd paket/.paket && \
+    for f in paket.bootstrapper.exe paket.targets paket.exe Paket.Restore.targets; do \
+        wget -q https://github.com/fsprojects/Paket/releases/download/5.257.0/$f; done
+COPY --from=peach-fetch /pin.tgz /tmp/pin.tgz
+RUN tar -xzf /tmp/pin.tgz -C 3rdParty/pin && rm /tmp/pin.tgz && \
+    sed -i s/pin-3.19-98425-gcc-linux/pin-3.20-98437-gf02b61307-gcc-linux/g build/config/linux.py
+# patches:
+#  - bblocks.cpp: build fix from vanhauser-thc/peachpro.
+#  - BaseProgram.cs: accept mono 6.
+#  - ObjectCopier.cs: mono >= 5 marks the certain fields as readonly.
+#  - NLog 4.3.2 -> 4.5.11.
+RUN python - <<'PY'
+import io, re
+def patch(path, old, new, regex=False):
+    with io.open(path, encoding="utf-8-sig", newline="") as f:
+        src = f.read()
+    out = re.sub(old, new, src, count=1) if regex else src.replace(old, new, 1)
+    assert out != src, "patch failed: " + path
+    with io.open(path, "w", encoding="utf-8", newline="") as f:
+        f.write(out)
+
+patch("core/BasicBlocks/bblocks.cpp",
+      "STATIC_ASSERT(sizeof(size_t) == sizeof(ADDRINT));",
+      "static_assert(sizeof(size_t) == sizeof(ADDRINT), \"\");")
+patch("pro/Core/Runtime/BaseProgram.cs",
+      "var maxVer = new Version(5, 0, 0);", "var maxVer = new Version(7, 0, 0);")
+patch("core/Core/ObjectCopier.cs",
+      r"(\t+)else if \(fieldType\.IsValueType\)",
+      r"\1else if (fieldType.IsValueType && Array.Exists(fieldType.GetFields("
+      r"BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic), f => f.IsInitOnly))\n"
+      r"\1\texprs.Add(AssignField(fieldInfo, clone, Expression.Field(original, fieldInfo)));\n"
+      r"\g<0>", regex=True)
+patch("core/Core/ObjectCopier.cs",
+      r"(?s)var getType = typeof\(object\)\.GetMethod\(\"GetType\"\);\s*var getField = [^;]*;\s*(var setValue = [^;]*;)"
+      r".*?Expression\.Call\(\s*Expression\.Call\(\s*Expression\.Call\(clone, getType\),.*?\),\s*setValue,\s*clone,",
+      r"\1\n\t\t\tvar expr = Expression.Call(Expression.Constant(fieldInfo), setValue, Expression.Convert(clone, typeof(object)),",
+      regex=True)
+patch("paket/paket.dependencies", "nuget NLog 4.3.2", "nuget NLog 4.5.11")
+patch("paket/paket.lock", "    NLog (4.3.2)", "    NLog (4.5.11)")
+PY
+RUN (cd paket && (mono .paket/paket.exe restore || mono .paket/paket.exe restore)) && \
+    ./waf configure && ./waf build install --variant=linux_x86_64_release >/tmp/waf.log 2>&1 || (tail -60 /tmp/waf.log; exit 1)
+
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get -y update && \
+    apt-get -y install \
+    sudo \
+    apt-utils \
+    build-essential \
+    gcc g++ make \
+    autoconf automake libtool bison \
+    pkg-config \
+    libssl-dev \
+    libevent-dev \
+    zlib1g-dev \
+    openssl \
+    stunnel4 \
+    ca-certificates \
+    git \
+    wget \
+    unzip \
+    cpio \
+    nano vim \
+    net-tools \
+    netcat \
+    python3.11 python3.11-dev python3-pip \
+    locales && \
+    locale-gen en_US.UTF-8 && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN groupadd ubuntu && \
+    useradd -rm -d /home/ubuntu -s /bin/bash -g ubuntu -G sudo -u 1000 ubuntu \
+        -p "$(openssl passwd -1 ubuntu)" && \
+    echo "ubuntu ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/ubuntu && \
+    chmod 0440 /etc/sudoers.d/ubuntu
+
+RUN chmod 777 /tmp
+
+RUN python3.11 -m pip install -U pip setuptools wheel
+
+RUN python3.11 -m pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org gcovr==8.6
+
+RUN apt-get -y update && apt-get -y install --no-install-recommends gnupg dirmngr && \
+    gpg --homedir /tmp --no-default-keyring --keyring /usr/share/keyrings/mono-official-archive-keyring.gpg \
+        --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF && \
+    echo "deb [signed-by=/usr/share/keyrings/mono-official-archive-keyring.gpg] https://download.mono-project.com/repo/ubuntu stable-focal main" \
+        > /etc/apt/sources.list.d/mono-official-stable.list && \
+    apt-get -y update && apt-get -y install --no-install-recommends mono-complete
+COPY --from=peach-build /pfce/output/linux_x86_64_release/bin /opt/peach
+RUN chown -R 1000:1000 /opt/peach
+
+ENV CFLAGS="-fprofile-arcs --coverage -ftest-coverage -O0"
+ENV CXXFLAGS="-fprofile-arcs --coverage -ftest-coverage -O0"
+ENV LDFLAGS="--coverage"
+
+WORKDIR /home/ubuntu
+
+RUN wget -q https://github.com/OpenSMTPD/OpenSMTPD/archive/refs/tags/7.7.0p0.zip && \
+    unzip -q 7.7.0p0.zip && \
+    rm 7.7.0p0.zip
+
+COPY gcov-flush-snippet.c /home/ubuntu/gcov-flush-snippet.c
+RUN cd /home/ubuntu/OpenSMTPD-7.7.0p0 && \
+    python3 - <<'PY'
+src = "usr.sbin/smtpd/smtpd.c"
+anchor = "extern char *__progname;\n"
+with open(src) as f:
+    text = f.read()
+with open("/home/ubuntu/gcov-flush-snippet.c") as f:
+    snippet = f.read()
+assert anchor in text, "anchor not found in smtpd.c"
+text = text.replace(anchor, anchor + "\n" + snippet + "\n", 1)
+with open(src, "w") as f:
+    f.write(text)
+print("Injected gcov flush handler into smtpd.c")
+PY
+
+
+RUN cd /home/ubuntu/OpenSMTPD-7.7.0p0 && python3 - <<'PY'
+import re, glob
+# chroot("...") / chroot(PATH_x)  ->  (0)   (so "if (chroot(...) == -1)" never fires)
+# pledge("...", ...)              ->  (0)
+chroot_re = re.compile(r'chroot\s*\(\s*[^;]*?\)')
+pledge_re = re.compile(r'pledge\s*\(\s*[^;]*?\)')
+for path in glob.glob("usr.sbin/smtpd/*.c"):
+    with open(path) as f:
+        src = f.read()
+    new = chroot_re.sub('(0)', src)
+    new = pledge_re.sub('(0)', new)
+    if new != src:
+        with open(path, "w") as f:
+            f.write(new)
+        print("neutered chroot/pledge in", path)
+PY
+
+RUN cd /home/ubuntu/OpenSMTPD-7.7.0p0 && \
+    ./bootstrap && \
+    ./configure --disable-portable --enable-plaintext-auth && \
+    make && make install
+
+RUN mkdir -p /etc/smtpd
+COPY smtpd.conf /etc/smtpd.conf
+COPY credentials /etc/smtpd/credentials
+COPY stunnel.conf /etc/stunnel/stunnel.conf
+
+RUN mkdir -p /etc/ssl/private && \
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+        -keyout /etc/ssl/private/server.key \
+        -out /etc/ssl/certs/server.crt \
+        -subj "/CN=localhost"
+
+RUN mkdir -p /var/empty && \
+    useradd -c "SMTP Daemon" -d /var/empty -s /usr/sbin/nologin _smtpd && \
+    useradd -c "SMTPD Queue" -d /var/empty -s /usr/sbin/nologin _smtpq
+
+RUN mkdir -p /var/spool/smtpd/data && \
+    chown 0:0 /var/spool/smtpd && chmod 711 /var/spool/smtpd && \
+    mkdir -p /var/spool/smtpd/queue && \
+    chown _smtpq:0 /var/spool/smtpd/queue && chmod 700 /var/spool/smtpd/queue && \
+    mkdir -p /var/spool/smtpd/control && \
+    chown _smtpd:_smtpd /var/spool/smtpd/control && chmod 711 /var/spool/smtpd/control
+
+RUN mkdir -p /var/run/smtpd && chown _smtpd /var/run/smtpd && \
+    mkdir -p /var/run/smtpd/ca /var/run/smtpd/dispatcher /var/run/smtpd/scheduler \
+             /var/run/smtpd/control /var/run/smtpd/queue && \
+    chown _smtpd:_smtpd /var/run/smtpd/* && chmod 755 /var/run/smtpd/*
+
+RUN mkdir -p /var/lib/ssl/certs && cp -r /etc/ssl/certs/* /var/lib/ssl/certs
+
+RUN cp /etc/ssl/certs/ca-certificates.crt /usr/lib/ssl/cert.pem && \
+    cp /etc/ssl/certs/ca-certificates.crt /etc/ssl/cert.pem && \
+    mkdir -p /var/empty/usr/lib/ssl /var/empty/etc/ssl && \
+    cp /etc/ssl/certs/ca-certificates.crt /var/empty/usr/lib/ssl/cert.pem && \
+    cp /etc/ssl/certs/ca-certificates.crt /var/empty/etc/ssl/cert.pem
+
+RUN useradd -ms /bin/bash the_user && echo "the_user:the_password" | chpasswd && \
+    mkdir -p /var/mail && \
+    touch /var/mail/the_user && \
+    chown the_user:the_user /var/mail/the_user
+
+RUN mkdir -p /etc/mail && touch /etc/mail/aliases
+
+COPY --chown=ubuntu:ubuntu peach-scripts/ /home/ubuntu/peach/
+RUN chmod +x /home/ubuntu/peach/run_peach.sh
+
+RUN mkdir -p /home/ubuntu/cov_out && chown -R ubuntu:ubuntu /home/ubuntu/cov_out
+
+RUN mkdir -p /cov_raw && chmod 1777 /cov_raw
+
+RUN chown -R ubuntu:ubuntu /home/ubuntu/OpenSMTPD-7.7.0p0
+
+USER ubuntu
+WORKDIR /home/ubuntu
+ENV COV_OUT_DIR=/home/ubuntu/cov_out
+
+CMD ["/home/ubuntu/peach/run_peach.sh"]

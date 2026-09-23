@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--Peach translation of fandango-scripts/dns.fan (+ dns_client.fan).-->
+<Peach xmlns="http://peachfuzzer.com/2012/Peach"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://peachfuzzer.com/2012/Peach peach.xsd">
+
+	<Import import="random"/>
+
+
+	<!-- <q_name_written> ::= (<label_len_octet> <byte>{byte_to_int(b'\x00' + bytes(<label_len_octet>))})+ := gen_q_name() -->
+	<DataModel name="q_name_written">
+		<Choice name="q_name_written">
+		<Block name="example_com">
+			<Block name="label0">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="example"/>
+			</Block>
+			<Block name="label1">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="com"/>
+			</Block>
+		</Block>
+		<Block name="mail_example_com">
+			<Block name="label0">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="mail"/>
+			</Block>
+			<Block name="label1">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="example"/>
+			</Block>
+			<Block name="label2">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="com"/>
+			</Block>
+		</Block>
+		<Block name="www_example_com">
+			<Block name="label0">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="www"/>
+			</Block>
+			<Block name="label1">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="example"/>
+			</Block>
+			<Block name="label2">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="com"/>
+			</Block>
+		</Block>
+		<Block name="sip__tcp_example_com">
+			<Block name="label0">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="_sip"/>
+			</Block>
+			<Block name="label1">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="_tcp"/>
+			</Block>
+			<Block name="label2">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="example"/>
+			</Block>
+			<Block name="label3">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="com"/>
+			</Block>
+		</Block>
+		<Block name="arpa_1_0_0_127_in_addr_arpa">
+			<Block name="label0">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="1"/>
+			</Block>
+			<Block name="label1">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="0"/>
+			</Block>
+			<Block name="label2">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="0"/>
+			</Block>
+			<Block name="label3">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="127"/>
+			</Block>
+			<Block name="label4">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="in-addr"/>
+			</Block>
+			<Block name="label5">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="arpa"/>
+			</Block>
+		</Block>
+		<Block name="doesnotexist_example_com">
+			<Block name="label0">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="doesnotexist"/>
+			</Block>
+			<Block name="label1">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="example"/>
+			</Block>
+			<Block name="label2">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="com"/>
+			</Block>
+		</Block>
+		<Block name="test_example_com">
+			<Block name="label0">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="test"/>
+			</Block>
+			<Block name="label1">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="example"/>
+			</Block>
+			<Block name="label2">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="com"/>
+			</Block>
+		</Block>
+		<Block name="www_github_com">
+			<Block name="label0">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="www"/>
+			</Block>
+			<Block name="label1">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="github"/>
+			</Block>
+			<Block name="label2">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="com"/>
+			</Block>
+		</Block>
+		<Block name="www_wikipedia_org">
+			<Block name="label0">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="www"/>
+			</Block>
+			<Block name="label1">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="wikipedia"/>
+			</Block>
+			<Block name="label2">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="org"/>
+			</Block>
+		</Block>
+		<Block name="github_com">
+			<Block name="label0">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="github"/>
+			</Block>
+			<Block name="label1">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="com"/>
+			</Block>
+		</Block>
+		<Block name="google_com">
+			<Block name="label0">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="google"/>
+			</Block>
+			<Block name="label1">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="com"/>
+			</Block>
+		</Block>
+		<Block name="example_com_2">
+			<Block name="label0">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="example"/>
+			</Block>
+			<Block name="label1">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="com"/>
+			</Block>
+		</Block>
+		<Block name="cloudflare_com">
+			<Block name="label0">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="cloudflare"/>
+			</Block>
+			<Block name="label1">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="com"/>
+			</Block>
+		</Block>
+		<Block name="wikipedia_org">
+			<Block name="label0">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="wikipedia"/>
+			</Block>
+			<Block name="label1">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="org"/>
+			</Block>
+		</Block>
+		<Block name="amazon_com">
+			<Block name="label0">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="amazon"/>
+			</Block>
+			<Block name="label1">
+				<Number name="label_len_octet" size="8"><Relation type="size" of="bytes"/></Number>
+				<String name="bytes" value="com"/>
+			</Block>
+		</Block>
+		</Choice>
+	</DataModel>
+
+	<!-- <q_name> ::= <q_name_written> 0{8} -->
+	<DataModel name="q_name">
+		<Block name="q_name_written" ref="q_name_written"/>
+		<Number name="root" size="8" value="0"/>
+	</DataModel>
+
+	<!-- <q_name_optional> ::= <q_name_written>? 0{8} -->
+	<DataModel name="q_name_optional">
+		<Block name="q_name_written" ref="q_name_written" minOccurs="0" maxOccurs="1"/>
+		<Number name="root" size="8" value="0"/>
+	</DataModel>
+
+	<!-- <rr_class> ::= 0{15} 1 -->
+	<!-- <a_ttl> ::= 0 <bit>{7} <byte>{3} -->
+
+	<!-- <question> ::= <q_name> <q_type> <rr_class>
+	     <q_type> ::= <type_id_a> | <type_id_a> | <type_id_a> | <type_id_cname> | <type_id_cname> | <type_id_ns> | <type_id_ns>
+	                | <type_id_soa> | <type_id_ptr> | <type_id_mx> | <type_id_txt> | <type_id_aaaa> | <type_id_srv> -->
+	<DataModel name="question">
+		<Block name="q_name" ref="q_name"/>
+		<Choice name="q_type">
+			<Number name="type_id_a" size="16" endian="big" value="1"/>
+			<Number name="type_id_a_2" size="16" endian="big" value="1"/>
+			<Number name="type_id_a_3" size="16" endian="big" value="1"/>
+			<Number name="type_id_cname" size="16" endian="big" value="5"/>
+			<Number name="type_id_cname_2" size="16" endian="big" value="5"/>
+			<Number name="type_id_ns" size="16" endian="big" value="2"/>
+			<Number name="type_id_ns_2" size="16" endian="big" value="2"/>
+			<Number name="type_id_soa" size="16" endian="big" value="6"/>
+			<Number name="type_id_ptr" size="16" endian="big" value="12"/>
+			<Number name="type_id_mx" size="16" endian="big" value="15"/>
+			<Number name="type_id_txt" size="16" endian="big" value="16"/>
+			<Number name="type_id_aaaa" size="16" endian="big" value="28"/>
+			<Number name="type_id_srv" size="16" endian="big" value="33"/>
+		</Choice>
+		<Number name="rr_class" size="16" endian="big" value="1"/>
+	</DataModel>
+
+	<!-- <answer_opt> ::= <q_name_optional> (<type_opt> | <type_a> | <type_aaaa>) -->
+	<DataModel name="answer_opt">
+		<Block name="q_name_optional" ref="q_name_optional"/>
+		<Choice name="rr">
+			<!-- <type_opt> ::= <type_id_opt> <udp_payload_size> <a_ttl> <a_rd_length> <opt_rdata>
+			     <udp_payload_size> ::= <bit>{16} := pack(">H", choice([512, 1232, 4096]))
+			     where bytes(<t>.<a_rd_length>) == pack('>H', len(bytes(<t>.<opt_rdata>))) -->
+			<Block name="type_opt">
+				<Number name="type_id_opt" size="16" endian="big" value="41"/>
+				<Choice name="udp_payload_size">
+					<Number name="size_512" size="16" endian="big" value="512"/>
+					<Number name="size_1232" size="16" endian="big" value="1232"/>
+					<Number name="size_4096" size="16" endian="big" value="4096"/>
+				</Choice>
+				<Number name="a_ttl" size="32" endian="big" value="0"/>
+				<Number name="a_rd_length" size="16" endian="big"><Relation type="size" of="opt_rdata"/></Number>
+				<!-- <opt_rdata> ::= <opt_option>?
+				     <opt_option> ::= <byte>{2} <opt_opt_len> <byte>{byte_to_int(<opt_opt_len>)}
+				     <opt_opt_len> ::= <byte>{2} := pack(">H", randint(0, 4)) -->
+				<Block name="opt_rdata">
+					<Block name="opt_option" minOccurs="0" maxOccurs="1">
+						<Number name="code" size="16" endian="big" value="0"/>
+						<Number name="opt_opt_len" size="16" endian="big"><Relation type="size" of="data"/></Number>
+						<Blob name="data" length="0"/>
+					</Block>
+				</Block>
+			</Block>
+			<!-- <type_a> ::= <type_id_a> <rr_class> <a_ttl> 0{13} 1 0 0 <ip_address> -->
+			<Block name="type_a">
+				<Number name="type_id_a" size="16" endian="big" value="1"/>
+				<Number name="rr_class" size="16" endian="big" value="1"/>
+				<Number name="a_ttl" size="32" endian="big" value="0"/>
+				<Number name="rd_length" size="16" endian="big" value="4"/>
+				<Blob name="ip_address" valueType="hex" value="00 00 00 00"/>
+			</Block>
+			<!-- <type_aaaa> ::= <type_id_aaaa> <rr_class> <a_ttl> 0{11} 1 0 0 0 0 <ip_address_v6> -->
+			<Block name="type_aaaa">
+				<Number name="type_id_aaaa" size="16" endian="big" value="28"/>
+				<Number name="rr_class" size="16" endian="big" value="1"/>
+				<Number name="a_ttl" size="32" endian="big" value="0"/>
+				<Number name="rd_length" size="16" endian="big" value="16"/>
+				<Blob name="ip_address_v6" valueType="hex" value="00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"/>
+			</Block>
+		</Choice>
+	</DataModel>
+
+	<!-- <header_req> ::= <h_id> 0 <h_opcode_req> 0 0 <h_rd> 0 0 <bit> 0 <h_rcode_noerror> <req_qd_count> 0{16} 0{16} <req_ar_count>
+	     <req_qd_count> ::= <byte>{2} := pack(">H", 1)
+	     <req_ar_count> ::= <bit>{16} := pack(">H", choice([0, 0, 1])) -->
+	<DataModel name="header_req">
+		<Number name="h_id" size="16" endian="big" value="0"/>
+		<Number name="qr" size="1" value="0"/>
+		<Number name="h_opcode_req" size="4" value="0"/>
+		<Number name="aa" size="1" value="0"/>
+		<Number name="tc" size="1" value="0"/>
+		<Number name="h_rd" size="1" value="1"/>
+		<Number name="ra" size="1" value="0"/>
+		<Number name="z" size="1" value="0"/>
+		<Number name="bit" size="1" value="0"/>
+		<Number name="cd" size="1" value="0"/>
+		<Number name="h_rcode_noerror" size="4" value="0"/>
+		<Number name="req_qd_count" size="16" endian="big"><Relation type="count" of="question"/></Number>
+		<Number name="an_count" size="16" endian="big" value="0"/>
+		<Number name="ns_count" size="16" endian="big" value="0"/>
+		<Number name="req_ar_count" size="16" endian="big"><Relation type="count" of="answer_opt"/></Number>
+	</DataModel>
+
+	<!-- <dns_req> ::= <header_req> <question>{byte_to_int(<req_qd_count>)} <req_additional_section>
+	     <req_additional_section> ::= <answer_opt>{byte_to_int(<header_req>.<req_ar_count>)}
+	     req_ar_count = 0 -->
+	<DataModel name="dns_req">
+		<Block name="header_req" ref="header_req"/>
+		<Block name="question" ref="question" minOccurs="1" maxOccurs="-1"/>
+		<Block name="answer_opt" ref="answer_opt" minOccurs="0" maxOccurs="-1"/>
+	</DataModel>
+
+	<!-- <dns_req>, req_ar_count = 1 -->
+	<DataModel name="dns_req_additional">
+		<Block name="header_req" ref="header_req"/>
+		<Block name="question" ref="question" minOccurs="1" maxOccurs="-1"/>
+		<Block name="answer_opt" ref="answer_opt" minOccurs="1" maxOccurs="-1"/>
+	</DataModel>
+
+	<!-- <dns_resp> ::= <header_resp> <question_section> <answer_an_section> <answer_au_section> <answer_opt_section>
+	     <header_resp> ::= <h_id> 1 <h_opcode_req> <h_tc> 0 <h_resp_rd> <resp_flags_lo> <resp_qd_count> <resp_an_count> <resp_ns_count> <resp_ar_count>
+	     <resp_flags_lo> ::= <h_ra> <bit> <h_aa> 0 <h_rcode_resp>
+	     <h_rcode_resp> ::= NOERROR | FORMERR | SERVFAIL | NXDOMAIN | NOTIMP | REFUSED -->
+	<DataModel name="dns_resp">
+		<Block name="header_resp">
+			<Number name="h_id" size="16" endian="big"/>
+			<Number name="qr" size="1" value="1" token="true"/>
+			<Number name="h_opcode_req" size="4" value="0" token="true"/>
+			<Number name="h_tc" size="1"/>
+			<Number name="zero1" size="1" value="0" token="true"/>
+			<Number name="h_resp_rd" size="1"/>
+			<Number name="h_ra" size="1"/>
+			<Number name="bit" size="1"/>
+			<Number name="h_aa" size="1"/>
+			<Number name="zero2" size="1" value="0" token="true"/>
+			<Number name="h_rcode_resp" size="4" constraint="int(value) &lt;= 5"/>
+			<Number name="resp_qd_count" size="16" endian="big"/>
+			<Number name="resp_an_count" size="16" endian="big"/>
+			<Number name="resp_ns_count" size="16" endian="big"/>
+			<Number name="resp_ar_count" size="16" endian="big"/>
+		</Block>
+		<Blob name="sections"/>
+	</DataModel>
+
+
+	<StateModel name="start" initialState="exchange">
+
+		<!-- <start> ::= <exchange>
+		     <exchange> ::= <Client:dns_req> <Server:dns_resp>
+		     <req_ar_count> := pack(">H", choice([0, 0, 1])) -->
+		<State name="exchange">
+			<Action type="changeState" ref="exchange_no_additional" when="random.randrange(3) != 0"/>
+			<Action type="changeState" ref="exchange_additional"/>
+		</State>
+		<State name="exchange_no_additional">
+			<Action type="output"><DataModel ref="dns_req"/></Action>
+			<Action type="input"><DataModel ref="dns_resp"/></Action>
+		</State>
+		<State name="exchange_additional">
+			<Action type="output"><DataModel ref="dns_req_additional"/></Action>
+			<Action type="input"><DataModel ref="dns_resp"/></Action>
+		</State>
+	</StateModel>
+
+	<Test name="Default" nonDeterministicActions="true">
+		<StateModel ref="start"/>
+		<Publisher class="Udp">
+			<Param name="Host" value="127.0.0.1"/>
+			<Param name="Port" value="25566"/>
+			<Param name="Timeout" value="2000"/>
+		</Publisher>
+		<Strategy class="Random"/>
+	</Test>
+</Peach>
