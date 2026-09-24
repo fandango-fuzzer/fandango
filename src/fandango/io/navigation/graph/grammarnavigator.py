@@ -1,4 +1,6 @@
-from collections.abc import Iterable
+import heapq
+import itertools
+from collections.abc import Hashable, Iterable
 from typing import NamedTuple, Optional, Union
 
 from astar import AStar
@@ -14,9 +16,11 @@ from fandango.language.grammar.node_visitors.grammar_graph_converter import (
     EagerGrammarGraphNode,
     GrammarGraphConverter,
     GrammarGraphNode,
+    LazyGrammarGraphNode,
 )
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.grammar.nodes.repetition import Repetition
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.symbols import NonTerminal, Symbol
 
@@ -69,6 +73,10 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         self._chain_summaries: dict[GrammarGraphNode, ChainSummary] = {}
         self._heuristic_costs: dict[GrammarGraphNode, int] = {}
         self._search_fallbacks: list[int] = []
+        self._future_keys: dict[GrammarGraphNode, Hashable] = {}
+        self._continuation_keys: dict[
+            GrammarGraphNode, Optional[frozenset[Hashable]]
+        ] = {}
 
     _SUB_UNREACHABLE = 100_000
     ANCESTOR_LOOKBACK = 6
@@ -138,7 +146,94 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         Overloaded method. Don't call this directly, use astar_tree or astar_search_end instead.
         """
         self.comparisons = 0
-        return super().astar(start, goal, reverse_path)
+        if self.is_goal_reached(start, goal):
+            return [start]
+        insertion_order = itertools.count()
+        best_costs = {self._search_state(start): 0}
+        came_from: dict[GrammarGraphNode, Optional[GrammarGraphNode]] = {start: None}
+        closed: set[Hashable] = set()
+        frontier = [
+            (self.heuristic_cost_estimate(start, goal), next(insertion_order), 0, start)
+        ]
+        while frontier:
+            _, _, cost, current = heapq.heappop(frontier)
+            state = self._search_state(current)
+            if state in closed or cost > best_costs[state]:
+                continue
+            if self.is_goal_reached(current, goal):
+                path = []
+                node: Optional[GrammarGraphNode] = current
+                while node is not None:
+                    path.append(node)
+                    node = came_from[node]
+                return path if reverse_path else list(reversed(path))
+            closed.add(state)
+            for neighbor in self.neighbors(current):
+                neighbor_state = self._search_state(neighbor)
+                if neighbor_state in closed:
+                    continue
+                neighbor_cost = cost + self.distance_between(current, neighbor)
+                if neighbor_cost >= best_costs.get(neighbor_state, neighbor_cost + 1):
+                    continue
+                best_costs[neighbor_state] = neighbor_cost
+                came_from[neighbor] = current
+                heapq.heappush(
+                    frontier,
+                    (
+                        neighbor_cost + self.heuristic_cost_estimate(neighbor, goal),
+                        next(insertion_order),
+                        neighbor_cost,
+                        neighbor,
+                    ),
+                )
+        return None
+
+    def _enclosing_instance(self, node: GrammarGraphNode) -> Optional[GrammarGraphNode]:
+        current = node.parent
+        while current is not None and not isinstance(current, LazyGrammarGraphNode):
+            if isinstance(current.node, Repetition):
+                return None
+            if current.parent is None:
+                return current
+            current = current.parent
+        return current
+
+    def _continuation_key(
+        self, instance: GrammarGraphNode
+    ) -> Optional[frozenset[Hashable]]:
+        if not isinstance(instance, LazyGrammarGraphNode):
+            return frozenset()
+        if instance not in self._continuation_keys:
+            self._continuation_keys[instance] = None
+            self._continuation_keys[instance] = frozenset(
+                self._future_key(following) for following in instance._pre_load_reaches
+            )
+        return self._continuation_keys[instance]
+
+    def _future_key(self, node: GrammarGraphNode) -> Hashable:
+        if node not in self._future_keys:
+            instance = self._enclosing_instance(node)
+            continuation = (
+                None if instance is None else self._continuation_key(instance)
+            )
+            self._future_keys[node] = (
+                ("instance", id(node))
+                if continuation is None
+                else (id(node.node), continuation)
+            )
+        return self._future_keys[node]
+
+    def _search_state(self, node: GrammarGraphNode) -> Hashable:
+        if not self.search_symbols:
+            return self._future_key(node)
+        summary = self._chain_summary(node)
+        if summary.shared_with_forbidden_path < summary.length:
+            return (
+                self._future_key(node),
+                summary.recent_matched_lengths,
+                summary.closest_target_distances,
+            )
+        return (self._future_key(node), summary)
 
     def neighbors(self, n: GrammarGraphNode) -> list[GrammarGraphNode]:
         return n.reaches
@@ -325,9 +420,12 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
             destination_k_path=destination_k_path, tree=tree
         )
         if not reachability.path_reachable:
-            if not self.check_reachability_w_controlflow(
-                destination_k_path=destination_k_path
-            ).path_reachable and destination_k_path[0] != NonTerminal("<start>"):
+            if (
+                tree is None
+                or not self.check_reachability_w_controlflow(
+                    destination_k_path=destination_k_path
+                ).path_reachable
+            ):
                 raise FandangoError(
                     f"Symbol {destination_k_path} is not reachable in grammar."
                 )
