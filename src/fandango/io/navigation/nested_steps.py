@@ -29,7 +29,7 @@ def run_nested_steps(
     pending_steps = [steps]
     is_started = False
     nested_result: Optional[Result] = None
-    nested_error: Optional[BaseException] = None
+    nested_error: Optional[Exception] = None
     while pending_steps:
         current_steps = pending_steps[-1]
         try:
@@ -45,7 +45,7 @@ def run_nested_steps(
             is_started = True
             nested_result = finished_steps.value
             continue
-        except BaseException as steps_error:
+        except Exception as steps_error:
             pending_steps.pop()
             is_started = True
             nested_error = steps_error
@@ -53,7 +53,7 @@ def run_nested_steps(
         try:
             pending_steps.append(steps_for(request))
             is_started = False
-        except BaseException as steps_error:
+        except Exception as steps_error:
             is_started = True
             nested_error = steps_error
     if nested_error is not None:
