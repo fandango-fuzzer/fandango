@@ -1,6 +1,5 @@
 from collections.abc import Iterable
-from functools import lru_cache
-from typing import Optional, Union
+from typing import NamedTuple, Optional, Union
 
 from astar import AStar
 
@@ -22,22 +21,23 @@ from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.symbols import NonTerminal, Symbol
 
 
-@lru_cache(maxsize=16384)
-def _path_symbols(node: "GrammarGraphNode", include_controlflow: bool) -> list[Symbol]:
-    """Cache the symbol chain from a grammar-graph node up to the root."""
-    node_chain = [node]
-    current = node
-    while current.parent is not None:
-        current = current.parent
-        node_chain.append(current)
-    node_chain.reverse()
-    if include_controlflow:
-        return [n.node.to_symbol() for n in node_chain]
-    return [n.node.to_symbol() for n in node_chain if not n.node.is_controlflow]
-
-
 class NavigatorTimedOutError(FandangoError):
     pass
+
+
+def nearer(first: Optional[int], second: Optional[int]) -> Optional[int]:
+    if first is None:
+        return second
+    if second is None:
+        return first
+    return min(first, second)
+
+
+class ChainSummary(NamedTuple):
+    length: int
+    shared_with_forbidden_path: int
+    recent_matched_lengths: tuple[int, ...]
+    closest_target_distances: tuple[Optional[int], ...]
 
 
 class GrammarNavigator(AStar[GrammarGraphNode]):
@@ -65,6 +65,10 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         self._target_dists: Optional[list[dict[str, int]]] = None
         # Reference graph. Shows which symbols directly reference which others.
         self._ref_fwd: Optional[dict[str, set[str]]] = None
+        self._chain_symbols: dict[GrammarGraphNode, Optional[Symbol]] = {}
+        self._chain_summaries: dict[GrammarGraphNode, ChainSummary] = {}
+        self._heuristic_costs: dict[GrammarGraphNode, int] = {}
+        self._search_fallbacks: list[int] = []
 
     _SUB_UNREACHABLE = 100_000
     ANCESTOR_LOOKBACK = 6
@@ -156,62 +160,118 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
                 return self.non_terminal_cost
         return self.node_cost
 
+    def _chain_symbol(self, node: GrammarGraphNode) -> Optional[Symbol]:
+        if node not in self._chain_symbols:
+            self._chain_symbols[node] = (
+                None if node.node.is_controlflow else node.node.to_symbol()
+            )
+        return self._chain_symbols[node]
+
+    def _chain(self, node: GrammarGraphNode) -> tuple[Symbol, ...]:
+        symbols = []
+        current: Optional[GrammarGraphNode] = node
+        while current is not None:
+            symbol = self._chain_symbol(current)
+            if symbol is not None:
+                symbols.append(symbol)
+            current = current.parent
+        return tuple(reversed(symbols))
+
+    def _start_search(
+        self,
+        search_symbols: Optional[list[Symbol]],
+        forbidden_path: tuple[Symbol, ...],
+        target_dists: Optional[list[dict[str, int]]],
+    ) -> None:
+        self.search_symbols = search_symbols
+        self._forbidden_path = forbidden_path
+        self._target_dists = target_dists
+        self._search_fallbacks = self._prefix_fallbacks(search_symbols or [])
+        self._chain_summaries.clear()
+        self._heuristic_costs.clear()
+
     @staticmethod
-    def _get_path_symbols(
-        node: GrammarGraphNode, include_controlflow: bool
-    ) -> list[Symbol]:
-        return _path_symbols(node, include_controlflow)
+    def _prefix_fallbacks(pattern: list[Symbol]) -> list[int]:
+        fallbacks = [0] * len(pattern)
+        matched = 0
+        for i in range(1, len(pattern)):
+            while matched > 0 and pattern[i] != pattern[matched]:
+                matched = fallbacks[matched - 1]
+            if pattern[i] == pattern[matched]:
+                matched += 1
+            fallbacks[i] = matched
+        return fallbacks
 
-    def _live_suffix_len(self, current_chain: list[Symbol]) -> int:
-        """Longest suffix of ``current_chain`` that is a prefix of the k-path."""
-        if not self.search_symbols or not current_chain:
-            return 0
-        search_len = len(self.search_symbols)
-        chain_len = len(current_chain)
-        strict = 0
-        for i in range(1, min(search_len, chain_len) + 1):
-            if current_chain[-i:] == self.search_symbols[:i]:
-                strict = i
-        return strict
+    def _matched_length_after(self, matched: int, symbol: Symbol) -> int:
+        assert self.search_symbols is not None
+        if matched == len(self.search_symbols):
+            matched = self._search_fallbacks[matched - 1]
+        while matched > 0 and self.search_symbols[matched] != symbol:
+            matched = self._search_fallbacks[matched - 1]
+        if self.search_symbols[matched] == symbol:
+            matched += 1
+        return matched
 
-    def _strip_forbidden_prefix(self, current_chain: list[Symbol]) -> list[Symbol]:
-        """
-        Drop the longest leading run a node's chain shares with the recorded
-        dead-end path. Only the part beyond it is genuine progress, so a match
-        that merely reproduces (a prefix of) the dead-end path collapses to
-        nothing while a fresh occurrence further down keeps its credit.
-        """
-        if not self._forbidden_path:
-            return current_chain
-        i = 0
-        limit = min(len(current_chain), len(self._forbidden_path))
-        while i < limit and current_chain[i] == self._forbidden_path[i]:
-            i += 1
-        return current_chain[i:]
+    def _extended_summary(
+        self, summary: ChainSummary, symbol: Optional[Symbol]
+    ) -> ChainSummary:
+        if symbol is None:
+            return summary
+        length = summary.length + 1
+        if (
+            summary.shared_with_forbidden_path == summary.length
+            and summary.length < len(self._forbidden_path)
+            and symbol == self._forbidden_path[summary.length]
+        ):
+            return summary._replace(length=length, shared_with_forbidden_path=length)
+        previous_matched = (
+            summary.recent_matched_lengths[-1] if summary.recent_matched_lengths else 0
+        )
+        matched = self._matched_length_after(previous_matched, symbol)
+        name = str(symbol)
+        return ChainSummary(
+            length,
+            summary.shared_with_forbidden_path,
+            (summary.recent_matched_lengths + (matched,))[-self.ANCESTOR_LOOKBACK :],
+            tuple(
+                nearer(closest, target.get(name))
+                for closest, target in zip(
+                    summary.closest_target_distances,
+                    self._target_dists or [],
+                    strict=True,
+                )
+            ),
+        )
 
-    def heuristic_path_symbols(self, current_chain: list[Symbol]) -> int:
-        if not self.search_symbols or not current_chain:
+    def _chain_summary(self, node: GrammarGraphNode) -> ChainSummary:
+        unsummarised = []
+        current: Optional[GrammarGraphNode] = node
+        while current is not None and current not in self._chain_summaries:
+            unsummarised.append(current)
+            current = current.parent
+        if current is None:
+            summary = ChainSummary(0, 0, (), (None,) * len(self._target_dists or []))
+        else:
+            summary = self._chain_summaries[current]
+        for graph_node in reversed(unsummarised):
+            summary = self._extended_summary(summary, self._chain_symbol(graph_node))
+            self._chain_summaries[graph_node] = summary
+        return summary
+
+    def _heuristic_cost(self, summary: ChainSummary) -> int:
+        assert self.search_symbols is not None
+        if summary.length == 0:
             return 1
-        current_chain = self._strip_forbidden_prefix(current_chain)
         search_len = len(self.search_symbols)
-
-        strict = self._live_suffix_len(current_chain)
-        if strict == search_len:
+        recent = summary.recent_matched_lengths
+        if recent and recent[-1] == search_len:
             return 0
 
         # Inside an exchange the chain ends with symbols below the state, so the
         # suffix no longer matches the k-path and every transition looks like a
         # step back. Rate the node by the best match among its nearest ancestors.
         # The goal test above stays exact.
-        for j in range(
-            len(current_chain) - 1,
-            max(len(current_chain) - self.ANCESTOR_LOOKBACK, 0),
-            -1,
-        ):
-            strict = max(strict, self._live_suffix_len(current_chain[:j]))
-        strict = min(strict, search_len - 1)
-
-        chain_strs = [str(s) for s in current_chain]
+        strict = min(max(recent, default=0), search_len - 1)
 
         # Sub-gradient toward search_symbols[strict] (the next symbol that would
         # extend the live suffix) via the static reference distance, taken as min
@@ -219,29 +279,23 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         # through OFF-path symbols first.
         BIG = 1_000_000
         sub = self._SUB_UNREACHABLE
-        if (
-            strict < search_len
-            and self._target_dists is not None
-            and strict < len(self._target_dists)
-        ):
-            dmap = self._target_dists[strict]
-            best = None
-            for cs in chain_strs:
-                d = dmap.get(cs)
-                if d is not None and (best is None or d < best):
-                    best = d
-            if best is not None:
-                sub = best
+        if self._target_dists is not None and strict < len(self._target_dists):
+            closest = summary.closest_target_distances[strict]
+            if closest is not None:
+                sub = closest
         # Never return 0 here
         return max((search_len - strict) * BIG + sub, 1)
 
     def heuristic_cost_estimate(
         self, current: GrammarGraphNode, goal: GrammarGraphNode
     ) -> int:
-        if self.search_symbols is not None and len(self.search_symbols) > 0:
-            chain = self._get_path_symbols(current, False)
-            return self.heuristic_path_symbols(chain)
-        return 1
+        if not self.search_symbols:
+            return 1
+        cost = self._heuristic_costs.get(current)
+        if cost is None:
+            cost = self._heuristic_cost(self._chain_summary(current))
+            self._heuristic_costs[current] = cost
+        return cost
 
     def is_goal_reached(
         self, current: GrammarGraphNode, goal: GrammarGraphNode
@@ -292,18 +346,19 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
             start_nav_node = self.graph.walk(tree)
         else:
             start_nav_node = self.graph.start
-        self.search_symbols = list(destination_k_path)
         # Record the realized derivation path as forbidden only when there is an
         # existing derivation whose match cannot be completed by extension.
-        if tree is not None and not reachability.completable_by_extension:
-            self._forbidden_path = tuple(self._get_path_symbols(start_nav_node, False))
-        else:
-            self._forbidden_path = tuple()
-        # Precompute static reference distances to each symbol of the k-path so
-        # the heuristic has a gradient toward whichever symbol is needed next
-        # (not just the first). Crossing message-state plateaus between two
-        # k-path symbols otherwise degenerates to brute force.
-        self._target_dists = [self._symbol_distances_to(s) for s in destination_k_path]
+        # Static reference distances to each symbol of the k-path give the
+        # heuristic a gradient toward whichever symbol is needed next (not just
+        # the first). Crossing message-state plateaus between two k-path symbols
+        # otherwise degenerates to brute force.
+        self._start_search(
+            list(destination_k_path),
+            self._chain(start_nav_node)
+            if tree is not None and not reachability.completable_by_extension
+            else tuple(),
+            [self._symbol_distances_to(s) for s in destination_k_path],
+        )
         a_star_path = self.astar(
             start_nav_node,
             EagerGrammarGraphNode(NonTerminalNode(NonTerminal("<dummy>"), []), []),
@@ -327,7 +382,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         start_node = self.graph.walk(tree)
         if start_node.is_accepting:
             return []
-        self.search_symbols = None
+        self._start_search(None, tuple(), None)
         self.is_search_end_node = True
         a_star_path = self.astar(start_node, start_node)
         if a_star_path is None:
