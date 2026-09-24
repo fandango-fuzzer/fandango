@@ -106,16 +106,34 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             time.sleep(0.025)
         return True
 
+    def _gen_timeout_violation(self) -> FandangoRemoteViolation:
+        external_parties = self._packet_selector.next_external_parties()
+        packets_by_party = self._packet_selector.forecasting_result.parties_to_packets
+        expected_nonterminals = sorted(
+            {
+                nonterminal
+                for party in external_parties
+                for nonterminal in packets_by_party[party].get_non_terminals()
+            },
+            key=lambda nonterminal: nonterminal.format_as_spec(),
+        )
+        return FandangoRemoteViolation(
+            f"Timed out while waiting for message from remote party. Expected message from party: {', '.join(external_parties)}",
+            error_type=RemoteViolationType.TIMEOUT,
+            session_tree=self._protocol_tree,
+            sender=", ".join(external_parties),
+            recipient=None,
+            payload_raw="",
+            expected_nonterminals=expected_nonterminals,
+        )
+
     def _handle_remote_response(self) -> DerivationTree:
         timeout = self._remote_response_timeout
         for packet in self._packet_selector.next_packets:
             if packet.node.sender == "TimerEvent":
                 timeout = -1
         if not self._wait_for_remote_message(timeout):
-            external_parties = self._packet_selector.next_external_parties()
-            raise FandangoFailedError(
-                f"Timed out while waiting for message from remote party. Expected message from party: {', '.join(external_parties)}"
-            )
+            raise self._gen_timeout_violation()
 
         packet_sender = None
         packet_recipient = None

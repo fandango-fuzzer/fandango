@@ -12,6 +12,7 @@ class RemoteViolationType(enum.Enum):
     UNEXPECTED_PARTY = "UNEXPECTED_PARTY"
     CONSTRAINT = "CONSTRAINT"
     PARAMETER_DERIVATION = "PARAMETER_DERIVATION"
+    TIMEOUT = "TIMEOUT"
 
 
 class FandangoRemoteViolation(FandangoFailedError):
@@ -43,7 +44,10 @@ class FandangoRemoteViolation(FandangoFailedError):
         self.payload_tree = payload_tree
 
     def __repr__(self) -> str:
-        parts = [f"{self.sender} -> {self.recipient}: {self.payload_raw!r}"]
+        if self.error_type == RemoteViolationType.TIMEOUT:
+            parts = [f"no message from {self.sender}"]
+        else:
+            parts = [f"{self.sender} -> {self.recipient}: {self.payload_raw!r}"]
         if self.expected_nonterminals:
             expected = " | ".join(
                 nt.format_as_spec() for nt in self.expected_nonterminals
