@@ -8,7 +8,6 @@ from fandango.io.navigation.graph.packetiterativeparser import (
 from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConverter
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.language import DerivationTree, Grammar
-from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.grammar import KPath
 from fandango.language.grammar.node_visitors.grammar_graph_converter import (
     GrammarGraphNode,
@@ -53,9 +52,7 @@ class PacketNavigator(GrammarNavigator):
             return
         self._parser.detailed_tree = tree
         self._parser.reference_tree = tree
-        self._parser.new_parse(NonTerminal("<start>"), ParsingMode.INCOMPLETE)
-
-        self._parser.consume(history_nts)
+        self._parser.parse_history(history_nts)
         for suggested_tree, is_complete in self._parser.tree_at(
             self._parser.consumed_length(), incomplete=True
         ):

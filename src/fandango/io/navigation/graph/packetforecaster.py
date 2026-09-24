@@ -9,7 +9,6 @@ from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConve
 from fandango.io.navigation.graph.visitor.continuing_nodevisitor import (
     ContinuingNodeVisitor,
 )
-from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.terminal import TerminalNode
@@ -199,8 +198,7 @@ class PacketForecaster:
             options = options.union(finder.forecast())
         else:
             self._parser.reference_tree = tree
-            self._parser.new_parse(NonTerminal("<start>"), ParsingMode.INCOMPLETE)
-            self._parser.consume(history_nts)
+            self._parser.parse_history(history_nts)
             for suggested_tree, is_complete in self._parser.tree_at(
                 self._parser.consumed_length(), incomplete=True
             ):
