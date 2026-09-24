@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import enum
+import errno
 import io
 import logging
 import os
@@ -22,6 +23,8 @@ from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
 
 EnvKey = Hashable
+
+CONNECT_RETRY_INTERVAL_S = 0.01
 
 
 class EnvContext:
@@ -424,22 +427,38 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
                                 self._connection, _ = self._sock.accept()
                                 break
                     else:
-                        assert self._sock is not None
-                        self._sock.setblocking(False)
-                        try:
-                            self._sock.connect((self.ip, self.port))
-                        except BlockingIOError:
-                            pass
-                        while self._running:
-                            _, wlist, _ = select.select([], [self._sock], [], 0.00001)
-                            if wlist:
-                                self._connection = self._sock
-                                break
-                        self._sock.setblocking(True)
+                        self._connect_to_remote()
                 else:
                     # For UDP, we do not need to accept a connection
                     assert self._sock is not None
                     self._connection = self._sock
+
+    def _connect_to_remote(self) -> None:
+        while self._running:
+            assert self._sock is not None
+            self._sock.setblocking(False)
+            result: int | None = self._sock.connect_ex((self.ip, self.port))
+            if result in (errno.EINPROGRESS, errno.EWOULDBLOCK, errno.EALREADY):
+                result = self._finished_connect_result()
+            if result == 0:
+                self._sock.setblocking(True)
+                self._connection = self._sock
+                return
+            if not self._running:
+                return
+            self._sock.close()
+            self._create_socket()
+            time.sleep(CONNECT_RETRY_INTERVAL_S)
+
+    def _finished_connect_result(self) -> int | None:
+        assert self._sock is not None
+        while self._running:
+            _, writable, _ = select.select(
+                [], [self._sock], [], CONNECT_RETRY_INTERVAL_S
+            )
+            if writable:
+                return self._sock.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
+        return None
 
     def _listen(self) -> None:
         """
