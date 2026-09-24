@@ -57,7 +57,11 @@ class GrammarGraphNode(abc.ABC):
     def walk(self, tree_node: DerivationTree) -> GrammarGraphNode:
         return run_nested_steps(self._walk_steps(tree_node), _walk_steps_of)
 
-    def _walk_steps(self, tree_node: DerivationTree) -> WalkSteps:
+    def _walk_steps(
+        self, tree_node: DerivationTree
+    ) -> Generator[
+        tuple[GrammarGraphNode, DerivationTree], GrammarGraphNode, GrammarGraphNode
+    ]:
         if issubclass(
             self.node.__class__,
             (NonTerminalNode, Concatenation, Repetition, Alternative),
@@ -101,14 +105,11 @@ class GrammarGraphNode(abc.ABC):
         return walked_node
 
 
-WalkSteps = Generator[
-    tuple[GrammarGraphNode, DerivationTree], GrammarGraphNode, GrammarGraphNode
-]
-
-
 def _walk_steps_of(
     graph_node_and_tree: tuple[GrammarGraphNode, DerivationTree],
-) -> WalkSteps:
+) -> Generator[
+    tuple[GrammarGraphNode, DerivationTree], GrammarGraphNode, GrammarGraphNode
+]:
     graph_node, tree_node = graph_node_and_tree
     return graph_node._walk_steps(tree_node)
 
