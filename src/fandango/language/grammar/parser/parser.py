@@ -37,7 +37,9 @@ class ParserCacheItem:
 
 class Parser:
     def __init__(self, grammar_rules: dict[NonTerminal, Node]):
+        self._grammar_rules = grammar_rules
         self._iter_parser = IterativeParser(grammar_rules)
+        self._iter_parsers_by_start: dict[NonTerminal, IterativeParser] = {}
         self._cache: LRUCache[
             tuple[
                 str | bytes,
@@ -168,6 +170,11 @@ class Parser:
             include_controlflow=include_controlflow,
         )
         return next(tree_gen, None)
+
+    def iterative_parser(self, start: NonTerminal) -> IterativeParser:
+        if start not in self._iter_parsers_by_start:
+            self._iter_parsers_by_start[start] = IterativeParser(self._grammar_rules)
+        return self._iter_parsers_by_start[start]
 
     def collapse(self, tree: Optional[DerivationTree]) -> Optional[DerivationTree]:
         return self._iter_parser.collapse(tree)

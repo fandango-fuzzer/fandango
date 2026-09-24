@@ -139,6 +139,11 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
             collapsed_path_depth = len(self.current_path_collapsed)
             found = False
             for alt in node.alternatives:
+                if (
+                    not isinstance(alt, TerminalNode)
+                    and alt.to_symbol() != tree[0].symbol
+                ):
+                    continue
                 try:
                     continue_exploring = self.visit(alt)
                     found = True

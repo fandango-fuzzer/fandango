@@ -145,7 +145,7 @@ class _PacketCandidates:
             mounting_path = next(iter(expected[non_terminal].paths))
             hookin_path = [nt for nt, is_new in mounting_path.path if not is_new]
             hookin_parent = mounting_path.tree.get_last_by_path(hookin_path)
-            parser = IterativeParser(grammar.rules)
+            parser = grammar.iterative_parser(non_terminal)
             parser.new_parse(
                 start=non_terminal,
                 mode=ParsingMode.COMPLETE,

@@ -23,6 +23,7 @@ from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
+from fandango.language.grammar.parser.iterative_parser import IterativeParser
 from fandango.language.grammar.parser.parser import Parser
 from fandango.language.symbols import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree, TreeTuple
@@ -371,6 +372,9 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         return self._parser.parse_multiple(
             word, start, mode=mode, include_controlflow=include_controlflow
         )
+
+    def iterative_parser(self, start: NonTerminal) -> IterativeParser:
+        return self._parser.iterative_parser(start)
 
     def max_position(self) -> int:
         """Return the maximum position reached during last parsing."""
@@ -821,7 +825,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         k_paths: set[KPath] = set()
         for start_node in start_nodes:
             _, at_or_below = self._k_paths_at_or_below(
-                start_node, None, k, coverage_goal, parties
+                start_node, None, k, coverage_goal, parties, inside_message=False
             )
             k_paths |= at_or_below
 
@@ -844,6 +848,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         k: int,
         coverage_goal: CoverageGoal,
         input_parties: frozenset[str],
+        inside_message: bool,
     ) -> tuple[set[KPath], set[KPath]]:
         """Returns the k-paths starting at `node` and the k-paths starting at or below `node`."""
         symbol = tree.symbol
@@ -858,8 +863,8 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         assert isinstance(symbol, NonTerminal)
 
         cache_key = None
-        if tree.sender is not None or tree.parent is None:
-            cache_key = hash((tree, parent_symbol, k, coverage_goal, input_parties))
+        if tree.sender is not None or not inside_message:
+            cache_key = hash((tree, k, coverage_goal, input_parties))
             if cache_key in self._tree_k_path_cache:
                 return self._tree_k_path_cache[cache_key]
 
@@ -870,7 +875,12 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                 if child.sender is not None and child.sender not in input_parties:
                     continue
             starting_at_child, at_or_below_child = self._k_paths_at_or_below(
-                child, symbol, k, coverage_goal, input_parties
+                child,
+                symbol,
+                k,
+                coverage_goal,
+                input_parties,
+                inside_message=inside_message or tree.sender is not None,
             )
             for path in starting_at_child:
                 if len(path) < k:

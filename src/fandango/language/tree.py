@@ -427,10 +427,17 @@ class DerivationTree:
         if self.hash_cache is not None:
             return self.hash_cache
 
-        flatted = self.flattened()
+        unhashed: list[DerivationTree] = []
+        pending: list[DerivationTree] = [self]
+        while pending:
+            node = pending.pop()
+            unhashed.append(node)
+            pending.extend(
+                child for child in node._children if child.hash_cache is None
+            )
 
         result = 0
-        for node in reversed(flatted):
+        for node in reversed(unhashed):
             node.hash_cache = hash(
                 (
                     node.symbol,
