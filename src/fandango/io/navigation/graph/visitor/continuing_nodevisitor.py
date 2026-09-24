@@ -134,16 +134,18 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
         if tree is not None:
             continue_exploring = True
             self.current_tree.append([tree[0]])
-            fallback_tree = list(self.current_tree)
-            fallback_path = list(self.current_path)
+            tree_depth = len(self.current_tree)
+            path_depth = len(self.current_path)
+            collapsed_path_depth = len(self.current_path_collapsed)
             found = False
             for alt in node.alternatives:
                 try:
                     continue_exploring = self.visit(alt)
                     found = True
                 except GrammarKeyError:
-                    self.current_tree = fallback_tree
-                    self.current_path = fallback_path
+                    del self.current_tree[tree_depth:]
+                    del self.current_path[path_depth:]
+                    del self.current_path_collapsed[collapsed_path_depth:]
             self.current_tree.pop()
             self.on_leave_controlflow()
             if not found:

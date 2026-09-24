@@ -15,7 +15,6 @@ from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
-from fandango.language.tree_value import TreeValueType
 
 
 class PathFinder(ContinuingNodeVisitor):
@@ -86,16 +85,9 @@ class MountingPath:
     def _collapsed_path(
         path: tuple[tuple[NonTerminal, bool], ...],
     ) -> tuple[tuple[NonTerminal, bool], ...]:
-        new_path = []
-        for nt, new_node in path:
-            if nt.is_type(TreeValueType.STRING) and str(nt.value()).startswith("<__"):
-                continue
-            elif nt.is_type(TreeValueType.BYTES) and bytes(nt.value()).startswith(
-                b"<__"
-            ):
-                continue
-            new_path.append((nt, new_node))
-        return tuple(new_path)
+        return tuple(
+            (nt, new_node) for nt, new_node in path if not nt.name().startswith("<__")
+        )
 
     def __hash__(self) -> int:
         return hash((hash(self.tree), hash(self.path)))
