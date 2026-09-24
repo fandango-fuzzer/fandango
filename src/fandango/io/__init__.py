@@ -24,8 +24,6 @@ from fandango.logger import LOGGER
 
 EnvKey = Hashable
 
-CONNECT_RETRY_INTERVAL_S = 0.01
-
 
 class EnvContext:
     contextVar: Optional[ContextVar[Optional[UUID]]] = ContextVar(
@@ -296,6 +294,8 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
 
     BUFFER_SIZE_UDP = 1024  # Size of the buffer for receiving data
     BUFFER_SIZE_TCP = 4096  # Size of the buffer for receiving data
+    CONNECT_RETRY_INTERVAL_S = 0.01
+    CONNECT_TIMEOUT_S = 10.0
 
     def __init__(
         self,
@@ -333,6 +333,7 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
         self._send_thread: Optional[threading.Thread] = None
         self.current_remote_addr = None
         self._lock = threading.Lock()
+        self._connect_deadline = 0.0
 
     @property
     def protocol_type(self) -> Protocol:
@@ -378,6 +379,7 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
             if self.protocol_type == Protocol.TCP:
                 self._sock.listen(1)
         self._running = True
+        self._connect_deadline = time.monotonic() + self.CONNECT_TIMEOUT_S
         self._send_thread = threading.Thread(target=self._listen, daemon=True)
         self._send_thread.daemon = True
         self._send_thread.start()
@@ -434,10 +436,10 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
                     self._connection = self._sock
 
     def _connect_to_remote(self) -> None:
-        while self._running:
+        while self._running and time.monotonic() < self._connect_deadline:
             assert self._sock is not None
             self._sock.setblocking(False)
-            result: int | None = self._sock.connect_ex((self.ip, self.port))
+            result: Optional[int] = self._sock.connect_ex((self.ip, self.port))
             if result in (errno.EINPROGRESS, errno.EWOULDBLOCK, errno.EALREADY):
                 result = self._finished_connect_result()
             if result == 0:
@@ -448,13 +450,13 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
                 return
             self._sock.close()
             self._create_socket()
-            time.sleep(CONNECT_RETRY_INTERVAL_S)
+            time.sleep(self.CONNECT_RETRY_INTERVAL_S)
 
-    def _finished_connect_result(self) -> int | None:
+    def _finished_connect_result(self) -> Optional[int]:
         assert self._sock is not None
-        while self._running:
+        while self._running and time.monotonic() < self._connect_deadline:
             _, writable, _ = select.select(
-                [], [self._sock], [], CONNECT_RETRY_INTERVAL_S
+                [], [self._sock], [], self.CONNECT_RETRY_INTERVAL_S
             )
             if writable:
                 return self._sock.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
@@ -466,7 +468,7 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
         """
 
         self._wait_accept()
-        if not self._running:
+        if not self._running or self._connection is None:
             return
 
         while self._running:
@@ -504,8 +506,10 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
                 f"Party {self.party_name!r} not running. Invoke start() first."
             )
         self._wait_accept()
-
-        assert self._connection is not None
+        if self._connection is None:
+            raise FandangoError(
+                f"Party {self.party_name!r} could not connect to {self.ip}:{self.port}."
+            )
         if isinstance(message, DerivationTree):
             send_data = message.to_bytes(encoding="utf-8")
         elif isinstance(message, str):
