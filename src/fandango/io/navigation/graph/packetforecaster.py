@@ -9,13 +9,11 @@ from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConve
 from fandango.io.navigation.graph.visitor.continuing_nodevisitor import (
     ContinuingNodeVisitor,
 )
-from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
-from fandango.language.tree_value import TreeValueType
 
 
 class PathFinder(ContinuingNodeVisitor):
@@ -86,16 +84,9 @@ class MountingPath:
     def _collapsed_path(
         path: tuple[tuple[NonTerminal, bool], ...],
     ) -> tuple[tuple[NonTerminal, bool], ...]:
-        new_path = []
-        for nt, new_node in path:
-            if nt.is_type(TreeValueType.STRING) and str(nt.value()).startswith("<__"):
-                continue
-            elif nt.is_type(TreeValueType.BYTES) and bytes(nt.value()).startswith(
-                b"<__"
-            ):
-                continue
-            new_path.append((nt, new_node))
-        return tuple(new_path)
+        return tuple(
+            (nt, new_node) for nt, new_node in path if not nt.name().startswith("<__")
+        )
 
     def __hash__(self) -> int:
         return hash((hash(self.tree), hash(self.path)))
@@ -207,8 +198,10 @@ class PacketForecaster:
             options = options.union(finder.forecast())
         else:
             self._parser.reference_tree = tree
-            self._parser.new_parse(NonTerminal("<start>"), ParsingMode.INCOMPLETE)
-            for suggested_tree, is_complete in self._parser.consume(history_nts):
+            self._parser.parse_history(history_nts)
+            for suggested_tree, is_complete in self._parser.tree_at(
+                self._parser.consumed_length(), incomplete=True
+            ):
                 for orig_r_msg, r_msg in zip(
                     tree.protocol_msgs(), suggested_tree.protocol_msgs(), strict=False
                 ):

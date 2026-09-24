@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import enum
+import errno
 import io
 import logging
 import os
@@ -293,6 +294,8 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
 
     BUFFER_SIZE_UDP = 1024  # Size of the buffer for receiving data
     BUFFER_SIZE_TCP = 4096  # Size of the buffer for receiving data
+    CONNECT_RETRY_INTERVAL_S = 0.01
+    CONNECT_TIMEOUT_S = 10.0
 
     def __init__(
         self,
@@ -330,6 +333,7 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
         self._send_thread: Optional[threading.Thread] = None
         self.current_remote_addr = None
         self._lock = threading.Lock()
+        self._connect_deadline = 0.0
 
     @property
     def protocol_type(self) -> Protocol:
@@ -375,6 +379,7 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
             if self.protocol_type == Protocol.TCP:
                 self._sock.listen(1)
         self._running = True
+        self._connect_deadline = time.monotonic() + self.CONNECT_TIMEOUT_S
         self._send_thread = threading.Thread(target=self._listen, daemon=True)
         self._send_thread.daemon = True
         self._send_thread.start()
@@ -424,22 +429,38 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
                                 self._connection, _ = self._sock.accept()
                                 break
                     else:
-                        assert self._sock is not None
-                        self._sock.setblocking(False)
-                        try:
-                            self._sock.connect((self.ip, self.port))
-                        except BlockingIOError:
-                            pass
-                        while self._running:
-                            _, wlist, _ = select.select([], [self._sock], [], 0.00001)
-                            if wlist:
-                                self._connection = self._sock
-                                break
-                        self._sock.setblocking(True)
+                        self._connect_to_remote()
                 else:
                     # For UDP, we do not need to accept a connection
                     assert self._sock is not None
                     self._connection = self._sock
+
+    def _connect_to_remote(self) -> None:
+        while self._running and time.monotonic() < self._connect_deadline:
+            assert self._sock is not None
+            self._sock.setblocking(False)
+            result: Optional[int] = self._sock.connect_ex((self.ip, self.port))
+            if result in (errno.EINPROGRESS, errno.EWOULDBLOCK, errno.EALREADY):
+                result = self._finished_connect_result()
+            if result == 0:
+                self._sock.setblocking(True)
+                self._connection = self._sock
+                return
+            if not self._running:
+                return
+            self._sock.close()
+            self._create_socket()
+            time.sleep(self.CONNECT_RETRY_INTERVAL_S)
+
+    def _finished_connect_result(self) -> Optional[int]:
+        assert self._sock is not None
+        while self._running and time.monotonic() < self._connect_deadline:
+            _, writable, _ = select.select(
+                [], [self._sock], [], self.CONNECT_RETRY_INTERVAL_S
+            )
+            if writable:
+                return self._sock.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
+        return None
 
     def _listen(self) -> None:
         """
@@ -447,7 +468,7 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
         """
 
         self._wait_accept()
-        if not self._running:
+        if not self._running or self._connection is None:
             return
 
         while self._running:
@@ -485,8 +506,10 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
                 f"Party {self.party_name!r} not running. Invoke start() first."
             )
         self._wait_accept()
-
-        assert self._connection is not None
+        if self._connection is None:
+            raise FandangoError(
+                f"Party {self.party_name!r} could not connect to {self.ip}:{self.port}."
+            )
         if isinstance(message, DerivationTree):
             send_data = message.to_bytes(encoding="utf-8")
         elif isinstance(message, str):
@@ -902,13 +925,10 @@ class FandangoIO(object):
         :param receiver: The receiver of the message.
         :param message: The message received from the sender.
         """
+        if not message:
+            return
         with self.receive_lock:
-            if isinstance(message, bytes):
-                for fragment_int in message:
-                    self.receive.append((sender, receiver, bytes([fragment_int])))
-            else:
-                for fragment_str in message:
-                    self.receive.append((sender, receiver, fragment_str))
+            self.receive.append((sender, receiver, message))
 
     def received_msg(self) -> bool:
         """
@@ -972,15 +992,40 @@ class FandangoIO(object):
         with self.receive_lock:
             self.receive.clear()
 
-    def clear_by_party(self, party_name: str, to_idx: int) -> None:
-        """Clears all received messages from a specific party up to a given index."""
+    def pending_blocks(self, party_name: str) -> list[str | bytes]:
+        """
+        What `party_name` sent and nobody dropped yet, as it arrived.
 
+        Stops at a change of message type, so a run of text is never handed
+        out together with a run of bytes. Blocks are not joined: a reader
+        feeds them one by one, and `get_full_fragments` is the one place that
+        puts a stream back together, for error messages.
+        """
         with self.receive_lock:
-            self.receive = [
-                (sender, receiver, msg)
-                for idx, (sender, receiver, msg) in enumerate(self.receive)
-                if not (sender == party_name and idx <= to_idx)
-            ]
+            parts = [msg for sender, _, msg in self.receive if sender == party_name]
+        blocks: list[str | bytes] = []
+        for part in parts:
+            if blocks and type(part) is not type(blocks[0]):
+                break
+            blocks.append(part)
+        return blocks
+
+    def drop_received(self, party_name: str, count: int) -> None:
+        """
+        Drops the first `count` units received from `party_name`.
+        """
+        with self.receive_lock:
+            remaining = count
+            kept: list[tuple[str, str, str | bytes]] = []
+            for sender, receiver, msg in self.receive:
+                if sender != party_name or remaining <= 0:
+                    kept.append((sender, receiver, msg))
+                elif len(msg) <= remaining:
+                    remaining -= len(msg)
+                else:
+                    kept.append((sender, receiver, msg[remaining:]))
+                    remaining = 0
+            self.receive = kept
 
     def transmit(
         self, sender: str, recipient: Optional[str], message: DerivationTree

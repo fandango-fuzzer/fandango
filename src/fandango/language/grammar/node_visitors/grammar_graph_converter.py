@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import abc
+from collections.abc import Generator
 from typing import Optional
 
 from fandango.errors import FandangoError
+from fandango.io.navigation.nested_steps import run_nested_steps
 from fandango.language import DerivationTree, NonTerminal, Terminal
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
@@ -52,7 +54,14 @@ class GrammarGraphNode(abc.ABC):
             return False
         return self.node.min == 0
 
-    def walk(self, tree_node: DerivationTree) -> "GrammarGraphNode":
+    def walk(self, tree_node: DerivationTree) -> GrammarGraphNode:
+        return run_nested_steps(self._walk_steps(tree_node), _walk_steps_of)
+
+    def _walk_steps(
+        self, tree_node: DerivationTree
+    ) -> Generator[
+        tuple[GrammarGraphNode, DerivationTree], GrammarGraphNode, GrammarGraphNode
+    ]:
         if issubclass(
             self.node.__class__,
             (NonTerminalNode, Concatenation, Repetition, Alternative),
@@ -84,7 +93,7 @@ class GrammarGraphNode(abc.ABC):
             found_node = False
             for current_graph_node in walked_node.reaches:
                 try:
-                    next_walked_node = current_graph_node.walk(child)
+                    next_walked_node = yield current_graph_node, child
                 except GrammarWalkError:
                     next_walked_node = None
                 if next_walked_node is not None:
@@ -94,6 +103,15 @@ class GrammarGraphNode(abc.ABC):
             if not found_node:
                 raise GrammarWalkError("Grammar graph doesn't match tree structure.")
         return walked_node
+
+
+def _walk_steps_of(
+    graph_node_and_tree: tuple[GrammarGraphNode, DerivationTree],
+) -> Generator[
+    tuple[GrammarGraphNode, DerivationTree], GrammarGraphNode, GrammarGraphNode
+]:
+    graph_node, tree_node = graph_node_and_tree
+    return graph_node._walk_steps(tree_node)
 
 
 class EagerGrammarGraphNode(GrammarGraphNode):

@@ -13,6 +13,7 @@ from fandango.io.coverage_filter import PacketCoverageFilter
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.io.navigation.selection.packetselector import PacketSelector
 from fandango.io.packetparser import parse_next_remote_packet
+from fandango.io.violation import FandangoRemoteViolation, RemoteViolationType
 from fandango.language.grammar import FuzzingMode
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
@@ -24,9 +25,11 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self,
         packet_algorithm: SimpleGeneticAlgorithm,
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS,
-        remote_response_timeout: int = 15,
+        remote_response_timeout: float = 15.0,
+        max_messages_per_tree: int = 200,
     ):
         self.CLEAR_CONSTRAINT_CACHE_INTERVAL = 100
+        self.RANDOM_END_PROBABILITY = 0.5
         self._start_symbol = NonTerminal("<start>")
         self._packet_algorithm = packet_algorithm
         self.grammar = packet_algorithm.grammar
@@ -43,6 +46,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             self._io_instance,
             self._protocol_tree,
             self._packet_algorithm.diversity_k,
+            max_messages_per_tree=max_messages_per_tree,
         )
         self._packet_selector.set_coverage_goal(self._coverage_goal)
         self._packet_coverage_filter = PacketCoverageFilter(
@@ -51,14 +55,50 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self.violations: list[tuple[DerivationTree, Exception]] = []
         self.throw_on_violation = False
 
-    def _is_protocol_run_complete(self) -> bool:
-        return (
-            len(self._packet_selector.get_next_parties()) == 0
-            or self._packet_selector.is_guide_to_end()
-            or self._coverage_goal == CoverageGoal.SINGLE_DERIVATION
-        ) and self._packet_selector.is_complete()
+    @property
+    def coverage_goal(self) -> CoverageGoal:
+        return self._coverage_goal
 
-    def _wait_for_remote_message(self, timeout: int) -> bool:
+    def set_coverage_goal(self, goal: CoverageGoal) -> None:
+        """Switch the guidance mode, e.g. to CoverageGoal.RANDOM once every
+        k-path is covered. Takes effect with the next protocol run."""
+        self._coverage_goal = goal
+        self._packet_selector.set_coverage_goal(goal)
+
+    def coverage_percent(self) -> Optional[float]:
+        """Share of k-paths covered so far, in [0, 1]; None in RANDOM mode,
+        which does not track coverage."""
+        if self._coverage_goal == CoverageGoal.RANDOM:
+            return None
+        return self._packet_selector.coverage_percent()
+
+    @property
+    def max_messages_per_tree(self) -> int:
+        """Messages after which a protocol run is guided to its end."""
+        return self._packet_selector.max_messages_per_tree
+
+    @max_messages_per_tree.setter
+    def max_messages_per_tree(self, count: int) -> None:
+        self._packet_selector.max_messages_per_tree = count
+
+    @property
+    def remote_response_timeout(self) -> float:
+        return self._remote_response_timeout
+
+    @remote_response_timeout.setter
+    def remote_response_timeout(self, seconds: float) -> None:
+        self._remote_response_timeout = seconds
+
+    def _is_protocol_run_complete(self) -> bool:
+        if not self._packet_selector.is_complete():
+            return False
+        if len(self._packet_selector.get_next_parties()) == 0:
+            return True
+        if self._coverage_goal == CoverageGoal.RANDOM:
+            return random.random() < self.RANDOM_END_PROBABILITY
+        return self._packet_selector.is_guide_to_end()
+
+    def _wait_for_remote_message(self, timeout: float) -> bool:
         wait_start = time.time()
         while not self._io_instance.received_msg():
             if time.time() - wait_start > timeout and timeout >= 0:
@@ -66,24 +106,45 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             time.sleep(0.025)
         return True
 
+    def _gen_timeout_violation(self) -> FandangoRemoteViolation:
+        external_parties = self._packet_selector.next_external_parties()
+        packets_by_party = self._packet_selector.forecasting_result.parties_to_packets
+        expected_nonterminals = sorted(
+            {
+                nonterminal
+                for party in external_parties
+                for nonterminal in packets_by_party[party].get_non_terminals()
+            },
+            key=lambda nonterminal: nonterminal.format_as_spec(),
+        )
+        return FandangoRemoteViolation(
+            f"Timed out while waiting for message from remote party. Expected message from party: {', '.join(external_parties)}",
+            error_type=RemoteViolationType.TIMEOUT,
+            session_tree=self._protocol_tree,
+            sender=", ".join(external_parties),
+            recipient=None,
+            payload_raw="",
+            expected_nonterminals=expected_nonterminals,
+        )
+
     def _handle_remote_response(self) -> DerivationTree:
         timeout = self._remote_response_timeout
         for packet in self._packet_selector.next_packets:
             if packet.node.sender == "TimerEvent":
                 timeout = -1
         if not self._wait_for_remote_message(timeout):
-            external_parties = self._packet_selector.next_external_parties()
-            raise FandangoFailedError(
-                f"Timed out while waiting for message from remote party. Expected message from party: {', '.join(external_parties)}"
-            )
+            raise self._gen_timeout_violation()
 
         packet_sender = None
         packet_recipient = None
         packet_tree = None
+        expected_nonterminals: list[NonTerminal] = []
+        failed_constraints: list[str] = []
         for forecast, packet_tree in parse_next_remote_packet(
             self.grammar,
             self._packet_selector.forecasting_result,
             self._io_instance,
+            self._protocol_tree,
         ):
             packet_sender = packet_tree.sender
             packet_recipient = packet_tree.recipient
@@ -95,13 +156,9 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 # does not corrupt the shared base tree for the next candidate.
                 history_tree = hookin_option.tree.deepcopy(copy_parent=False)
                 history_tree.append(hookin_option.path[1:-1], packet_tree)
-                _solutions, (fitness, _failing_trees, _suggestion) = (
-                    GeneratorWithReturn(
-                        self._packet_algorithm.evaluator.evaluate_individual(
-                            history_tree
-                        )
-                    ).collect()
-                )
+                _solutions, (fitness, failing_trees, _suggestion) = GeneratorWithReturn(
+                    self._packet_algorithm.evaluator.evaluate_individual(history_tree)
+                ).collect()
                 assert fitness <= 1.0
                 if fitness == 1.0:
                     log_message_transfer(
@@ -111,6 +168,12 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                         False,
                     )
                     return history_tree
+                for failing_tree in failing_trees:
+                    constraint = failing_tree.cause.format_as_spec()
+                    if constraint not in failed_constraints:
+                        failed_constraints.append(constraint)
+            if packet_tree.nonterminal not in expected_nonterminals:
+                expected_nonterminals.append(packet_tree.nonterminal)
         if packet_tree is not None:
             assert packet_sender is not None
             log_message_transfer(
@@ -118,6 +181,19 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 packet_recipient,
                 packet_tree,
                 False,
+            )
+            raise FandangoRemoteViolation(
+                "Remote response does not match constraints",
+                error_type=RemoteViolationType.CONSTRAINT,
+                session_tree=self._protocol_tree,
+                sender=packet_sender,
+                recipient=packet_recipient,
+                payload_raw=packet_tree.to_bytes()
+                if packet_tree.contains_bytes()
+                else packet_tree.to_string(),
+                expected_nonterminals=expected_nonterminals,
+                failed_constraints=failed_constraints,
+                payload_tree=packet_tree,
             )
         raise FandangoParseError("Remote response does not match constraints")
 
@@ -184,6 +260,12 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 f"Couldn't find solution for any packet: {nonterminals_str}"
             ) from None
 
+    def _is_coverage_complete(self) -> bool:
+        return (
+            self._coverage_goal != CoverageGoal.RANDOM
+            and self._packet_selector.coverage_percent() == 1.0
+        )
+
     def _is_failed_forecast(self) -> bool:
         return (
             len(self._packet_selector.get_next_parties()) == 0
@@ -207,9 +289,10 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             ):
                 self._clear_constraint_caches()
             self._packet_selector.compute(self._protocol_tree)
-            LOGGER.info(
-                f"Current coverage: {self._packet_selector.coverage_percent() * 100:.2f}%"
-            )
+            if self._coverage_goal != CoverageGoal.RANDOM:
+                LOGGER.info(
+                    f"Current coverage: {self._packet_selector.coverage_percent() * 100:.2f}%"
+                )
 
             if self._is_failed_forecast():
                 raise FandangoFailedError("Could not forecast next packet")
@@ -221,9 +304,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 self._packet_selector.add_completed_tree(final_tree)
                 self._packet_coverage_filter.add_completed_tree(final_tree)
                 yield final_tree
-                if self._coverage_goal == CoverageGoal.SINGLE_DERIVATION:
-                    return None
-                if self._packet_selector.coverage_percent() == 1.0:
+                if self._is_coverage_complete():
                     log_guidance_hint("Full coverage reached, stopping evolution.")
                     return None
                 log_guidance_hint("Starting new protocol run.")
@@ -265,15 +346,19 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     FandangoParseError,
                     FandangoValueError,
                 ) as exc:
-                    self._packet_selector.record_coverage(self._protocol_tree)
+                    self._packet_selector.abort_run(self._protocol_tree)
                     self._packet_coverage_filter.add_completed_tree(self._protocol_tree)
                     self.violations.append((self._protocol_tree, exc))
                     if self.throw_on_violation:
                         raise exc
                     LOGGER.warning(
                         f"Discarding remote response that could not be handled. "
-                        f"Recording violation and starting a new protocol run: {exc}"
+                        f"Recording violation: {exc}"
                     )
+                    if self._is_coverage_complete():
+                        log_guidance_hint("Full coverage reached, stopping evolution.")
+                        return None
+                    log_guidance_hint("Starting new protocol run.")
                     self._io_instance.reset_parties()
                     self._protocol_tree = DerivationTree(self._start_symbol, [])
                     continue

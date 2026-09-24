@@ -1,15 +1,161 @@
 import itertools
 import sys
+from collections.abc import Callable
+from typing import Any, NamedTuple
 
 import pytest
 from pytest_benchmark.fixture import BenchmarkFixture
 
-from fandango.api import Fandango
+from fandango.api import Fandango, FandangoBase
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
+from fandango.language.grammar import ParsingMode
 from fandango.language.parse.parse import parse
 
 from .utils import RESOURCES_ROOT
+
+GRAMMAR_WITH_ALL_NODES_INPUT = 'ab=12;cd="xy"!;ef=;'
+AMBIGUOUS_SPEC = "<start> ::= <e>\n<e> ::= <e> '+' <e> | '1'\n"
+RIGHT_RECURSIVE_SPEC = '<start> ::= <A>\n<A> ::= "a" <A> | "a"\n'
+LEFT_RECURSIVE_SPEC = '<start> ::= <A>\n<A> ::= <A> "a" | "a"\n'
+
+
+def repeat_to(unit: str, length: int) -> str:
+    """`unit` repeated to about `length`, cut on a unit boundary."""
+    return unit * max(1, round(length / len(unit)))
+
+
+class ParseCase(NamedTuple):
+    label: str
+    spec: str
+    make_word: Callable[[int], str | bytes]
+    max_length: int = 10_000
+    incomplete: bool = False
+    limit: int | None = None
+    incremental: bool = False
+
+
+PARSE_CASES = [
+    ParseCase(
+        label="csv",
+        spec=(RESOURCES_ROOT / "csv.fan").read_text(),
+        make_word=lambda n: repeat_to("aa;bb;cc\n", n),
+    ),
+    ParseCase(
+        label="node-types",
+        spec=(RESOURCES_ROOT / "grammar_with_all_nodes.fan").read_text(),
+        make_word=lambda n: repeat_to(GRAMMAR_WITH_ALL_NODES_INPUT, n),
+    ),
+    ParseCase(
+        label="node-types-prefix",
+        spec=(RESOURCES_ROOT / "grammar_with_all_nodes.fan").read_text(),
+        make_word=lambda n: repeat_to(GRAMMAR_WITH_ALL_NODES_INPUT, n) + "ab=1",
+        incomplete=True,
+    ),
+    ParseCase(
+        label="ambiguous",
+        spec=AMBIGUOUS_SPEC,
+        make_word=lambda n: "+".join("1" * (n // 2 + 1)),
+        limit=25,
+        max_length=1_000,
+    ),
+    ParseCase(
+        label="right-recursion",
+        spec=RIGHT_RECURSIVE_SPEC,
+        make_word=lambda n: "a" * n,
+    ),
+    ParseCase(
+        label="left-recursion",
+        spec=LEFT_RECURSIVE_SPEC,
+        make_word=lambda n: "a" * n,
+    ),
+    ParseCase(
+        label="bits",
+        spec=(RESOURCES_ROOT / "bitstream.fan").read_text(),
+        make_word=lambda n: "a" * n,
+    ),
+    ParseCase(
+        label="binary",
+        spec=(RESOURCES_ROOT / "rgb.fan").read_text(),
+        make_word=lambda n: b"rAb" * max(1, n // 3) + b"\x01;",
+    ),
+    ParseCase(
+        label="incremental",
+        spec=(RESOURCES_ROOT / "grammar_with_all_nodes.fan").read_text(),
+        make_word=lambda n: repeat_to(GRAMMAR_WITH_ALL_NODES_INPUT, n),
+        incremental=True,
+    ),
+]
+
+PARSE_LENGTHS = (10, 100, 1_000, 10_000)
+TEST_MAX_INPUT_LENGTH = 100
+
+
+def _parse_grid() -> list[Any]:
+    """
+    Parsing test grid for benchmarking
+    """
+    grid = []
+    for case in PARSE_CASES:
+        for length in PARSE_LENGTHS:
+            marks = (
+                [
+                    pytest.mark.skip(
+                        reason=f"{case.label} takes minutes at {length:,} characters"
+                    )
+                ]
+                if length > case.max_length
+                else []
+            )
+            grid.append(
+                pytest.param(case, length, id=f"{case.label}-{length}", marks=marks)
+            )
+    return grid
+
+
+PARSE_GRID = _parse_grid()
+
+
+def _run_case(
+    case: ParseCase, word: str | bytes, fandango: FandangoBase, grammar: Any
+) -> None:
+    if case.incremental:
+        iter_parser = grammar._parser._iter_parser
+        iter_parser.new_parse(
+            start="<start>",
+            mode=ParsingMode.INCOMPLETE if case.incomplete else ParsingMode.COMPLETE,
+        )
+        for index in range(len(word)):
+            iter_parser.consume(word[index : index + 1])
+        trees = iter_parser.tree_at(len(word), incomplete=case.incomplete)
+    else:
+        trees = fandango.parse(word, prefix=case.incomplete)
+    list(itertools.islice(trees, case.limit))
+
+
+@pytest.mark.parametrize(
+    ("case", "length"),
+    PARSE_GRID,
+)
+def test_parse(benchmark: BenchmarkFixture, case: ParseCase, length: int) -> None:
+    if benchmark.disabled and length > TEST_MAX_INPUT_LENGTH:
+        pytest.skip(f"{length:,} character-tests are for benchmarking.")
+    grammar, constraints = parse(case.spec, use_stdlib=False, use_cache=False)
+    assert grammar is not None
+    fandango = Fandango._with_parsed(grammar, constraints)
+    word = case.make_word(length)
+
+    def func():
+        _run_case(case, word, fandango, grammar)
+
+    try:
+        benchmark.pedantic(
+            func,
+            setup=grammar._parser._cache.clear,
+            iterations=1,
+        )
+    except RecursionError:
+        pytest.xfail(f"{case.label} runs out of Python stack at {length:,} characters")
 
 
 def test_parse_spec(benchmark: BenchmarkFixture):

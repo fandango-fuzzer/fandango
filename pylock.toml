@@ -95,21 +95,6 @@ wheels = [
 ]
 
 [[packages]]
-name = "astar"
-version = "0.99"
-marker = "python_full_version < '3.12'"
-index = "https://pypi.org/simple"
-wheels = [{ url = "https://files.pythonhosted.org/packages/b5/c9/4e7a3100197ce6658d0c287ab51061a709603f43ac7976e9f5740533aa17/astar-0.99-py3-none-any.whl", upload-time = 2023-06-16T08:28:01Z, size = 6635, hashes = { sha256 = "4d6e9bf8e90543d38cde7d90e873db78c5132247959c2d65abb8ac9d7e666aaf" } }]
-
-[[packages]]
-name = "astar"
-version = "1.1"
-marker = "python_full_version >= '3.12'"
-index = "https://pypi.org/simple"
-sdist = { url = "https://files.pythonhosted.org/packages/c5/19/028ff09c0fdb2c185816768c2557698f1aa7ecf09466fb246d8bfe13556d/astar-1.1.tar.gz", upload-time = 2026-03-12T18:08:58Z, size = 6574, hashes = { sha256 = "5627ca3db21f8a6cd9df483610355069def0dd687a857ce6349f50a8e93759be" } }
-wheels = [{ url = "https://files.pythonhosted.org/packages/5f/b7/d6142de5410839f11557460555cc1a753f6a9fc7c6114ea9515a9c358522/astar-1.1-py3-none-any.whl", upload-time = 2026-03-12T18:08:57Z, size = 7385, hashes = { sha256 = "9c8c013a58e2de4ffd0fb97bd994387539484fdd416afe4a540404ab9289ef86" } }]
-
-[[packages]]
 name = "asttokens"
 version = "3.0.1"
 index = "https://pypi.org/simple"
@@ -2468,14 +2453,6 @@ version = "3.0.1"
 index = "https://pypi.org/simple"
 sdist = { url = "https://files.pythonhosted.org/packages/75/a7/9810d872919697c9d01295633f5d574fb416d47e535f258272ca1f01f447/snowballstemmer-3.0.1.tar.gz", upload-time = 2025-05-09T16:34:51Z, size = 105575, hashes = { sha256 = "6d5eeeec8e9f84d4d56b847692bacf79bc2c8e90c7f80ca4444ff8b6f2e52895" } }
 wheels = [{ url = "https://files.pythonhosted.org/packages/c8/78/3565d011c61f5a43488987ee32b6f3f656e7f107ac2782dd57bdd7d91d9a/snowballstemmer-3.0.1-py3-none-any.whl", upload-time = 2025-05-09T16:34:50Z, size = 103274, hashes = { sha256 = "6cd7b3897da8d6c9ffb968a6781fa6532dce9c3618a4b127d920dab764a19064" } }]
-
-[[packages]]
-name = "sortedcontainers"
-version = "2.4.0"
-marker = "python_full_version < '3.12'"
-index = "https://pypi.org/simple"
-sdist = { url = "https://files.pythonhosted.org/packages/e8/c4/ba2f8066cceb6f23394729afe52f3bf7adec04bf9ed2c820b39e19299111/sortedcontainers-2.4.0.tar.gz", upload-time = 2021-05-16T22:03:42Z, size = 30594, hashes = { sha256 = "25caa5a06cc30b6b83d11423433f65d1f9d76c4c6a0c90e3379eaa43b9bfdb88" } }
-wheels = [{ url = "https://files.pythonhosted.org/packages/32/46/9cb0e58b2deb7f82b84065f37f3bffeb12413f947f9388e4cac22c4621ce/sortedcontainers-2.4.0-py2.py3-none-any.whl", upload-time = 2021-05-16T22:03:41Z, size = 29575, hashes = { sha256 = "a163dcaede0f1c021485e957a39245190e74249897e2ae4b2aa38595db237ee0" } }]
 
 [[packages]]
 name = "soupsieve"

@@ -1,5 +1,4 @@
 import itertools
-import random
 import warnings
 from collections import defaultdict
 from collections.abc import Generator, Iterator, Sequence
@@ -24,6 +23,7 @@ from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
+from fandango.language.grammar.parser.iterative_parser import IterativeParser
 from fandango.language.grammar.parser.parser import Parser
 from fandango.language.symbols import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree, TreeTuple
@@ -55,8 +55,8 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         self._k_path_cache: LRUCache[
             tuple[NonTerminal, bool, CoverageGoal], list[set[tuple[Symbol, ...]]]
         ] = LRUCache(maxsize=cache_size())
-        self._tree_k_path_cache: LRUCache[int, set[tuple[Symbol, ...]]] = LRUCache(
-            maxsize=cache_size()
+        self._tree_k_path_cache: LRUCache[int, tuple[set[KPath], set[KPath]]] = (
+            LRUCache(maxsize=cache_size())
         )
 
     @property
@@ -166,18 +166,22 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         self._populate_sources(tree)
 
     def _populate_sources(self, tree: DerivationTree) -> None:
-        if self.is_use_generator(tree):
-            tree.sources = self.derive_sources(tree)
-            for child in tree.children:
-                child.set_all_read_only(True)
-            return
-        for child in tree.children:
-            self._populate_sources(child)
+        stack = [tree]
+        while stack:
+            node = stack.pop()
+            if self.is_use_generator(node):
+                node.sources = self.derive_sources(node)
+                for child in node.children:
+                    child.set_all_read_only(True)
+                continue
+            stack.extend(reversed(node.children))
 
     def _rec_remove_sources(self, tree: DerivationTree) -> None:
-        tree.sources = []
-        for child in tree.children:
-            self._rec_remove_sources(child)
+        stack = [tree]
+        while stack:
+            node = stack.pop()
+            node.sources = []
+            stack.extend(node.children)
 
     def generate_string(
         self,
@@ -368,6 +372,9 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         return self._parser.parse_multiple(
             word, start, mode=mode, include_controlflow=include_controlflow
         )
+
+    def iterative_parser(self, start: NonTerminal) -> IterativeParser:
+        return self._parser.iterative_parser(start)
 
     def max_position(self) -> int:
         """Return the maximum position reached during last parsing."""
@@ -801,115 +808,110 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         overlap_to_root: bool = False,
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
         input_parties: Optional[set[str]] = None,
-    ) -> set[tuple[Symbol, ...]]:
+    ) -> set[KPath]:
         """
         Extracts all k-length paths (k-paths) from a derivation tree.
         """
-        if input_parties is None:
-            input_parties = set()
-
-        overlap_parent = tree
-        if overlap_to_root:
-            for _ in range(k - 1):
-                if overlap_parent.parent is not None:
-                    overlap_parent = overlap_parent.parent
-
-        hash_key = hash((tree, overlap_parent, k, overlap_to_root, coverage_goal))
-        if hash_key in self._tree_k_path_cache:
-            k_paths = self._tree_k_path_cache[hash_key]
-            return k_paths
-
-        start_nodes: list[tuple[Optional[NonTerminal], DerivationTree]] = []
-
-        def collect_start_nodes(tree_root: DerivationTree) -> None:
-            if not isinstance(tree_root.symbol, NonTerminal):
-                return
-            for child in tree_root.children:
-                if coverage_goal == CoverageGoal.INPUTS:
-                    if child.sender is not None and child.sender not in input_parties:
-                        continue
-                start_nodes.append((tree_root.symbol, child))
-                collect_start_nodes(child)
-
-        collect_start_nodes(tree)
-        start_nodes.append((None, tree))
-
+        parties = frozenset(input_parties or set())
         if coverage_goal == CoverageGoal.INPUTS:
-            input_symbol_starters = [
-                (parent, child)
-                for parent, child in start_nodes
-                if isinstance(child.symbol, NonTerminal)
-                and child.sender in input_parties
+            start_nodes = [
+                record.msg
+                for record in tree.protocol_msgs()
+                if record.sender in parties
             ]
-            start_nodes.clear()
-            for parent, child in input_symbol_starters:
-                collect_start_nodes(child)
-                start_nodes.append((parent, child))
+        else:
+            start_nodes = [tree]
 
-        paths: list[set[tuple[Symbol, ...]]] = [set() for _ in range(k)]
-
-        def traverse(
-            parent_symbol: Optional[NonTerminal],
-            tree_node: DerivationTree,
-            path: tuple[Symbol, ...],
-        ) -> None:
-            tree_symbol = tree_node.symbol
-            assert isinstance(tree_symbol, (Terminal, NonTerminal))
-            if isinstance(tree_symbol, Terminal):
-                if parent_symbol is None:
-                    raise RuntimeError(
-                        "Received a Terminal with no parent symbol when computing k-path!"
-                    )
-                symbol_value: str | bytes | int
-                if tree_symbol.value().is_type(TreeValueType.STRING):
-                    symbol_value = tree_symbol.value().to_string()
-                elif tree_symbol.value().is_type(TreeValueType.BYTES):
-                    symbol_value = tree_symbol.value().to_bytes()
-                else:
-                    symbol_value = tree_symbol.value().to_int()
-
-                parent_rule_nodes = NonTerminalNode(
-                    parent_symbol, self.grammar_settings
-                ).descendents(self, filter_controlflow=True)
-                parent_rule_terminals = [
-                    x for x in parent_rule_nodes if isinstance(x, TerminalNode)
-                ]
-                random.shuffle(parent_rule_terminals)
-                for rule_node in parent_rule_terminals:
-                    if rule_node.symbol.check(symbol_value, False)[0]:
-                        paths[len(path)].add(path + (rule_node.symbol,))
-                return
-            new_path = path + (tree_symbol,)
-            if len(new_path) <= k:
-                paths[len(new_path) - 1].add(new_path)
-                if len(new_path) == k:
-                    return
-            for child in tree_node.children:
-                if coverage_goal == CoverageGoal.STATE_INPUTS:
-                    if child.sender is not None and child.sender not in input_parties:
-                        continue
-                traverse(tree_symbol, child, new_path)
-
-        for parent, node in start_nodes:
-            traverse(parent, node, tuple())
-
-        k_paths = set()
-        for path_set in paths:
-            k_paths.update(path_set)
+        k_paths: set[KPath] = set()
+        for start_node in start_nodes:
+            _, at_or_below = self._k_paths_at_or_below(
+                start_node, None, k, coverage_goal, parties, inside_message=False
+            )
+            k_paths |= at_or_below
 
         if overlap_to_root:
+            ancestor = tree
+            for _ in range(k - 1):
+                if ancestor.parent is not None:
+                    ancestor = ancestor.parent
             for path in self._extract_k_paths_from_tree(
-                overlap_parent,
-                k,
-                False,
-                coverage_goal=coverage_goal,
-                input_parties=input_parties,
+                ancestor, k, False, coverage_goal, input_parties
             ):
                 if tree.symbol in path:
                     k_paths.add(path)
-
-        self._tree_k_path_cache[hash_key] = k_paths
         return k_paths
+
+    def _k_paths_at_or_below(
+        self,
+        tree: DerivationTree,
+        parent_symbol: Optional[NonTerminal],
+        k: int,
+        coverage_goal: CoverageGoal,
+        input_parties: frozenset[str],
+        inside_message: bool,
+    ) -> tuple[set[KPath], set[KPath]]:
+        """Returns the k-paths starting at `node` and the k-paths starting at or below `node`."""
+        symbol = tree.symbol
+        if isinstance(symbol, Terminal):
+            if parent_symbol is None:
+                return set(), set()
+            matching_paths: set[KPath] = {
+                (terminal,)
+                for terminal in self._rule_terminals_matching(parent_symbol, symbol)
+            }
+            return matching_paths, matching_paths
+        assert isinstance(symbol, NonTerminal)
+
+        cache_key = None
+        if tree.sender is not None or not inside_message:
+            cache_key = hash((tree, k, coverage_goal, input_parties))
+            if cache_key in self._tree_k_path_cache:
+                return self._tree_k_path_cache[cache_key]
+
+        starting_here: set[KPath] = {(symbol,)}
+        at_or_below: set[KPath] = set()
+        for child in tree.children:
+            if coverage_goal == CoverageGoal.STATE_INPUTS:
+                if child.sender is not None and child.sender not in input_parties:
+                    continue
+            starting_at_child, at_or_below_child = self._k_paths_at_or_below(
+                child,
+                symbol,
+                k,
+                coverage_goal,
+                input_parties,
+                inside_message=inside_message or tree.sender is not None,
+            )
+            for path in starting_at_child:
+                if len(path) < k:
+                    starting_here.add((symbol,) + path)
+            at_or_below |= at_or_below_child
+        at_or_below |= starting_here
+
+        if cache_key is not None:
+            self._tree_k_path_cache[cache_key] = (starting_here, at_or_below)
+        return starting_here, at_or_below
+
+    def _rule_terminals_matching(
+        self, non_terminal: NonTerminal, terminal: Terminal
+    ) -> set[Terminal]:
+        """Returns the terminals in the rule of `non_terminal` that accept the value of `terminal`."""
+        value = terminal.value()
+        word: str | bytes | int
+        if value.is_type(TreeValueType.STRING):
+            word = value.to_string()
+        elif value.is_type(TreeValueType.BYTES):
+            word = value.to_bytes()
+        else:
+            word = value.to_int()
+        rule_nodes = NonTerminalNode(non_terminal, self.grammar_settings).descendents(
+            self, filter_controlflow=True
+        )
+        return {
+            rule_node.symbol
+            for rule_node in rule_nodes
+            if isinstance(rule_node, TerminalNode) and rule_node.symbol.check(word)[0]
+        }
 
     def prime(self) -> None:
         LOGGER.debug("Priming grammar")

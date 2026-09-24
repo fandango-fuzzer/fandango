@@ -43,7 +43,7 @@ class ConstraintTest(unittest.TestCase):
 
         random.seed(0)
         tree = grammar.fuzz()
-        print([t.symbol.format_as_spec() for t in tree.flatten()])
+        print([t.symbol.format_as_spec() for t in tree.flattened()])
 
     def test_parse(self):
         with open(RESOURCES_ROOT / "grammar.fan", "r") as file:
