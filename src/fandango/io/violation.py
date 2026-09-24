@@ -45,7 +45,9 @@ class FandangoRemoteViolation(FandangoFailedError):
     def __repr__(self) -> str:
         parts = [f"{self.sender} -> {self.recipient}: {self.payload_raw!r}"]
         if self.expected_nonterminals:
-            expected = " | ".join(nt.format_as_spec() for nt in self.expected_nonterminals)
+            expected = " | ".join(
+                nt.format_as_spec() for nt in self.expected_nonterminals
+            )
             parts.append(f"expected {expected}")
         if self.failed_constraints:
             parts.append(f"violates {'; '.join(self.failed_constraints)}")

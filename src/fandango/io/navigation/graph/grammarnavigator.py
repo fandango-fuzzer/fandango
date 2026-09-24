@@ -10,6 +10,7 @@ from fandango.io.navigation.graph.reachability_checker import (
     ReachabilityChecker,
     ReachabilityResult,
 )
+from fandango.io.navigation.nested_steps import run_nested_steps
 from fandango.language import DerivationTree, Grammar
 from fandango.language.grammar.grammar import KPath
 from fandango.language.grammar.node_visitors.grammar_graph_converter import (
@@ -23,7 +24,6 @@ from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Repetition
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.symbols import NonTerminal, Symbol
-from fandango.io.navigation.nested_steps import run_nested_steps
 
 
 class NavigatorTimedOutError(FandangoError):

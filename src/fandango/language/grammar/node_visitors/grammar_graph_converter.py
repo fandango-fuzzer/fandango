@@ -5,6 +5,7 @@ from collections.abc import Generator
 from typing import Optional
 
 from fandango.errors import FandangoError
+from fandango.io.navigation.nested_steps import run_nested_steps
 from fandango.language import DerivationTree, NonTerminal, Terminal
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
@@ -13,7 +14,6 @@ from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
-from fandango.io.navigation.nested_steps import run_nested_steps
 
 
 class GrammarWalkError(FandangoError):

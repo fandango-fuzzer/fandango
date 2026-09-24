@@ -2,6 +2,7 @@ from collections.abc import Generator
 from typing import Optional
 
 from fandango.errors import FandangoValueError
+from fandango.io.navigation.nested_steps import run_nested_steps
 from fandango.language import Grammar, NonTerminal
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
@@ -12,7 +13,6 @@ from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Repetition
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.tree import DerivationTree
-from fandango.io.navigation.nested_steps import run_nested_steps
 
 VisitSteps = Generator[Node, bool, bool]
 

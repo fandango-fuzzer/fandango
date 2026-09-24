@@ -138,13 +138,9 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 # does not corrupt the shared base tree for the next candidate.
                 history_tree = hookin_option.tree.deepcopy(copy_parent=False)
                 history_tree.append(hookin_option.path[1:-1], packet_tree)
-                _solutions, (fitness, failing_trees, _suggestion) = (
-                    GeneratorWithReturn(
-                        self._packet_algorithm.evaluator.evaluate_individual(
-                            history_tree
-                        )
-                    ).collect()
-                )
+                _solutions, (fitness, failing_trees, _suggestion) = GeneratorWithReturn(
+                    self._packet_algorithm.evaluator.evaluate_individual(history_tree)
+                ).collect()
                 assert fitness <= 1.0
                 if fitness == 1.0:
                     log_message_transfer(
