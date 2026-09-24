@@ -63,7 +63,7 @@ class TestParseNextRemotePacketAmbiguity(unittest.TestCase):
         io = FandangoIO()
         io.add_receive("Extern", "Fuzzer", "response")
 
-        results = list(parse_next_remote_packet(grammar, forecast, io))
+        results = list(parse_next_remote_packet(grammar, forecast, io, history_tree))
 
         yielded_symbols = {pair[1].symbol for pair in results}
         self.assertEqual(
@@ -92,7 +92,7 @@ class TestParseNextRemotePacketAmbiguity(unittest.TestCase):
         io = FandangoIO.instance()
         io.add_receive("Extern", "Fuzzer", "response")
 
-        results = list(parse_next_remote_packet(grammar, forecast, io))
+        results = list(parse_next_remote_packet(grammar, forecast, io, history_tree))
 
         self.assertEqual(len(results), 2, "Expected two parse candidates")
 

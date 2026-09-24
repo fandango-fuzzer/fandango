@@ -13,6 +13,7 @@ from fandango.io.coverage_filter import PacketCoverageFilter
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.io.navigation.selection.packetselector import PacketSelector
 from fandango.io.packetparser import parse_next_remote_packet
+from fandango.io.violation import FandangoRemoteViolation, RemoteViolationType
 from fandango.language.grammar import FuzzingMode
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
@@ -24,7 +25,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self,
         packet_algorithm: SimpleGeneticAlgorithm,
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS,
-        remote_response_timeout: float = 15,
+        remote_response_timeout: float = 15.0,
         max_messages_per_tree: int = 200,
     ):
         self.CLEAR_CONSTRAINT_CACHE_INTERVAL = 100
@@ -119,10 +120,13 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         packet_sender = None
         packet_recipient = None
         packet_tree = None
+        expected_nonterminals: list[NonTerminal] = []
+        failed_constraints: list[str] = []
         for forecast, packet_tree in parse_next_remote_packet(
             self.grammar,
             self._packet_selector.forecasting_result,
             self._io_instance,
+            self._protocol_tree,
         ):
             packet_sender = packet_tree.sender
             packet_recipient = packet_tree.recipient
@@ -134,7 +138,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 # does not corrupt the shared base tree for the next candidate.
                 history_tree = hookin_option.tree.deepcopy(copy_parent=False)
                 history_tree.append(hookin_option.path[1:-1], packet_tree)
-                _solutions, (fitness, _failing_trees, _suggestion) = (
+                _solutions, (fitness, failing_trees, _suggestion) = (
                     GeneratorWithReturn(
                         self._packet_algorithm.evaluator.evaluate_individual(
                             history_tree
@@ -150,6 +154,12 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                         False,
                     )
                     return history_tree
+                for failing_tree in failing_trees:
+                    constraint = failing_tree.cause.format_as_spec()
+                    if constraint not in failed_constraints:
+                        failed_constraints.append(constraint)
+            if packet_tree.nonterminal not in expected_nonterminals:
+                expected_nonterminals.append(packet_tree.nonterminal)
         if packet_tree is not None:
             assert packet_sender is not None
             log_message_transfer(
@@ -157,6 +167,19 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 packet_recipient,
                 packet_tree,
                 False,
+            )
+            raise FandangoRemoteViolation(
+                "Remote response does not match constraints",
+                error_type=RemoteViolationType.CONSTRAINT,
+                session_tree=self._protocol_tree,
+                sender=packet_sender,
+                recipient=packet_recipient,
+                payload_raw=packet_tree.to_bytes()
+                if packet_tree.contains_bytes()
+                else packet_tree.to_string(),
+                expected_nonterminals=expected_nonterminals,
+                failed_constraints=failed_constraints,
+                payload_tree=packet_tree,
             )
         raise FandangoParseError("Remote response does not match constraints")
 

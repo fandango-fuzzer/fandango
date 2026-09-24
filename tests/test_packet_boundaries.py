@@ -25,19 +25,19 @@ AMBIGUOUS = (RESOURCES_ROOT / "ambiguous_io.fan").read_text()
 
 
 def forecast_of(spec: str):
-    """The grammar, and what it expects next once the query has been sent."""
+    """The grammar, the session once the query has been sent, and what it expects next."""
     grammar = Fandango(spec, use_stdlib=False, use_cache=False).grammar
     history = grammar.parse("hello", mode=ParsingMode.INCOMPLETE)
     assert history is not None
-    return grammar, PacketForecaster(grammar).predict(history)
+    return grammar, history, PacketForecaster(grammar).predict(history)
 
 
 def test_packet_ending_within_block() -> None:
-    grammar, forecast = forecast_of(AMBIGUOUS)
+    grammar, history, forecast = forecast_of(AMBIGUOUS)
     io = FandangoIO()
     io.add_receive("Extern", "Fuzzer", "responseAND MORE")
 
-    results = list(parse_next_remote_packet(grammar, forecast, io))
+    results = list(parse_next_remote_packet(grammar, forecast, io, history))
 
     assert {str(tree) for _, tree in results} == {"response"}
     assert io.pending_blocks("Extern") == ["AND MORE"]
@@ -45,12 +45,12 @@ def test_packet_ending_within_block() -> None:
 
 
 def test_packet_arriving_in_pieces() -> None:
-    grammar, forecast = forecast_of(AMBIGUOUS)
+    grammar, history, forecast = forecast_of(AMBIGUOUS)
     io = FandangoIO()
     for piece in ("res", "pon", "se"):
         io.add_receive("Extern", "Fuzzer", piece)
 
-    results = list(parse_next_remote_packet(grammar, forecast, io))
+    results = list(parse_next_remote_packet(grammar, forecast, io, history))
 
     assert {str(tree) for _, tree in results} == {"response"}
     assert io.pending_blocks("Extern") == []
@@ -58,13 +58,15 @@ def test_packet_arriving_in_pieces() -> None:
 
 
 def test_a_growable_packet_waits_for_more_data() -> None:
-    grammar, forecast = forecast_of(GROWABLE)
+    grammar, history, forecast = forecast_of(GROWABLE)
     io = FandangoIO()
     io.add_receive("Extern", "Fuzzer", "abcd;")
 
     start = time.perf_counter()
     results = list(
-        parse_next_remote_packet(grammar, forecast, io, wait_for_completion_time=0.3)
+        parse_next_remote_packet(
+            grammar, forecast, io, history, wait_for_completion_time=0.3
+        )
     )
     waited = time.perf_counter() - start
 
@@ -75,12 +77,12 @@ def test_a_growable_packet_waits_for_more_data() -> None:
 
 def test_a_fixed_packet_does_not_wait() -> None:
     """Once no candidate can grow, the answer is due at once."""
-    grammar, forecast = forecast_of(FIXED)
+    grammar, history, forecast = forecast_of(FIXED)
     io = FandangoIO()
     io.add_receive("Extern", "Fuzzer", "abcd;")
 
     start = time.perf_counter()
-    results = list(parse_next_remote_packet(grammar, forecast, io))
+    results = list(parse_next_remote_packet(grammar, forecast, io, history))
     waited = time.perf_counter() - start
 
     assert {str(tree) for _, tree in results} == {"abcd;"}
