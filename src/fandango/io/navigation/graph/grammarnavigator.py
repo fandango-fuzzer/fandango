@@ -3,8 +3,6 @@ import itertools
 from collections.abc import Generator, Hashable, Iterable
 from typing import NamedTuple, Optional, Union
 
-from astar import AStar
-
 from fandango.errors import FandangoError
 from fandango.io.navigation.graph.reachability_checker import (
     ReachabilityChecker,
@@ -14,7 +12,6 @@ from fandango.io.navigation.nested_steps import run_nested_steps
 from fandango.language import DerivationTree, Grammar
 from fandango.language.grammar.grammar import KPath
 from fandango.language.grammar.node_visitors.grammar_graph_converter import (
-    EagerGrammarGraphNode,
     GrammarGraphConverter,
     GrammarGraphNode,
     LazyGrammarGraphNode,
@@ -45,7 +42,7 @@ class ChainSummary(NamedTuple):
     closest_target_distances: tuple[Optional[int], ...]
 
 
-class GrammarNavigator(AStar[GrammarGraphNode]):
+class GrammarNavigator:
     def __init__(self, grammar: Grammar, start_symbol: Optional[NonTerminal] = None):
         if start_symbol is None:
             start_symbol = NonTerminal("<start>")
@@ -53,8 +50,6 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         self.grammar = grammar
         self.graph = graph_converter.process()
         self.message_cost = 0
-        self.non_terminal_cost = 0
-        self.node_cost = 0
         self.max_comparisons = 10_000_000
         self.comparisons = 0
         self.search_symbols: Optional[list[Symbol]] = None
@@ -140,34 +135,32 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
     def astar(
         self,
         start: GrammarGraphNode,
-        goal: GrammarGraphNode,
-        reverse_path: bool = False,
     ) -> Union[Iterable[GrammarGraphNode], None]:
         """
-        Overloaded method. Don't call this directly, use astar_tree or astar_search_end instead.
+        Don't call this directly, use astar_tree or astar_search_end instead.
         """
         self.comparisons = 0
-        if self.is_goal_reached(start, goal):
+        if self.is_goal_reached(start):
             return [start]
         insertion_order = itertools.count()
         best_costs = {self._search_state(start): 0}
         came_from: dict[GrammarGraphNode, Optional[GrammarGraphNode]] = {start: None}
         closed: set[Hashable] = set()
         frontier = [
-            (self.heuristic_cost_estimate(start, goal), next(insertion_order), 0, start)
+            (self.heuristic_cost_estimate(start), next(insertion_order), 0, start)
         ]
         while frontier:
             _, _, cost, current = heapq.heappop(frontier)
             state = self._search_state(current)
             if state in closed or cost > best_costs[state]:
                 continue
-            if self.is_goal_reached(current, goal):
+            if self.is_goal_reached(current):
                 path = []
                 node: Optional[GrammarGraphNode] = current
                 while node is not None:
                     path.append(node)
                     node = came_from[node]
-                return path if reverse_path else list(reversed(path))
+                return list(reversed(path))
             closed.add(state)
             for neighbor in self.neighbors(current):
                 neighbor_state = self._search_state(neighbor)
@@ -181,7 +174,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
                 heapq.heappush(
                     frontier,
                     (
-                        neighbor_cost + self.heuristic_cost_estimate(neighbor, goal),
+                        neighbor_cost + self.heuristic_cost_estimate(neighbor),
                         next(insertion_order),
                         neighbor_cost,
                         neighbor,
@@ -250,19 +243,10 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
     def set_message_cost(self, cost: int) -> None:
         self.message_cost = cost
 
-    def set_non_terminal_cost(self, cost: int) -> None:
-        self.non_terminal_cost = cost
-
-    def set_node_costs(self, cost: int) -> None:
-        self.node_cost = cost
-
     def distance_between(self, n1: GrammarGraphNode, n2: GrammarGraphNode) -> int:
-        if isinstance(n2.node, NonTerminalNode):
-            if n2.node.sender is not None:
-                return self.message_cost
-            else:
-                return self.non_terminal_cost
-        return self.node_cost
+        if isinstance(n2.node, NonTerminalNode) and n2.node.sender is not None:
+            return self.message_cost
+        return 0
 
     def _chain_symbol(self, node: GrammarGraphNode) -> Optional[Symbol]:
         if node not in self._chain_symbols:
@@ -390,9 +374,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         # Never return 0 here
         return max((search_len - strict) * BIG + sub, 1)
 
-    def heuristic_cost_estimate(
-        self, current: GrammarGraphNode, goal: GrammarGraphNode
-    ) -> int:
+    def heuristic_cost_estimate(self, current: GrammarGraphNode) -> int:
         if not self.search_symbols:
             return 1
         cost = self._heuristic_costs.get(current)
@@ -401,9 +383,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
             self._heuristic_costs[current] = cost
         return cost
 
-    def is_goal_reached(
-        self, current: GrammarGraphNode, goal: GrammarGraphNode
-    ) -> bool:
+    def is_goal_reached(self, current: GrammarGraphNode) -> bool:
         self.comparisons += 1
         if self.comparisons > self.max_comparisons:
             raise NavigatorTimedOutError(
@@ -412,7 +392,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         if self.is_search_end_node:
             return current.is_accepting
 
-        return self.heuristic_cost_estimate(current, goal) == 0
+        return self.heuristic_cost_estimate(current) == 0
 
     def check_reachability_w_controlflow(
         self, *, tree: Optional[DerivationTree] = None, destination_k_path: KPath
@@ -466,10 +446,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
             else tuple(),
             [self._symbol_distances_to(s) for s in destination_k_path],
         )
-        a_star_path = self.astar(
-            start_nav_node,
-            EagerGrammarGraphNode(NonTerminalNode(NonTerminal("<dummy>"), []), []),
-        )
+        a_star_path = self.astar(start_nav_node)
         if a_star_path is None:
             return None
         return list(a_star_path)
@@ -491,7 +468,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
             return []
         self._start_search(None, tuple(), None)
         self.is_search_end_node = True
-        a_star_path = self.astar(start_node, start_node)
+        a_star_path = self.astar(start_node)
         if a_star_path is None:
             return []
         return a_star_path
