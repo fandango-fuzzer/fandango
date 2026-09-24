@@ -273,14 +273,17 @@ class DerivationTree:
         """
         Returns a list of all protocol messages present in the current DerivationTree and children.
         """
-        if not isinstance(self.symbol, NonTerminal):
-            return []
-        if self.sender is not None:
-            return [ProtocolMessage(self.sender, self.recipient, self)]
-        subtrees = []
-        for child in self._children:
-            subtrees.extend(child.protocol_msgs())
-        return subtrees
+        messages: list[ProtocolMessage] = []
+        pending: list[DerivationTree] = [self]
+        while pending:
+            node = pending.pop()
+            if not isinstance(node.symbol, NonTerminal):
+                continue
+            if node.sender is not None:
+                messages.append(ProtocolMessage(node.sender, node.recipient, node))
+                continue
+            pending.extend(reversed(node._children))
+        return messages
 
     def append(
         self, hookin_path: tuple[tuple[NonTerminal, bool], ...], tree: "DerivationTree"

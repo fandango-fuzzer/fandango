@@ -1,6 +1,6 @@
 import heapq
 import itertools
-from collections.abc import Hashable, Iterable
+from collections.abc import Generator, Hashable, Iterable
 from typing import NamedTuple, Optional, Union
 
 from astar import AStar
@@ -23,6 +23,7 @@ from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Repetition
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.symbols import NonTerminal, Symbol
+from fandango.io.navigation.nested_steps import run_nested_steps
 
 
 class NavigatorTimedOutError(FandangoError):
@@ -198,23 +199,28 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
             current = current.parent
         return current
 
-    def _continuation_key(
+    def _continuation_key_steps(
         self, instance: GrammarGraphNode
-    ) -> Optional[frozenset[Hashable]]:
+    ) -> Generator[GrammarGraphNode, Hashable, Optional[frozenset[Hashable]]]:
         if not isinstance(instance, LazyGrammarGraphNode):
             return frozenset()
         if instance not in self._continuation_keys:
             self._continuation_keys[instance] = None
-            self._continuation_keys[instance] = frozenset(
-                self._future_key(following) for following in instance._pre_load_reaches
-            )
+            following_keys = []
+            for following in instance._pre_load_reaches:
+                following_keys.append((yield following))
+            self._continuation_keys[instance] = frozenset(following_keys)
         return self._continuation_keys[instance]
 
-    def _future_key(self, node: GrammarGraphNode) -> Hashable:
+    def _future_key_steps(
+        self, node: GrammarGraphNode
+    ) -> Generator[GrammarGraphNode, Hashable, Hashable]:
         if node not in self._future_keys:
             instance = self._enclosing_instance(node)
             continuation = (
-                None if instance is None else self._continuation_key(instance)
+                None
+                if instance is None
+                else (yield from self._continuation_key_steps(instance))
             )
             self._future_keys[node] = (
                 ("instance", id(node))
@@ -222,6 +228,9 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
                 else (id(node.node), continuation)
             )
         return self._future_keys[node]
+
+    def _future_key(self, node: GrammarGraphNode) -> Hashable:
+        return run_nested_steps(self._future_key_steps(node), self._future_key_steps)
 
     def _search_state(self, node: GrammarGraphNode) -> Hashable:
         if not self.search_symbols:
