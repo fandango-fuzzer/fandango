@@ -97,7 +97,7 @@ class PacketGuide:
         uncovered_paths = get_uncovered_paths()
         self._guide_to_end = False
         if (
-            len(history_tree.protocol_msgs()) > self._max_messages_per_tree
+            len(list(history_tree.protocol_msgs())) > self._max_messages_per_tree
             or len(uncovered_paths) == 0
         ):
             if len(uncovered_paths) == 0:

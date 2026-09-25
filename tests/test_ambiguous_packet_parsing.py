@@ -121,7 +121,7 @@ class TestConstraintDisambiguation(unittest.TestCase):
 
         self.assertEqual(len(result_list), 1)
         result = result_list[0]
-        messages = result.protocol_msgs()
+        messages = list(result.protocol_msgs())
         self.assertEqual(len(messages), 3)
 
         # First message: Fuzzer sends the query

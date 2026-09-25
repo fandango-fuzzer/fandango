@@ -269,24 +269,25 @@ class DerivationTree:
             stack.extend(node._children)
             stack.extend(node._sources)
 
-    def protocol_msgs(self) -> list[ProtocolMessage]:
+    def protocol_msgs(self, reverse: bool = False) -> Iterator[ProtocolMessage]:
         """
-        Returns a list of all protocol messages present in the current DerivationTree and children.
+        Yields all protocol messages present in the current DerivationTree and children, last message first if reverse is set.
         """
-        messages: list[ProtocolMessage] = []
         pending: list[DerivationTree] = [self]
         while pending:
             node = pending.pop()
             if not isinstance(node.symbol, NonTerminal):
                 continue
             if node.sender is not None:
-                messages.append(ProtocolMessage(node.sender, node.recipient, node))
+                yield ProtocolMessage(node.sender, node.recipient, node)
                 continue
-            pending.extend(reversed(node._children))
-        return messages
+            pending.extend(node._children if reverse else reversed(node._children))
 
     def append(
-        self, hookin_path: tuple[tuple[NonTerminal, bool], ...], tree: "DerivationTree"
+        self,
+        hookin_path: tuple[tuple[NonTerminal, bool], ...],
+        tree: "DerivationTree",
+        read_only_new_nodes: bool = False,
     ) -> None:
         """
         Appends a given DerivationTree to the current subtree at the specified hookin_path.
@@ -294,20 +295,21 @@ class DerivationTree:
         :param hookin_path: A tuple of (NonTerminal, bool) pairs indicating the path to append the tree. If the bool
         is set to true, a new node is created for the NonTerminal.
         :param tree: The DerivationTree to append.
+        :param read_only_new_nodes: If True, the nodes created along hookin_path are read-only.
         """
         if len(hookin_path) == 0:
             self.add_child(tree)
             return
         next_nt, add_new_node = hookin_path[0]
         if add_new_node:
-            self.add_child(DerivationTree(next_nt))
+            self.add_child(DerivationTree(next_nt, read_only=read_only_new_nodes))
         elif (
             len(self.children) == 0
             or not isinstance(self.children[-1].symbol, NonTerminal)
             or self.children[-1].symbol.name() != next_nt.name()
         ):
             raise ValueError("Invalid hookin_path!")
-        self.children[-1].append(hookin_path[1:], tree)
+        self.children[-1].append(hookin_path[1:], tree, read_only_new_nodes)
 
     def set_children(self, children: list["DerivationTree"]) -> None:
         self._children = children

@@ -46,9 +46,10 @@ class PacketCoverageFilter:
         return 0
 
     def filter(self, individual: DerivationTree) -> Optional[DerivationTree]:
-        if len(individual.protocol_msgs()) == 0:
+        last_record = next(individual.protocol_msgs(reverse=True), None)
+        if last_record is None:
             return individual
-        msg = individual.protocol_msgs()[-1].msg
+        msg = last_record.msg
         symbol = msg.symbol
         assert isinstance(symbol, NonTerminal)
         packet_type = PacketNonTerminal(msg.sender, msg.recipient, symbol)
@@ -64,7 +65,9 @@ class PacketCoverageFilter:
         ) - tracker.covered_packet_k_paths(packet_type, overlap_to_root=True)
 
         overlap_to_root = any(
-            0 < self._is_path_start_with(state_path, path) < self._coverage_tracker.diversity_k
+            0
+            < self._is_path_start_with(state_path, path)
+            < self._coverage_tracker.diversity_k
             for path in uncovered_paths
         )
 

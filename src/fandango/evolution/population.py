@@ -158,7 +158,7 @@ class IoPopulationManager(PopulationManager):
             )
         tree.set_all_read_only(True)
         dummy = DerivationTree(NonTerminal("<hookin>"))
-        tree.append(mounting_option.path[1:-1], dummy)
+        tree.append(mounting_option.path[1:-1], dummy, read_only_new_nodes=True)
 
         fuzz_point = dummy.parent
         assert fuzz_point is not None

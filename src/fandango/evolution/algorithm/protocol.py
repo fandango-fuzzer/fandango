@@ -155,7 +155,9 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 # Deepcopy so that a failed constraint attempt on one NT
                 # does not corrupt the shared base tree for the next candidate.
                 history_tree = hookin_option.tree.deepcopy(copy_parent=False)
-                history_tree.append(hookin_option.path[1:-1], packet_tree)
+                history_tree.append(
+                    hookin_option.path[1:-1], packet_tree, read_only_new_nodes=True
+                )
                 _solutions, (fitness, failing_trees, _suggestion) = GeneratorWithReturn(
                     self._packet_algorithm.evaluator.evaluate_individual(history_tree)
                 ).collect()
@@ -321,7 +323,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 )
                 if self._io_instance.received_msg():
                     continue
-                new_packet = next_history_tree.protocol_msgs()[-1]
+                new_packet = next(next_history_tree.protocol_msgs(reverse=True))
                 if (
                     new_packet.recipient is None
                     or not self._io_instance.parties[
