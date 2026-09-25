@@ -258,6 +258,10 @@ def test_conversion_with_replacement(expression, value, expected):
         ("def f(a, /, b=1): return a + b\nx = f(0)", 1, False),
         ("def f(a, b=0, /, c=1): return a + b + c\nx = f(0)", 1, False),
         ("def f(a, b=1, *rest, c=0, **options): return b + c\nx = f(0)", 1, False),
+        ("f = lambda: 1\nx = f()", 1, False),
+        ("f = lambda a, b=1: a + b\nx = f(0)", 1, False),
+        ("f = lambda a, *, b=1: a + b\nx = f(0)", 1, False),
+        ("f = lambda a, /, b=1, *rest, c=0, **options: b + c\nx = f(0)", 1, False),
     ],
 )
 def test_conversion_statement(stmt, value, is_global):
