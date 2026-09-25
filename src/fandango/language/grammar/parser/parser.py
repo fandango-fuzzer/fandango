@@ -125,7 +125,9 @@ class Parser:
                 if parsed in cached_forest.forest:
                     continue
                 cached_forest.forest[parsed] = None
-                result = parsed if include_controlflow else self.collapse(parsed)
+                result = (
+                    deepcopy(parsed) if include_controlflow else self.collapse(parsed)
+                )
             if result is not None:
                 yield result
         cached_forest.complete = True

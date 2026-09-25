@@ -527,7 +527,7 @@ class IterativeParser:
         self._completed = {}
         self._incomplete = {}
         self._parsing_mode = mode
-        self._hookin_parent = deepcopy(hookin_parent)
+        self._hookin_parent = hookin_parent
         self._compiler._clear_tmp()
 
     def consume(self, char: str | bytes | int) -> None:

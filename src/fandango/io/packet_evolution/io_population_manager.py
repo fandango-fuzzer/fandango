@@ -4,7 +4,7 @@ from typing import Optional
 from fandango.constraints.failing_tree import Suggestion
 from fandango.evolution.population import PopulationManager
 from fandango.io.navigation.graph.packetforecaster import ForecastingPacket
-from fandango.io.packet_evolution.packet_mounting import PacketMounting
+from fandango.io.packet_evolution.packet_mounter import PacketMounter
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
@@ -21,7 +21,7 @@ class IoPopulationManager(PopulationManager):
         self.fuzzable_packets: list[ForecastingPacket] = []
         self.fallback_packets: list[ForecastingPacket] = []
         self.allow_fallback_packets = False
-        self.packet_mounting = PacketMounting(grammar)
+        self.packet_mounter = PacketMounter(grammar)
 
     def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
         if self.fuzzable_packets is None or len(self.fuzzable_packets) == 0:
@@ -33,7 +33,7 @@ class IoPopulationManager(PopulationManager):
         current_idx = (self._prev_packet_idx + 1) % len(packet_selection)
         current_pck = random.choice(packet_selection)
         mounting_option = random.choice(list(current_pck.paths))
-        fuzzed_packet = self.packet_mounting.fuzz_detached_packet(
+        fuzzed_packet = self.packet_mounter.fuzz_attached(
             current_pck, mounting_option, max_nodes
         )
 
@@ -43,7 +43,7 @@ class IoPopulationManager(PopulationManager):
     def _apply_suggestion(
         self, individual: DerivationTree, suggestion: Optional[Suggestion]
     ) -> tuple[DerivationTree, int]:
-        canonical_packet = self.packet_mounting.canonical(individual)
-        with self.packet_mounting.mounted(canonical_packet):
-            fixed, fixes_made = super()._apply_suggestion(canonical_packet, suggestion)
-        return individual if fixed is canonical_packet else fixed, fixes_made
+        first_seen_packet = self.packet_mounter.first_seen_equal(individual)
+        with self.packet_mounter.mount_context(first_seen_packet):
+            fixed, fixes_made = super()._apply_suggestion(first_seen_packet, suggestion)
+        return individual if fixed is first_seen_packet else fixed, fixes_made

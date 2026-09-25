@@ -44,15 +44,15 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._packet_algorithm.population_manager = self._population_manager
         self._packet_algorithm.evaluator = MountingEvaluator(
             self._packet_algorithm.evaluator,
-            self._population_manager.packet_mounting,
+            self._population_manager.packet_mounter,
         )
         self._packet_algorithm.crossover_operator = MountingCrossover(
             self._packet_algorithm.crossover_operator,
-            self._population_manager.packet_mounting,
+            self._population_manager.packet_mounter,
         )
         self._packet_algorithm.mutation_method = MountingMutation(
             self._packet_algorithm.mutation_method,
-            self._population_manager.packet_mounting,
+            self._population_manager.packet_mounter,
         )
         self._protocol_tree: DerivationTree = DerivationTree(self._start_symbol)
         self._coverage_goal = coverage_goal
@@ -152,6 +152,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         if not self._wait_for_remote_message(timeout):
             raise self._gen_timeout_violation()
 
+        packet_mounter = self._population_manager.packet_mounter
+        packet_mounter.clear()
         packet_sender = None
         packet_recipient = None
         packet_tree = None
@@ -169,14 +171,9 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             assert packet_sender is not None
 
             for hookin_option in forecast.paths:
-                # Deepcopy so that a failed constraint attempt on one NT
-                # does not corrupt the shared base tree for the next candidate.
-                history_tree = hookin_option.tree.deepcopy(copy_parent=False)
-                history_tree.append(
-                    hookin_option.path[1:-1], packet_tree, read_only_new_nodes=True
-                )
+                packet_mounter.attach(packet_tree, forecast, hookin_option)
                 _solutions, (fitness, failing_trees, _suggestion) = GeneratorWithReturn(
-                    self._packet_algorithm.evaluator.evaluate_individual(history_tree)
+                    self._packet_algorithm.evaluator.evaluate_individual(packet_tree)
                 ).collect()
                 assert fitness <= 1.0
                 if fitness == 1.0:
@@ -186,7 +183,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                         packet_tree,
                         False,
                     )
-                    return history_tree
+                    return packet_mounter.mount(packet_tree)
                 for failing_tree in failing_trees:
                     constraint = failing_tree.cause.format_as_spec()
                     if constraint not in failed_constraints:
@@ -217,7 +214,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         raise FandangoParseError("Remote response does not match constraints")
 
     def _filter_by_coverage(self, packet: DerivationTree) -> Optional[DerivationTree]:
-        with self._population_manager.packet_mounting.mounted(packet):
+        with self._population_manager.packet_mounter.mount_context(packet):
             return self._packet_coverage_filter.filter(packet)
 
     def _generate_packet(self, max_generations: int | None = None) -> DerivationTree:
@@ -337,7 +334,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 self._packet_algorithm.reset()
                 self._configure_fuzzable_packets()
                 self._packet_coverage_filter.set_current_tree(self._protocol_tree)
-                next_history_tree = self._population_manager.packet_mounting.attach(
+                next_history_tree = self._population_manager.packet_mounter.mount(
                     self._generate_packet(max_generations=max_generations)
                 )
                 if self._io_instance.received_msg():
@@ -386,7 +383,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             self._protocol_tree.set_all_read_only(True)
 
     def _configure_fuzzable_packets(self) -> None:
-        self._population_manager.packet_mounting.forget()
+        self._population_manager.packet_mounter.clear()
         self._clear_constraint_caches()
         self._population_manager.fuzzable_packets = self._packet_selector.next_packets
         self._population_manager.fallback_packets = []
