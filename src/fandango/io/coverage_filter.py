@@ -1,25 +1,22 @@
 from typing import Optional
 
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.language.grammar.grammar import Grammar, KPath
+from fandango.io.navigation.selection.coverage_tracker import CoverageTracker
+from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 
 
 class PacketCoverageFilter:
-    def __init__(self, diversity_k: int, grammar: Grammar):
-        self._diversity_k = diversity_k
-        self._grammar = grammar
+    def __init__(self, coverage_tracker: CoverageTracker):
+        self._coverage_tracker = coverage_tracker
         self._submitted_solutions: set[int] = set()
         self.hold_back_solutions: set[DerivationTree] = set()
         self._solution_set: set[int] = set()
-        self._past_msgs: set[DerivationTree] = set()
-        self._current_msgs: set[DerivationTree] = set()
 
     def add_completed_tree(self, tree: DerivationTree) -> None:
         """Fold a finished run's messages into the past-message set."""
         for record in tree.protocol_msgs():
-            self._past_msgs.add(record.msg)
             self._submitted_solutions.add(
                 hash((record.sender, record.recipient, record.msg))
             )
@@ -28,9 +25,7 @@ class PacketCoverageFilter:
         """Register the in-progress tree's messages for the next generation."""
         self.hold_back_solutions.clear()
         self._solution_set.clear()
-        self._current_msgs = set()
         for record in current_tree.protocol_msgs():
-            self._current_msgs.add(record.msg)
             self._submitted_solutions.add(
                 hash((record.sender, record.recipient, record.msg))
             )
@@ -39,23 +34,9 @@ class PacketCoverageFilter:
         self._submitted_solutions.clear()
         self.hold_back_solutions.clear()
         self._solution_set.clear()
-        self._past_msgs.clear()
-        self._current_msgs.clear()
 
-    def get_past_msgs(
-        self, packet_type: Optional[PacketNonTerminal] = None
-    ) -> set[DerivationTree]:
-        msg_trees = self._past_msgs | self._current_msgs
-        if packet_type is None:
-            return msg_trees
-        return {
-            msg
-            for msg in msg_trees
-            if isinstance(msg.symbol, NonTerminal)
-            and PacketNonTerminal(msg.sender, msg.recipient, msg.symbol) == packet_type
-        }
-
-    def _is_path_start_with(self, state_path: KPath, path: KPath) -> int:
+    @staticmethod
+    def _is_path_start_with(state_path: KPath, path: KPath) -> int:
         n = len(state_path)
         m = len(path)
         max_overlap = min(n, m)
@@ -65,50 +46,33 @@ class PacketCoverageFilter:
         return 0
 
     def filter(self, individual: DerivationTree) -> Optional[DerivationTree]:
-        if len(individual.protocol_msgs()) != 0:
-            msg = individual.protocol_msgs()[-1].msg
-            symbol = msg.symbol
-            assert isinstance(symbol, NonTerminal)
-            msg_key = PacketNonTerminal(msg.sender, msg.recipient, symbol)
-            msg_hash = hash(msg)
-        else:
-            msg = None
-            symbol = None
-            msg_key = None
-            msg_hash = None
-
-        if msg is None:
+        if len(individual.protocol_msgs()) == 0:
             return individual
-
-        assert msg_hash is not None and msg_key is not None
-        state_path_tree = msg.get_path()
-        if len(state_path_tree) > self._diversity_k:
-            state_path_tree = state_path_tree[-self._diversity_k :]
-        state_path = tuple(map(lambda x: x.symbol, state_path_tree))
+        msg = individual.protocol_msgs()[-1].msg
+        symbol = msg.symbol
         assert isinstance(symbol, NonTerminal)
-        uncovered_paths = self._grammar.get_uncovered_k_paths(
-            list(self.get_past_msgs(msg_key)),
-            self._diversity_k,
-            symbol,
-            overlap_to_root=True,
-        )
+        packet_type = PacketNonTerminal(msg.sender, msg.recipient, symbol)
+        msg_hash = hash(msg)
+
+        state_path_tree = msg.get_path()
+        if len(state_path_tree) > self._coverage_tracker.diversity_k:
+            state_path_tree = state_path_tree[-self._coverage_tracker.diversity_k :]
+        state_path = tuple(map(lambda x: x.symbol, state_path_tree))
+        tracker = self._coverage_tracker
+        uncovered_paths = tracker.all_k_paths(
+            symbol, overlap_to_root=True
+        ) - tracker.covered_packet_k_paths(packet_type, overlap_to_root=True)
 
         overlap_to_root = any(
-            0 < self._is_path_start_with(state_path, path) < self._diversity_k
+            0 < self._is_path_start_with(state_path, path) < self._coverage_tracker.diversity_k
             for path in uncovered_paths
         )
 
-        old_coverage = self._grammar.compute_kpath_coverage(
-            list(self.get_past_msgs(msg_key)),
-            self._diversity_k,
-            symbol,
-            overlap_to_root=overlap_to_root,
-        )
-        new_coverage = self._grammar.compute_kpath_coverage(
-            list(self.get_past_msgs(msg_key)) + [msg],
-            self._diversity_k,
-            symbol,
-            overlap_to_root=overlap_to_root,
+        all_paths = tracker.all_k_paths(symbol, overlap_to_root=overlap_to_root)
+        covered_paths = tracker.covered_packet_k_paths(packet_type, overlap_to_root)
+        old_coverage = covered_share(covered_paths, all_paths)
+        new_coverage = covered_share(
+            covered_paths | tracker.k_paths_of(msg, overlap_to_root), all_paths
         )
         if old_coverage < new_coverage or new_coverage == 1.0:
             if new_coverage < 1.0:
@@ -121,3 +85,9 @@ class PacketCoverageFilter:
         ):
             self.hold_back_solutions.add(individual)
         return None
+
+
+def covered_share(covered_paths: set[KPath], all_paths: set[KPath]) -> float:
+    if not all_paths:
+        return 1.0
+    return len(covered_paths) / len(all_paths)

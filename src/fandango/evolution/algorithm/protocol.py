@@ -50,7 +50,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         )
         self._packet_selector.set_coverage_goal(self._coverage_goal)
         self._packet_coverage_filter = PacketCoverageFilter(
-            self._packet_algorithm.diversity_k, self.grammar
+            self._packet_selector.coverage_tracker
         )
         self.violations: list[tuple[DerivationTree, Exception]] = []
         self.throw_on_violation = False

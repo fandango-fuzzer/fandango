@@ -88,6 +88,10 @@ class PacketSelector:
         self._completed_count = 0
 
     @property
+    def coverage_tracker(self) -> CoverageTracker:
+        return self._coverage_tracker
+
+    @property
     def forecasting_result(self) -> ForecastingResult:
         return self._forecast.result
 
