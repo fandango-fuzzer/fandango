@@ -76,13 +76,6 @@ class SimpleMutation(MutationOperator):
         node_to_mutate = random.choice(subtrees)
         assert isinstance(node_to_mutate.symbol, NonTerminal)
 
-        enclosing_message_or_root = node_to_mutate
-        while (
-            enclosing_message_or_root.sender is None
-            and enclosing_message_or_root.parent is not None
-        ):
-            enclosing_message_or_root = enclosing_message_or_root.parent
-
         # Get a truncated tree that contains all nodes left from the selected node.
         ctx_tree = node_to_mutate.split_end()
         if ctx_tree.parent is not None:
@@ -93,8 +86,7 @@ class SimpleMutation(MutationOperator):
         new_subtree = grammar.fuzz(
             node_to_mutate.symbol,
             prefix_node=prefix_node,
-            max_nodes=node_to_mutate.size()
-            + (max_nodes - enclosing_message_or_root.size()),
+            max_nodes=node_to_mutate.size() + (max_nodes - individual.size()),
         )
         new_subtree.sender = node_to_mutate.sender
         new_subtree.recipient = node_to_mutate.recipient

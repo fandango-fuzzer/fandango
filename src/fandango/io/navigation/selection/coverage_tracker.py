@@ -172,7 +172,11 @@ class CoverageTracker:
     def k_paths_of(self, message: DerivationTree, overlap_to_root: bool) -> set[KPath]:
         return self._covered([message], overlap_to_root=overlap_to_root)
 
-    def _grouped_coverages(self) -> tuple[GroupedKPathCoverage, ...]:
+    def _grouped_coverages(
+        self,
+    ) -> tuple[
+        GroupedKPathCoverage[NonTerminal] | GroupedKPathCoverage[PacketNonTerminal], ...
+    ]:
         return (
             self._whole_coverage,
             self._message_coverage,

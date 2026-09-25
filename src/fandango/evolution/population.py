@@ -122,4 +122,3 @@ class PopulationManager:
             fixes_made += len(suggested_replacements)
 
         return individual, fixes_made
-
