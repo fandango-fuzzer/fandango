@@ -1,7 +1,7 @@
 import copy
+import itertools
 import warnings
-from collections import deque
-from collections.abc import Callable, Generator, Iterable, Iterator
+from collections.abc import Callable, Generator, Iterable, Iterator, Sequence
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
 from fandango.language.symbols import NonTerminal, Slice, Symbol, Terminal
@@ -144,6 +144,7 @@ class DerivationTree:
         )
 
         self.hash_cache: Optional[int] = None
+        self._find_subtree_cache: dict[NonTerminal, Sequence[list[DerivationTree]]] = {}
         self._parent: Optional[DerivationTree] = None
         self._sender = sender
         self._recipient = recipient
@@ -227,6 +228,7 @@ class DerivationTree:
         node: Optional[DerivationTree] = self
         while node is not None:
             node.hash_cache = None
+            node._find_subtree_cache.clear()
             if update_size:
                 node._size = None
             node = node._parent
@@ -323,12 +325,15 @@ class DerivationTree:
 
     @sources.setter
     def sources(self, source: list["DerivationTree"]) -> None:
+        had_sources = len(self._sources) > 0
         if source is None:
             self._sources = []
         else:
             self._sources = source
         for param in self._sources:
             param._parent = self
+        if had_sources or self._sources:
+            self.invalidate_hash(update_size=False)
 
     def add_child(self, child: "DerivationTree") -> None:
         self._children.append(child)
@@ -348,12 +353,43 @@ class DerivationTree:
             symbol = NonTerminal(symbol)
         else:
             assert isinstance(symbol, NonTerminal)
-        queue = deque([self])
-        while queue:
-            current = queue.popleft()
-            if current.symbol.is_non_terminal and current.symbol == symbol:
-                yield current
-            queue.extend([*current._children, *current._sources])
+        yield from self._find_subtrees_breadth_first(symbol)
+
+    def _find_subtrees_breadth_first(
+        self, symbol: NonTerminal
+    ) -> Iterator["DerivationTree"]:
+        unindexed: list[DerivationTree] = []
+        pending = [self]
+        while pending:
+            node = pending.pop()
+            if symbol not in node._find_subtree_cache:
+                unindexed.append(node)
+                pending.extend([*node._children, *node._sources])
+        for node in reversed(unindexed):
+            own_level = (
+                [node]
+                if node._symbol.is_non_terminal and node._symbol == symbol
+                else []
+            )
+            levels_below = [
+                found_below
+                for below in [*node._children, *node._sources]
+                if (found_below := below._find_subtree_cache[symbol])
+            ]
+            if not levels_below:
+                node._find_subtree_cache[symbol] = [own_level] if own_level else ()
+                continue
+            if len(levels_below) == 1:
+                node._find_subtree_cache[symbol] = [own_level, *levels_below[0]]
+                continue
+            merged_levels: list[list[DerivationTree]] = [own_level]
+            for below_levels in levels_below:
+                for depth, nodes in enumerate(below_levels, start=1):
+                    if depth == len(merged_levels):
+                        merged_levels.append([])
+                    merged_levels[depth].extend(nodes)
+            node._find_subtree_cache[symbol] = merged_levels
+        return itertools.chain.from_iterable(self._find_subtree_cache[symbol])
 
     def find_all_trees(self, symbol: NonTerminal | str) -> list["DerivationTree"]:
         warnings.warn(
