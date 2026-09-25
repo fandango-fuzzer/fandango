@@ -3,18 +3,14 @@ from fandango.io.navigation.coverage.powerschedule import (
     PowerScheduleKPath,
 )
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
-from fandango.language.grammar.grammar import Grammar, KPath
+from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols import NonTerminal, Symbol
 
 
 class TargetSelector:
     """Picks the next k-path to guide toward."""
 
-    def __init__(
-        self, grammar: Grammar, start_symbol: NonTerminal, model: ProtocolModel
-    ):
-        self._grammar = grammar
-        self._start_symbol = start_symbol
+    def __init__(self, model: ProtocolModel):
         self._model = model
         self._msg_power_schedule = PowerScheduleCoverage()
         self._state_path_power_schedule = PowerScheduleKPath()
@@ -61,11 +57,7 @@ class TargetSelector:
     def _least_covered_message(
         self, coverage_scores: list[tuple[NonTerminal, float]]
     ) -> Symbol:
-        protocol_msgs = self._grammar.get_protocol_messages(self._start_symbol)
-        message_nts = set(map(lambda x: x.symbol, protocol_msgs))
-        message_coverage: dict[Symbol, float] = dict(
-            filter(lambda x: x[0] in message_nts, coverage_scores)
-        )
+        message_coverage: dict[Symbol, float] = dict(coverage_scores)
         m_ps = self._msg_power_schedule
         m_ps.assign_energy_coverage(message_coverage)
         target = m_ps.choose()

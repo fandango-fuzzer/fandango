@@ -31,7 +31,7 @@ class PacketSelector:
         self.io_instance = io_instance
         self._model = ProtocolModel(grammar, self.start_symbol)
         self._forecast = ForecastView(grammar, io_instance, lambda: self.history_tree)
-        self._target_selector = TargetSelector(grammar, self.start_symbol, self._model)
+        self._target_selector = TargetSelector(self._model)
         self._guide = PacketGuide(
             self._model,
             self._forecast,

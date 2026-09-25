@@ -48,9 +48,12 @@ def bruteforce_uncovered(selector, trees):
 
 
 def bruteforce_scores(selector, trees):
-    messages_by_nt = selector._model.group_messages_by_nt(trees)
+    messages_by_nt = {}
+    for tree in trees:
+        for record in tree.protocol_msgs():
+            messages_by_nt.setdefault(record.msg.symbol, []).append(record.msg)
     scores = {}
-    for symbol in selector._model.state_grammar_symbols:
+    for symbol in {message.symbol for message in selector._model.protocol_msg_symbols}:
         if symbol not in messages_by_nt:
             scores[symbol] = 0.0
         else:

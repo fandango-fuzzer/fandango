@@ -87,7 +87,7 @@ class CoverageTracker:
         self._input_parties = input_parties
         self._history = history
         self._coverage_goal = coverage_goal
-        self._whole_coverage: GroupedKPathCoverage[NonTerminal] = GroupedKPathCoverage(
+        self._goal_coverage: GroupedKPathCoverage[NonTerminal] = GroupedKPathCoverage(
             lambda tree: {self._start_symbol: [tree]},
             lambda trees: self._covered(
                 trees,
@@ -138,7 +138,7 @@ class CoverageTracker:
     def set_coverage_goal(self, goal: CoverageGoal) -> None:
         # coverage_goal feeds whole-tree extraction, so the folded basis is invalid.
         self._coverage_goal = goal
-        self._whole_coverage.reset()
+        self._goal_coverage.reset()
         self._coverage_scores = None
 
     def uncovered_paths(self) -> list[KPath]:
@@ -148,7 +148,7 @@ class CoverageTracker:
             input_parties=self._input_parties(),
         )
         return list(
-            all_paths.difference(self._whole_coverage.covered(self._start_symbol))
+            all_paths.difference(self._goal_coverage.covered(self._start_symbol))
         )
 
     def coverage_scores(self) -> list[tuple[NonTerminal, float]]:
@@ -162,7 +162,7 @@ class CoverageTracker:
             coverage_goal=self._coverage_goal,
             input_parties=self._input_parties(),
         )
-        covered_paths = available_paths & self._whole_coverage.covered(
+        covered_paths = available_paths & self._goal_coverage.covered(
             self._start_symbol
         )
         return KPathCounts(len(covered_paths), len(available_paths))
@@ -189,7 +189,7 @@ class CoverageTracker:
         GroupedKPathCoverage[NonTerminal] | GroupedKPathCoverage[PacketNonTerminal], ...
     ]:
         return (
-            self._whole_coverage,
+            self._goal_coverage,
             self._message_coverage,
             self._packet_coverage,
             self._packet_coverage_with_context,

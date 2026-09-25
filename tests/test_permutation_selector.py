@@ -139,7 +139,7 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
         model = ProtocolModel(self.grammar, start)
         forecast = _StubForecast(self.grammar, _make_test_io(), lambda: self.history)
         navigator = PacketNavigator(self.grammar, start)
-        target_selector = TargetSelector(self.grammar, start, model)
+        target_selector = TargetSelector(model)
         return PacketGuide(
             model, forecast, navigator, target_selector, max_messages_per_tree=200
         )
