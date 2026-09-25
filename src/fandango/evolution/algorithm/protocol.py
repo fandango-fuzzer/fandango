@@ -7,11 +7,16 @@ from fandango.errors import FandangoFailedError, FandangoParseError, FandangoVal
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.algorithm.base import GeneticAlgorithm
 from fandango.evolution.algorithm.simple import SimpleGeneticAlgorithm
-from fandango.evolution.population import IoPopulationManager
 from fandango.io import FandangoIO
 from fandango.io.coverage_filter import PacketCoverageFilter
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.io.navigation.selection.packetselector import PacketSelector
+from fandango.io.packet_evolution.io_population_manager import IoPopulationManager
+from fandango.io.packet_evolution.mounting_operators import (
+    MountingCrossover,
+    MountingEvaluator,
+    MountingMutation,
+)
 from fandango.io.packetparser import parse_next_remote_packet
 from fandango.io.violation import FandangoRemoteViolation, RemoteViolationType
 from fandango.language.grammar import FuzzingMode
@@ -37,6 +42,18 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             self.grammar, str(self._start_symbol)
         )
         self._packet_algorithm.population_manager = self._population_manager
+        self._packet_algorithm.evaluator = MountingEvaluator(
+            self._packet_algorithm.evaluator,
+            self._population_manager.packet_mounting,
+        )
+        self._packet_algorithm.crossover_operator = MountingCrossover(
+            self._packet_algorithm.crossover_operator,
+            self._population_manager.packet_mounting,
+        )
+        self._packet_algorithm.mutation_method = MountingMutation(
+            self._packet_algorithm.mutation_method,
+            self._population_manager.packet_mounting,
+        )
         self._protocol_tree: DerivationTree = DerivationTree(self._start_symbol)
         self._coverage_goal = coverage_goal
         self._remote_response_timeout = remote_response_timeout
@@ -199,6 +216,10 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             )
         raise FandangoParseError("Remote response does not match constraints")
 
+    def _filter_by_coverage(self, packet: DerivationTree) -> Optional[DerivationTree]:
+        with self._population_manager.packet_mounting.mounted(packet):
+            return self._packet_coverage_filter.filter(packet)
+
     def _generate_packet(self, max_generations: int | None = None) -> DerivationTree:
         if max_generations is None:
             selected_packet_max_generations = 10
@@ -212,7 +233,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             solutions = [
                 next(
                     filter(
-                        lambda x: self._packet_coverage_filter.filter(x),
+                        self._filter_by_coverage,
                         self._population_manager.refill_population(
                             current_population=self._packet_algorithm.population,
                             eval_individual=self._packet_algorithm.evaluator.evaluate_individual,
@@ -233,7 +254,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         try:
             return next(
                 filter(
-                    lambda x: self._packet_coverage_filter.filter(x),
+                    self._filter_by_coverage,
                     self._packet_algorithm.generate(
                         max_generations=selected_packet_max_generations
                     ),
@@ -318,8 +339,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 self._packet_algorithm.reset()
                 self._configure_fuzzable_packets()
                 self._packet_coverage_filter.set_current_tree(self._protocol_tree)
-                next_history_tree = self._generate_packet(
-                    max_generations=max_generations
+                next_history_tree = self._population_manager.packet_mounting.attach(
+                    self._generate_packet(max_generations=max_generations)
                 )
                 if self._io_instance.received_msg():
                     continue
@@ -367,6 +388,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             self._protocol_tree.set_all_read_only(True)
 
     def _configure_fuzzable_packets(self) -> None:
+        self._population_manager.packet_mounting.forget()
+        self._clear_constraint_caches()
         self._population_manager.fuzzable_packets = self._packet_selector.next_packets
         self._population_manager.fallback_packets = []
         for sender in self._packet_selector.next_fuzzer_parties():

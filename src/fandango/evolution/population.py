@@ -1,13 +1,9 @@
-import random
 from collections.abc import Callable, Generator
 from typing import Optional
 
 from fandango.constraints.failing_tree import FailingTree, Suggestion
-from fandango.errors import FandangoValueError
 from fandango.evolution import GeneratorWithReturn
-from fandango.io.navigation.graph.packetforecaster import ForecastingPacket
 from fandango.language.grammar.grammar import Grammar
-from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
 
@@ -127,43 +123,3 @@ class PopulationManager:
 
         return individual, fixes_made
 
-
-class IoPopulationManager(PopulationManager):
-    def __init__(
-        self,
-        grammar: Grammar,
-        start_symbol: str,
-    ):
-        super().__init__(grammar, start_symbol)
-        self._prev_packet_idx = 0
-        self.fuzzable_packets: list[ForecastingPacket] = []
-        self.fallback_packets: list[ForecastingPacket] = []
-        self.allow_fallback_packets = False
-
-    def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
-        if self.fuzzable_packets is None or len(self.fuzzable_packets) == 0:
-            return DerivationTree(NonTerminal(self._start_symbol))
-        packet_selection = list(self.fuzzable_packets)
-        if self.allow_fallback_packets:
-            packet_selection.extend(self.fallback_packets)
-
-        current_idx = (self._prev_packet_idx + 1) % len(packet_selection)
-        current_pck = random.choice(packet_selection)
-        mounting_option = random.choice(list(current_pck.paths))
-
-        tree = self._grammar.collapse(mounting_option.tree)
-        if tree is None:
-            raise FandangoValueError(
-                f"Could not collapse tree for {mounting_option.path} in packet {current_pck.node}"
-            )
-        tree.set_all_read_only(True)
-        dummy = DerivationTree(NonTerminal("<hookin>"))
-        tree.append(mounting_option.path[1:-1], dummy, read_only_new_nodes=True)
-
-        fuzz_point = dummy.parent
-        assert fuzz_point is not None
-        fuzz_point.set_children(fuzz_point.children[:-1])
-        current_pck.node.fuzz(fuzz_point, self._grammar, max_nodes)
-
-        self._prev_packet_idx = current_idx
-        return tree
