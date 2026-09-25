@@ -1,3 +1,4 @@
+import dataclasses
 from collections.abc import Callable, Hashable
 from typing import Generic, Optional, TypeVar
 
@@ -9,6 +10,12 @@ from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 
 Group = TypeVar("Group", bound=Hashable)
+
+
+@dataclasses.dataclass(frozen=True)
+class KPathCounts:
+    covered_count: int
+    available_count: int
 
 
 class GroupedKPathCoverage(Generic[Group]):
@@ -149,18 +156,22 @@ class CoverageTracker:
             self._coverage_scores = self._compute_coverage_scores()
         return self._coverage_scores
 
-    def coverage_percent(self) -> float:
-        uncovered = self.uncovered_paths()
-        if len(uncovered) == 0:
-            return 1.0
-        all_paths = self.all_k_paths(
+    def k_path_counts(self) -> KPathCounts:
+        available_paths = self.all_k_paths(
             self._start_symbol,
             coverage_goal=self._coverage_goal,
             input_parties=self._input_parties(),
         )
-        if len(all_paths) == 0:
+        covered_paths = available_paths & self._whole_coverage.covered(
+            self._start_symbol
+        )
+        return KPathCounts(len(covered_paths), len(available_paths))
+
+    def coverage_percent(self) -> float:
+        counts = self.k_path_counts()
+        if counts.available_count == 0:
             return 1.0
-        return 1.0 - (len(uncovered) / len(all_paths))
+        return counts.covered_count / counts.available_count
 
     def covered_packet_k_paths(
         self, packet_type: PacketNonTerminal, overlap_to_root: bool

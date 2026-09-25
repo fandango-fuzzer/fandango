@@ -10,6 +10,7 @@ from fandango.evolution.algorithm.simple import SimpleGeneticAlgorithm
 from fandango.io import FandangoIO
 from fandango.io.coverage_filter import PacketCoverageFilter
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
+from fandango.io.navigation.selection.coverage_tracker import KPathCounts
 from fandango.io.navigation.selection.packetselector import PacketSelector
 from fandango.io.packet_evolution.io_population_manager import IoPopulationManager
 from fandango.io.packet_evolution.mounting_operators import (
@@ -88,6 +89,11 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         if self._coverage_goal == CoverageGoal.RANDOM:
             return None
         return self._packet_selector.coverage_percent()
+
+    def k_path_counts(self) -> Optional[KPathCounts]:
+        if self._coverage_goal == CoverageGoal.RANDOM:
+            return None
+        return self._packet_selector.coverage_tracker.k_path_counts()
 
     @property
     def max_messages_per_tree(self) -> int:
