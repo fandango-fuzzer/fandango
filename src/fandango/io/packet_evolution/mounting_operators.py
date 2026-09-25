@@ -21,11 +21,9 @@ class MountingEvaluator(Evaluator):
         self._packet_mounter = packet_mounter
 
     def evaluate_individual(self, individual: DerivationTree) -> Evaluation:
-        # We use first_seen_packer to profit from cache optimizations during evaluation
-        first_seen_packet = self._packet_mounter.first_seen_equal(individual)
-        with self._packet_mounter.mount_context(first_seen_packet):
+        with self._packet_mounter.mounted_context(individual) as mounted_packet:
             solutions, evaluation = GeneratorWithReturn(
-                super().evaluate_individual(first_seen_packet.get_root())
+                super().evaluate_individual(mounted_packet.get_root())
             ).collect()
         for _solution in solutions:
             yield individual
@@ -42,8 +40,20 @@ class MountingCrossover(CrossoverOperator):
     def crossover(
         self, grammar: Grammar, parent1: DerivationTree, parent2: DerivationTree
     ) -> Optional[tuple[DerivationTree, DerivationTree]]:
-        with self._packet_mounter.mount_context(parent1, parent2):
-            return self._crossover_operator.crossover(grammar, parent1, parent2)
+        with (
+            self._packet_mounter.mounted_context(parent1) as mounted_parent1,
+            self._packet_mounter.mounted_context(parent2) as mounted_parent2,
+        ):
+            children = self._crossover_operator.crossover(
+                grammar, mounted_parent1, mounted_parent2
+            )
+        if children is None:
+            return None
+        child1, child2 = children
+        return (
+            parent1 if child1 is mounted_parent1 else child1,
+            parent2 if child2 is mounted_parent2 else child2,
+        )
 
 
 class MountingMutation(MutationOperator):
@@ -59,13 +69,9 @@ class MountingMutation(MutationOperator):
         grammar: Grammar,
         evaluate_func: Callable[[DerivationTree], Evaluation],
     ) -> Generator[DerivationTree, None, DerivationTree]:
-        # We use first_seen_packer to profit from cache optimizations during evaluation
-        first_seen_packet = self._packet_mounter.first_seen_equal(individual)
-        with self._packet_mounter.mount_context(first_seen_packet):
+        with self._packet_mounter.mounted_context(individual) as mounted_packet:
             solutions, mutated = GeneratorWithReturn(
-                self._mutation_operator.mutate(
-                    first_seen_packet, grammar, evaluate_func
-                )
+                self._mutation_operator.mutate(mounted_packet, grammar, evaluate_func)
             ).collect()
         yield from solutions
-        return individual if mutated is first_seen_packet else mutated
+        return individual if mutated is mounted_packet else mutated

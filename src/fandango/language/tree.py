@@ -1016,6 +1016,10 @@ class DerivationTree:
         """
         return self._parent
 
+    @parent.setter
+    def parent(self, parent: Optional["DerivationTree"]) -> None:
+        self._parent = parent
+
     def children_values(self) -> list[TreeValue]:
         """
         Return values of all direct children

@@ -153,7 +153,6 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             raise self._gen_timeout_violation()
 
         packet_mounter = self._population_manager.packet_mounter
-        packet_mounter.reset(self._protocol_tree)
         packet_sender = None
         packet_recipient = None
         packet_tree = None
@@ -183,7 +182,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                         packet_tree,
                         False,
                     )
-                    return packet_mounter.mount(packet_tree)
+                    return packet_mounter.commit(packet_tree)
                 for failing_tree in failing_trees:
                     constraint = failing_tree.cause.format_as_spec()
                     if constraint not in failed_constraints:
@@ -214,8 +213,12 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         raise FandangoParseError("Remote response does not match constraints")
 
     def _filter_by_coverage(self, packet: DerivationTree) -> Optional[DerivationTree]:
-        with self._population_manager.packet_mounter.mount_context(packet):
-            return self._packet_coverage_filter.filter(packet)
+        with self._population_manager.packet_mounter.mounted_context(
+            packet
+        ) as mounted_packet:
+            if self._packet_coverage_filter.filter(mounted_packet) is None:
+                return None
+            return packet
 
     def _generate_packet(self, max_generations: int | None = None) -> DerivationTree:
         if max_generations is None:
@@ -298,6 +301,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         max_generations: Optional[int] = None,
         mode: FuzzingMode = FuzzingMode.COMPLETE,
     ) -> Generator[DerivationTree, None, None]:
+        packet_mounter = self._population_manager.packet_mounter
         iteration = 0
         while True:
             iteration += 1
@@ -332,13 +336,13 @@ class ProtocolAlgorithm(GeneticAlgorithm):
 
             if self._should_generate_next_packet():
                 self._packet_algorithm.reset()
-                self._configure_fuzzable_packets()
-                self._packet_coverage_filter.set_current_tree(self._protocol_tree)
-                next_history_tree = self._population_manager.packet_mounter.mount(
-                    self._generate_packet(max_generations=max_generations)
-                )
-                if self._io_instance.received_msg():
-                    continue
+                with packet_mounter.session_context(self._protocol_tree):
+                    self._configure_fuzzable_packets()
+                    self._packet_coverage_filter.set_current_tree(self._protocol_tree)
+                    packet = self._generate_packet(max_generations=max_generations)
+                    if self._io_instance.received_msg():
+                        continue
+                    next_history_tree = packet_mounter.commit(packet)
                 new_packet = next(next_history_tree.protocol_msgs(reverse=True))
                 if (
                     new_packet.recipient is None
@@ -358,7 +362,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 self._protocol_tree = next_history_tree
             else:
                 try:
-                    self._protocol_tree = self._handle_remote_response()
+                    with packet_mounter.session_context(self._protocol_tree):
+                        self._protocol_tree = self._handle_remote_response()
                 except (
                     FandangoFailedError,
                     FandangoParseError,
@@ -383,7 +388,6 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             self._protocol_tree.set_all_read_only(True)
 
     def _configure_fuzzable_packets(self) -> None:
-        self._population_manager.packet_mounter.reset(self._protocol_tree)
         self._clear_constraint_caches()
         self._population_manager.fuzzable_packets = self._packet_selector.next_packets
         self._population_manager.fallback_packets = []
