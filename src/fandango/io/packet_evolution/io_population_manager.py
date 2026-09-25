@@ -40,12 +40,10 @@ class IoPopulationManager(PopulationManager):
         self._prev_packet_idx = current_idx
         return fuzzed_packet
 
-    def fix_individual(
-        self,
-        individual: DerivationTree,
-        suggestion: Optional[Suggestion] = None,
+    def _apply_suggestion(
+        self, individual: DerivationTree, suggestion: Optional[Suggestion]
     ) -> tuple[DerivationTree, int]:
         canonical_packet = self.packet_mounting.canonical(individual)
         with self.packet_mounting.mounted(canonical_packet):
-            fixed, fixes_made = super().fix_individual(canonical_packet, suggestion)
+            fixed, fixes_made = super()._apply_suggestion(canonical_packet, suggestion)
         return individual if fixed is canonical_packet else fixed, fixes_made

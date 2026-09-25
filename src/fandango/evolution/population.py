@@ -85,13 +85,11 @@ class PopulationManager:
             found_solution, (_fitness, failing_trees, suggestion) = GeneratorWithReturn(
                 eval_individual(individual)
             ).collect()
-            candidate, _fixes_made = self.fix_individual(
-                individual,
-                suggestion,
-            )
-            new_found_solution, (_new_fitness, _new_failing_trees, suggestion) = (
-                GeneratorWithReturn(eval_individual(candidate)).collect()
-            )
+            new_found_solution, (candidate, _fixes_made) = GeneratorWithReturn(
+                self.fix_individual(
+                    individual, failing_trees, suggestion, eval_individual
+                )
+            ).collect()
             if attempts < max_attempts:
                 if PopulationManager.add_unique_individual(
                     current_population, candidate, unique_hashes
@@ -109,16 +107,42 @@ class PopulationManager:
     def fix_individual(
         self,
         individual: DerivationTree,
-        suggestion: Optional[Suggestion] = None,
-    ) -> tuple[DerivationTree, int]:
+        failing_trees: list[FailingTree],
+        suggestion: Suggestion,
+        eval_individual: Callable[
+            [DerivationTree],
+            Generator[
+                DerivationTree, None, tuple[float, list[FailingTree], Suggestion]
+            ],
+        ],
+    ) -> Generator[DerivationTree, None, tuple[DerivationTree, int]]:
         fixes_made = 0
-        if suggestion:
-            suggested_replacements = suggestion.get_replacements(
-                individual, self._grammar
-            )
-            individual = individual.replace_multiple(
-                self._grammar, suggested_replacements
-            )
-            fixes_made += len(suggested_replacements)
-
+        fix_round_count = 0
+        failing_constraints = frozenset(tree.cause for tree in failing_trees)
+        involved_constraints = set(failing_constraints)
+        seen_failing_constraints = {failing_constraints}
+        while failing_constraints and fix_round_count < len(involved_constraints):
+            fixed, round_fixes_made = self._apply_suggestion(individual, suggestion)
+            if round_fixes_made == 0:
+                break
+            fix_round_count += 1
+            fixes_made += round_fixes_made
+            _fitness, failing_trees, suggestion = yield from eval_individual(fixed)
+            individual = fixed
+            failing_constraints = frozenset(tree.cause for tree in failing_trees)
+            if failing_constraints in seen_failing_constraints:
+                break
+            seen_failing_constraints.add(failing_constraints)
+            involved_constraints |= failing_constraints
         return individual, fixes_made
+
+    def _apply_suggestion(
+        self, individual: DerivationTree, suggestion: Optional[Suggestion]
+    ) -> tuple[DerivationTree, int]:
+        if not suggestion:
+            return individual, 0
+        suggested_replacements = suggestion.get_replacements(individual, self._grammar)
+        return (
+            individual.replace_multiple(self._grammar, suggested_replacements),
+            len(suggested_replacements),
+        )

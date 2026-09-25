@@ -436,10 +436,12 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
             for ind in new_population:
                 (
                     _fitness,
-                    _failing_trees,
+                    failing_trees,
                     suggestion,
                 ) = yield from self.evaluator.evaluate_individual(ind)
-                ind, num_fixes = self.population_manager.fix_individual(ind, suggestion)
+                ind, num_fixes = yield from self.population_manager.fix_individual(
+                    ind, failing_trees, suggestion, self.evaluator.evaluate_individual
+                )
                 self.population.append(ind)
                 self.fixes_made += num_fixes
 
