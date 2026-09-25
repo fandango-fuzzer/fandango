@@ -35,7 +35,7 @@ def session(*exchanges):
     )
 
 
-def filter_after(finished_session):
+def tracker_after(finished_session):
     grammar = Fandango(
         (RESOURCES_ROOT / "echo_io.fan").read_text(), use_stdlib=False, use_cache=False
     ).grammar
@@ -50,7 +50,11 @@ def filter_after(finished_session):
         CoverageGoal.STATE_INPUTS,
     )
     tracker.add_completed_tree(finished_session)
-    return PacketCoverageFilter(tracker)
+    return tracker
+
+
+def filter_after(finished_session):
+    return PacketCoverageFilter(tracker_after(finished_session))
 
 
 def test_new_k_path_passes():
@@ -68,3 +72,18 @@ def test_known_k_path_is_held_back():
 def test_other_party_does_not_count():
     packet_filter = filter_after(session(("A", "C")))
     assert packet_filter.filter(session(("C", None))) is not None
+
+
+def test_unreachable_k_paths_end_holding_back():
+    packet_filter = filter_after(session(("A", "C")))
+    candidate = session(("A", None))
+    assert packet_filter.filter(candidate) is None
+    packet_filter.mark_uncovered_k_paths_unreachable()
+    assert packet_filter.filter(candidate) is not None
+
+
+def test_unreachable_k_path_still_counts_when_hit():
+    packet_filter = filter_after(session(("A", "C")))
+    packet_filter.filter(session(("A", None)))
+    packet_filter.mark_uncovered_k_paths_unreachable()
+    assert packet_filter.filter(session(("B", None))) is not None
