@@ -1547,8 +1547,10 @@ class SearchProcessor(FandangoParserVisitor):
         searches = []
         search_map = {}
         if ctx.slash_no_default():
-            p = self.visitSlash_no_default(ctx.slash_no_default())
+            p, s, m = self.visitSlash_no_default(ctx.slash_no_default())
             posonlyargs.extend(p)
+            searches.extend(s)
+            search_map.update(m)
         elif ctx.slash_with_default():
             p, d, s, m = self.visitSlash_with_default(ctx.slash_with_default())
             posonlyargs.extend(p)
@@ -1561,18 +1563,14 @@ class SearchProcessor(FandangoParserVisitor):
             args.append(arg)
             searches.extend(s)
             search_map.update(m)
-        kwonlyargs = []
-        kw_defaults = []
         for param in ctx.param_with_default():
             arg, d, s, m = self.visitParam_with_default(param)
-            if ctx.slash_with_default():
-                args.append(arg)
-                defaults.append(d)
-            else:
-                kwonlyargs.append(arg)
-                kw_defaults.append(d)
+            args.append(arg)
+            defaults.append(d)
             searches.extend(s)
             search_map.update(m)
+        kwonlyargs = []
+        kw_defaults = []
         if ctx.star_etc():
             vararg, kw_args, kw_d, kwarg, s, m = self.visitStar_etc(ctx.star_etc())
             kwonlyargs.extend(kw_args)
@@ -1595,16 +1593,42 @@ class SearchProcessor(FandangoParserVisitor):
             search_map,
         )
 
+    def visitSlash_no_default(self, ctx: FandangoParser.Slash_no_defaultContext):
+        posonlyargs, searches, search_map = [], [], {}
+        for param in ctx.param_no_default():
+            arg, s, m = self.visitParam_no_default(param)
+            posonlyargs.append(arg)
+            searches.extend(s)
+            search_map.update(m)
+        return posonlyargs, searches, search_map
+
+    def visitSlash_with_default(self, ctx: FandangoParser.Slash_with_defaultContext):
+        posonlyargs, searches, search_map = [], [], {}
+        for param in ctx.param_no_default():
+            arg, s, m = self.visitParam_no_default(param)
+            posonlyargs.append(arg)
+            searches.extend(s)
+            search_map.update(m)
+        defaults = []
+        for param in ctx.param_with_default():
+            arg, d, s, m = self.visitParam_with_default(param)
+            posonlyargs.append(arg)
+            defaults.append(d)
+            searches.extend(s)
+            search_map.update(m)
+        return posonlyargs, defaults, searches, search_map
+
     def visitStar_etc(self, ctx: FandangoParser.Star_etcContext):
         searches, search_map = [], {}
         vararg = None
-        if ctx.STAR():
-            if ctx.param_no_default():
-                vararg, s, m = self.visitParam_no_default(ctx.param_no_default())
-            else:
-                vararg, s, m = self.visitParam_no_default_star_annotation(
-                    ctx.param_no_default_star_annotation()
-                )
+        if ctx.param_no_default():
+            vararg, s, m = self.visitParam_no_default(ctx.param_no_default())
+            searches.extend(s)
+            search_map.update(m)
+        elif ctx.param_no_default_star_annotation():
+            vararg, s, m = self.visitParam_no_default_star_annotation(
+                ctx.param_no_default_star_annotation()
+            )
             searches.extend(s)
             search_map.update(m)
         kwonlyargs = []
