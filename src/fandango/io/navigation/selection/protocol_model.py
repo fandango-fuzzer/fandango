@@ -1,12 +1,9 @@
-from typing import Optional
-
 from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConverter
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.symbols import NonTerminal
-from fandango.language.tree import DerivationTree
 
 
 class ProtocolModel:
@@ -20,25 +17,6 @@ class ProtocolModel:
         self.state_grammar_symbols = self._get_state_grammar_symbols(start_symbol)
         self.protocol_msg_symbols = grammar.get_protocol_messages(start_symbol)
         self.permutation_groups = self._build_permutation_groups()
-
-    def group_messages_by_nt(
-        self,
-        trees: list[DerivationTree],
-        non_terminals: Optional[set[NonTerminal]] = None,
-    ) -> dict[NonTerminal, list[DerivationTree]]:
-        """Group message subtrees by their NonTerminal symbol."""
-        if non_terminals is None:
-            non_terminals = self.state_grammar_symbols
-        messages: list[DerivationTree] = []
-        for tree in trees:
-            for subtree in tree.flattened():
-                if subtree.symbol in non_terminals:
-                    messages.append(subtree)
-        messages_by_nt: dict[NonTerminal, list[DerivationTree]] = {}
-        for msg in messages:
-            assert isinstance(msg.symbol, NonTerminal)
-            messages_by_nt.setdefault(msg.symbol, []).append(msg)
-        return messages_by_nt
 
     def _get_state_grammar_symbols(
         self, starting_symbol: NonTerminal

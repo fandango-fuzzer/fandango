@@ -98,7 +98,7 @@ class CoverageTracker:
         )
         self._message_coverage: GroupedKPathCoverage[NonTerminal] = (
             GroupedKPathCoverage(
-                lambda tree: self._model.group_messages_by_nt([tree]),
+                self._messages_by_symbol,
                 self._covered,
                 history,
             )
@@ -196,6 +196,16 @@ class CoverageTracker:
         )
 
     @staticmethod
+    def _messages_by_symbol(
+        tree: DerivationTree,
+    ) -> dict[NonTerminal, list[DerivationTree]]:
+        messages: dict[NonTerminal, list[DerivationTree]] = {}
+        for record in tree.protocol_msgs():
+            assert isinstance(record.msg.symbol, NonTerminal)
+            messages.setdefault(record.msg.symbol, []).append(record.msg)
+        return messages
+
+    @staticmethod
     def _messages_by_packet_type(
         tree: DerivationTree,
     ) -> dict[PacketNonTerminal, list[DerivationTree]]:
@@ -247,7 +257,7 @@ class CoverageTracker:
     def _compute_coverage_scores(self) -> list[tuple[NonTerminal, float]]:
         """Per-NonTerminal coverage score: covered / total k-paths."""
         nt_coverage: dict[NonTerminal, float] = {}
-        for symbol in self._model.state_grammar_symbols:
+        for symbol in {message.symbol for message in self._model.protocol_msg_symbols}:
             if not self._message_coverage.is_seen(symbol):
                 nt_coverage[symbol] = 0.0
                 continue
