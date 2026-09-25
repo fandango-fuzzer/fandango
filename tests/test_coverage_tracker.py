@@ -23,20 +23,16 @@ def packet_selector_and_tree(grammar_file):
     return fandango.fandango._packet_selector, tree
 
 
-def tracker_following(selector, history):
+def make_tracker(selector, history):
     return CoverageTracker(
         selector.grammar,
         selector._coverage_tracker._diversity_k,
         selector._model,
         selector.start_symbol,
         selector._input_parties,
-        history,
+        lambda: history,
         GOAL,
     )
-
-
-def make_tracker(selector, history):
-    return tracker_following(selector, lambda: history)
 
 
 def bruteforce_uncovered(selector, trees):
@@ -127,19 +123,20 @@ def test_reset_clears_basis(grammar_file):
     assert tracker.coverage_scores() == bruteforce_scores(selector, [history])
 
 
-def test_coverage_follows_the_running_history_after_invalidation():
+def test_coverage_follows_the_history_the_selector_computes():
     selector, running = packet_selector_and_tree("minimal_io.fan")
+    selector.reset_coverage()
+    selector.set_coverage_goal(GOAL)
+    tracker = selector.coverage_tracker
     empty_history = DerivationTree(NonTerminal("<start>"))
-    history = empty_history
-    tracker = tracker_following(selector, lambda: history)
+
+    selector.compute(empty_history)
     scores_before = tracker.coverage_scores()
     uncovered_before = set(tracker.uncovered_paths())
     assert scores_before == bruteforce_scores(selector, [empty_history])
     assert uncovered_before == bruteforce_uncovered(selector, [empty_history])
 
-    history = running
-    tracker.invalidate()
-
+    selector.compute(running)
     assert tracker.coverage_scores() == bruteforce_scores(selector, [running])
     assert set(tracker.uncovered_paths()) == bruteforce_uncovered(selector, [running])
     assert tracker.coverage_scores() != scores_before

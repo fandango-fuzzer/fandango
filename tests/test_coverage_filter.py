@@ -1,56 +1,70 @@
 from fandango.api import Fandango
-from fandango.evolution.algorithm.protocol import ProtocolAlgorithm
 from fandango.io.coverage_filter import PacketCoverageFilter
-from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.language.grammar import FuzzingMode
-from fandango.language.symbols import NonTerminal
+from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
+from fandango.io.navigation.selection.coverage_tracker import CoverageTracker
+from fandango.io.navigation.selection.protocol_model import ProtocolModel
+from fandango.language.symbols import NonTerminal, Terminal
+from fandango.language.tree import DerivationTree
 
 from .utils import RESOURCES_ROOT
 
-
-def filter_and_tree():
-    with open(RESOURCES_ROOT / "minimal_io.fan") as f:
-        spec = f.read()
-    fandango = Fandango(spec, use_stdlib=False, use_cache=False)
-    tree = fandango.fuzz(mode=FuzzingMode.IO, population_size=1)[0]
-    assert isinstance(fandango.fandango, ProtocolAlgorithm)
-    diversity_k = fandango.fandango._packet_algorithm.diversity_k
-    return PacketCoverageFilter(diversity_k, fandango.grammar), tree
+START = NonTerminal("<start>")
+DIVERSITY_K = 5
 
 
-def bruteforce_msgs(trees, packet_type=None):
-    msgs = set()
-    for tree in trees:
-        for record in tree.protocol_msgs():
-            msgs.add(record.msg)
-    if packet_type is None:
-        return msgs
-    return {
-        m
-        for m in msgs
-        if isinstance(m.symbol, NonTerminal)
-        and PacketNonTerminal(m.sender, m.recipient, m.symbol) == packet_type
-    }
+def note(sender, recipient, text):
+    return DerivationTree(
+        NonTerminal("<note>"),
+        [DerivationTree(Terminal(f"{text}\n"))],
+        sender=sender,
+        recipient=recipient,
+    )
 
 
-def test_get_past_msgs_matches_bruteforce():
-    flt, tree = filter_and_tree()
-    flt.add_completed_tree(tree)
-    flt.set_current_tree(tree)
-    assert flt.get_past_msgs() == bruteforce_msgs([tree])
+def session(*exchanges):
+    return DerivationTree(
+        START,
+        [
+            DerivationTree(
+                NonTerminal("<exchange>"),
+                [note("Fuzzer", "Extern", sent)]
+                + ([note("Extern", "Fuzzer", reply)] if reply else []),
+            )
+            for sent, reply in exchanges
+        ],
+    )
 
 
-def test_get_past_msgs_filters_by_type():
-    flt, tree = filter_and_tree()
-    flt.add_completed_tree(tree)
-    record = tree.protocol_msgs()[0]
-    packet_type = PacketNonTerminal(record.sender, record.recipient, record.msg.symbol)
-    assert flt.get_past_msgs(packet_type) == bruteforce_msgs([tree], packet_type)
+def filter_after(finished_session):
+    grammar = Fandango(
+        (RESOURCES_ROOT / "echo_io.fan").read_text(), use_stdlib=False, use_cache=False
+    ).grammar
+    empty_history = DerivationTree(START)
+    tracker = CoverageTracker(
+        grammar,
+        DIVERSITY_K,
+        ProtocolModel(grammar, START),
+        START,
+        lambda: {"Fuzzer"},
+        lambda: empty_history,
+        CoverageGoal.STATE_INPUTS,
+    )
+    tracker.add_completed_tree(finished_session)
+    return PacketCoverageFilter(tracker)
 
 
-def test_reset_clears():
-    flt, tree = filter_and_tree()
-    flt.add_completed_tree(tree)
-    flt.set_current_tree(tree)
-    flt.reset()
-    assert flt.get_past_msgs() == set()
+def test_new_k_path_passes():
+    packet_filter = filter_after(session(("A", "C")))
+    assert packet_filter.filter(session(("B", None))) is not None
+
+
+def test_known_k_path_is_held_back():
+    packet_filter = filter_after(session(("A", "C")))
+    candidate = session(("A", None))
+    assert packet_filter.filter(candidate) is None
+    assert candidate in packet_filter.hold_back_solutions
+
+
+def test_other_party_does_not_count():
+    packet_filter = filter_after(session(("A", "C")))
+    assert packet_filter.filter(session(("C", None))) is not None
