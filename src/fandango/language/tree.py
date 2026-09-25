@@ -344,7 +344,7 @@ class DerivationTree:
         self, symbol: NonTerminal | str
     ) -> Generator["DerivationTree", None, None]:
         """
-        Recursive, breadth-first search to find all trees with the given non-terminal symbol under this tree, including sources of generators.
+        Breadth-first search to find all trees with the given non-terminal symbol under this tree, including sources of generators.
 
         :param symbol: The non-terminal symbol to find.
         :return: A generator of all trees with the given non-terminal symbol under this tree.
