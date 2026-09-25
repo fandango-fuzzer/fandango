@@ -43,6 +43,7 @@ class IoPopulationManager(PopulationManager):
     def _apply_suggestion(
         self, individual: DerivationTree, suggestion: Optional[Suggestion]
     ) -> tuple[DerivationTree, int]:
+        # We use first_seen_packer to profit from cache optimizations during evaluation
         first_seen_packet = self.packet_mounter.first_seen_equal(individual)
         with self.packet_mounter.mount_context(first_seen_packet):
             fixed, fixes_made = super()._apply_suggestion(first_seen_packet, suggestion)

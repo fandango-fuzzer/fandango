@@ -21,6 +21,7 @@ class MountingEvaluator(Evaluator):
         self._packet_mounter = packet_mounter
 
     def evaluate_individual(self, individual: DerivationTree) -> Evaluation:
+        # We use first_seen_packer to profit from cache optimizations during evaluation
         first_seen_packet = self._packet_mounter.first_seen_equal(individual)
         with self._packet_mounter.mount_context(first_seen_packet):
             solutions, evaluation = GeneratorWithReturn(
@@ -58,6 +59,7 @@ class MountingMutation(MutationOperator):
         grammar: Grammar,
         evaluate_func: Callable[[DerivationTree], Evaluation],
     ) -> Generator[DerivationTree, None, DerivationTree]:
+        # We use first_seen_packer to profit from cache optimizations during evaluation
         first_seen_packet = self._packet_mounter.first_seen_equal(individual)
         with self._packet_mounter.mount_context(first_seen_packet):
             solutions, mutated = GeneratorWithReturn(
