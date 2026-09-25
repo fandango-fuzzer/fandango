@@ -21,7 +21,7 @@ class IoPopulationManager(PopulationManager):
         self.fuzzable_packets: list[ForecastingPacket] = []
         self.fallback_packets: list[ForecastingPacket] = []
         self.allow_fallback_packets = False
-        self.packet_mounter = PacketMounter(grammar)
+        self.packet_mounter = PacketMounter(grammar, start_symbol)
 
     def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
         if self.fuzzable_packets is None or len(self.fuzzable_packets) == 0:

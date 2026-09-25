@@ -153,7 +153,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             raise self._gen_timeout_violation()
 
         packet_mounter = self._population_manager.packet_mounter
-        packet_mounter.clear()
+        packet_mounter.reset(self._protocol_tree)
         packet_sender = None
         packet_recipient = None
         packet_tree = None
@@ -171,7 +171,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             assert packet_sender is not None
 
             for hookin_option in forecast.paths:
-                packet_mounter.attach(packet_tree, forecast, hookin_option)
+                packet_mounter.attach(packet_tree, hookin_option)
                 _solutions, (fitness, failing_trees, _suggestion) = GeneratorWithReturn(
                     self._packet_algorithm.evaluator.evaluate_individual(packet_tree)
                 ).collect()
@@ -383,7 +383,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             self._protocol_tree.set_all_read_only(True)
 
     def _configure_fuzzable_packets(self) -> None:
-        self._population_manager.packet_mounter.clear()
+        self._population_manager.packet_mounter.reset(self._protocol_tree)
         self._clear_constraint_caches()
         self._population_manager.fuzzable_packets = self._packet_selector.next_packets
         self._population_manager.fallback_packets = []
