@@ -248,9 +248,6 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         if solutions:
             return solutions[0]
 
-        if solutions:
-            return solutions[0]
-
         try:
             return next(
                 filter(
@@ -263,6 +260,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         except StopIteration:
             pass
 
+        self._packet_coverage_filter.mark_uncovered_k_paths_unreachable()
         if len(self._packet_coverage_filter.hold_back_solutions) != 0:
             return random.choice(list(self._packet_coverage_filter.hold_back_solutions))
 

@@ -13,6 +13,8 @@ class PacketCoverageFilter:
         self._submitted_solutions: set[int] = set()
         self.hold_back_solutions: set[DerivationTree] = set()
         self._solution_set: set[int] = set()
+        self._held_back_packet_types: set[PacketNonTerminal] = set()
+        self._unreachable_k_paths: dict[tuple[PacketNonTerminal, bool], set[KPath]] = {}
 
     def add_completed_tree(self, tree: DerivationTree) -> None:
         """Fold a finished run's messages into the past-message set."""
@@ -25,6 +27,7 @@ class PacketCoverageFilter:
         """Register the in-progress tree's messages for the next generation."""
         self.hold_back_solutions.clear()
         self._solution_set.clear()
+        self._held_back_packet_types.clear()
         for record in current_tree.protocol_msgs():
             self._submitted_solutions.add(
                 hash((record.sender, record.recipient, record.msg))
@@ -34,6 +37,27 @@ class PacketCoverageFilter:
         self._submitted_solutions.clear()
         self.hold_back_solutions.clear()
         self._solution_set.clear()
+        self._held_back_packet_types.clear()
+        self._unreachable_k_paths.clear()
+
+    def mark_uncovered_k_paths_unreachable(self) -> None:
+        for packet_type in self._held_back_packet_types:
+            for overlap_to_root in (False, True):
+                self._unreachable_k_paths.setdefault(
+                    (packet_type, overlap_to_root), set()
+                ).update(
+                    self._reachable_k_paths(packet_type, overlap_to_root)
+                    - self._coverage_tracker.covered_packet_k_paths(
+                        packet_type, overlap_to_root
+                    )
+                )
+
+    def _reachable_k_paths(
+        self, packet_type: PacketNonTerminal, overlap_to_root: bool
+    ) -> set[KPath]:
+        return self._coverage_tracker.all_k_paths(
+            packet_type.symbol, overlap_to_root=overlap_to_root
+        ) - self._unreachable_k_paths.get((packet_type, overlap_to_root), set())
 
     @staticmethod
     def _is_path_start_with(state_path: KPath, path: KPath) -> int:
@@ -60,8 +84,8 @@ class PacketCoverageFilter:
             state_path_tree = state_path_tree[-self._coverage_tracker.diversity_k :]
         state_path = tuple(map(lambda x: x.symbol, state_path_tree))
         tracker = self._coverage_tracker
-        uncovered_paths = tracker.all_k_paths(
-            symbol, overlap_to_root=True
+        uncovered_paths = self._reachable_k_paths(
+            packet_type, overlap_to_root=True
         ) - tracker.covered_packet_k_paths(packet_type, overlap_to_root=True)
 
         overlap_to_root = any(
@@ -73,15 +97,18 @@ class PacketCoverageFilter:
 
         all_paths = tracker.all_k_paths(symbol, overlap_to_root=overlap_to_root)
         covered_paths = tracker.covered_packet_k_paths(packet_type, overlap_to_root)
+        covered_with_msg = covered_paths | tracker.k_paths_of(msg, overlap_to_root)
         old_coverage = covered_share(covered_paths, all_paths)
-        new_coverage = covered_share(
-            covered_paths | tracker.k_paths_of(msg, overlap_to_root), all_paths
-        )
-        if old_coverage < new_coverage or new_coverage == 1.0:
+        new_coverage = covered_share(covered_with_msg, all_paths)
+        if (
+            old_coverage < new_coverage
+            or self._reachable_k_paths(packet_type, overlap_to_root) <= covered_with_msg
+        ):
             if new_coverage < 1.0:
                 self._solution_set.add(msg_hash)
             return individual
-        elif (
+        self._held_back_packet_types.add(packet_type)
+        if (
             msg_hash not in self._submitted_solutions
             and msg_hash not in self._solution_set
             and msg_hash not in self.hold_back_solutions
