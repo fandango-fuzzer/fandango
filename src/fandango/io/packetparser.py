@@ -11,6 +11,7 @@ from fandango.io.violation import FandangoRemoteViolation, RemoteViolationType
 from fandango.language import DerivationTree, Grammar, NonTerminal
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.parser.iterative_parser import IterativeParser
+from fandango.logger import LOGGER
 
 WAIT_FOR_EXPECTED_PARTY_TIME = 10
 POLL_INTERVAL = 0.025
@@ -59,6 +60,13 @@ def parse_next_remote_packet(
                     payload_raw=payload,
                     expected_nonterminals=list(candidates.parsers),
                 )
+            LOGGER.warning(
+                f"Waited {wait_for_completion_time}s for more data after "
+                + " | ".join(str(non_terminal) for non_terminal in candidates.found)
+                + ", the grammar still allows "
+                + " | ".join(str(non_terminal) for non_terminal in candidates.open)
+                + " to grow"
+            )
             break
         fed_blocks_nr += len(fresh_blocks)
         candidates.consume(fresh_blocks)
