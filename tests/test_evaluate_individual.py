@@ -307,7 +307,7 @@ def test_does_not_provide_suggestion_with_slice_and_fixed_value():
     assert len(suggested_replacements) == 0
 
 
-def test_weighted_fitness_rounding_error():
+def test_weighted_fitness_rounding():
     grammar, constraints = parse(
         [
             "<start> ::= <a> <b> <c>\n"

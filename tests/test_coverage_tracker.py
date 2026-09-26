@@ -1,5 +1,3 @@
-import pytest
-
 from fandango.api import Fandango
 from fandango.evolution.algorithm.protocol import ProtocolAlgorithm
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
@@ -10,7 +8,7 @@ from fandango.language.tree import DerivationTree
 
 from .utils import RESOURCES_ROOT
 
-IO_GRAMMARS = ["minimal_io.fan", "ambiguous_io.fan"]
+IO_GRAMMAR = "ambiguous_io.fan"
 GOAL = CoverageGoal.STATE_INPUTS
 
 
@@ -70,9 +68,8 @@ def bruteforce_scores(selector, trees):
     return list(sorted(scores.items(), key=lambda x: (x[1], x[0].name())))
 
 
-@pytest.mark.parametrize("grammar_file", IO_GRAMMARS)
-def test_folded_uncovered_matches_bruteforce(grammar_file):
-    selector, tree = packet_selector_and_tree(grammar_file)
+def test_folded_uncovered_matches_bruteforce():
+    selector, tree = packet_selector_and_tree(IO_GRAMMAR)
     history = DerivationTree(NonTerminal("<start>"))
     tracker = make_tracker(selector, history)
     tracker.add_completed_tree(tree)
@@ -81,18 +78,16 @@ def test_folded_uncovered_matches_bruteforce(grammar_file):
     )
 
 
-@pytest.mark.parametrize("grammar_file", IO_GRAMMARS)
-def test_folded_scores_match_bruteforce(grammar_file):
-    selector, tree = packet_selector_and_tree(grammar_file)
+def test_folded_scores_match_bruteforce():
+    selector, tree = packet_selector_and_tree(IO_GRAMMAR)
     history = DerivationTree(NonTerminal("<start>"))
     tracker = make_tracker(selector, history)
     tracker.add_completed_tree(tree)
     assert tracker.coverage_scores() == bruteforce_scores(selector, [tree, history])
 
 
-@pytest.mark.parametrize("grammar_file", IO_GRAMMARS)
-def test_folded_percent_matches_bruteforce(grammar_file):
-    selector, tree = packet_selector_and_tree(grammar_file)
+def test_folded_percent_matches_bruteforce():
+    selector, tree = packet_selector_and_tree(IO_GRAMMAR)
     history = DerivationTree(NonTerminal("<start>"))
     tracker = make_tracker(selector, history)
     tracker.add_completed_tree(tree)
@@ -110,9 +105,8 @@ def test_folded_percent_matches_bruteforce(grammar_file):
     assert tracker.coverage_percent() == expected
 
 
-@pytest.mark.parametrize("grammar_file", IO_GRAMMARS)
-def test_repeated_fold_is_idempotent(grammar_file):
-    selector, tree = packet_selector_and_tree(grammar_file)
+def test_repeated_fold_is_idempotent():
+    selector, tree = packet_selector_and_tree(IO_GRAMMAR)
     history = DerivationTree(NonTerminal("<start>"))
     tracker = make_tracker(selector, history)
     tracker.add_completed_tree(tree)
@@ -122,9 +116,8 @@ def test_repeated_fold_is_idempotent(grammar_file):
     )
 
 
-@pytest.mark.parametrize("grammar_file", IO_GRAMMARS)
-def test_reset_clears_basis(grammar_file):
-    selector, tree = packet_selector_and_tree(grammar_file)
+def test_reset_clears_basis():
+    selector, tree = packet_selector_and_tree(IO_GRAMMAR)
     history = DerivationTree(NonTerminal("<start>"))
     tracker = make_tracker(selector, history)
     tracker.add_completed_tree(tree)

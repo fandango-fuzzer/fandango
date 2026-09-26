@@ -292,10 +292,12 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             ) from None
 
     def _is_coverage_complete(self) -> bool:
-        return (
-            self._coverage_goal != CoverageGoal.RANDOM
-            and self._packet_selector.coverage_percent() == 1.0
-        )
+        return self.coverage_percent() == 1.0
+
+    def _start_new_run(self) -> None:
+        log_guidance_hint("Starting new protocol run.")
+        self._io_instance.reset_parties()
+        self._protocol_tree = DerivationTree(self._start_symbol, [])
 
     def _is_failed_forecast(self) -> bool:
         return (
@@ -340,9 +342,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 if self._is_coverage_complete():
                     log_guidance_hint("Full coverage reached, stopping evolution.")
                     return None
-                log_guidance_hint("Starting new protocol run.")
-                self._io_instance.reset_parties()
-                self._protocol_tree = DerivationTree(self._start_symbol, [])
+                self._start_new_run()
                 continue
 
             if self._should_generate_next_packet():
@@ -392,9 +392,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     if self._is_coverage_complete():
                         log_guidance_hint("Full coverage reached, stopping evolution.")
                         return None
-                    log_guidance_hint("Starting new protocol run.")
-                    self._io_instance.reset_parties()
-                    self._protocol_tree = DerivationTree(self._start_symbol, [])
+                    self._start_new_run()
                     continue
             self._protocol_tree.set_all_read_only(True)
 
