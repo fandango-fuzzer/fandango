@@ -33,7 +33,7 @@ class Parser:
         self._grammar_rules = grammar_rules
         self._iter_parser = IterativeParser(grammar_rules)
         self._iter_parsers_by_start: dict[NonTerminal, IterativeParser] = {}
-        self._last_yielded_tree_cache: LRUCache[
+        self._cache: LRUCache[
             tuple[
                 str | bytes,
                 NonTerminal,
@@ -93,7 +93,7 @@ class Parser:
             start = NonTerminal(start)
 
         cache_key = (word, start, mode, hash(hookin_parent))
-        last_yielded_tree = self._last_yielded_tree_cache.get(cache_key)
+        last_yielded_tree = self._cache.get(cache_key)
         if last_yielded_tree is not None:
             with _gc_paused():
                 tree = deepcopy(last_yielded_tree)
@@ -121,7 +121,7 @@ class Parser:
                     deepcopy(parsed) if include_controlflow else self.collapse(parsed)
                 )
             if result is not None:
-                self._last_yielded_tree_cache[cache_key] = parsed
+                self._cache[cache_key] = parsed
                 yield result
 
     def parse_multiple(
