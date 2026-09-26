@@ -244,8 +244,7 @@ class GrammarProcessor(FandangoParserVisitor):
                     global_variables=self.global_variables,
                 )
                 self.repetition_constraints.append(bounds_constraint)
-            if bounds_constraint is not None:
-                bounds_constraint.repetition_node = rep_node
+            rep_node.bounds_constraint = bounds_constraint
             return rep_node
         reps_visit = self.searches.visit(ctx.expression(0))
         reps: tuple[str, list[NonTerminalSearch], dict[str, NonTerminalSearch]] = (
