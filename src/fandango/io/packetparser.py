@@ -2,7 +2,7 @@ import time
 
 from fandango.errors import FandangoFailedError, FandangoParseError
 from fandango.io import FandangoIO
-from fandango.io.navigation.graph.packetforecaster import (
+from fandango.io.navigation.graph.forecasting_result import (
     ForecastingNonTerminals,
     ForecastingPacket,
     ForecastingResult,

@@ -2,11 +2,11 @@ from collections.abc import Callable
 from typing import Optional
 
 from fandango.io import FandangoIO
-from fandango.io.navigation.graph.packetforecaster import (
+from fandango.io.navigation.graph.forecasting_result import (
     ForecastingPacket,
     ForecastingResult,
-    PacketForecaster,
 )
+from fandango.io.navigation.graph.packetforecaster import PacketForecaster
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.tree import DerivationTree
 

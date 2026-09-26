@@ -2,7 +2,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 
 from fandango.errors import FandangoValueError
-from fandango.io.navigation.graph.packetforecaster import (
+from fandango.io.navigation.graph.forecasting_result import (
     ForecastingPacket,
     MountingPath,
 )
@@ -30,6 +30,25 @@ class MessageHolders:
         """Makes these nodes the parents of their messages again."""
         for holder, message in self._holder_message_pairs:
             message.parent = holder
+
+    def hang_messages_into(self, tree: DerivationTree) -> None:
+        """Swaps the messages in the tree for the messages under root, in order."""
+        message_copies = [message.msg for message in tree.protocol_msgs()]
+        message_by_copy_id = {
+            id(message_copy): message.msg
+            for message_copy, message in zip(
+                message_copies, self.root.protocol_msgs(), strict=True
+            )
+        }
+        parents_of_copies = {
+            id(message_copy.parent): message_copy.parent
+            for message_copy in message_copies
+        }
+        for parent in parents_of_copies.values():
+            assert parent is not None
+            parent.set_children(
+                [message_by_copy_id.get(id(child), child) for child in parent.children]
+            )
 
 
 class PacketMounter:
@@ -202,25 +221,7 @@ class PacketMounter:
             raise FandangoValueError(
                 f"Mounting path {mounting_path.path} holds other messages than the session"
             )
-        message_copies = [message.msg for message in skeleton.protocol_msgs()]
-        session_message_by_copy_id = {
-            id(message_copy): session_message
-            for message_copy, session_message in zip(
-                message_copies, session_messages, strict=True
-            )
-        }
-        parents_of_copies = {
-            id(message_copy.parent): message_copy.parent
-            for message_copy in message_copies
-        }
-        for parent in parents_of_copies.values():
-            assert parent is not None
-            parent.set_children(
-                [
-                    session_message_by_copy_id.get(id(child), child)
-                    for child in parent.children
-                ]
-            )
+        self._session_message_holders.hang_messages_into(skeleton)
 
     @staticmethod
     def _set_read_only_above_messages(skeleton: DerivationTree) -> None:

@@ -3,7 +3,7 @@ from typing import Optional
 
 from fandango.constraints.failing_tree import Suggestion
 from fandango.evolution.population import PopulationManager
-from fandango.io.navigation.graph.packetforecaster import ForecastingPacket
+from fandango.io.navigation.graph.forecasting_result import ForecastingPacket
 from fandango.io.packet_evolution.packet_mounter import PacketMounter
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.symbols import NonTerminal

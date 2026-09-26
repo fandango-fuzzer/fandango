@@ -2,7 +2,7 @@ from typing import Optional
 
 from fandango.io import FandangoIO
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
-from fandango.io.navigation.graph.packetforecaster import (
+from fandango.io.navigation.graph.forecasting_result import (
     ForecastingPacket,
     ForecastingResult,
 )

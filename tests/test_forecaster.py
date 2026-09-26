@@ -1,6 +1,6 @@
 from fandango.api import Fandango
+from fandango.io.navigation.graph.forecasting_result import ForecastingResult
 from fandango.io.navigation.graph.packetforecaster import (
-    ForecastingResult,
     PacketForecaster,
     PathFinder,
 )

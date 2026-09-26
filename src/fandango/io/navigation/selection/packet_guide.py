@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from typing import Optional
 
-from fandango.io.navigation.graph.packetforecaster import ForecastingPacket
+from fandango.io.navigation.graph.forecasting_result import ForecastingPacket
 from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.selection.forecast_view import ForecastView
