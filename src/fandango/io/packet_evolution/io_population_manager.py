@@ -24,11 +24,11 @@ class IoPopulationManager(PopulationManager):
         self.packet_mounter = PacketMounter(grammar, start_symbol)
 
     def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
-        if self.fuzzable_packets is None or len(self.fuzzable_packets) == 0:
-            return DerivationTree(NonTerminal(self._start_symbol))
         packet_selection = list(self.fuzzable_packets)
         if self.allow_fallback_packets:
             packet_selection.extend(self.fallback_packets)
+        if len(packet_selection) == 0:
+            return DerivationTree(NonTerminal(self._start_symbol))
 
         current_idx = (self._prev_packet_idx + 1) % len(packet_selection)
         current_pck = random.choice(packet_selection)
