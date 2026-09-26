@@ -8,7 +8,11 @@ from typing import Iterable, Optional
 
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
-from fandango.errors import FandangoParseError, FandangoValueError
+from fandango.errors import (
+    FandangoFailedError,
+    FandangoParseError,
+    FandangoValueError,
+)
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.adaptation import AdaptiveTuner
 from fandango.evolution.algorithm.base import (
@@ -190,6 +194,11 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
             )
 
             timer.increment(len(self.population))
+
+        if not self.population:
+            raise FandangoFailedError(
+                "Could not generate a single individual; see the warnings above"
+            )
 
         LOGGER.info(
             f"Initial population generated in {time.time() - st_time:.2f} seconds"

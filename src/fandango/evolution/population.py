@@ -2,6 +2,7 @@ from collections.abc import Callable, Generator
 from typing import Optional
 
 from fandango.constraints.failing_tree import FailingTree, Suggestion
+from fandango.errors import FandangoGeneratorError
 from fandango.evolution import GeneratorWithReturn
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.tree import DerivationTree
@@ -81,7 +82,12 @@ class PopulationManager:
             not self._is_population_complete(current_population, target_population_size)
             and attempts < max_attempts
         ):
-            individual = self._generate_population_entry(max_nodes)
+            try:
+                individual = self._generate_population_entry(max_nodes)
+            except FandangoGeneratorError as error:
+                self._grammar.warn_about_generator_error(error)
+                attempts += 1
+                continue
             found_solution, (_fitness, failing_trees, suggestion) = GeneratorWithReturn(
                 eval_individual(individual)
             ).collect()

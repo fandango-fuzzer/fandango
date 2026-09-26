@@ -13,7 +13,7 @@ from fandango.constraints.failing_tree import (
     Suggestion,
 )
 from fandango.constraints.fitness import ConstraintFitness
-from fandango.errors import FandangoValueError
+from fandango.errors import FandangoGeneratorError, FandangoValueError
 from fandango.language.grammar import nodes
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.nodes.repetition import Repetition
@@ -104,17 +104,17 @@ class RepetitionBoundsSuggestion(Suggestion):
 
         old_tree_children = tree.children
         tree.set_children([])
-
-        self._repetition_node.fuzz(
-            tree,
-            grammar,
-            override_starting_repetition=starting_rep,
-            override_current_iteration=rep_iteration,
-            override_iterations_to_perform=starting_rep + nr_to_insert,
-        )
-
-        insert_children = tree.children
-        tree.set_children(old_tree_children)
+        try:
+            self._repetition_node.fuzz(
+                tree,
+                grammar,
+                override_starting_repetition=starting_rep,
+                override_current_iteration=rep_iteration,
+                override_iterations_to_perform=starting_rep + nr_to_insert,
+            )
+            insert_children = tree.children
+        finally:
+            tree.set_children(old_tree_children)
 
         copy_parent = tree.deepcopy(
             copy_children=True,
@@ -194,13 +194,16 @@ class RepetitionBoundsSuggestion(Suggestion):
             if self._insertion_exceeds_node_limit(individual, nr_to_insert):
                 self._warn_about_node_limit(nr_to_insert)
                 return replacements
-            replacements.append(
-                self._insert_repetitions(
-                    nr_to_insert=nr_to_insert,
-                    rep_iteration=self._iter_id,
-                    grammar=grammar,
+            try:
+                replacements.append(
+                    self._insert_repetitions(
+                        nr_to_insert=nr_to_insert,
+                        rep_iteration=self._iter_id,
+                        grammar=grammar,
+                    )
                 )
-            )
+            except FandangoGeneratorError as error:
+                grammar.warn_about_generator_error(error)
         else:
             if self._goal_len == 0 and not self.allow_repetition_full_delete:
                 self._goal_len = 1

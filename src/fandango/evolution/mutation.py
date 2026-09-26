@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable, Generator
 
 from fandango.constraints.failing_tree import FailingTree, Suggestion
+from fandango.errors import FandangoGeneratorError
 from fandango.language import DerivationTree, Grammar
 from fandango.language.symbols import NonTerminal
 
@@ -83,11 +84,15 @@ class SimpleMutation(MutationOperator):
             prefix_node.remove_child(index=-1)
         else:
             prefix_node = None
-        new_subtree = grammar.fuzz(
-            node_to_mutate.symbol,
-            prefix_node=prefix_node,
-            max_nodes=node_to_mutate.size() + (max_nodes - individual.size()),
-        )
+        try:
+            new_subtree = grammar.fuzz(
+                node_to_mutate.symbol,
+                prefix_node=prefix_node,
+                max_nodes=node_to_mutate.size() + (max_nodes - individual.size()),
+            )
+        except FandangoGeneratorError as error:
+            grammar.warn_about_generator_error(error)
+            return individual
         new_subtree.sender = node_to_mutate.sender
         new_subtree.recipient = node_to_mutate.recipient
         mutated = individual.replace(grammar, node_to_mutate, new_subtree)
