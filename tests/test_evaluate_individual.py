@@ -1,3 +1,4 @@
+import logging
 from itertools import islice
 
 import pytest
@@ -329,3 +330,33 @@ def test_weighted_fitness_rounding_error():
     assert fitness == 1.0
     assert failing_trees == []
     assert solutions == [individual]
+
+
+@pytest.mark.parametrize(
+    "count, expected_replacement_count", [("4", 1), ("999999999", 0)]
+)
+def test_a_repetition_repair_stays_below_the_node_limit(
+    count, expected_replacement_count, caplog
+):
+    grammar, constraints = parse(
+        [
+            "<start> ::= <count> ':' <octet>{int(<count>)}\n"
+            "<count> ::= r'[0-9]+'\n"
+            "<octet> ::= r'[a-z]'\n"
+        ]
+    )
+    assert grammar is not None
+    fan = DefaultAlgorithm(grammar, constraints)
+    individual = grammar.parse("2:ab")
+    assert individual is not None
+    count_tree = individual.find_all_nodes(NonTerminal("<count>"))[0]
+    individual = individual.replace(
+        grammar, count_tree, grammar.parse(count, start="<count>")
+    )
+    gen = GeneratorWithReturn(fan.evaluator.evaluate_individual(individual=individual))
+    _solutions, (_fitness, failing_trees, suggestion) = gen.collect()
+    assert len(failing_trees) == 1
+    caplog.set_level(logging.WARNING)
+    replacements = suggestion.get_replacements(individual, grammar)
+    assert len(replacements) == expected_replacement_count
+    assert ("Not repairing" in caplog.text) == (expected_replacement_count == 0)
