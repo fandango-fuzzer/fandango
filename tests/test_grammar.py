@@ -113,6 +113,22 @@ class ConstraintTest(unittest.TestCase):
         updated_tree = tree.replace(grammar, orig_c_inner, update_orig_inner)
         self.assertTrue(updated_tree.children[0].children[0].read_only)
 
+    def test_converter_with_context_repetition(self):
+        grammar, constraints = parse(
+            [
+                "<start> ::= <len> ':' <body>\n"
+                "<len> ::= '3'\n"
+                "<body> ::= <octet>{int(<len>)} := str(<text>)\n"
+                "<text> ::= r'[a-z]{3}' := str(<body>)\n"
+                "<octet> ::= r'[a-z]'\n"
+            ],
+            use_stdlib=False,
+            use_cache=False,
+        )
+        assert grammar is not None
+        solution = self.get_solutions(grammar, constraints, desired_solutions=1)[0]
+        self.assertRegex(str(solution), r"^3:[a-z]{3}$")
+
     def test_permutations(self):
         with open(RESOURCES_ROOT / "permutation.fan", "r") as file:
             grammar, c = parse(file, use_stdlib=False, use_cache=False)
