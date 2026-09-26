@@ -409,6 +409,22 @@ class RepetitionBoundsConstraint(Constraint):
                 iter_list[rep_round].append(id_tree)
         return reference_trees
 
+    @staticmethod
+    def node_before_repetition(
+        first_iteration: DerivationTree,
+    ) -> Optional[DerivationTree]:
+        node = first_iteration
+        while (
+            node.parent is not None
+            and index_by_reference(node.parent.children, node) == 0
+        ):
+            node = node.parent
+        if node.parent is None:
+            return None
+        index = index_by_reference(node.parent.children, node)
+        assert index is not None and index > 0, "Invalid child index for bounds search"
+        return node.parent.children[index - 1]
+
     def fitness(
         self,
         tree: DerivationTree,
@@ -449,27 +465,7 @@ class RepetitionBoundsConstraint(Constraint):
             first_iteration = iter_list[smallest_rep][0]
             last_iteration = iter_list[highest_rep][-1]
 
-            # We get the last not applicable for containing a referenced encoding in the grammar.
-            max_bounds_search: Optional[DerivationTree] = first_iteration
-            assert max_bounds_search is not None
-            while (
-                max_bounds_search.parent is not None
-                and index_by_reference(
-                    max_bounds_search.parent.children, max_bounds_search
-                )
-                == 0
-            ):
-                max_bounds_search = max_bounds_search.parent
-
-            if max_bounds_search.parent is not None:
-                parent = max_bounds_search.parent
-                index = index_by_reference(parent.children, max_bounds_search)
-                assert index is not None and index > 0, (
-                    "Invalid child index for bounds search"
-                )
-                max_bounds_search = parent.children[index - 1]
-            else:
-                max_bounds_search = None
+            max_bounds_search = self.node_before_repetition(first_iteration)
 
             bound_min, min_ref_tree = self.min(max_bounds_search)
             bound_max, max_ref_tree = self.max(max_bounds_search)

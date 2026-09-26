@@ -17,6 +17,11 @@ class KPathCounts:
     covered_count: int
     available_count: int
 
+    def covered_share(self) -> float:
+        if self.available_count == 0:
+            return 1.0
+        return self.covered_count / self.available_count
+
 
 class GroupedKPathCoverage(Generic[Group]):
     def __init__(
@@ -98,17 +103,27 @@ class CoverageTracker:
         )
         self._message_coverage: GroupedKPathCoverage[NonTerminal] = (
             GroupedKPathCoverage(
-                self._messages_by_symbol,
+                lambda tree: self._messages_grouped_by(
+                    tree, lambda packet_type: packet_type.symbol
+                ),
                 self._covered,
                 history,
             )
         )
         self._packet_coverage: GroupedKPathCoverage[PacketNonTerminal] = (
-            GroupedKPathCoverage(self._messages_by_packet_type, self._covered, history)
+            GroupedKPathCoverage(
+                lambda tree: self._messages_grouped_by(
+                    tree, lambda packet_type: packet_type
+                ),
+                self._covered,
+                history,
+            )
         )
         self._packet_coverage_with_context: GroupedKPathCoverage[PacketNonTerminal] = (
             GroupedKPathCoverage(
-                self._messages_by_packet_type,
+                lambda tree: self._messages_grouped_by(
+                    tree, lambda packet_type: packet_type
+                ),
                 lambda trees: self._covered(trees, overlap_to_root=True),
                 history,
             )
@@ -168,10 +183,7 @@ class CoverageTracker:
         return KPathCounts(len(covered_paths), len(available_paths))
 
     def coverage_percent(self) -> float:
-        counts = self.k_path_counts()
-        if counts.available_count == 0:
-            return 1.0
-        return counts.covered_count / counts.available_count
+        return self.k_path_counts().covered_share()
 
     def covered_packet_k_paths(
         self, packet_type: PacketNonTerminal, overlap_to_root: bool
@@ -196,26 +208,16 @@ class CoverageTracker:
         )
 
     @staticmethod
-    def _messages_by_symbol(
-        tree: DerivationTree,
-    ) -> dict[NonTerminal, list[DerivationTree]]:
-        messages: dict[NonTerminal, list[DerivationTree]] = {}
-        for record in tree.protocol_msgs():
-            assert isinstance(record.msg.symbol, NonTerminal)
-            messages.setdefault(record.msg.symbol, []).append(record.msg)
-        return messages
-
-    @staticmethod
-    def _messages_by_packet_type(
-        tree: DerivationTree,
-    ) -> dict[PacketNonTerminal, list[DerivationTree]]:
-        messages: dict[PacketNonTerminal, list[DerivationTree]] = {}
+    def _messages_grouped_by(
+        tree: DerivationTree, group_of: Callable[[PacketNonTerminal], Group]
+    ) -> dict[Group, list[DerivationTree]]:
+        messages: dict[Group, list[DerivationTree]] = {}
         for record in tree.protocol_msgs():
             assert isinstance(record.msg.symbol, NonTerminal)
             packet_type = PacketNonTerminal(
                 record.sender, record.recipient, record.msg.symbol
             )
-            messages.setdefault(packet_type, []).append(record.msg)
+            messages.setdefault(group_of(packet_type), []).append(record.msg)
         return messages
 
     def _covered(

@@ -12,7 +12,7 @@ from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Repetition
 from fandango.language.grammar.nodes.terminal import TerminalNode
-from fandango.language.tree import DerivationTree, index_by_reference
+from fandango.language.tree import DerivationTree
 
 VisitSteps = Generator[Node, bool, bool]
 
@@ -204,15 +204,6 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
         self.on_leave_controlflow()
         return ret
 
-    @staticmethod
-    def _node_before(tree: DerivationTree) -> Optional[DerivationTree]:
-        while tree.parent is not None:
-            tree_index = index_by_reference(tree.parent.children, tree)
-            if tree_index:
-                return tree.parent.children[tree_index - 1]
-            tree = tree.parent
-        return None
-
     def _repetition_type_steps(self, node: Repetition) -> VisitSteps:
         tree = self.current_tree[-1]
         last_complete = True
@@ -227,7 +218,7 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
         rep_max = node.max
         if node.bounds_constraint:
             if tree:
-                stop_before = self._node_before(tree[0])
+                stop_before = node.bounds_constraint.node_before_repetition(tree[0])
             else:
                 stop_before = next(
                     (

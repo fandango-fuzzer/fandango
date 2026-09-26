@@ -1,7 +1,10 @@
 from typing import Optional
 
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.io.navigation.selection.coverage_tracker import CoverageTracker
+from fandango.io.navigation.selection.coverage_tracker import (
+    CoverageTracker,
+    KPathCounts,
+)
 from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
@@ -98,8 +101,10 @@ class PacketCoverageFilter:
         all_paths = tracker.all_k_paths(symbol, overlap_to_root=overlap_to_root)
         covered_paths = tracker.covered_packet_k_paths(packet_type, overlap_to_root)
         covered_with_msg = covered_paths | tracker.k_paths_of(msg, overlap_to_root)
-        old_coverage = covered_share(covered_paths, all_paths)
-        new_coverage = covered_share(covered_with_msg, all_paths)
+        old_coverage = KPathCounts(len(covered_paths), len(all_paths)).covered_share()
+        new_coverage = KPathCounts(
+            len(covered_with_msg), len(all_paths)
+        ).covered_share()
         if (
             old_coverage < new_coverage
             or self._reachable_k_paths(packet_type, overlap_to_root) <= covered_with_msg
@@ -115,9 +120,3 @@ class PacketCoverageFilter:
         ):
             self.hold_back_solutions_by_msg_hash[msg_hash] = individual
         return None
-
-
-def covered_share(covered_paths: set[KPath], all_paths: set[KPath]) -> float:
-    if not all_paths:
-        return 1.0
-    return len(covered_paths) / len(all_paths)
