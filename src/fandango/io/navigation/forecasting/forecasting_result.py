@@ -79,14 +79,6 @@ class ForecastingResult:
     def get_msg_parties(self) -> set[str]:
         return set(self.parties_to_packets.keys())
 
-    def contains_any_party(self, parties: list[str]) -> bool:
-        """
-        Checks if the ForecastingResult contains any of the specified parties.
-        :param parties: List of party names to check.
-        :return: True if any party is found, False otherwise.
-        """
-        return any(party in self.parties_to_packets for party in parties)
-
     def __getitem__(self, item: str) -> ForecastingNonTerminals:
         return self.parties_to_packets[item]
 
