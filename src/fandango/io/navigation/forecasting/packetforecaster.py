@@ -57,6 +57,7 @@ class PathFinder(ContinuingNodeVisitor):
         self.collapsed_tree = self.grammar.collapse(tree)
         if session_messages is not None and self.collapsed_tree is not None:
             session_messages.hang_messages_into(self.collapsed_tree)
+            session_messages.hang_messages_into(tree)
         super().find(tree)
         return self.result
 

@@ -12,7 +12,7 @@ from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Repetition
 from fandango.language.grammar.nodes.terminal import TerminalNode
-from fandango.language.tree import DerivationTree
+from fandango.language.tree import DerivationTree, index_by_reference
 
 VisitSteps = Generator[Node, bool, bool]
 
@@ -204,6 +204,15 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
         self.on_leave_controlflow()
         return ret
 
+    @staticmethod
+    def _node_before(tree: DerivationTree) -> Optional[DerivationTree]:
+        while tree.parent is not None:
+            tree_index = index_by_reference(tree.parent.children, tree)
+            if tree_index:
+                return tree.parent.children[tree_index - 1]
+            tree = tree.parent
+        return None
+
     def _repetition_type_steps(self, node: Repetition) -> VisitSteps:
         tree = self.current_tree[-1]
         last_complete = True
@@ -217,16 +226,19 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
         rep_min = node.min
         rep_max = node.max
         if node.bounds_constraint:
-            prefix_tree = None
-            for tree_list in self.current_tree[::-1]:
-                if tree_list is None or len(tree_list) != 0:
-                    continue
-                prefix_tree = tree_list[-1].prefix()
-                prefix_tree = self.grammar.collapse(prefix_tree.get_root())
-                break
-            assert prefix_tree is not None
-            rep_min, _ = node.bounds_constraint.min(prefix_tree)
-            rep_max, _ = node.bounds_constraint.max(prefix_tree)
+            if tree:
+                stop_before = self._node_before(tree[0])
+            else:
+                stop_before = next(
+                    (
+                        tree_list[-1]
+                        for tree_list in reversed(self.current_tree)
+                        if tree_list
+                    ),
+                    None,
+                )
+            rep_min, _ = node.bounds_constraint.min(stop_before)
+            rep_max, _ = node.bounds_constraint.max(stop_before)
         if not last_complete:
             return False
         if tree_len < rep_max:
