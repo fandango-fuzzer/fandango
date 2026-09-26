@@ -11,7 +11,7 @@ from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree, index_by_reference
 
 
-class MessageHolders:
+class MessageHolder:
     """The nodes of a tree that have session messages as children."""
 
     def __init__(self, root: DerivationTree):
@@ -32,7 +32,7 @@ class MessageHolders:
             message.parent = holder
 
     @contextmanager
-    def hold_messages_context(self) -> Iterator["MessageHolders"]:
+    def hold_messages_context(self) -> Iterator["MessageHolder"]:
         """Yields these holders; afterwards they are the parents of their messages again."""
         try:
             yield self
@@ -65,11 +65,11 @@ class PacketMounter:
 
     def __init__(self, grammar: Grammar, start_symbol: str):
         self._grammar = grammar
-        self._session_message_holders = MessageHolders(
+        self._session_message_holders = MessageHolder(
             DerivationTree(NonTerminal(start_symbol))
         )
         self._active_message_holders = self._session_message_holders
-        self._message_holders_by_root_id: dict[int, MessageHolders] = {}
+        self._message_holders_by_root_id: dict[int, MessageHolder] = {}
         self._mount_points_by_mounting_path: dict[MountingPath, DerivationTree] = {}
         self._first_mounted_packets_by_root_hash: dict[int, DerivationTree] = {}
 
@@ -181,10 +181,10 @@ class PacketMounter:
         self._active_message_holders = self._message_holders(root)
         self._active_message_holders.hold_messages()
 
-    def _message_holders(self, root: DerivationTree) -> MessageHolders:
+    def _message_holders(self, root: DerivationTree) -> MessageHolder:
         """Returns the message holders of the tree under root, found once per session."""
         if id(root) not in self._message_holders_by_root_id:
-            self._message_holders_by_root_id[id(root)] = MessageHolders(root)
+            self._message_holders_by_root_id[id(root)] = MessageHolder(root)
         return self._message_holders_by_root_id[id(root)]
 
     def _mount_point(self, mounting_path: MountingPath) -> DerivationTree:

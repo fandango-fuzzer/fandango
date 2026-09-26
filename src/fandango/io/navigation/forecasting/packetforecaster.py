@@ -13,7 +13,7 @@ from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConve
 from fandango.io.navigation.graph.visitor.continuing_nodevisitor import (
     ContinuingNodeVisitor,
 )
-from fandango.io.packet_evolution.packet_mounter import MessageHolders
+from fandango.io.packet_evolution.packet_mounter import MessageHolder
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.terminal import TerminalNode
@@ -43,7 +43,7 @@ class _PathFinder(ContinuingNodeVisitor):
     def forecast(
         self,
         tree: Optional[DerivationTree] = None,
-        session_messages: Optional[MessageHolders] = None,
+        session_messages: Optional[MessageHolder] = None,
     ) -> ForecastingResult:
         """
         Finds all possible protocol messages that can be mounted to the given DerivationTree.
@@ -103,7 +103,7 @@ class PacketForecaster:
             history_nts += message.msg.symbol.name()
         self._parser.reference_tree = tree
         self._parser.parse_history(history_nts)
-        with MessageHolders(tree).hold_messages_context() as session_messages:
+        with MessageHolder(tree).hold_messages_context() as session_messages:
             for suggested_tree, is_complete in self._parser.tree_at(
                 self._parser.consumed_length(), incomplete=True
             ):

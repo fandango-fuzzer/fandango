@@ -2,7 +2,7 @@ from copy import deepcopy
 from typing import Optional
 
 from fandango.errors import FandangoValueError
-from fandango.io.packet_evolution.packet_mounter import MessageHolders
+from fandango.io.packet_evolution.packet_mounter import MessageHolder
 from fandango.language import NonTerminal
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.nodes.node import Node
@@ -40,7 +40,7 @@ class PacketIterativeParser(IterativeParser):
             raise FandangoValueError(
                 "Reference tree must be set before constructing the incomplete tree!"
             )
-        with MessageHolders(
+        with MessageHolder(
             self.reference_tree
         ).hold_messages_context() as session_messages:
             session_messages.hang_messages_into(i_cpy)

@@ -18,6 +18,7 @@ from fandango.io.packet_evolution.mounting_operators import (
     MountingEvaluator,
     MountingMutation,
 )
+from fandango.io.packet_evolution.packet_mounter import MessageHolder
 from fandango.io.packetparser import parse_next_remote_packet
 from fandango.io.violation import FandangoRemoteViolation, RemoteViolationType
 from fandango.language.grammar import FuzzingMode
@@ -332,6 +333,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 final_tree = random.choice(
                     list(self._packet_selector.forecasting_result.complete_trees)
                 )
+                MessageHolder(final_tree).hold_messages()
                 self._packet_selector.add_completed_tree(final_tree)
                 self._packet_coverage_filter.add_completed_tree(final_tree)
                 yield final_tree
