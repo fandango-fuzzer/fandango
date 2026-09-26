@@ -21,7 +21,7 @@ from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 
 
-class PathFinder(ContinuingNodeVisitor):
+class _PathFinder(ContinuingNodeVisitor):
     """
     For a given grammar and DerivationTree, this class
     finds possible upcoming message types, the nonterminals that generate them and the paths where the messages
@@ -97,7 +97,7 @@ class PacketForecaster:
             assert isinstance(r_msg.msg.symbol, NonTerminal)
             history_nts += r_msg.msg.symbol.name()
 
-        finder = PathFinder(self.grammar)
+        finder = _PathFinder(self.grammar)
         options = ForecastingResult()
         if history_nts == "":
             options = options.union(finder.forecast())
