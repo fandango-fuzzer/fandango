@@ -484,13 +484,7 @@ class IterativeParser:
             if id(current) in seen:
                 continue
             seen.add(id(current))
-            for edge in current.edges:
-                if edge.previous is not None:
-                    pending.append(edge.previous)
-                if isinstance(edge.filler, ParseState):
-                    pending.append(edge.filler)
-                elif isinstance(edge.filler, LeoNest):
-                    pending.extend(edge.filler.states())
+            pending.extend(current.linked_states())
         return False
 
     def new_parse(

@@ -168,6 +168,15 @@ class ParseState:
         """What filled the most recent symbol along the first derivation."""
         return self.edges[0].filler if self.edges else None
 
+    def linked_states(self) -> Iterator["ParseState"]:
+        for edge in self.edges:
+            if edge.previous is not None:
+                yield edge.previous
+            if isinstance(edge.filler, ParseState):
+                yield edge.filler
+            elif isinstance(edge.filler, LeoNest):
+                yield from edge.filler.states()
+
     def set_edge(
         self,
         previous: Optional["ParseState"],
