@@ -9,53 +9,10 @@ from fandango.io.violation import FandangoRemoteViolation, RemoteViolationType
 from fandango.language.grammar import FuzzingMode
 from fandango.language.symbols.non_terminal import NonTerminal
 
-# The server answers the requests named in REPLIES and sends ERR; to any
-# other, which the grammar does not allow, so that run ends in a violation.
-# The client stops the test after MAX_SENT messages if Fandango never
-# stops on its own.
-SPEC = """
-<start> ::= <exchange>{1,4}
-<exchange> ::= <ping> | <hello> | <bye>
-<ping> ::= <Client:Server:ping_request> <Server:Client:pong>
-<hello> ::= <Client:Server:hello_request> <Server:Client:hi>
-<bye> ::= <Client:Server:bye_request> <Server:Client:ok>
-<ping_request> ::= 'PING;'
-<hello_request> ::= 'HELLO;'
-<bye_request> ::= 'BYE;'
-<pong> ::= 'PONG;'
-<hi> ::= 'HI;'
-<ok> ::= 'OK;'
+from .utils import RESOURCES_ROOT
 
-REPLIES = %s
-MAX_SENT = 60
-
-class Client(FandangoParty):
-    sent = 0
-
-    def __init__(self):
-        super().__init__(connection_mode=ConnectionMode.OPEN)
-
-    def send(self, message, recipient):
-        Client.sent += 1
-        if Client.sent > MAX_SENT:
-            raise TooManyMessages()
-        reply = REPLIES.get(str(message), "ERR;")
-        if reply:
-            self.io_instance.add_receive("Server", "Client", reply)
-
-    def stop(self):
-        pass
-
-class Server(FandangoParty):
-    def __init__(self):
-        super().__init__(connection_mode=ConnectionMode.EXTERNAL)
-
-    def stop(self):
-        pass
-
-class TooManyMessages(Exception):
-    pass
-"""
+with open(RESOURCES_ROOT / "violation_io.fan") as spec_file:
+    SPEC = spec_file.read()
 
 
 def run_generate(
@@ -69,7 +26,9 @@ def run_generate(
         # FandangoIO is bound to the context that builds the parties, so
         # everything happens on this thread.
         random.seed(1)
-        fandango = Fandango(spec % replies, use_stdlib=False, use_cache=False)
+        fandango = Fandango(
+            spec + f"\nREPLIES = {replies!r}\n", use_stdlib=False, use_cache=False
+        )
         fandango.init_population(mode=FuzzingMode.IO)
         algorithm = fandango.fandango
         assert isinstance(algorithm, ProtocolAlgorithm)
@@ -79,7 +38,7 @@ def run_generate(
             for _ in algorithm.generate():
                 pass
             ended.append("returned")
-        except BaseException as error:  # noqa: BLE001
+        except BaseException as error:
             ended.append(type(error).__name__)
 
     runner = threading.Thread(target=run, daemon=True)
@@ -89,7 +48,7 @@ def run_generate(
     return algorithms[0], ended[0]
 
 
-def test_full_coverage_ends_generation_even_if_every_run_fails() -> None:
+def test_all_runs_failing() -> None:
     algorithm, ended = run_generate({})
 
     assert ended == "returned"
@@ -97,18 +56,13 @@ def test_full_coverage_ends_generation_even_if_every_run_fails() -> None:
     assert len(algorithm.violations) > 0
 
 
-def test_a_failed_run_does_not_steer_the_next_one() -> None:
+def test_syntax_violation() -> None:
     """Only HELLO fails. The guide target of a failed run must not carry
     over, or Fandango keeps repeating it and never reaches full coverage."""
     algorithm, ended = run_generate({"PING;": "PONG;", "BYE;": "OK;"})
 
     assert ended == "returned"
     assert algorithm._packet_selector.coverage_percent() == 1.0
-
-
-def test_a_violation_names_the_received_message_and_what_it_should_have_been() -> None:
-    algorithm, _ = run_generate({"PING;": "PONG;", "BYE;": "OK;"})
-
     errors = [error for _, error in algorithm.violations]
     assert errors
     for error in errors:
@@ -128,7 +82,7 @@ def test_a_violation_names_the_received_message_and_what_it_should_have_been() -
         )
 
 
-def test_a_violated_constraint_is_named_with_the_message() -> None:
+def test_constraint_violation() -> None:
     spec = SPEC.replace(
         "<pong> ::= 'PONG;'",
         "<pong> ::= 'PONG' <counter> ';'\n<counter> ::= '1' | '7'\nwhere str(<counter>) == '1'",
@@ -159,7 +113,7 @@ def test_a_violated_constraint_is_named_with_the_message() -> None:
         )
 
 
-def test_a_parameter_that_cannot_be_derived_is_named_with_the_message() -> None:
+def test_parameter_derivation_violation() -> None:
     spec = SPEC.replace(
         "<pong> ::= 'PONG;'",
         "<pong> ::= 'PONG' <digits> ';' := 'PONG' + str(<count>) + ';'\n"
@@ -191,7 +145,7 @@ def test_a_parameter_that_cannot_be_derived_is_named_with_the_message() -> None:
         )
 
 
-def test_a_silent_server_ends_the_run_with_a_timeout_naming_the_party() -> None:
+def test_timeout_violation() -> None:
     algorithm, ended = run_generate(
         {"PING;": "PONG;", "HELLO;": "", "BYE;": "OK;"}, remote_response_timeout=0.1
     )
