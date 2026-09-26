@@ -267,7 +267,9 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             pass
 
         self._packet_coverage_filter.mark_uncovered_k_paths_unreachable()
-        hold_back_solutions = self._packet_coverage_filter.hold_back_solutions_by_msg_hash
+        hold_back_solutions = (
+            self._packet_coverage_filter.hold_back_solutions_by_msg_hash
+        )
         if len(hold_back_solutions) != 0:
             return random.choice(list(hold_back_solutions.values()))
 
