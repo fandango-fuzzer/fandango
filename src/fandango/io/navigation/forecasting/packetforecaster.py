@@ -92,42 +92,26 @@ class PacketForecaster:
         that the PacketForecaster was initialized with.
         :param tree: The DerivationTree to base the prediction on.
         """
-        history_nts = ""
-        for r_msg in tree.protocol_msgs():
-            assert isinstance(r_msg.msg.symbol, NonTerminal)
-            history_nts += r_msg.msg.symbol.name()
-
+        messages = list(tree.protocol_msgs())
         finder = _PathFinder(self.grammar)
         options = ForecastingResult()
-        if history_nts == "":
-            options = options.union(finder.forecast())
-        else:
-            self._parser.reference_tree = tree
-            self._parser.parse_history(history_nts)
-            with MessageHolders(tree).hold_messages_context() as session_messages:
-                for suggested_tree, is_complete in self._parser.tree_at(
-                    self._parser.consumed_length(), incomplete=True
-                ):
-                    for orig_r_msg, r_msg in zip(
-                        tree.protocol_msgs(),
-                        suggested_tree.protocol_msgs(),
-                        strict=False,
-                    ):
-                        assert isinstance(r_msg.msg.symbol, NonTerminal)
-                        assert isinstance(orig_r_msg.msg.symbol, NonTerminal)
-                        if (
-                            r_msg.msg.symbol.name()[9:]
-                            != orig_r_msg.msg.symbol.name()[1:]
-                            or r_msg.sender != orig_r_msg.sender
-                            or r_msg.recipient != orig_r_msg.recipient
-                        ):
-                            break
-                        r_msg.msg.symbol = orig_r_msg.msg.symbol
-                    else:
-                        options = options.union(
-                            finder.forecast(suggested_tree, session_messages)
-                        )
-                        if is_complete and finder.collapsed_tree is not None:
-                            options.complete_trees.add(finder.collapsed_tree)
-
+        if not messages:
+            return options.union(finder.forecast())
+        history_nts = ""
+        for message in messages:
+            assert isinstance(message.msg.symbol, NonTerminal)
+            history_nts += message.msg.symbol.name()
+        self._parser.reference_tree = tree
+        self._parser.parse_history(history_nts)
+        with MessageHolders(tree).hold_messages_context() as session_messages:
+            for suggested_tree, is_complete in self._parser.tree_at(
+                self._parser.consumed_length(), incomplete=True
+            ):
+                if not StateGrammarConverter.matches_history(suggested_tree, messages):
+                    continue
+                options = options.union(
+                    finder.forecast(suggested_tree, session_messages)
+                )
+                if is_complete and finder.collapsed_tree is not None:
+                    options.complete_trees.add(finder.collapsed_tree)
         return options

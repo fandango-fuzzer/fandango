@@ -36,15 +36,19 @@ def make_tracker(selector, history):
 
 
 def bruteforce_uncovered(selector, trees):
-    return set(
-        selector.grammar.get_uncovered_k_paths(
-            trees,
-            selector._coverage_tracker._diversity_k,
-            selector.start_symbol,
-            coverage_goal=GOAL,
-            input_parties=selector._input_parties(),
-        )
+    k = selector._coverage_tracker._diversity_k
+    all_paths = selector.grammar.generate_all_k_paths(
+        k=k,
+        non_terminal=selector.start_symbol,
+        coverage_goal=GOAL,
+        input_parties=selector._input_parties(),
     )
+    covered_paths = set()
+    for tree in trees:
+        covered_paths |= selector.grammar._extract_k_paths_from_tree(
+            tree, k, coverage_goal=GOAL, input_parties=selector._input_parties()
+        )
+    return all_paths - covered_paths
 
 
 def bruteforce_scores(selector, trees):
@@ -57,9 +61,12 @@ def bruteforce_scores(selector, trees):
         if symbol not in messages_by_nt:
             scores[symbol] = 0.0
         else:
-            scores[symbol] = selector.grammar.compute_kpath_coverage(
-                messages_by_nt[symbol], selector._coverage_tracker._diversity_k, symbol
-            )
+            k = selector._coverage_tracker._diversity_k
+            all_paths = selector.grammar.generate_all_k_paths(k=k, non_terminal=symbol)
+            covered_paths = set()
+            for message in messages_by_nt[symbol]:
+                covered_paths |= selector.grammar._extract_k_paths_from_tree(message, k)
+            scores[symbol] = len(covered_paths) / len(all_paths) if all_paths else 1.0
     return list(sorted(scores.items(), key=lambda x: (x[1], x[0].name())))
 
 
