@@ -15,7 +15,6 @@ class PacketIterativeParser(IterativeParser):
     def __init__(self, grammar_rules: dict[NonTerminal, Node]):
         super().__init__(grammar_rules)
         self.reference_tree: Optional[DerivationTree] = None
-        self.detailed_tree: Optional[DerivationTree] = None
         self._consumed_history: Optional[str] = None
 
     def parse_history(self, history: str) -> None:

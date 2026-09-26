@@ -50,7 +50,6 @@ class PacketNavigator(GrammarNavigator):
         if history_nts == "":
             yield DerivationTree(NonTerminal("<start>")), False
             return
-        self._parser.detailed_tree = tree
         self._parser.reference_tree = tree
         self._parser.parse_history(history_nts)
         for suggested_tree, is_complete in self._parser.tree_at(

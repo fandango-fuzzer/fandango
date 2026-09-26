@@ -95,7 +95,6 @@ class PacketForecaster:
         for r_msg in tree.protocol_msgs():
             assert isinstance(r_msg.msg.symbol, NonTerminal)
             history_nts += r_msg.msg.symbol.name()
-        self._parser.detailed_tree = tree
 
         finder = PathFinder(self.grammar)
         options = ForecastingResult()
