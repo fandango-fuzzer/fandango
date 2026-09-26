@@ -105,11 +105,14 @@ class Terminal(Symbol):
             return self.check_all(word), 1
         symbol, check_word = self._align_type(word)
         if self.is_regex:
-            pattern = _compile(symbol)
             if incomplete:
-                match = pattern.fullmatch(check_word, partial=True)
-            else:
-                match = pattern.match(check_word)
+                lengths, can_continue = self.regex_check_multiple_lengths(
+                    check_word, len(check_word)
+                )
+                if lengths or can_continue:
+                    return True, len(check_word)
+                return False, 0
+            match = _compile(symbol).match(check_word)
             if match is not None:
                 return True, match.end()
             return False, 0

@@ -163,7 +163,8 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         return generated.children
 
     def populate_sources(self, tree: DerivationTree) -> None:
-        self._rec_remove_sources(tree)
+        for node in tree.flattened():
+            node.sources = []
         self._populate_sources(tree)
 
     def _populate_sources(self, tree: DerivationTree) -> None:
@@ -176,13 +177,6 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                     child.set_all_read_only(True)
                 continue
             stack.extend(reversed(node.children))
-
-    def _rec_remove_sources(self, tree: DerivationTree) -> None:
-        stack = [tree]
-        while stack:
-            node = stack.pop()
-            node.sources = []
-            stack.extend(node.children)
 
     def generate_string(
         self,

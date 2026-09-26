@@ -45,10 +45,10 @@ class IterativeParser:
         self._forest = ForestBuilder(self._rules, self._compiler._nodes)
         self._consumed_length = 0
         # saves starting states per index of the given input for complete and incomplete parses.
-        self._completed: dict[int, list[ParseState]] = {}
+        self._completed: dict[int, dict[ParseState, ParseState]] = {}
         # for incomplete parsed we only store positions of other states that are also in _completed or that
         # are at the end of one given input from consume
-        self._incomplete: dict[int, list[ParseState]] = {}
+        self._incomplete: dict[int, dict[ParseState, ParseState]] = {}
 
     def can_continue(self) -> bool:
         if len(self._table) <= 1:
@@ -260,20 +260,7 @@ class IterativeParser:
         )
         assert not state.next_symbol.is_regex
 
-        check_word = word[word_index:]
-        if state.is_terminal_partial_match:
-            prev_terminal = state.last_filler()
-            assert isinstance(prev_terminal, DerivationTree)
-            prev_val = prev_terminal.symbol.value()
-            prev_val_raw: str | bytes
-            if prev_val.is_type(TreeValueType.BYTES):
-                prev_val_raw = bytes(prev_val)
-                check_word = bytes(
-                    TreeValue(prev_val_raw).append(TreeValue(check_word))
-                )
-            else:
-                prev_val_raw = str(prev_val)
-                check_word = str(TreeValue(prev_val_raw).append(TreeValue(check_word)))
+        check_word, _prev_match_length = self._continued_word(state, word, word_index)
         if state.next_symbol.is_type(TreeValueType.BYTES):
             dot_len = len(bytes(state.next_symbol.value()))
         else:
@@ -291,17 +278,13 @@ class IterativeParser:
 
             next_state = state.copy()
             next_state.partial_matched_length = match_length
-            tree = ParserDerivationTree(Terminal(check_word[:match_length]))
-            next_state.set_edge(
-                state.predecessor() if state.is_terminal_partial_match else state, tree
-            )
         else:
             next_state = state.next()
             next_state.partial_matched_length = 0
-            tree = ParserDerivationTree(Terminal(check_word[:match_length]))
-            next_state.set_edge(
-                state.predecessor() if state.is_terminal_partial_match else state, tree
-            )
+        next_state.set_edge(
+            state.predecessor() if state.is_terminal_partial_match else state,
+            ParserDerivationTree(Terminal(check_word[:match_length])),
+        )
         table[
             column_index
             + ((match_length - state.partial_matched_length) * columns_per_byte)
@@ -309,6 +292,25 @@ class IterativeParser:
         self._max_position = max(self._max_position, word_index + match_length)
 
         return True
+
+    @staticmethod
+    def _continued_word(
+        state: ParseState, word: str | bytes, word_index: int
+    ) -> tuple[str | bytes, int]:
+        check_word = word[word_index:]
+        if not state.is_terminal_partial_match:
+            return check_word, 0
+        prev_terminal = state.last_filler()
+        assert isinstance(prev_terminal, DerivationTree)
+        prev_val = prev_terminal.symbol.value()
+        prev_val_raw: str | bytes
+        if prev_val.is_type(TreeValueType.BYTES):
+            prev_val_raw = bytes(prev_val)
+            check_word = bytes(TreeValue(prev_val_raw).append(TreeValue(check_word)))
+        else:
+            prev_val_raw = str(prev_val)
+            check_word = str(TreeValue(prev_val_raw).append(TreeValue(check_word)))
+        return check_word, len(prev_val_raw)
 
     def scan_regex(
         self,
@@ -335,22 +337,7 @@ class IterativeParser:
         )
         assert state.next_symbol.is_regex
 
-        check_word = word[word_index:]
-        prev_match_length = 0
-        if state.is_terminal_partial_match:
-            prev_terminal = state.last_filler()
-            assert isinstance(prev_terminal, DerivationTree)
-            prev_val = prev_terminal.symbol.value()
-            prev_val_raw: str | bytes
-            if prev_val.is_type(TreeValueType.BYTES):
-                prev_val_raw = bytes(prev_val)
-                check_word = bytes(
-                    TreeValue(prev_val_raw).append(TreeValue(check_word))
-                )
-            else:
-                prev_val_raw = str(prev_val)
-                check_word = str(TreeValue(prev_val_raw).append(TreeValue(check_word)))
-            prev_match_length = len(prev_val_raw)
+        check_word, prev_match_length = self._continued_word(state, word, word_index)
 
         columns_per_byte = self._columns_per_byte
         # A growing a partial match replaces the previous partial terminal
@@ -497,13 +484,7 @@ class IterativeParser:
             if id(current) in seen:
                 continue
             seen.add(id(current))
-            for edge in current.edges:
-                if edge.previous is not None:
-                    pending.append(edge.previous)
-                if isinstance(edge.filler, ParseState):
-                    pending.append(edge.filler)
-                elif isinstance(edge.filler, LeoNest):
-                    pending.extend(edge.filler.states())
+            pending.extend(current.linked_states())
         return False
 
     def new_parse(
@@ -571,7 +552,7 @@ class IterativeParser:
                     if state.nonterminal == self.implicit_start and (
                         column_index % columns_per_byte == 0 or at_end
                     ):
-                        self._store_emittable_state(self._completed, offset, state)
+                        self._completed.setdefault(offset, {})[state] = state
 
                     self.complete(state, table, column_index)
                 else:
@@ -620,7 +601,7 @@ class IterativeParser:
                         continue
                     if state.nonterminal == self.implicit_start:
                         if state.has_children():
-                            self._store_emittable_state(self._incomplete, offset, state)
+                            self._incomplete.setdefault(offset, {})[state] = state
                         continue
                     if state.has_children() or (
                         offset == 0 and not state.next_symbol_is_nonterminal()
@@ -630,18 +611,6 @@ class IterativeParser:
             column_index += 1
             if column_index % columns_per_byte == 0:
                 word_index += 1
-
-    @staticmethod
-    def _store_emittable_state(
-        states_by_offset: dict[int, list[ParseState]], offset: int, state: ParseState
-    ) -> None:
-        """Stores `state` under `offset`, replacing an equal one stored before."""
-        states = states_by_offset.setdefault(offset, [])
-        for index, known in enumerate(states):
-            if known == state:
-                states[index] = state
-                return
-        states.append(state)
 
     def consumed_length(self) -> int:
         """How many units of input `consume` has taken since `new_parse`."""
@@ -659,9 +628,11 @@ class IterativeParser:
         """
         Every parse parsable with `offset` given bytes, as `(tree, is_complete)`.
         """
-        flagged = [(state, True) for state in self._completed.get(offset, [])]
+        flagged = [(state, True) for state in self._completed.get(offset, {}).values()]
         if incomplete:
-            flagged.extend((state, False) for state in self._incomplete.get(offset, []))
+            flagged.extend(
+                (state, False) for state in self._incomplete.get(offset, {}).values()
+            )
         seen_hashes_and_flags: set[tuple[int, bool]] = set()
         for state, flag in flagged:
             for tree in self._forest.derivations_of(state):

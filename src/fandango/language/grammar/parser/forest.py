@@ -199,14 +199,7 @@ class ForestBuilder:
             if len(current.edges) > 1:
                 found = True
                 break
-            for edge in current.edges:
-                if edge.previous is not None:
-                    stack.append(edge.previous)
-                filler = edge.filler
-                if isinstance(filler, LeoNest):
-                    stack.extend(filler.states())
-                elif isinstance(filler, ParseState):
-                    stack.append(filler)
+            stack.extend(current.linked_states())
 
         if not found:
             for state_id in seen:
