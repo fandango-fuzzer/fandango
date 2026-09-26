@@ -1,10 +1,10 @@
 from collections.abc import Callable
 from typing import Optional
 
-from fandango.io.navigation.graph.forecasting_result import ForecastingPacket
+from fandango.io.navigation.forecasting.forecast_view import ForecastView
+from fandango.io.navigation.forecasting.forecasting_result import ForecastingPacket
 from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.io.navigation.selection.forecast_view import ForecastView
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.target_selector import TargetSelector
 from fandango.language.grammar.grammar import KPath

@@ -2,7 +2,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 
 from fandango.errors import FandangoValueError
-from fandango.io.navigation.graph.forecasting_result import (
+from fandango.io.navigation.forecasting.forecasting_result import (
     ForecastingPacket,
     MountingPath,
 )

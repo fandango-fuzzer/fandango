@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Optional
 
 from fandango.errors import FandangoValueError
-from fandango.io.navigation.graph.forecasting_result import (
+from fandango.io.navigation.forecasting.forecasting_result import (
     ForecastingPacket,
     ForecastingResult,
     MountingPath,

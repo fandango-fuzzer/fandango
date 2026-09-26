@@ -2,13 +2,13 @@ from typing import Optional
 
 from fandango.io import FandangoIO
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
-from fandango.io.navigation.graph.forecasting_result import (
+from fandango.io.navigation.forecasting.forecast_view import ForecastView
+from fandango.io.navigation.forecasting.forecasting_result import (
     ForecastingPacket,
     ForecastingResult,
 )
 from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.selection.coverage_tracker import CoverageTracker
-from fandango.io.navigation.selection.forecast_view import ForecastView
 from fandango.io.navigation.selection.packet_guide import PacketGuide
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.target_selector import TargetSelector

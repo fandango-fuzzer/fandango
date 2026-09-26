@@ -3,9 +3,9 @@ from typing import Optional
 
 from fandango.api import Fandango
 from fandango.io import ConnectionMode, FandangoIO, FandangoParty
+from fandango.io.navigation.forecasting.forecast_view import ForecastView
 from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.io.navigation.selection.forecast_view import ForecastView
 from fandango.io.navigation.selection.packet_guide import PacketGuide
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.target_selector import TargetSelector
