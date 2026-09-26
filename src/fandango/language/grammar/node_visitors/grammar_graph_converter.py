@@ -55,7 +55,12 @@ class GrammarGraphNode(abc.ABC):
         return self.node.min == 0
 
     def walk(self, tree_node: DerivationTree) -> GrammarGraphNode:
-        return run_nested_steps(self._walk_steps(tree_node), _walk_steps_of)
+        return run_nested_steps(
+            self._walk_steps(tree_node),
+            lambda graph_node_and_tree: graph_node_and_tree[0]._walk_steps(
+                graph_node_and_tree[1]
+            ),
+        )
 
     def _walk_steps(
         self, tree_node: DerivationTree
@@ -103,15 +108,6 @@ class GrammarGraphNode(abc.ABC):
             if not found_node:
                 raise GrammarWalkError("Grammar graph doesn't match tree structure.")
         return walked_node
-
-
-def _walk_steps_of(
-    graph_node_and_tree: tuple[GrammarGraphNode, DerivationTree],
-) -> Generator[
-    tuple[GrammarGraphNode, DerivationTree], GrammarGraphNode, GrammarGraphNode
-]:
-    graph_node, tree_node = graph_node_and_tree
-    return graph_node._walk_steps(tree_node)
 
 
 class EagerGrammarGraphNode(GrammarGraphNode):
