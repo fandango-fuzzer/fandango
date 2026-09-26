@@ -47,16 +47,11 @@ def parse_next_remote_packet(
         )
         if not fresh_blocks:
             if not candidates.found:
-                _, recipient, payload = unconsumed_fragment(io_instance, sender)
-                raise FandangoRemoteViolation(
-                    f"Timeout while waiting for next message fragment from {sender}. \n"
-                    + candidates.describe(io_instance.get_full_fragments()),
-                    error_type=RemoteViolationType.INCOMPLETE,
-                    session_tree=session_tree,
-                    sender=sender,
-                    recipient=recipient,
-                    payload_raw=payload,
-                    expected_nonterminals=list(candidates.parsers),
+                raise candidates.remote_violation(
+                    io_instance,
+                    sender,
+                    RemoteViolationType.INCOMPLETE,
+                    f"Timeout while waiting for next message fragment from {sender}. ",
                 )
             LOGGER.warning(
                 f"Waited {wait_for_completion_time}s for more data after "
@@ -208,8 +203,8 @@ class _PacketCandidates:
         sender: str,
         parameter_error: tuple[NonTerminal, FandangoParseError, DerivationTree] | None,
     ) -> FandangoRemoteViolation:
-        _, recipient, payload_raw = unconsumed_fragment(io_instance, sender)
         if parameter_error is not None:
+            _, recipient, payload_raw = unconsumed_fragment(io_instance, sender)
             non_terminal, error, tree = parameter_error
             return FandangoRemoteViolation(
                 f"Couldn't derive the generator parameters of the received {non_terminal}. Received part: {tree}. Exception: {error}",
@@ -221,10 +216,24 @@ class _PacketCandidates:
                 expected_nonterminals=[non_terminal],
                 payload_tree=tree,
             )
+        return self.remote_violation(
+            io_instance,
+            sender,
+            RemoteViolationType.SYNTAX,
+            "Could not parse received message fragments into predicted NonTerminals.",
+        )
+
+    def remote_violation(
+        self,
+        io_instance: FandangoIO,
+        sender: str,
+        error_type: RemoteViolationType,
+        headline: str,
+    ) -> FandangoRemoteViolation:
+        _, recipient, payload_raw = unconsumed_fragment(io_instance, sender)
         return FandangoRemoteViolation(
-            "Could not parse received message fragments into predicted NonTerminals.\n"
-            + self.describe(io_instance.get_full_fragments()),
-            error_type=RemoteViolationType.SYNTAX,
+            headline + "\n" + self.describe(io_instance.get_full_fragments()),
+            error_type=error_type,
             session_tree=self._session_tree,
             sender=sender,
             recipient=recipient,
