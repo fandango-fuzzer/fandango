@@ -45,10 +45,10 @@ class IterativeParser:
         self._forest = ForestBuilder(self._rules, self._compiler._nodes)
         self._consumed_length = 0
         # saves starting states per index of the given input for complete and incomplete parses.
-        self._completed: dict[int, list[ParseState]] = {}
+        self._completed: dict[int, dict[ParseState, ParseState]] = {}
         # for incomplete parsed we only store positions of other states that are also in _completed or that
         # are at the end of one given input from consume
-        self._incomplete: dict[int, list[ParseState]] = {}
+        self._incomplete: dict[int, dict[ParseState, ParseState]] = {}
 
     def can_continue(self) -> bool:
         if len(self._table) <= 1:
@@ -552,7 +552,7 @@ class IterativeParser:
                     if state.nonterminal == self.implicit_start and (
                         column_index % columns_per_byte == 0 or at_end
                     ):
-                        self._store_emittable_state(self._completed, offset, state)
+                        self._completed.setdefault(offset, {})[state] = state
 
                     self.complete(state, table, column_index)
                 else:
@@ -601,7 +601,7 @@ class IterativeParser:
                         continue
                     if state.nonterminal == self.implicit_start:
                         if state.has_children():
-                            self._store_emittable_state(self._incomplete, offset, state)
+                            self._incomplete.setdefault(offset, {})[state] = state
                         continue
                     if state.has_children() or (
                         offset == 0 and not state.next_symbol_is_nonterminal()
@@ -611,18 +611,6 @@ class IterativeParser:
             column_index += 1
             if column_index % columns_per_byte == 0:
                 word_index += 1
-
-    @staticmethod
-    def _store_emittable_state(
-        states_by_offset: dict[int, list[ParseState]], offset: int, state: ParseState
-    ) -> None:
-        """Stores `state` under `offset`, replacing an equal one stored before."""
-        states = states_by_offset.setdefault(offset, [])
-        for index, known in enumerate(states):
-            if known == state:
-                states[index] = state
-                return
-        states.append(state)
 
     def consumed_length(self) -> int:
         """How many units of input `consume` has taken since `new_parse`."""
@@ -640,9 +628,11 @@ class IterativeParser:
         """
         Every parse parsable with `offset` given bytes, as `(tree, is_complete)`.
         """
-        flagged = [(state, True) for state in self._completed.get(offset, [])]
+        flagged = [(state, True) for state in self._completed.get(offset, {}).values()]
         if incomplete:
-            flagged.extend((state, False) for state in self._incomplete.get(offset, []))
+            flagged.extend(
+                (state, False) for state in self._incomplete.get(offset, {}).values()
+            )
         seen: set[tuple[DerivationTree, bool]] = set()
         for state, flag in flagged:
             for tree in self._forest.derivations_of(state):
