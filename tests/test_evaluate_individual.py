@@ -315,9 +315,8 @@ def test_weighted_fitness_rounding_error():
             "<b> ::= <count> <item>{int(<count>)}\n"
             "<c> ::= <count> <item>{int(<count>)}\n"
             "<count> ::= '1'\n"
-            "<item> ::= 'x'\n"
+            "<item> ::= 'x'\n" + "where str(<count>) == '1'\n" * 15
         ]
-        + ["where str(<count>) == '1'"] * 15
     )
     assert grammar is not None
     fan = DefaultAlgorithm(grammar, constraints)
@@ -350,9 +349,9 @@ def test_a_repetition_repair_stays_below_the_node_limit(
     individual = grammar.parse("2:ab")
     assert individual is not None
     count_tree = individual.find_all_nodes(NonTerminal("<count>"))[0]
-    individual = individual.replace(
-        grammar, count_tree, grammar.parse(count, start="<count>")
-    )
+    new_count_tree = grammar.parse(count, start="<count>")
+    assert new_count_tree is not None
+    individual = individual.replace(grammar, count_tree, new_count_tree)
     gen = GeneratorWithReturn(fan.evaluator.evaluate_individual(individual=individual))
     _solutions, (_fitness, failing_trees, suggestion) = gen.collect()
     assert len(failing_trees) == 1
