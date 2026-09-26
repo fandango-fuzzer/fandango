@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from copy import deepcopy
 from typing import Any, Optional
 
 from fandango.errors import FandangoValueError
@@ -215,7 +214,7 @@ class PacketForecaster:
                         cpy = orig_r_msg.msg.deepcopy(copy_parent=False)
                         assert isinstance(cpy.symbol, NonTerminal)
                         r_msg.msg.set_children(cpy.children)
-                        r_msg.msg.sources = deepcopy(cpy.sources)
+                        r_msg.msg.sources = cpy.sources
                         r_msg.msg.symbol = NonTerminal("<" + cpy.symbol.name()[1:])
                     else:
                         break
