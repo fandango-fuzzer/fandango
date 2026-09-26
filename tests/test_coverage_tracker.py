@@ -133,7 +133,7 @@ def test_reset_clears_basis(grammar_file):
     assert tracker.coverage_scores() == bruteforce_scores(selector, [history])
 
 
-def test_coverage_follows_the_history_the_selector_computes():
+def test_compute_refreshes_coverage():
     selector, running = packet_selector_and_tree("minimal_io.fan")
     selector.reset_coverage()
     selector.set_coverage_goal(GOAL)
