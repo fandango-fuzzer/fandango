@@ -662,12 +662,13 @@ class IterativeParser:
         flagged = [(state, True) for state in self._completed.get(offset, [])]
         if incomplete:
             flagged.extend((state, False) for state in self._incomplete.get(offset, []))
-        seen: set[tuple[DerivationTree, bool]] = set()
+        seen_hashes_and_flags: set[tuple[int, bool]] = set()
         for state, flag in flagged:
             for tree in self._forest.derivations_of(state):
-                if (tree, flag) in seen:
+                hash_and_flag = (hash(tree), flag)
+                if hash_and_flag in seen_hashes_and_flags:
                     continue
-                seen.add((tree, flag))
+                seen_hashes_and_flags.add(hash_and_flag)
                 yield self._forest.to_derivation_tree(tree), flag
 
     def collapse(self, tree: Optional[DerivationTree]) -> Optional[DerivationTree]:
