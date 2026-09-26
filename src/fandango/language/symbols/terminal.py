@@ -83,6 +83,15 @@ class Terminal(Symbol):
                 break
             if not match.partial:
                 lengths.append(length)
+        if lengths and lengths[-1] == len(word):
+            longer_than_word = (
+                b"(?:%s)(?<=[\\s\\S]{%d})"
+                if isinstance(symbol, bytes)
+                else "(?:%s)(?<=[\\s\\S]{%d})"
+            )
+            # The next line is String.format. Replace the %s with the symbols regex
+            longer_pattern = _compile(longer_than_word % (symbol, len(word) + 1))
+            can_continue = longer_pattern.fullmatch(word, partial=True) is not None
         return lengths, can_continue
 
     def check(
