@@ -14,11 +14,13 @@ from fandango.constraints.failing_tree import (
 )
 from fandango.constraints.fitness import ConstraintFitness
 from fandango.errors import FandangoValueError
+from fandango.language.grammar import nodes
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.nodes.repetition import Repetition
 from fandango.language.search import NonTerminalSearch
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree, index_by_reference
+from fandango.logger import LOGGER
 
 
 def _get_first_common_node(
@@ -36,6 +38,8 @@ def _get_first_common_node(
 
 
 class RepetitionBoundsSuggestion(Suggestion):
+    repetition_ids_warned_about: set[str] = set()
+
     def __init__(
         self,
         ending_rep_tree: DerivationTree,
@@ -46,6 +50,7 @@ class RepetitionBoundsSuggestion(Suggestion):
         iter_id: int,
         repetition_id: str,
         repetition_node: Repetition,
+        bounds_constraint_str: str,
     ):
         """
         Suggestion to fix a failing tree for a repetition bounds constraint.
@@ -58,6 +63,7 @@ class RepetitionBoundsSuggestion(Suggestion):
         :param int iter_id: The iteration ID of the repetition.
         :param str repetition_id: The ID of the repetition.
         :param Repetition repetition_node: The repetition node.
+        :param str bounds_constraint_str: The constraint's bounds as written in the spec.
         """
         self._ending_rep_tree = ending_rep_tree
         self._starting_rep_value = starting_rep_value
@@ -67,6 +73,7 @@ class RepetitionBoundsSuggestion(Suggestion):
         self._iter_id = iter_id
         self._repetition_id = repetition_id
         self._repetition_node = repetition_node
+        self._bounds_constraint_str = bounds_constraint_str
         self.allow_repetition_full_delete = False
 
     def rec_set_allow_repetition_full_delete(
@@ -122,6 +129,24 @@ class RepetitionBoundsSuggestion(Suggestion):
 
         return tree, copy_parent
 
+    def _insertion_exceeds_node_limit(
+        self, individual: DerivationTree, nr_to_insert: int
+    ) -> bool:
+        fewest_inserted_nodes = (
+            nr_to_insert * self._repetition_node.node.distance_to_completion
+        )
+        return individual.size() + fewest_inserted_nodes > nodes.MAX_SAFE_NODES
+
+    def _warn_about_node_limit(self, nr_to_insert: int) -> None:
+        if self._repetition_id in self.repetition_ids_warned_about:
+            return
+        self.repetition_ids_warned_about.add(self._repetition_id)
+        LOGGER.warning(
+            f"Not repairing {self._bounds_constraint_str}: it needs "
+            f"{nr_to_insert} more repetitions, which would grow the tree past "
+            f"{nodes.MAX_SAFE_NODES} nodes"
+        )
+
     def _delete_repetitions(
         self, *, nr_to_delete: int, rep_iteration: int
     ) -> tuple[DerivationTree, DerivationTree]:
@@ -165,9 +190,13 @@ class RepetitionBoundsSuggestion(Suggestion):
         """
         replacements: list[tuple[DerivationTree, DerivationTree]] = []
         if self._goal_len > self._bound_len:
+            nr_to_insert = self._goal_len - self._bound_len
+            if self._insertion_exceeds_node_limit(individual, nr_to_insert):
+                self._warn_about_node_limit(nr_to_insert)
+                return replacements
             replacements.append(
                 self._insert_repetitions(
-                    nr_to_insert=self._goal_len - self._bound_len,
+                    nr_to_insert=nr_to_insert,
                     rep_iteration=self._iter_id,
                     grammar=grammar,
                 )
@@ -461,6 +490,7 @@ class RepetitionBoundsConstraint(Constraint):
                             iter_id=iter_id,
                             repetition_id=self.repetition_id,
                             repetition_node=self.repetition_node,
+                            bounds_constraint_str=self.format_as_spec(),
                         )
                     )
                 failing_trees.append(FailingTree(first_iteration.parent, self))
