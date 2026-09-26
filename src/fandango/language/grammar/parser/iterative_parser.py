@@ -349,6 +349,11 @@ class IterativeParser:
         lengths, can_continue = state.next_symbol.regex_check_multiple_lengths(
             check_word, prev_match_length + 1
         )
+        if not state.is_terminal_partial_match:
+            empty_lengths, _ = state.next_symbol.regex_check_multiple_lengths(
+                check_word[:0], 0
+            )
+            lengths = empty_lengths + lengths
         for length in lengths:
             next_state = state.next()
             next_state.partial_matched_length = 0
