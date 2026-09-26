@@ -62,14 +62,14 @@ class NonTerminalNode(Node):
             parameters = dummy_current_tree.children
             for p in parameters:
                 p._parent = None
-            generated = grammar.generate(self.symbol, parameters)
+            parent.set_children(parent.children[:-1])
+            generated = grammar.generate(self.symbol, parameters, hookin_parent=parent)
             # Prevent children from being overwritten without executing generator
             for child in generated.children:
                 child.set_all_read_only(True)
 
             generated.sender = self.sender
             generated.recipient = self.recipient
-            parent.set_children(parent.children[:-1])
             parent.add_child(generated)
             return
         parent.set_children(parent.children[:-1])
