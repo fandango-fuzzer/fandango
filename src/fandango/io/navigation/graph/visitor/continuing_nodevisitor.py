@@ -66,10 +66,8 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
             return self._alternative_steps(node)
         if isinstance(node, Repetition):
             return self._repetition_steps(node)
-        if isinstance(node, TerminalNode):
-            return self._terminal_steps(node)
-        if isinstance(node, CharSet):
-            return self._char_set_steps(node)
+        if isinstance(node, (TerminalNode, CharSet)):
+            return self._leaf_steps(node)
         raise FandangoValueError(f"No visit steps for {type(node).__name__}")
 
     def on_enter_controlflow(self, expected_nt: str) -> None:
@@ -127,13 +125,10 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
         tree = self.current_tree[-1]
         return self.onTerminalNodeVisit(node, tree is None)
 
-    def _terminal_steps(self, node: TerminalNode) -> VisitSteps:
+    def _leaf_steps(self, node: TerminalNode | CharSet) -> VisitSteps:
         yield from ()
-        return self.visitTerminalNode(node)
-
-    def _char_set_steps(self, node: CharSet) -> VisitSteps:
-        yield from ()
-        return self.visitCharSet(node)
+        continue_exploring: bool = node.accept(self)
+        return continue_exploring
 
     def _concatenation_steps(self, node: Concatenation) -> VisitSteps:
         self.on_enter_controlflow(f"<__{node.id}>")
