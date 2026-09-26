@@ -1,5 +1,4 @@
 import random
-import time
 from collections.abc import Generator
 from typing import Optional
 
@@ -122,14 +121,6 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             return random.random() < self.RANDOM_END_PROBABILITY
         return self._packet_selector.is_guide_to_end()
 
-    def _wait_for_remote_message(self, timeout: float) -> bool:
-        wait_start = time.time()
-        while not self._io_instance.received_msg():
-            if time.time() - wait_start > timeout and timeout >= 0:
-                return False
-            time.sleep(0.025)
-        return True
-
     def _gen_timeout_violation(self) -> FandangoRemoteViolation:
         external_parties = self._packet_selector.next_external_parties()
         packets_by_party = self._packet_selector.forecasting_result.parties_to_packets
@@ -156,7 +147,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         for packet in self._packet_selector.next_packets:
             if packet.node.sender == "TimerEvent":
                 timeout = -1
-        if not self._wait_for_remote_message(timeout):
+        if not self._io_instance.wait_until(self._io_instance.received_msg, timeout):
             raise self._gen_timeout_violation()
 
         packet_mounter = self._population_manager.packet_mounter

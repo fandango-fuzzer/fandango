@@ -1,5 +1,3 @@
-import time
-
 from fandango.errors import FandangoFailedError, FandangoParseError
 from fandango.io import FandangoIO
 from fandango.io.navigation.forecasting.forecasting_result import (
@@ -14,7 +12,6 @@ from fandango.language.grammar.parser.iterative_parser import IterativeParser
 from fandango.logger import LOGGER
 
 WAIT_FOR_EXPECTED_PARTY_TIME = 10
-POLL_INTERVAL = 0.025
 
 ReceivedMessages = list[tuple[str, str, str | bytes]]
 
@@ -85,31 +82,33 @@ def _wait_for_expected_sender(
     forecast: ForecastingResult, io_instance: FandangoIO, session_tree: DerivationTree
 ) -> str:
     """The first party in the forecast that sent something, waiting a while for one."""
-    started = time.time()
-    while True:
-        senders = [sender for sender, _, _ in io_instance.get_received_msgs()]
-        for sender in senders:
-            if sender in forecast:
-                return sender
-        if time.time() - started > WAIT_FOR_EXPECTED_PARTY_TIME:
-            if not senders:
-                raise FandangoFailedError(
-                    "Timeout while waiting for message. No message has been received."
-                )
-            sender, recipient, payload = unconsumed_fragment(io_instance, senders[0])
-            raise FandangoRemoteViolation(
-                "Unexpected party sent message. Expected: "
-                + " | ".join(forecast.get_msg_parties())
-                + f". Received: {set(senders)}."
-                + f" Messages: {io_instance.get_full_fragments()}",
-                error_type=RemoteViolationType.UNEXPECTED_PARTY,
-                session_tree=session_tree,
-                sender=sender,
-                recipient=recipient,
-                payload_raw=payload,
-                expected_nonterminals=[],
-            )
-        time.sleep(POLL_INTERVAL)
+    io_instance.wait_until(
+        lambda: any(
+            sender in forecast for sender in io_instance.get_received_parties()
+        ),
+        WAIT_FOR_EXPECTED_PARTY_TIME,
+    )
+    senders = [sender for sender, _, _ in io_instance.get_received_msgs()]
+    for sender in senders:
+        if sender in forecast:
+            return sender
+    if not senders:
+        raise FandangoFailedError(
+            "Timeout while waiting for message. No message has been received."
+        )
+    sender, recipient, payload = unconsumed_fragment(io_instance, senders[0])
+    raise FandangoRemoteViolation(
+        "Unexpected party sent message. Expected: "
+        + " | ".join(forecast.get_msg_parties())
+        + f". Received: {set(senders)}."
+        + f" Messages: {io_instance.get_full_fragments()}",
+        error_type=RemoteViolationType.UNEXPECTED_PARTY,
+        session_tree=session_tree,
+        sender=sender,
+        recipient=recipient,
+        payload_raw=payload,
+        expected_nonterminals=[],
+    )
 
 
 def unconsumed_fragment(
@@ -126,14 +125,11 @@ def _wait_for_new_blocks(
     io_instance: FandangoIO, sender: str, nr_fed_blocks: int, timeout: float
 ) -> list[str | bytes]:
     """The blocks from `sender` after the first `fed_blocks`, empty once `timeout` passes without any."""
-    started = time.time()
-    while True:
-        blocks = io_instance.pending_blocks(sender)
-        if len(blocks) > nr_fed_blocks:
-            return blocks[nr_fed_blocks:]
-        if time.time() - started > timeout:
-            return []
-        time.sleep(POLL_INTERVAL)
+    if not io_instance.wait_until(
+        lambda: len(io_instance.pending_blocks(sender)) > nr_fed_blocks, timeout
+    ):
+        return []
+    return io_instance.pending_blocks(sender)[nr_fed_blocks:]
 
 
 class _PacketCandidates:
