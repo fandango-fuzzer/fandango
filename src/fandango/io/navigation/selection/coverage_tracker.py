@@ -150,6 +150,10 @@ class CoverageTracker:
             grouped_coverage.invalidate()
         self._coverage_scores = None
 
+    @property
+    def coverage_goal(self) -> CoverageGoal:
+        return self._coverage_goal
+
     def set_coverage_goal(self, goal: CoverageGoal) -> None:
         # coverage_goal feeds whole-tree extraction, so the folded basis is invalid.
         self._coverage_goal = goal

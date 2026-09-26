@@ -56,7 +56,6 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             self._population_manager.packet_mounter,
         )
         self._protocol_tree: DerivationTree = DerivationTree(self._start_symbol)
-        self._coverage_goal = coverage_goal
         self._remote_response_timeout = remote_response_timeout
         self._io_instance: FandangoIO = FandangoIO.instance()
         self._packet_selector: PacketSelector = PacketSelector(
@@ -66,7 +65,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             self._packet_algorithm.diversity_k,
             max_messages_per_tree=max_messages_per_tree,
         )
-        self._packet_selector.set_coverage_goal(self._coverage_goal)
+        self._packet_selector.set_coverage_goal(coverage_goal)
         self._packet_coverage_filter = PacketCoverageFilter(
             self._packet_selector.coverage_tracker
         )
@@ -75,23 +74,22 @@ class ProtocolAlgorithm(GeneticAlgorithm):
 
     @property
     def coverage_goal(self) -> CoverageGoal:
-        return self._coverage_goal
+        return self._packet_selector.coverage_tracker.coverage_goal
 
     def set_coverage_goal(self, goal: CoverageGoal) -> None:
         """Switch the guidance mode, e.g. to CoverageGoal.RANDOM once every
         k-path is covered. Takes effect with the next protocol run."""
-        self._coverage_goal = goal
         self._packet_selector.set_coverage_goal(goal)
 
     def coverage_percent(self) -> Optional[float]:
         """Share of k-paths covered so far, in [0, 1]; None in RANDOM mode,
         which does not track coverage."""
-        if self._coverage_goal == CoverageGoal.RANDOM:
+        if self.coverage_goal == CoverageGoal.RANDOM:
             return None
         return self._packet_selector.coverage_percent()
 
     def k_path_counts(self) -> Optional[KPathCounts]:
-        if self._coverage_goal == CoverageGoal.RANDOM:
+        if self.coverage_goal == CoverageGoal.RANDOM:
             return None
         return self._packet_selector.coverage_tracker.k_path_counts()
 
@@ -117,7 +115,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             return False
         if len(self._packet_selector.get_next_parties()) == 0:
             return True
-        if self._coverage_goal == CoverageGoal.RANDOM:
+        if self.coverage_goal == CoverageGoal.RANDOM:
             return random.random() < self.RANDOM_END_PROBABILITY
         return self._packet_selector.is_guide_to_end()
 
@@ -314,7 +312,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             ):
                 self._clear_constraint_caches()
             self._packet_selector.compute(self._protocol_tree)
-            if self._coverage_goal != CoverageGoal.RANDOM:
+            if self.coverage_goal != CoverageGoal.RANDOM:
                 LOGGER.info(
                     f"Current coverage: {self._packet_selector.coverage_percent() * 100:.2f}%"
                 )

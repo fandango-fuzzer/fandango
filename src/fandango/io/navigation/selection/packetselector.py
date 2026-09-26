@@ -42,7 +42,6 @@ class PacketSelector:
         self.history_tree: DerivationTree = DerivationTree(NonTerminal("<start>"))
         self._last_completed_tree: Optional[DerivationTree] = None
         self._completed_count = 0
-        self._coverage_goal = CoverageGoal.STATE_INPUTS
         self._coverage_tracker = CoverageTracker(
             grammar,
             diversity_k,
@@ -50,7 +49,7 @@ class PacketSelector:
             self.start_symbol,
             self._input_parties,
             lambda: self.history_tree,
-            self._coverage_goal,
+            CoverageGoal.STATE_INPUTS,
         )
         self._next_packets: Optional[list[ForecastingPacket]] = None
         self.compute(history_tree)
@@ -97,7 +96,7 @@ class PacketSelector:
 
     def _ensure_next_packets(self) -> list[ForecastingPacket]:
         if self._next_packets is None:
-            if self._coverage_goal == CoverageGoal.RANDOM:
+            if self._coverage_tracker.coverage_goal == CoverageGoal.RANDOM:
                 self._next_packets = self._guide.find_packets()
                 return self._next_packets
             self._next_packets = self._guide.select_next_packet(
@@ -150,5 +149,4 @@ class PacketSelector:
         self._guide.max_messages_per_tree = count
 
     def set_coverage_goal(self, goal: CoverageGoal) -> None:
-        self._coverage_goal = goal
         self._coverage_tracker.set_coverage_goal(goal)
