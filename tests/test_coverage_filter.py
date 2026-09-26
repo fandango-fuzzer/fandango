@@ -66,7 +66,7 @@ def test_known_k_path_is_held_back():
     packet_filter = filter_after(session(("A", "C")))
     candidate = session(("A", None))
     assert packet_filter.filter(candidate) is None
-    assert candidate in packet_filter.hold_back_solutions
+    assert candidate in packet_filter.hold_back_solutions_by_msg_hash.values()
 
 
 def test_other_party_does_not_count():
