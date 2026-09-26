@@ -2,6 +2,7 @@ from copy import deepcopy
 from typing import Optional
 
 from fandango.errors import FandangoValueError
+from fandango.io.packet_evolution.packet_mounter import MessageHolders
 from fandango.language import NonTerminal
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.nodes.node import Node
@@ -39,19 +40,10 @@ class PacketIterativeParser(IterativeParser):
             raise FandangoValueError(
                 "Reference tree must be set before constructing the incomplete tree!"
             )
-        for i_msg, r_msg in zip(
-            i_cpy.protocol_msgs(),
-            self.reference_tree.protocol_msgs(),
-            strict=False,
-        ):
-            i_msg.msg.set_children(r_msg.msg.children)
-            i_msg.msg.sources = r_msg.msg.sources
-            symbol = r_msg.msg.symbol
-            if isinstance(symbol, NonTerminal):
-                # TODO: Is this just to create a new string?
-                i_msg.msg.symbol = NonTerminal("<" + symbol.name()[1:])
-            else:
-                raise FandangoValueError("NonTerminal symbol must be a string!")
+        with MessageHolders(
+            self.reference_tree
+        ).hold_messages_context() as session_messages:
+            session_messages.hang_messages_into(i_cpy)
         return i_cpy
 
 

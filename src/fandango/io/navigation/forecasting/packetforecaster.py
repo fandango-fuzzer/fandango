@@ -101,32 +101,32 @@ class PacketForecaster:
         if history_nts == "":
             options = options.union(finder.forecast())
         else:
-            # Save messages from original session tree
-            session_messages = MessageHolders(tree)
             self._parser.reference_tree = tree
             self._parser.parse_history(history_nts)
-            for suggested_tree, is_complete in self._parser.tree_at(
-                self._parser.consumed_length(), incomplete=True
-            ):
-                for orig_r_msg, r_msg in zip(
-                    tree.protocol_msgs(), suggested_tree.protocol_msgs(), strict=False
+            with MessageHolders(tree).hold_messages_context() as session_messages:
+                for suggested_tree, is_complete in self._parser.tree_at(
+                    self._parser.consumed_length(), incomplete=True
                 ):
-                    assert isinstance(r_msg.msg.symbol, NonTerminal)
-                    assert isinstance(orig_r_msg.msg.symbol, NonTerminal)
-                    if (
-                        r_msg.msg.symbol.name()[9:] != orig_r_msg.msg.symbol.name()[1:]
-                        or r_msg.sender != orig_r_msg.sender
-                        or r_msg.recipient != orig_r_msg.recipient
+                    for orig_r_msg, r_msg in zip(
+                        tree.protocol_msgs(),
+                        suggested_tree.protocol_msgs(),
+                        strict=False,
                     ):
-                        break
-                    r_msg.msg.symbol = orig_r_msg.msg.symbol
-                else:
-                    options = options.union(
-                        finder.forecast(suggested_tree, session_messages)
-                    )
-                    if is_complete and finder.collapsed_tree is not None:
-                        options.complete_trees.add(finder.collapsed_tree)
+                        assert isinstance(r_msg.msg.symbol, NonTerminal)
+                        assert isinstance(orig_r_msg.msg.symbol, NonTerminal)
+                        if (
+                            r_msg.msg.symbol.name()[9:]
+                            != orig_r_msg.msg.symbol.name()[1:]
+                            or r_msg.sender != orig_r_msg.sender
+                            or r_msg.recipient != orig_r_msg.recipient
+                        ):
+                            break
+                        r_msg.msg.symbol = orig_r_msg.msg.symbol
+                    else:
+                        options = options.union(
+                            finder.forecast(suggested_tree, session_messages)
+                        )
+                        if is_complete and finder.collapsed_tree is not None:
+                            options.complete_trees.add(finder.collapsed_tree)
 
-            # Restore messages from original session tree
-            session_messages.hold_messages()
         return options

@@ -31,13 +31,21 @@ class MessageHolders:
         for holder, message in self._holder_message_pairs:
             message.parent = holder
 
+    @contextmanager
+    def hold_messages_context(self) -> Iterator["MessageHolders"]:
+        """Yields these holders; afterwards they are the parents of their messages again."""
+        try:
+            yield self
+        finally:
+            self.hold_messages()
+
     def hang_messages_into(self, tree: DerivationTree) -> None:
-        """Swaps the messages in the tree for the messages under root, in order."""
+        """Swaps the messages in the tree for the messages under root."""
         message_copies = [message.msg for message in tree.protocol_msgs()]
         message_by_copy_id = {
             id(message_copy): message.msg
             for message_copy, message in zip(
-                message_copies, self.root.protocol_msgs(), strict=True
+                message_copies, self.root.protocol_msgs(), strict=False
             )
         }
         parents_of_copies = {
