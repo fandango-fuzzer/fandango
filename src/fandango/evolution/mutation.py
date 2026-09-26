@@ -80,7 +80,7 @@ class SimpleMutation(MutationOperator):
         ctx_tree = node_to_mutate.split_end()
         if ctx_tree.parent is not None:
             prefix_node = ctx_tree.parent
-            prefix_node.set_children(ctx_tree.children[:-1])
+            prefix_node.remove_child(index=-1)
         else:
             prefix_node = None
         new_subtree = grammar.fuzz(
