@@ -260,20 +260,7 @@ class IterativeParser:
         )
         assert not state.next_symbol.is_regex
 
-        check_word = word[word_index:]
-        if state.is_terminal_partial_match:
-            prev_terminal = state.last_filler()
-            assert isinstance(prev_terminal, DerivationTree)
-            prev_val = prev_terminal.symbol.value()
-            prev_val_raw: str | bytes
-            if prev_val.is_type(TreeValueType.BYTES):
-                prev_val_raw = bytes(prev_val)
-                check_word = bytes(
-                    TreeValue(prev_val_raw).append(TreeValue(check_word))
-                )
-            else:
-                prev_val_raw = str(prev_val)
-                check_word = str(TreeValue(prev_val_raw).append(TreeValue(check_word)))
+        check_word, _prev_match_length = self._continued_word(state, word, word_index)
         if state.next_symbol.is_type(TreeValueType.BYTES):
             dot_len = len(bytes(state.next_symbol.value()))
         else:
@@ -291,17 +278,13 @@ class IterativeParser:
 
             next_state = state.copy()
             next_state.partial_matched_length = match_length
-            tree = ParserDerivationTree(Terminal(check_word[:match_length]))
-            next_state.set_edge(
-                state.predecessor() if state.is_terminal_partial_match else state, tree
-            )
         else:
             next_state = state.next()
             next_state.partial_matched_length = 0
-            tree = ParserDerivationTree(Terminal(check_word[:match_length]))
-            next_state.set_edge(
-                state.predecessor() if state.is_terminal_partial_match else state, tree
-            )
+        next_state.set_edge(
+            state.predecessor() if state.is_terminal_partial_match else state,
+            ParserDerivationTree(Terminal(check_word[:match_length])),
+        )
         table[
             column_index
             + ((match_length - state.partial_matched_length) * columns_per_byte)
@@ -309,6 +292,25 @@ class IterativeParser:
         self._max_position = max(self._max_position, word_index + match_length)
 
         return True
+
+    @staticmethod
+    def _continued_word(
+        state: ParseState, word: str | bytes, word_index: int
+    ) -> tuple[str | bytes, int]:
+        check_word = word[word_index:]
+        if not state.is_terminal_partial_match:
+            return check_word, 0
+        prev_terminal = state.last_filler()
+        assert isinstance(prev_terminal, DerivationTree)
+        prev_val = prev_terminal.symbol.value()
+        prev_val_raw: str | bytes
+        if prev_val.is_type(TreeValueType.BYTES):
+            prev_val_raw = bytes(prev_val)
+            check_word = bytes(TreeValue(prev_val_raw).append(TreeValue(check_word)))
+        else:
+            prev_val_raw = str(prev_val)
+            check_word = str(TreeValue(prev_val_raw).append(TreeValue(check_word)))
+        return check_word, len(prev_val_raw)
 
     def scan_regex(
         self,
@@ -335,22 +337,7 @@ class IterativeParser:
         )
         assert state.next_symbol.is_regex
 
-        check_word = word[word_index:]
-        prev_match_length = 0
-        if state.is_terminal_partial_match:
-            prev_terminal = state.last_filler()
-            assert isinstance(prev_terminal, DerivationTree)
-            prev_val = prev_terminal.symbol.value()
-            prev_val_raw: str | bytes
-            if prev_val.is_type(TreeValueType.BYTES):
-                prev_val_raw = bytes(prev_val)
-                check_word = bytes(
-                    TreeValue(prev_val_raw).append(TreeValue(check_word))
-                )
-            else:
-                prev_val_raw = str(prev_val)
-                check_word = str(TreeValue(prev_val_raw).append(TreeValue(check_word)))
-            prev_match_length = len(prev_val_raw)
+        check_word, prev_match_length = self._continued_word(state, word, word_index)
 
         columns_per_byte = self._columns_per_byte
         # A growing a partial match replaces the previous partial terminal
