@@ -11,7 +11,7 @@ class PacketCoverageFilter:
     def __init__(self, coverage_tracker: CoverageTracker):
         self._coverage_tracker = coverage_tracker
         self._submitted_solutions: set[int] = set()
-        self.hold_back_solutions: set[DerivationTree] = set()
+        self.hold_back_solutions_by_msg_hash: dict[int, DerivationTree] = {}
         self._solution_set: set[int] = set()
         self._held_back_packet_types: set[PacketNonTerminal] = set()
         self._unreachable_k_paths: dict[tuple[PacketNonTerminal, bool], set[KPath]] = {}
@@ -25,7 +25,7 @@ class PacketCoverageFilter:
 
     def set_current_tree(self, current_tree: DerivationTree) -> None:
         """Register the in-progress tree's messages for the next generation."""
-        self.hold_back_solutions.clear()
+        self.hold_back_solutions_by_msg_hash.clear()
         self._solution_set.clear()
         self._held_back_packet_types.clear()
         for record in current_tree.protocol_msgs():
@@ -35,7 +35,7 @@ class PacketCoverageFilter:
 
     def reset(self) -> None:
         self._submitted_solutions.clear()
-        self.hold_back_solutions.clear()
+        self.hold_back_solutions_by_msg_hash.clear()
         self._solution_set.clear()
         self._held_back_packet_types.clear()
         self._unreachable_k_paths.clear()
@@ -111,9 +111,9 @@ class PacketCoverageFilter:
         if (
             msg_hash not in self._submitted_solutions
             and msg_hash not in self._solution_set
-            and msg_hash not in self.hold_back_solutions
+            and msg_hash not in self.hold_back_solutions_by_msg_hash
         ):
-            self.hold_back_solutions.add(individual)
+            self.hold_back_solutions_by_msg_hash[msg_hash] = individual
         return None
 
 

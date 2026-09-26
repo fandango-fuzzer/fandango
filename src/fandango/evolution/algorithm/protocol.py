@@ -267,8 +267,9 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             pass
 
         self._packet_coverage_filter.mark_uncovered_k_paths_unreachable()
-        if len(self._packet_coverage_filter.hold_back_solutions) != 0:
-            return random.choice(list(self._packet_coverage_filter.hold_back_solutions))
+        hold_back_solutions = self._packet_coverage_filter.hold_back_solutions_by_msg_hash
+        if len(hold_back_solutions) != 0:
+            return random.choice(list(hold_back_solutions.values()))
 
         self._population_manager.allow_fallback_packets = True
         try:

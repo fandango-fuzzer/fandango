@@ -907,10 +907,13 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         rule_nodes = NonTerminalNode(non_terminal, self.grammar_settings).descendents(
             self, filter_controlflow=True
         )
+        is_bits = value.is_type(TreeValueType.TRAILING_BITS_ONLY)
         return {
             rule_node.symbol
             for rule_node in rule_nodes
-            if isinstance(rule_node, TerminalNode) and rule_node.symbol.check(word)[0]
+            if isinstance(rule_node, TerminalNode)
+            and rule_node.symbol.is_type(TreeValueType.TRAILING_BITS_ONLY) == is_bits
+            and rule_node.symbol.check(word)[0]
         }
 
     def prime(self) -> None:
