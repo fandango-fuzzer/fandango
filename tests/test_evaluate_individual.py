@@ -304,3 +304,28 @@ def test_does_not_provide_suggestion_with_slice_and_fixed_value():
     assert len(failing_trees) == 0
     suggested_replacements = suggestion.get_replacements(individual, grammar)
     assert len(suggested_replacements) == 0
+
+
+def test_weighted_fitness_rounding_error():
+    grammar, constraints = parse(
+        [
+            "<start> ::= <a> <b> <c>\n"
+            "<a> ::= <count> <item>{int(<count>)}\n"
+            "<b> ::= <count> <item>{int(<count>)}\n"
+            "<c> ::= <count> <item>{int(<count>)}\n"
+            "<count> ::= '1'\n"
+            "<item> ::= 'x'\n"
+        ]
+        + ["where str(<count>) == '1'"] * 15
+    )
+    assert grammar is not None
+    fan = DefaultAlgorithm(grammar, constraints)
+    assert len(fan.evaluator._hard_constraints) == 15
+    assert len(fan.evaluator._repetition_bounds_constraints) == 3
+    individual = grammar.parse("1x1x1x")
+    assert individual is not None
+    gen = GeneratorWithReturn(fan.evaluator.evaluate_individual(individual=individual))
+    solutions, (fitness, failing_trees, _suggestion) = gen.collect()
+    assert fitness == 1.0
+    assert failing_trees == []
+    assert solutions == [individual]

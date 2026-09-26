@@ -244,13 +244,12 @@ class Evaluator:
             + len(self._soft_constraints)
         )
 
-        fitness, failing_trees, suggestion = self.evaluate_hard_constraints(individual)
+        hard_fitness, failing_trees, suggestion = self.evaluate_hard_constraints(
+            individual
+        )
 
-        fully_solved_so_far = fitness == 1.0
-
-        if total_constraint_count > 0:
-            # normalize the fitness to the number of hard constraints
-            fitness = fitness / (total_constraint_count) * len(self._hard_constraints)
+        fully_solved_so_far = hard_fitness == 1.0
+        weighted_fitness = hard_fitness * len(self._hard_constraints)
 
         if len(self._repetition_bounds_constraints) > 0:
             # all hard constraints are satisfied, so we can evaluate the repetition bounds constraints
@@ -262,13 +261,7 @@ class Evaluator:
             failing_trees.extend(rep_failing_trees)
 
             fully_solved_so_far = fully_solved_so_far and rep_fitness == 1.0
-
-            # normalize the fitness to the number of constraints
-            fitness += (
-                rep_fitness
-                / total_constraint_count
-                * len(self._repetition_bounds_constraints)
-            )
+            weighted_fitness += rep_fitness * len(self._repetition_bounds_constraints)
 
         if len(self._soft_constraints) > 0 and fully_solved_so_far:
             # all hard and repetition bounds constraints are satisfied, so we can evaluate the soft constraints
@@ -278,10 +271,13 @@ class Evaluator:
 
             failing_trees.extend(soft_failing_trees)
 
-            fitness += (
-                soft_fitness / total_constraint_count * len(self._soft_constraints)
-            )
+            weighted_fitness += soft_fitness * len(self._soft_constraints)
 
+        fitness = (
+            weighted_fitness / total_constraint_count
+            if total_constraint_count > 0
+            else hard_fitness
+        )
         if fitness >= self._expected_fitness and key not in self._solution_set:
             if self._stop_criterion:
                 self._stop_criterion_met |= self._stop_criterion(individual)
