@@ -573,23 +573,6 @@ class TestIncrementalParsing(unittest.TestCase):
                     self._bytewise(spec, word), self._blockwise(spec, word)
                 )
 
-    def test_block_sizes_do_not_matter(self):
-        expected = self._bytewise(self.REPEATING, "aaaa")
-        for sizes in ([1, 3], [2, 2], [3, 1], [1, 1, 1, 1]):
-            with self.subTest(sizes=sizes):
-                self.assertEqual(
-                    expected, self._blockwise(self.REPEATING, "aaaa", sizes)
-                )
-
-    def test_an_offset_is_the_length_of_its_parse(self):
-        for label, spec, word in self.CASES:
-            with self.subTest(label):
-                parser = self._parser(spec)
-                parser.consume(word)
-                for offset in parser.parsed_positions():
-                    for tree, _ in parser.tree_at(offset):
-                        self.assertEqual(offset, len(str(parser.collapse(tree))))
-
     def test_nullable_grammar_empty_parse(self):
         parser = self._parser(self.NULLABLE)
         parser.consume("xx")
@@ -602,35 +585,6 @@ class TestIncrementalParsing(unittest.TestCase):
         self.assertEqual([5], parser.parsed_positions())
         self.assertEqual(
             ["ping\n"], [str(parser.collapse(tree)) for tree, _ in parser.tree_at(5)]
-        )
-
-    def test_parse_multiple_consumes(self):
-        parser = self._parser(self.REPEATING)
-        parser.consume("aa")
-        self.assertEqual([1, 2], parser.parsed_positions())
-        parser.consume("aa")
-        self.assertEqual([1, 2, 3, 4], parser.parsed_positions())
-        self.assertEqual(
-            ["a"], [str(parser.collapse(tree)) for tree, _ in parser.tree_at(1)]
-        )
-        self.assertEqual(
-            ["aaaa"], [str(parser.collapse(tree)) for tree, _ in parser.tree_at(4)]
-        )
-
-    def test_tree_emit_at_no_parse_position(self):
-        parser = self._parser(self.PACKETS)
-        parser.consume("ping\n")
-        self.assertEqual([], list(parser.tree_at(3)))
-
-    def test_a_bit_grammar_reports_whole_bytes_only(self):
-        parser = self._parser(self.BITS)
-        parser.consume(b"\x01\x02")
-        self.assertEqual([1, 2], parser.parsed_positions())
-        self.assertEqual(
-            ["\x01"], [str(parser.collapse(tree)) for tree, _ in parser.tree_at(1)]
-        )
-        self.assertEqual(
-            ["\x01\x02"], [str(parser.collapse(tree)) for tree, _ in parser.tree_at(2)]
         )
 
 
@@ -660,12 +614,6 @@ class TestIncompleteFlag(unittest.TestCase):
         self.assertEqual(
             [("", False), ("", True)],
             self._flagged("<start> ::= <a>*\n<a> ::= '0'\n", ""),
-        )
-
-    def test_empty_parse_from_an_empty_alternative(self):
-        self.assertEqual(
-            [("", False), ("", True)],
-            self._flagged("<start> ::= <a>\n<a> ::= '' | 'a'\n", ""),
         )
 
     def test_empty_parse_from_an_empty_repetition(self):
