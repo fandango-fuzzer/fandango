@@ -340,6 +340,12 @@ class DerivationTree:
         child._parent = self
         self.invalidate_hash()
 
+    def remove_child(self, *, index: int = -1) -> "DerivationTree":
+        child = self._children.pop(index)
+        child._parent = None
+        self.invalidate_hash()
+        return child
+
     def find_subtrees(
         self, symbol: NonTerminal | str
     ) -> Generator["DerivationTree", None, None]:
@@ -784,7 +790,7 @@ class DerivationTree:
         ref_tree = self.split_end(copy_tree)
         assert ref_tree.parent is not None
         ref_tree = ref_tree.parent
-        ref_tree.set_children(ref_tree.children[:-1])
+        ref_tree.remove_child(index=-1)
         return ref_tree
 
     def get_root(self, stop_at_argument_begin: bool = False) -> "DerivationTree":

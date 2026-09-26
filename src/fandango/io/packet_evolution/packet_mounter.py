@@ -8,7 +8,7 @@ from fandango.io.navigation.graph.packetforecaster import (
 )
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.symbols import NonTerminal
-from fandango.language.tree import DerivationTree
+from fandango.language.tree import DerivationTree, index_by_reference
 
 
 class MessageHolders:
@@ -134,9 +134,10 @@ class PacketMounter:
         """Removes the packet from its mount point's children; its parent pointer stays."""
         mount_point = packet.parent
         assert mount_point is not None
-        mount_point.set_children(
-            [child for child in mount_point.children if child is not packet]
-        )
+        packet_index = index_by_reference(mount_point.children, packet)
+        assert packet_index is not None
+        mount_point.remove_child(index=packet_index)
+        packet.parent = mount_point
 
     @staticmethod
     def _is_attached(tree: DerivationTree) -> bool:

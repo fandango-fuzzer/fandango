@@ -62,7 +62,7 @@ class NonTerminalNode(Node):
             parameters = dummy_current_tree.children
             for p in parameters:
                 p._parent = None
-            parent.set_children(parent.children[:-1])
+            parent.remove_child(index=-1)
             generated = grammar.generate(self.symbol, parameters, hookin_parent=parent)
             # Prevent children from being overwritten without executing generator
             for child in generated.children:
@@ -72,7 +72,7 @@ class NonTerminalNode(Node):
             generated.recipient = self.recipient
             parent.add_child(generated)
             return
-        parent.set_children(parent.children[:-1])
+        parent.remove_child(index=-1)
 
         assign_sender = None
         assign_recipient = None
