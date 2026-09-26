@@ -77,7 +77,7 @@ class Terminal(Symbol):
         lengths: list[int] = []
         can_continue = False
         for length in range(min_length, len(word) + 1):
-            match = pattern.fullmatch(word, 0, length, partial=True)
+            match = pattern.fullmatch(word[:length], partial=True)
             can_continue = match is not None
             if not can_continue:
                 break
