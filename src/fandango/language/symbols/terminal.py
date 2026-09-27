@@ -83,15 +83,19 @@ class Terminal(Symbol):
                 break
             if not match.partial:
                 lengths.append(length)
-        if lengths and lengths[-1] == len(word):
-            longer_than_word = (
-                b"(?:%s)(?<=[\\s\\S]{%d})"
-                if isinstance(symbol, bytes)
-                else "(?:%s)(?<=[\\s\\S]{%d})"
-            )
-            # The next line is String.format. Replace the %s with the symbols regex
-            longer_pattern = _compile(longer_than_word % (symbol, len(word) + 1))
-            can_continue = longer_pattern.fullmatch(word, partial=True) is not None
+        # This here should be able to check the can_continue property, but there seems to be a bug
+        # in the regex libray.
+        # See this example:
+        # (?:ab)+ on "abab" (regex 2026.9.10).
+        # Using this when the bug is fixed on regex production:
+        # if lengths and lengths[-1] == len(word):
+        #     longer_than_word = (
+        #         b"(?:%s)(?<=[\\s\\S]{%d})"
+        #         if isinstance(symbol, bytes)
+        #         else "(?:%s)(?<=[\\s\\S]{%d})"
+        #     )
+        #     longer_pattern = _compile(longer_than_word % (symbol, len(word) + 1))
+        #     can_continue = longer_pattern.fullmatch(word, partial=True) is not None
         return lengths, can_continue
 
     def check(
