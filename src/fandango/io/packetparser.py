@@ -13,7 +13,7 @@ from fandango.language.grammar.parser.iterative_parser import IterativeParser
 from fandango.logger import LOGGER
 
 WAIT_FOR_EXPECTED_PARTY_TIME = 10.0
-DEFAULT_WAIT_FOR_COMPLETION_TIME = 1.0
+DEFAULT_WAIT_FOR_COMPLETION_TIME = 0.15
 
 ReceivedMessages = list[tuple[str, str, str | bytes]]
 
