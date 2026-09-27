@@ -165,7 +165,7 @@ class IterativeParser:
         assert collapsed_tree is not None
         tree = collapsed_tree
         if hookin_parent is not None:
-            hookin_parent.set_children(hookin_parent.children + [tree])
+            hookin_parent.add_child(tree)
         try:
             context_nt = self._compiler.compile_bounded_repetition(
                 node, rule_symbol, tree if hookin_parent is None else hookin_parent
@@ -174,7 +174,7 @@ class IterativeParser:
             return
         finally:
             if hookin_parent is not None:
-                hookin_parent.set_children(hookin_parent.children[:-1])
+                hookin_parent.remove_child(index=-1)
         new_symbols: list[tuple[Symbol, frozenset[tuple[str, Any]]]] = []
         placed = False
         for symbol, params in state.symbols:
@@ -513,7 +513,7 @@ class IterativeParser:
         self._completed = {}
         self._incomplete = {}
         self._parsing_mode = mode
-        self._hookin_parent = deepcopy(hookin_parent)
+        self._hookin_parent = hookin_parent
         self._compiler._clear_tmp()
 
     def consume(self, char: str | bytes | int) -> None:
@@ -638,12 +638,13 @@ class IterativeParser:
             flagged.extend(
                 (state, False) for state in self._incomplete.get(offset, {}).values()
             )
-        seen: set[tuple[DerivationTree, bool]] = set()
+        seen_hashes_and_flags: set[tuple[int, bool]] = set()
         for state, flag in flagged:
             for tree in self._forest.derivations_of(state):
-                if (tree, flag) in seen:
+                hash_and_flag = (hash(tree), flag)
+                if hash_and_flag in seen_hashes_and_flags:
                     continue
-                seen.add((tree, flag))
+                seen_hashes_and_flags.add(hash_and_flag)
                 yield self._forest.to_derivation_tree(tree), flag
 
     def collapse(self, tree: Optional[DerivationTree]) -> Optional[DerivationTree]:

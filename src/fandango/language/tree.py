@@ -333,6 +333,12 @@ class DerivationTree:
         child._parent = self
         self.invalidate_hash()
 
+    def remove_child(self, *, index: int = -1) -> "DerivationTree":
+        child = self._children.pop(index)
+        child._parent = None
+        self.invalidate_hash()
+        return child
+
     def find_subtrees(
         self, symbol: NonTerminal | str
     ) -> Generator["DerivationTree", None, None]:
