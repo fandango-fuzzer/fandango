@@ -5,6 +5,7 @@ from fandango.io.navigation.forecasting.forecasting_result import (
     ForecastingPacket,
     ForecastingResult,
 )
+from fandango.io.packet_evolution.packet_mounter import MessageHolder
 from fandango.io.violation import FandangoRemoteViolation, RemoteViolationType
 from fandango.language import DerivationTree, Grammar, NonTerminal
 from fandango.language.grammar import ParsingMode
@@ -141,8 +142,11 @@ class _PacketCandidates:
         self._expected = expected
         self._session_tree = session_tree
         self.parsers: dict[NonTerminal, IterativeParser] = {}
+        self._session_messages = MessageHolder(session_tree)
+        self._message_holders: dict[NonTerminal, MessageHolder] = {}
         for non_terminal in expected.get_non_terminals():
             mounting_path = next(iter(expected[non_terminal].paths))
+            self._message_holders[non_terminal] = MessageHolder(mounting_path.tree)
             hookin_path = [nt for nt, is_new in mounting_path.path if not is_new]
             hookin_parent = mounting_path.tree.get_last_by_path(hookin_path)
             parser = grammar.iterative_parser(non_terminal)
@@ -159,13 +163,15 @@ class _PacketCandidates:
         ) = None
 
     def consume(self, blocks: list[str | bytes]) -> None:
-        for non_terminal in list(self.open):
-            parser = self.parsers[non_terminal]
-            for block in blocks:
-                parser.consume(block)
-            self._take_longest_packet(non_terminal)
-            if not parser.can_continue():
-                self.open.remove(non_terminal)
+        with self._session_messages.hold_messages_context():
+            for non_terminal in list(self.open):
+                self._message_holders[non_terminal].hold_messages()
+                parser = self.parsers[non_terminal]
+                for block in blocks:
+                    parser.consume(block)
+                self._take_longest_packet(non_terminal)
+                if not parser.can_continue():
+                    self.open.remove(non_terminal)
 
     def _take_longest_packet(self, non_terminal: NonTerminal) -> None:
         parser = self.parsers[non_terminal]
