@@ -2,6 +2,8 @@ import copy
 import warnings
 from collections import deque
 from collections.abc import Callable, Generator, Iterable, Iterator
+from contextlib import contextmanager
+from functools import partial
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
 from fandango.language.symbols import NonTerminal, Slice, Symbol, Terminal
@@ -765,9 +767,25 @@ class DerivationTree:
             root = root.parent
         return root
 
-    def _split_end(self) -> "DerivationTree":
+    @contextmanager
+    def split_end_context(self) -> Iterator["DerivationTree"]:
+        """
+        Like split_end(copy_tree=False), but restores the tree after the block.
+        """
+        undo: list[Callable[[], None]] = []
+        try:
+            yield self._split_end(undo)
+        finally:
+            for restore in reversed(undo):
+                restore()
+
+    def _split_end(
+        self, undo: Optional[list[Callable[[], None]]] = None
+    ) -> "DerivationTree":
         if self.parent is None or self in self.parent.sources:
             if self.parent is not None:
+                if undo is not None:
+                    undo.append(partial(setattr, self, "_parent", self.parent))
                 self._parent = None
             return self
         me_idx = index_by_reference(self.parent.children, self)
@@ -775,7 +793,9 @@ class DerivationTree:
             # Handle error or fallback — for example:
             raise ValueError("self not found in parent's children")
         keep_children = self.parent.children[: (me_idx + 1)]
-        parent = self.parent._split_end()
+        parent = self.parent._split_end(undo)
+        if undo is not None:
+            undo.append(partial(parent.set_children, parent.children))
         parent.set_children(keep_children)
         return self
 
