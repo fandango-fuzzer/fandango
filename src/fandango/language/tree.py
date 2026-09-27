@@ -814,30 +814,34 @@ class DerivationTree:
         self,
         grammar: "fandango.language.grammar.grammar.Grammar",  # full path to avoid circular import
         replacements: list[tuple["DerivationTree", "DerivationTree"]],
-        path_to_replacement: Optional[
-            dict[tuple[PathStep, ...], "DerivationTree"]
-        ] = None,
         current_path: Optional[tuple[PathStep, ...]] = None,
-        replacement_path_prefixes: Optional[set[tuple[PathStep, ...]]] = None,
     ) -> "DerivationTree":
         """
         Replace the subtree rooted at the given node with the new subtree.
         """
-        if path_to_replacement is None:
-            path_to_replacement = dict()
-            for replacee, replacement in replacements:
-                path_to_replacement[replacee.get_choices_path()] = replacement
+        path_to_replacement = dict()
+        for replacee, replacement in replacements:
+            path_to_replacement[replacee.get_choices_path()] = replacement
 
-        if replacement_path_prefixes is None:
-            replacement_path_prefixes = {
-                path[:length]
-                for path in path_to_replacement
-                for length in range(len(path) + 1)
-            }
-
+        replacement_path_prefixes = {
+            path[:length]
+            for path in path_to_replacement
+            for length in range(len(path) + 1)
+        }
         if current_path is None:
             current_path = self.get_choices_path()
 
+        return self._replace_multiple(
+            grammar, path_to_replacement, replacement_path_prefixes, current_path
+        )
+
+    def _replace_multiple(
+        self,
+        grammar: "fandango.language.grammar.grammar.Grammar",  # full path to avoid circular import
+        path_to_replacement: dict[tuple[PathStep, ...], "DerivationTree"],
+        replacement_path_prefixes: set[tuple[PathStep, ...]],
+        current_path: tuple[PathStep, ...],
+    ) -> "DerivationTree":
         if current_path not in replacement_path_prefixes:
             unchanged_copy = self.deepcopy(copy_parent=False)
             unchanged_copy._parent = self.parent
@@ -856,12 +860,11 @@ class DerivationTree:
             new_children = []
             for i, child in enumerate(new_subtree._children):
                 new_children.append(
-                    child.replace_multiple(
+                    child._replace_multiple(
                         grammar,
-                        replacements,
                         path_to_replacement,
-                        current_path + (ChildStep(i),),
                         replacement_path_prefixes,
+                        current_path + (ChildStep(i),),
                     )
                 )
             new_subtree.set_children(new_children)
@@ -873,23 +876,21 @@ class DerivationTree:
         new_children = []
         sources = []
         for i, param in enumerate(self._sources):
-            new_param = param.replace_multiple(
+            new_param = param._replace_multiple(
                 grammar,
-                replacements,
                 path_to_replacement,
-                current_path + (SourceStep(i),),
                 replacement_path_prefixes,
+                current_path + (SourceStep(i),),
             )
             sources.append(new_param)
             if new_param != param:
                 regen_children = True
         for i, child in enumerate(self._children):
-            new_child = child.replace_multiple(
+            new_child = child._replace_multiple(
                 grammar,
-                replacements,
                 path_to_replacement,
-                current_path + (ChildStep(i),),
                 replacement_path_prefixes,
+                current_path + (ChildStep(i),),
             )
             new_children.append(new_child)
             if new_child != child:
