@@ -66,7 +66,7 @@ def parse_next_remote_packet(
         candidates.consume(fresh_blocks)
 
     if not candidates.found:
-        raise candidates._generate_remote_validation(
+        raise candidates.generate_remote_violation(
             io_instance, sender, candidates.last_parameter_error
         )
 
@@ -203,7 +203,7 @@ class _PacketCandidates:
         ]
         return packet_end, packets
 
-    def _generate_remote_validation(
+    def generate_remote_violation(
         self,
         io_instance: FandangoIO,
         sender: str,
