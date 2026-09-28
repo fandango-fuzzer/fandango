@@ -393,7 +393,6 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         ]
         LOGGER.debug(f"Trying to generate: {', '.join(preferred_symbols)}")
 
-
     def reset(self) -> None:
         self._packet_algorithm.reset()
         self._packet_selector.reset_coverage()

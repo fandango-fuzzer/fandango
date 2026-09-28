@@ -70,9 +70,7 @@ class PacketMounter:
         else:
             start_symbol_nt = start_symbol
         self._grammar = grammar
-        self._history_message_holders = MessageHolder(
-            DerivationTree(start_symbol_nt)
-        )
+        self._history_message_holders = MessageHolder(DerivationTree(start_symbol_nt))
         self._active_message_holders = self._history_message_holders
         self._message_holders_by_root_id: dict[int, MessageHolder] = {}
         self._mount_points_by_mounting_path: dict[MountingPath, DerivationTree] = {}

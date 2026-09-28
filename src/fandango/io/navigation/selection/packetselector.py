@@ -19,7 +19,6 @@ from fandango.language.tree import DerivationTree
 
 
 class PacketSelector:
-
     def __init__(
         self,
         grammar: Grammar,
@@ -155,10 +154,7 @@ class PacketSelector:
         self._coverage_tracker.set_coverage_goal(goal)
 
     def is_failed_forecast(self):
-        return (
-            len(self.get_next_parties()) == 0
-            and not self.is_complete()
-        )
+        return len(self.get_next_parties()) == 0 and not self.is_complete()
 
     def is_protocol_run_complete(self) -> bool:
         if not self.is_complete():
@@ -175,6 +171,5 @@ class PacketSelector:
                 if packet.node.sender == "TimerEvent":
                     return False
         return (
-            len(self.next_fuzzer_parties()) != 0
-            and not self.io_instance.received_msg()
+            len(self.next_fuzzer_parties()) != 0 and not self.io_instance.received_msg()
         )
