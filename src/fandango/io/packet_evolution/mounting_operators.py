@@ -39,7 +39,6 @@ class MountingEvaluator(AbstractEvaluator):
             solutions, evaluation = GeneratorWithReturn(
                 self._evaluator.evaluate_individual(mounted_packet.get_root())
             ).collect()
-        # The decorated evaluator yields the mounted tree, the caller knows the packet.
         if solutions:
             yield individual
         return evaluation
