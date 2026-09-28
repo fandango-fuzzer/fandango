@@ -23,6 +23,10 @@ class IoPopulationManager(PopulationManager):
         self.allow_fallback_packets = False
         self.packet_mounter = PacketMounter(grammar, start_symbol)
 
+    def individual_hash(self, individual: DerivationTree) -> int:
+        mount_point = individual.parent
+        return hash((mount_point and mount_point.get_root(), individual))
+
     def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
         packet_selection = list(self.fuzzable_packets)
         if self.allow_fallback_packets:

@@ -225,7 +225,9 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
             )
             timer.increment(len(new_population))
 
-        unique_hashes = {hash(ind) for ind in new_population}
+        unique_hashes = {
+            self.population_manager.individual_hash(ind) for ind in new_population
+        }
         return new_population, unique_hashes
 
     def _perform_crossover(
@@ -433,7 +435,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
                 new_population = self._perform_destruction(new_population)
 
             # Ensure Uniqueness & Fill Population
-            new_population = list(set(new_population))
+            new_population = self.population_manager.unique(new_population)
             yield from self.population_manager.refill_population(
                 new_population,
                 self.evaluator.evaluate_individual,
