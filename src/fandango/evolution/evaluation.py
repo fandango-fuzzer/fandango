@@ -1,3 +1,4 @@
+import abc
 import random
 from collections import Counter
 from collections.abc import Callable, Generator, Sequence
@@ -20,8 +21,132 @@ from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER, print_exception
 from fandango.utils import cache_size
 
+Evaluation = tuple[float, list[FailingTree], Suggestion]
+PopulationEvaluation = list[tuple[DerivationTree, float, list[FailingTree], Suggestion]]
 
-class Evaluator:
+
+class AbstractEvaluator(abc.ABC):
+    """Evaluates individuals against the constraints of a specification."""
+
+    @property
+    @abc.abstractmethod
+    def expected_fitness(self) -> float:
+        """The fitness an individual needs to be a solution."""
+
+    @property
+    @abc.abstractmethod
+    def stop_criterion_met(self) -> bool:
+        """Whether a solution met the stop criterion."""
+
+    @property
+    @abc.abstractmethod
+    def uses_diversity_bonus(self) -> bool:
+        """Whether population evaluations add the diversity bonus."""
+
+    @abc.abstractmethod
+    def evaluate_individual(
+        self, individual: DerivationTree
+    ) -> Generator[DerivationTree, None, Evaluation]:
+        """
+        Yields the individual if it is a new solution, i.e., reaches the expected fitness.
+        Returns its fitness, its failing trees and the suggestion to fix them.
+        """
+
+    @abc.abstractmethod
+    def compute_diversity_bonus(
+        self,
+        individuals: list[DerivationTree],
+        fill_up: Optional[list[DerivationTree]] = None,
+    ) -> list[float]:
+        """Returns the diversity bonus of each individual, among the individuals and fill_up."""
+
+    @abc.abstractmethod
+    def get_fitness_check_count(self) -> int:
+        """Returns the number of fitness checks made so far."""
+
+    @abc.abstractmethod
+    def flush_fitness_cache(self) -> None:
+        """Forgets cached fitness values that change as more inputs are observed."""
+
+    @abc.abstractmethod
+    def clear_constraint_caches(self) -> None:
+        """Empties the fitness caches of the evaluator and its constraints."""
+
+    @abc.abstractmethod
+    def reset(self) -> None:
+        """Forgets the solutions found and the cached fitness values."""
+
+    def evaluate_population(
+        self, population: list[DerivationTree]
+    ) -> Generator[DerivationTree, None, PopulationEvaluation]:
+        """Yields the new solutions of the population and returns the evaluation of each individual."""
+        evaluation = []
+        for ind in population:
+            ind_eval = yield from self.evaluate_individual(ind)
+            evaluation.append((ind, *ind_eval))
+
+        if self.uses_diversity_bonus:
+            bonuses = self.compute_diversity_bonus(population, [])
+            evaluation = [
+                (ind, fitness + bonus, failing_trees, suggestion)
+                for (ind, fitness, failing_trees, suggestion), bonus in zip(
+                    evaluation, bonuses, strict=False
+                )
+            ]
+        return evaluation
+
+    def compute_mutation_pool(
+        self, population: list[DerivationTree]
+    ) -> list[DerivationTree]:
+        """
+        Computes the mutation pool for the given population.
+
+        The mutation pool is computed by sampling the population with replacement, where the probability of sampling an individual is proportional to its fitness.
+
+        :param population: The population to compute the mutation pool for.
+        :return: The mutation pool.
+        """
+        weights = []
+        for ind in population:
+            gen = GeneratorWithReturn(self.evaluate_individual(ind))
+            gen.collect()
+            weights.append(gen.return_value[0])
+        if not all(w == 0 for w in weights):
+            return random.choices(population, weights=weights, k=len(population))
+        else:
+            return population
+
+    @staticmethod
+    def select_elites(
+        evaluation: PopulationEvaluation,
+        elitism_rate: float,
+        population_size: int,
+    ) -> list[DerivationTree]:
+        return [
+            x[0]
+            for x in sorted(evaluation, key=lambda x: x[1], reverse=True)[
+                : int(elitism_rate * population_size)
+            ]
+        ]
+
+    @staticmethod
+    def tournament_selection(
+        evaluation: PopulationEvaluation,
+        tournament_size: int,
+    ) -> tuple[DerivationTree, DerivationTree]:
+        tournament = random.sample(evaluation, k=min(tournament_size, len(evaluation)))
+        tournament.sort(key=lambda x: x[1], reverse=True)
+        parent1 = tournament[0][0]
+        if len(tournament) == 2:
+            parent2 = tournament[1][0] if tournament[1][0] != parent1 else parent1
+        else:
+            parent2 = (
+                tournament[1][0] if tournament[1][0] != parent1 else tournament[2][0]
+            )
+        return parent1, parent2
+
+
+class Evaluator(AbstractEvaluator):
     def __init__(
         self,
         grammar: Grammar,
@@ -80,32 +205,19 @@ class Evaluator:
     def expected_fitness(self) -> float:
         return self._expected_fitness
 
+    @property
+    def uses_diversity_bonus(self) -> bool:
+        return self._diversity_k > 0 and self._diversity_weight > 0
+
     def get_fitness_check_count(self) -> int:
         """
         :return: The number of fitness checks made so far.
         """
         return self._checks_made
 
-    def compute_mutation_pool(
-        self, population: list[DerivationTree]
-    ) -> list[DerivationTree]:
-        """
-        Computes the mutation pool for the given population.
-
-        The mutation pool is computed by sampling the population with replacement, where the probability of sampling an individual is proportional to its fitness.
-
-        :param population: The population to compute the mutation pool for.
-        :return: The mutation pool.
-        """
-        weights = []
-        for ind in population:
-            gen = GeneratorWithReturn(self.evaluate_individual(ind))
-            gen.collect()
-            weights.append(gen.return_value[0])
-        if not all(w == 0 for w in weights):
-            return random.choices(population, weights=weights, k=len(population))
-        else:
-            return population
+    def reset(self) -> None:
+        self._solution_set.clear()
+        self._fitness_cache.clear()
 
     def flush_fitness_cache(self) -> None:
         """
@@ -286,54 +398,3 @@ class Evaluator:
 
         self._fitness_cache[key] = (fitness, failing_trees, suggestion)
         return fitness, failing_trees, suggestion
-
-    def evaluate_population(
-        self, population: list[DerivationTree]
-    ) -> Generator[
-        DerivationTree,
-        None,
-        list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
-    ]:
-        evaluation = []
-        for ind in population:
-            ind_eval = yield from self.evaluate_individual(ind)
-            evaluation.append((ind, *ind_eval))
-
-        if self._diversity_k > 0 and self._diversity_weight > 0:
-            bonuses = self.compute_diversity_bonus(population, [])
-            evaluation = [
-                (ind, fitness + bonus, failing_trees, suggestion)
-                for (ind, fitness, failing_trees, suggestion), bonus in zip(
-                    evaluation, bonuses, strict=False
-                )
-            ]
-        return evaluation
-
-    def select_elites(
-        self,
-        evaluation: list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
-        elitism_rate: float,
-        population_size: int,
-    ) -> list[DerivationTree]:
-        return [
-            x[0]
-            for x in sorted(evaluation, key=lambda x: x[1], reverse=True)[
-                : int(elitism_rate * population_size)
-            ]
-        ]
-
-    def tournament_selection(
-        self,
-        evaluation: list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
-        tournament_size: int,
-    ) -> tuple[DerivationTree, DerivationTree]:
-        tournament = random.sample(evaluation, k=min(tournament_size, len(evaluation)))
-        tournament.sort(key=lambda x: x[1], reverse=True)
-        parent1 = tournament[0][0]
-        if len(tournament) == 2:
-            parent2 = tournament[1][0] if tournament[1][0] != parent1 else parent1
-        else:
-            parent2 = (
-                tournament[1][0] if tournament[1][0] != parent1 else tournament[2][0]
-            )
-        return parent1, parent2
