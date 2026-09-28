@@ -8,6 +8,7 @@ from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.algorithm import DefaultAlgorithm
 from fandango.language.parse.parse import parse
 from fandango.language.symbols.non_terminal import NonTerminal
+from fandango.logger import LOGGER
 from tests.utils import RESOURCES_ROOT
 
 
@@ -355,7 +356,7 @@ def test_a_repetition_repair_stays_below_the_node_limit(
     gen = GeneratorWithReturn(fan.evaluator.evaluate_individual(individual=individual))
     _solutions, (_fitness, failing_trees, suggestion) = gen.collect()
     assert len(failing_trees) == 1
-    caplog.set_level(logging.WARNING)
+    caplog.set_level(logging.WARNING, logger=LOGGER.name)
     replacements = suggestion.get_replacements(individual, grammar)
     assert len(replacements) == expected_replacement_count
     assert ("Not repairing" in caplog.text) == (expected_replacement_count == 0)
