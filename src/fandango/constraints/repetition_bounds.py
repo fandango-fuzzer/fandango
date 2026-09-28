@@ -1,6 +1,5 @@
 import random
 from copy import copy
-from itertools import zip_longest
 from typing import Any, Optional, Unpack
 
 from fandango.constraints.base import GeneticBaseInitArgs
@@ -324,47 +323,39 @@ class RepetitionBoundsConstraint(Constraint):
 
     def _compute_rep_bound(
         self,
-        tree_rightmost_relevant_node: Optional["DerivationTree"],
+        context_end: Optional["DerivationTree"],
+        context_includes_end: bool,
         expr_data: tuple[str, list[NonTerminalSearch], dict[str, NonTerminalSearch]],
     ) -> tuple[Any, Optional["DerivationTree"]]:
         expr, _, searches = expr_data
         local_cpy = self.local_variables.copy()
 
         if len(searches) == 0:
-            return (
-                self.eval(expr, self.global_variables, local_cpy),
-                tree_rightmost_relevant_node,
-            )
+            return self.eval(expr, self.global_variables, local_cpy), None
 
-        nodes = []
         if len(searches) != 1:
             raise FandangoValueError(
                 "Computed repetition requires exactly one or zero searches"
             )
-        if tree_rightmost_relevant_node is None:
+        if context_end is None:
             raise FandangoValueError(
                 "Computed repetition with search requires a DerivationTree to reference"
             )
 
         search_name, search = next(iter(searches.items()))
-        max_path = tree_rightmost_relevant_node.get_choices_path()
-        for container in search.find(tree_rightmost_relevant_node.get_root()):
-            container_tree: DerivationTree = container.evaluate()
-            search_in_bounds = True
-            zip_var = list(zip_longest(max_path, container_tree.get_choices_path()))
-            for max_step, search_step in zip_var:
-                if max_step is None:
-                    break
-                if search_step is None:
-                    break
-                if max_step.index > search_step.index:
-                    break
-                if max_step.index < search_step.index:
-                    search_in_bounds = False
-                    break
-            if not search_in_bounds:
-                continue
-            nodes.append(container_tree)
+        nodes: list[DerivationTree] = []
+        # Truncate the tree to the bounds context while searching.
+        with context_end.split_end_context() as ctx_tree:
+            context: Optional[DerivationTree] = ctx_tree
+            if not context_includes_end:
+                context = ctx_tree.parent
+                if context is not None:
+                    context.remove_child(index=-1)
+            if context is not None:
+                nodes = [
+                    container.evaluate()
+                    for container in search.find(context.get_root())
+                ]
 
         if len(nodes) == 0:
             raise FandangoValueError(
@@ -379,14 +370,18 @@ class RepetitionBoundsConstraint(Constraint):
         return self.eval(expr, self.global_variables, local_cpy), target
 
     def min(
-        self, tree_stop_before: Optional[DerivationTree]
+        self, context_end: Optional[DerivationTree], context_includes_end: bool = True
     ) -> tuple[Any, Optional[DerivationTree]]:
-        return self._compute_rep_bound(tree_stop_before, self.expr_data_min)
+        return self._compute_rep_bound(
+            context_end, context_includes_end, self.expr_data_min
+        )
 
     def max(
-        self, tree_stop_before: Optional[DerivationTree]
+        self, context_end: Optional[DerivationTree], context_includes_end: bool = True
     ) -> tuple[Any, Optional[DerivationTree]]:
-        return self._compute_rep_bound(tree_stop_before, self.expr_data_max)
+        return self._compute_rep_bound(
+            context_end, context_includes_end, self.expr_data_max
+        )
 
     def group_by_repetition_id(
         self, id_trees: list[DerivationTree]
@@ -408,22 +403,6 @@ class RepetitionBoundsConstraint(Constraint):
                     iter_list[rep_round] = []
                 iter_list[rep_round].append(id_tree)
         return reference_trees
-
-    @staticmethod
-    def node_before_repetition(
-        first_iteration: DerivationTree,
-    ) -> Optional[DerivationTree]:
-        node = first_iteration
-        while (
-            node.parent is not None
-            and index_by_reference(node.parent.children, node) == 0
-        ):
-            node = node.parent
-        if node.parent is None:
-            return None
-        index = index_by_reference(node.parent.children, node)
-        assert index is not None and index > 0, "Invalid child index for bounds search"
-        return node.parent.children[index - 1]
 
     def fitness(
         self,
@@ -465,10 +444,12 @@ class RepetitionBoundsConstraint(Constraint):
             first_iteration = iter_list[smallest_rep][0]
             last_iteration = iter_list[highest_rep][-1]
 
-            max_bounds_search = self.node_before_repetition(first_iteration)
-
-            bound_min, min_ref_tree = self.min(max_bounds_search)
-            bound_max, max_ref_tree = self.max(max_bounds_search)
+            bound_min, min_ref_tree = self.min(
+                first_iteration, context_includes_end=False
+            )
+            bound_max, max_ref_tree = self.max(
+                first_iteration, context_includes_end=False
+            )
             bound_len = len(iter_list)
 
             if bound_min <= bound_len <= bound_max:

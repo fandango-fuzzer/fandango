@@ -212,10 +212,11 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
         rep_min = node.min
         rep_max = node.max
         if node.bounds_constraint:
+            context_end: Optional[DerivationTree]
             if tree:
-                stop_before = node.bounds_constraint.node_before_repetition(tree[0])
+                context_end = tree[0]
             else:
-                stop_before = next(
+                context_end = next(
                     (
                         tree_list[-1]
                         for tree_list in reversed(self.current_tree)
@@ -223,8 +224,9 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
                     ),
                     None,
                 )
-            rep_min, _ = node.bounds_constraint.min(stop_before)
-            rep_max, _ = node.bounds_constraint.max(stop_before)
+            context_includes_end = not tree
+            rep_min, _ = node.bounds_constraint.min(context_end, context_includes_end)
+            rep_max, _ = node.bounds_constraint.max(context_end, context_includes_end)
         if not last_complete:
             return False
         if tree_len < rep_max:
