@@ -768,9 +768,10 @@ class AnnotatedSearch(NonTerminalSearch, Generic[Annotation]):
         """
         return self._inner.format_as_spec()
 
-    def get_access_points(self) -> list[NonTerminal]:
+    def get_access_points(self, include_base: bool = False) -> list[NonTerminal]:
         """
         Get the access points of the non-terminal search, i.e., the non-terminal that are considered in this search.
+        :param bool include_base: Whether to include the non-terminals of the bases the search starts from.
         :return list[NonTerminal]: The list of access points.
         """
-        return self._inner.get_access_points()
+        return self._inner.get_access_points(include_base)
