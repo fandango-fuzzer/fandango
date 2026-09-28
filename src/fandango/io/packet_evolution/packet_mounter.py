@@ -64,10 +64,14 @@ class PacketMounter:
     An attached packet has its mount point as parent but is not among its children;
     a mounted packet is among them."""
 
-    def __init__(self, grammar: Grammar, start_symbol: str):
+    def __init__(self, grammar: Grammar, start_symbol: str | NonTerminal):
+        if isinstance(start_symbol, str):
+            start_symbol_nt = NonTerminal(start_symbol)
+        else:
+            start_symbol_nt = start_symbol
         self._grammar = grammar
         self._history_message_holders = MessageHolder(
-            DerivationTree(NonTerminal(start_symbol))
+            DerivationTree(start_symbol_nt)
         )
         self._active_message_holders = self._history_message_holders
         self._message_holders_by_root_id: dict[int, MessageHolder] = {}
