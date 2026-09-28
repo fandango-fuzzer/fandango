@@ -33,7 +33,7 @@ class IoPopulationManager(PopulationManager):
         current_idx = (self._prev_packet_idx + 1) % len(packet_selection)
         current_pck = random.choice(packet_selection)
         mounting_option = random.choice(list(current_pck.paths))
-        fuzzed_packet = self.packet_mounter.fuzz_attached(
+        fuzzed_packet = self.packet_mounter.fuzz(
             current_pck, mounting_option, max_nodes
         )
 
@@ -45,4 +45,4 @@ class IoPopulationManager(PopulationManager):
     ) -> tuple[DerivationTree, int]:
         with self.packet_mounter.mounted_context(individual) as mounted_packet:
             fixed, fixes_made = super()._apply_suggestion(mounted_packet, suggestion)
-        return individual if fixed is mounted_packet else fixed, fixes_made
+            return self.packet_mounter.original(fixed), fixes_made

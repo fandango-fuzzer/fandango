@@ -60,30 +60,31 @@ class MessageHolder:
 
 
 class PacketMounter:
-    """Mounts candidate packets into skeletons, one per mounting path, built around the session's messages.
-    An attached packet has its mount point as parent but is not among its children."""
+    """Mounts candidate packets into skeletons, one per mounting path, built around the history's messages.
+    An attached packet has its mount point as parent but is not among its children;
+    a mounted packet is among them."""
 
     def __init__(self, grammar: Grammar, start_symbol: str):
         self._grammar = grammar
-        self._session_message_holders = MessageHolder(
+        self._history_message_holders = MessageHolder(
             DerivationTree(NonTerminal(start_symbol))
         )
-        self._active_message_holders = self._session_message_holders
+        self._active_message_holders = self._history_message_holders
         self._message_holders_by_root_id: dict[int, MessageHolder] = {}
         self._mount_points_by_mounting_path: dict[MountingPath, DerivationTree] = {}
         self._first_mounted_packets_by_root_hash: dict[int, DerivationTree] = {}
+        self._packets_by_mounted_packet_id: dict[int, DerivationTree] = {}
 
     @contextmanager
-    def session_context(self, session_tree: DerivationTree) -> Iterator[None]:
-        """Builds skeletons around the session tree's messages during the block.
-        Afterwards the messages hang in the session tree, or in the tree of the committed packet."""
-        self._start_session(session_tree)
+    def history_context(self, history: DerivationTree) -> Iterator[None]:
+        """Builds skeletons around the history's messages during the block; afterwards the messages hang in the history."""
+        self._set_history(history)
         try:
             yield
         finally:
-            self._hold_messages_in(self._session_message_holders.root)
+            self._hold_messages_in(self._history_message_holders.root)
 
-    def fuzz_attached(
+    def fuzz(
         self, packet: ForecastingPacket, mounting_path: MountingPath, max_nodes: int
     ) -> DerivationTree:
         """Fuzzes a new packet at the mounting path's mount point and returns it attached."""
@@ -108,32 +109,41 @@ class PacketMounter:
     @contextmanager
     def mounted_context(self, packet: DerivationTree) -> Iterator[DerivationTree]:
         """Mounts the first equal packet in place of the attached packet during the block and yields it; others come back unchanged.
-        Packets mount into skeletons, never the session tree; with several mounted, the messages hang in the last one's skeleton."""
+        The first equal packet is mounted because the fitness cache holds failing trees of its nodes.
+        Packets mount into skeletons, never the history; with several mounted, the messages hang in the last one's skeleton."""
         if not self._is_attached(packet):
             yield packet
             return
         first_equal_packet = self._mount_first_equal(packet)
+        self._packets_by_mounted_packet_id[id(first_equal_packet)] = packet
         try:
             yield first_equal_packet
         finally:
+            del self._packets_by_mounted_packet_id[id(first_equal_packet)]
             self._unmount(first_equal_packet)
 
+    def original(self, tree: DerivationTree) -> DerivationTree:
+        """Returns the attached packet the tree is mounted in place of, or the tree itself.
+        Valid only inside the tree's mounted context."""
+        return self._packets_by_mounted_packet_id.get(id(tree), tree)
+
     def commit(self, packet: DerivationTree) -> DerivationTree:
-        """Mounts the packet for good and returns its tree, which becomes the session tree."""
+        """Mounts the packet for good and returns its tree, the next history.
+        Call it after the history context."""
         if self._is_attached(packet):
             self._mount(packet)
-        session_tree = packet.get_root()
-        self._start_session(session_tree)
-        return session_tree
+        history = packet.get_root()
+        self._set_history(history)
+        return history
 
-    def _start_session(self, session_tree: DerivationTree) -> None:
-        """Drops all skeletons and first equal packets and hangs the messages into the session tree."""
+    def _set_history(self, history: DerivationTree) -> None:
+        """Drops all skeletons and first equal packets and hangs the messages into the history."""
         self._mount_points_by_mounting_path.clear()
         self._first_mounted_packets_by_root_hash.clear()
         self._message_holders_by_root_id.clear()
-        self._session_message_holders = self._message_holders(session_tree)
-        self._active_message_holders = self._session_message_holders
-        self._session_message_holders.hold_messages()
+        self._history_message_holders = self._message_holders(history)
+        self._active_message_holders = self._history_message_holders
+        self._history_message_holders.hold_messages()
 
     def _mount_first_equal(self, packet: DerivationTree) -> DerivationTree:
         """Mounts the first packet seen with an equal mounted tree and returns it,
@@ -150,7 +160,7 @@ class PacketMounter:
         return first_equal_packet
 
     def _mount(self, packet: DerivationTree) -> None:
-        """Hangs the session's messages into the packet's skeleton and adds the packet to its mount point's children."""
+        """Hangs the history's messages into the packet's skeleton and adds the packet to its mount point's children."""
         mount_point = packet.parent
         assert mount_point is not None
         self._hold_messages_in(mount_point.get_root())
@@ -175,20 +185,20 @@ class PacketMounter:
         )
 
     def _hold_messages_in(self, root: DerivationTree) -> None:
-        """Hangs the session's messages into the tree under root."""
+        """Hangs the history's messages into the tree under root."""
         if root is self._active_message_holders.root:
             return
         self._active_message_holders = self._message_holders(root)
         self._active_message_holders.hold_messages()
 
     def _message_holders(self, root: DerivationTree) -> MessageHolder:
-        """Returns the message holders of the tree under root, found once per session."""
+        """Returns the message holders of the tree under root, found once per history."""
         if id(root) not in self._message_holders_by_root_id:
             self._message_holders_by_root_id[id(root)] = MessageHolder(root)
         return self._message_holders_by_root_id[id(root)]
 
     def _mount_point(self, mounting_path: MountingPath) -> DerivationTree:
-        """Returns the mounting path's mount point, built once per session."""
+        """Returns the mounting path's mount point, built once per history."""
         if mounting_path not in self._mount_points_by_mounting_path:
             self._mount_points_by_mounting_path[mounting_path] = (
                 self._build_mount_point(mounting_path)
@@ -196,7 +206,7 @@ class PacketMounter:
         return self._mount_points_by_mounting_path[mounting_path]
 
     def _build_mount_point(self, mounting_path: MountingPath) -> DerivationTree:
-        """Builds a read-only skeleton of the mounting path's tree around the session's messages
+        """Builds a read-only skeleton of the mounting path's tree around the history's messages
         and returns the node packets are appended to."""
         skeleton = self._grammar.collapse(mounting_path.tree)
         if skeleton is None:
@@ -216,20 +226,20 @@ class PacketMounter:
     def _replace_message_copies(
         self, skeleton: DerivationTree, mounting_path: MountingPath
     ) -> None:
-        """Swaps the message copies in the skeleton for the session's messages.
-        Raises if the mounting path's tree holds other messages than the session."""
-        session_messages = [
+        """Swaps the message copies in the skeleton for the history's messages.
+        Raises if the mounting path's tree holds other messages than the history."""
+        history_messages = [
             message.msg
-            for message in self._session_message_holders.root.protocol_msgs()
+            for message in self._history_message_holders.root.protocol_msgs()
         ]
         forecast_messages = [
             message.msg for message in mounting_path.tree.protocol_msgs()
         ]
-        if forecast_messages != session_messages:
+        if forecast_messages != history_messages:
             raise FandangoValueError(
-                f"Mounting path {mounting_path.path} holds other messages than the session"
+                f"Mounting path {mounting_path.path} holds other messages than the history"
             )
-        self._session_message_holders.hang_messages_into(skeleton)
+        self._history_message_holders.hang_messages_into(skeleton)
 
     @staticmethod
     def _set_read_only_above_messages(skeleton: DerivationTree) -> None:
