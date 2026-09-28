@@ -21,9 +21,6 @@ from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER, print_exception
 from fandango.utils import cache_size
 
-Evaluation = tuple[float, list[FailingTree], Suggestion]
-PopulationEvaluation = list[tuple[DerivationTree, float, list[FailingTree], Suggestion]]
-
 
 class AbstractEvaluator(abc.ABC):
     """Evaluates individuals against the constraints of a specification."""
@@ -46,7 +43,7 @@ class AbstractEvaluator(abc.ABC):
     @abc.abstractmethod
     def evaluate_individual(
         self, individual: DerivationTree
-    ) -> Generator[DerivationTree, None, Evaluation]:
+    ) -> Generator[DerivationTree, None, tuple[float, list[FailingTree], Suggestion]]:
         """
         Yields the individual if it is a new solution, i.e., reaches the expected fitness.
         Returns its fitness, its failing trees and the suggestion to fix them.
@@ -78,7 +75,11 @@ class AbstractEvaluator(abc.ABC):
 
     def evaluate_population(
         self, population: list[DerivationTree]
-    ) -> Generator[DerivationTree, None, PopulationEvaluation]:
+    ) -> Generator[
+        DerivationTree,
+        None,
+        list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
+    ]:
         """Yields the new solutions of the population and returns the evaluation of each individual."""
         evaluation = []
         for ind in population:
@@ -118,7 +119,7 @@ class AbstractEvaluator(abc.ABC):
 
     @staticmethod
     def select_elites(
-        evaluation: PopulationEvaluation,
+        evaluation: list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
         elitism_rate: float,
         population_size: int,
     ) -> list[DerivationTree]:
@@ -131,7 +132,7 @@ class AbstractEvaluator(abc.ABC):
 
     @staticmethod
     def tournament_selection(
-        evaluation: PopulationEvaluation,
+        evaluation: list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
         tournament_size: int,
     ) -> tuple[DerivationTree, DerivationTree]:
         tournament = random.sample(evaluation, k=min(tournament_size, len(evaluation)))
