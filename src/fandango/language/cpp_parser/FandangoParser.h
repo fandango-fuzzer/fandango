@@ -829,7 +829,7 @@ public:
     virtual size_t getRuleIndex() const override;
     Formula_comparisonContext *formula_comparison();
     antlr4::tree::TerminalNode *OPEN_PAREN();
-    ImpliesContext *implies();
+    Quantifier_in_lineContext *quantifier_in_line();
     antlr4::tree::TerminalNode *CLOSE_PAREN();
     ExprContext *expr();
 
