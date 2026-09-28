@@ -449,7 +449,6 @@ class DerivationTree:
                 child for child in node._children if child.hash_cache is None
             )
 
-        result = 0
         for node in reversed(unhashed):
             node.hash_cache = hash(
                 (
@@ -459,8 +458,8 @@ class DerivationTree:
                     tuple(hash(child) for child in node._children),
                 )
             )
-            result = node.hash_cache
-        return result
+        assert self.hash_cache is not None
+        return self.hash_cache
 
     def __tree__(self) -> TreeTuple[Symbol]:
         return self.symbol, [child.__tree__() for child in self._children]
