@@ -26,7 +26,7 @@ from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.grammar.parser.iterative_parser import IterativeParser
 from fandango.language.grammar.parser.parser import Parser
 from fandango.language.symbols import NonTerminal, Symbol, Terminal
-from fandango.language.tree import DerivationTree, TreeTuple
+from fandango.language.tree import DerivationTree, TreeTuple, index_by_reference
 from fandango.language.tree_value import TreeValueType
 from fandango.logger import LOGGER
 from fandango.utils import cache_size
@@ -804,81 +804,125 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         input_parties: Optional[set[str]] = None,
     ) -> set[KPath]:
         """
+        Main comutation entry point for extracting k-paths from a derivation tree.
         Extracts all k-length paths (k-paths) from a derivation tree.
         """
         parties = frozenset(input_parties or set())
-        if coverage_goal == CoverageGoal.INPUTS:
-            start_nodes = [
-                record.msg
-                for record in tree.protocol_msgs()
-                if record.sender in parties
-            ]
-        else:
-            start_nodes = [tree]
+        outside_in_goal = coverage_goal != CoverageGoal.INPUTS
+        # Messages do not nest, so the message enclosing the tree decides whether it counts.
+        message = tree
+        while message.sender is None:
+            parent = message.parent
+            # ... or case for unmounted trees
+            if parent is None or index_by_reference(parent.children, message) is None:
+                break
+            message = parent
+        in_goal = self._in_k_path_coverage_goal(
+            message, outside_in_goal, coverage_goal, parties
+        )
 
         k_paths: set[KPath] = set()
-        for start_node in start_nodes:
-            _, at_or_below = self._k_paths_at_or_below(
-                start_node, None, k, coverage_goal, parties, inside_message=False
-            )
-            k_paths |= at_or_below
+        if in_goal is None:
+            return k_paths
+        starting_here, at_or_below = self._k_paths_at_or_below(
+            tree, in_goal, k, coverage_goal, parties, inside_message=False
+        )
+        k_paths |= at_or_below
 
-        if overlap_to_root:
-            ancestor = tree
+        if overlap_to_root and in_goal:
+            # Paths start up to k-1 levels above the tree, reached through child edges.
+            prefix: KPath = tuple()
+            node = tree
             for _ in range(k - 1):
-                if ancestor.parent is not None:
-                    ancestor = ancestor.parent
-            for path in self._extract_k_paths_from_tree(
-                ancestor, k, False, coverage_goal, input_parties
-            ):
-                if tree.symbol in path:
-                    k_paths.add(path)
+                parent = node.parent
+                # ... or case for unmounted trees
+                if parent is None or index_by_reference(parent.children, node) is None:
+                    break
+                # Above the enclosing message, nodes are outside of any message.
+                if node.sender is not None and not outside_in_goal:
+                    break
+                prefix = (parent.symbol,) + prefix
+                k_paths |= {
+                    prefix + path
+                    for path in starting_here
+                    if len(prefix) + len(path) <= k
+                }
+                node = parent
         return k_paths
+
+    @staticmethod
+    def _in_k_path_coverage_goal(
+        node: DerivationTree,
+        parent_in_goal: Optional[bool],
+        coverage_goal: CoverageGoal,
+        input_parties: frozenset[str],
+    ) -> Optional[bool]:
+        """
+        Returns whether `node` counts for the coverage goal, given whether its parent does.
+        True: the node counts. False: only nodes below it may count. None: nothing at or below it counts.
+        """
+        if parent_in_goal is None or node.sender is None:
+            return parent_in_goal
+        if coverage_goal == CoverageGoal.INPUTS:
+            # Only the messages of input parties count, entirely.
+            return True if parent_in_goal or node.sender in input_parties else None
+        if (
+            coverage_goal == CoverageGoal.STATE_INPUTS
+            and node.sender not in input_parties
+        ):
+            return None
+        return parent_in_goal
 
     def _k_paths_at_or_below(
         self,
         tree: DerivationTree,
-        parent_symbol: Optional[NonTerminal],
+        in_goal: bool,
         k: int,
         coverage_goal: CoverageGoal,
         input_parties: frozenset[str],
         inside_message: bool,
     ) -> tuple[set[KPath], set[KPath]]:
-        """Returns the k-paths starting at `node` and the k-paths starting at or below `node`."""
+        """Returns the k-paths starting at `tree` and the k-paths starting at or below `tree`."""
         symbol = tree.symbol
         if isinstance(symbol, Terminal):
-            if parent_symbol is None:
+            if not in_goal or tree.parent is None:
                 return set(), set()
+            assert isinstance(tree.parent.symbol, NonTerminal)
             matching_paths: set[KPath] = {
                 (terminal,)
-                for terminal in self._rule_terminals_matching(parent_symbol, symbol)
+                for terminal in self._rule_terminals_matching(
+                    tree.parent.symbol, symbol
+                )
             }
             return matching_paths, matching_paths
         assert isinstance(symbol, NonTerminal)
 
         cache_key = None
         if tree.sender is not None or not inside_message:
-            cache_key = hash((tree, k, coverage_goal, input_parties))
+            cache_key = hash((tree, k, in_goal, coverage_goal, input_parties))
             if cache_key in self._tree_k_path_cache:
                 return self._tree_k_path_cache[cache_key]
 
-        starting_here: set[KPath] = {(symbol,)}
+        starting_here: set[KPath] = {(symbol,)} if in_goal else set()
         at_or_below: set[KPath] = set()
         for child in tree.children:
-            if coverage_goal == CoverageGoal.STATE_INPUTS:
-                if child.sender is not None and child.sender not in input_parties:
-                    continue
+            child_in_goal = self._in_k_path_coverage_goal(
+                child, in_goal, coverage_goal, input_parties
+            )
+            if child_in_goal is None:
+                continue
             starting_at_child, at_or_below_child = self._k_paths_at_or_below(
                 child,
-                symbol,
+                child_in_goal,
                 k,
                 coverage_goal,
                 input_parties,
                 inside_message=inside_message or tree.sender is not None,
             )
-            for path in starting_at_child:
-                if len(path) < k:
-                    starting_here.add((symbol,) + path)
+            if in_goal:
+                for path in starting_at_child:
+                    if len(path) < k:
+                        starting_here.add((symbol,) + path)
             at_or_below |= at_or_below_child
         at_or_below |= starting_here
 
