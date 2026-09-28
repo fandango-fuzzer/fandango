@@ -22,7 +22,7 @@ from fandango.evolution.algorithm.base import (
     LoggerLevel,
 )
 from fandango.evolution.crossover import CrossoverOperator
-from fandango.evolution.evaluation import Evaluator
+from fandango.evolution.evaluation import AbstractEvaluator, Evaluator
 from fandango.evolution.mutation import MutationOperator
 from fandango.evolution.population import PopulationManager
 from fandango.evolution.profiler import Profiler
@@ -102,7 +102,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
             grammar,
             start_symbol,
         )
-        self.evaluator = Evaluator(
+        self.evaluator: AbstractEvaluator = Evaluator(
             grammar,
             constraints,
             expected_fitness,
@@ -532,8 +532,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
 
     def reset(self) -> None:
         self.evaluator.flush_fitness_cache()
-        self.evaluator._solution_set.clear()
-        self.evaluator._fitness_cache.clear()
+        self.evaluator.reset()
         self.population.clear()
         self.evaluation.clear()
         self._initial_solutions.clear()

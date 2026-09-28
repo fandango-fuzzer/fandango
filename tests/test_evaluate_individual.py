@@ -6,6 +6,7 @@ import pytest
 from fandango import DerivationTree
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.algorithm import DefaultAlgorithm
+from fandango.evolution.evaluation import Evaluator
 from fandango.language.parse.parse import parse
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.logger import LOGGER
@@ -321,11 +322,13 @@ def test_weighted_fitness_rounding():
     )
     assert grammar is not None
     fan = DefaultAlgorithm(grammar, constraints)
-    assert len(fan.evaluator._hard_constraints) == 15
-    assert len(fan.evaluator._repetition_bounds_constraints) == 3
+    assert isinstance(fan.evaluator, Evaluator)
+    evaluator: Evaluator = fan.evaluator
+    assert len(evaluator._hard_constraints) == 15
+    assert len(evaluator._repetition_bounds_constraints) == 3
     individual = grammar.parse("1x1x1x")
     assert individual is not None
-    gen = GeneratorWithReturn(fan.evaluator.evaluate_individual(individual=individual))
+    gen = GeneratorWithReturn(evaluator.evaluate_individual(individual=individual))
     solutions, (fitness, failing_trees, _suggestion) = gen.collect()
     assert fitness == 1.0
     assert failing_trees == []
