@@ -6,6 +6,7 @@ from fandango.language.search import (
     AttributeSearch,
     DescendantAttributeSearch,
     ItemSearch,
+    LengthSearch,
     RuleSearch,
     SelectiveSearch,
     StarSearch,
@@ -206,3 +207,27 @@ class TestSearches(unittest.TestCase):
         self.assertEqual(2, len(trees[0]), len(trees[0]))
         self.assertIn(self._C1, trees[0])
         self.assertIn(self._C2, trees[0])
+
+    def test_access_points(self):
+        a, b, c = NonTerminal("<a>"), NonTerminal("<b>"), NonTerminal("<c>")
+        # search, access points without bases, access points with bases
+        cases = [
+            (RuleSearch(a), [a], [a]),
+            (AttributeSearch(RuleSearch(a), RuleSearch(b)), [b], [a, b]),
+            (DescendantAttributeSearch(RuleSearch(a), RuleSearch(b)), [b], [a, b]),
+            (
+                SelectiveSearch(RuleSearch(a), [(b, True), (c, False)]),
+                [b, c],
+                [a, b, c],
+            ),
+            (ItemSearch(RuleSearch(a), [0]), [a], [a]),
+            (StarSearch(AttributeSearch(RuleSearch(a), RuleSearch(b))), [b], [a, b]),
+            (
+                LengthSearch(DescendantAttributeSearch(RuleSearch(a), RuleSearch(c))),
+                [c],
+                [a, c],
+            ),
+        ]
+        for index, (search, without_base, with_base) in enumerate(cases):
+            self.assertEqual(without_base, search.get_access_points(), index)
+            self.assertEqual(with_base, search.get_access_points(True), index)
