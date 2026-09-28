@@ -1,12 +1,22 @@
+import functools
 import re
 from io import UnsupportedOperation
-from typing import cast
+from typing import Any, cast
 
 import regex
 
 from fandango.errors import FandangoValueError
 from fandango.language.symbols.symbol import Symbol, SymbolType
-from fandango.language.tree_value import TreeValue, TreeValueType
+from fandango.language.tree_value import (
+    BYTES_TO_STRING_ENCODING,
+    TreeValue,
+    TreeValueType,
+)
+
+
+@functools.cache
+def _compile(symbol: str | bytes) -> Any:
+    return regex.compile(symbol)  # type: ignore[no-untyped-call] # regex doesn't provide types
 
 
 class Terminal(Symbol):
@@ -43,6 +53,51 @@ class Terminal(Symbol):
     def from_number(number: str) -> "Terminal":
         return Terminal(Terminal.clean(number))
 
+    def _align_type(self, word: str | bytes) -> tuple[str | bytes, str | bytes]:
+        """
+        Converts word and tree value such that they have the same type (string or bytes).
+        """
+        if isinstance(word, bytes):
+            if self._value.is_type(TreeValueType.BYTES):
+                return self._value.to_bytes(), word
+            word = word.decode(BYTES_TO_STRING_ENCODING)
+        return self._value.to_string(), word
+
+    def regex_check_multiple_lengths(
+        self, word: str | bytes, min_length: int = 1
+    ) -> tuple[list[int], bool]:
+        """
+        Every length from `min_length` on at which this regex matches
+        `word[:length]`, and whether the word could be further extended
+         and still match the regex.
+        """
+        assert self.is_regex
+        symbol, word = self._align_type(word)
+        pattern = _compile(symbol)
+        lengths: list[int] = []
+        can_continue = False
+        for length in range(min_length, len(word) + 1):
+            match = pattern.fullmatch(word[:length], partial=True)
+            can_continue = match is not None
+            if not can_continue:
+                break
+            if not match.partial:
+                lengths.append(length)
+        # This here should be able to check the can_continue property, but there seems to be a bug
+        # in the regex libray.
+        # See this example:
+        # (?:ab)+ on "abab" (regex 2026.9.10).
+        # Using this when the bug is fixed on regex production:
+        # if lengths and lengths[-1] == len(word):
+        #     longer_than_word = (
+        #         b"(?:%s)(?<=[\\s\\S]{%d})"
+        #         if isinstance(symbol, bytes)
+        #         else "(?:%s)(?<=[\\s\\S]{%d})"
+        #     )
+        #     longer_pattern = _compile(longer_than_word % (symbol, len(word) + 1))
+        #     can_continue = longer_pattern.fullmatch(word, partial=True) is not None
+        return lengths, can_continue
+
     def check(
         self, word: str | bytes | int, incomplete: bool = False
     ) -> tuple[bool, int]:
@@ -52,57 +107,36 @@ class Terminal(Symbol):
             word, int
         ):
             return self.check_all(word), 1
-        check_word: str | bytes = word
-
-        symbol: str | bytes
-        if self._value.is_type(TreeValueType.BYTES) and isinstance(check_word, bytes):
-            symbol = self._value.to_bytes()
-        else:
-            symbol = self._value.to_string()
-            check_word = (
-                check_word
-                if isinstance(check_word, str)
-                else check_word.decode("latin-1")
-            )
-
+        symbol, check_word = self._align_type(word)
         if self.is_regex:
-            if not incomplete:
-                match = re.match(symbol, check_word)  # type: ignore [arg-type] # re actually does accept bytes
-                if match:
-                    # LOGGER.debug(f"It's a match: {match.group(0)!r}")
-                    return True, len(match.group(0))
-            else:
-                compiled = regex.compile(symbol)  # type: ignore[no-untyped-call] # regex doesn't provide types
-                match = compiled.match(check_word, partial=True)
-                if match is not None and (
-                    match.partial or match.end() == len(check_word)
-                ):
-                    return True, len(match.group(0))
-                match = compiled.fullmatch(check_word, partial=True)
-                if match is not None and (
-                    match.partial or match.end() == len(check_word)
-                ):
-                    return True, len(match.group(0))
-                return False, 0
-
-        else:
             if incomplete:
-                prefix = check_word
-                full_word = symbol
-            else:
-                prefix = symbol
-                full_word = check_word
-            if isinstance(full_word, str):
-                assert isinstance(prefix, str)
-                if full_word.startswith(prefix):
-                    return True, len(prefix)
-            else:
-                assert isinstance(full_word, bytes)
-                assert isinstance(prefix, bytes)
-                if full_word.startswith(prefix):
-                    return True, len(prefix)
+                lengths, can_continue = self.regex_check_multiple_lengths(
+                    check_word, len(check_word)
+                )
+                if lengths or can_continue:
+                    return True, len(check_word)
+                return False, 0
+            match = _compile(symbol).match(check_word)
+            if match is not None:
+                return True, match.end()
+            return False, 0
 
-        # LOGGER.debug(f"No match")
+        if incomplete:
+            prefix = check_word
+            full_word = symbol
+        else:
+            prefix = symbol
+            full_word = check_word
+        if isinstance(full_word, str):
+            assert isinstance(prefix, str)
+            if full_word.startswith(prefix):
+                return True, len(prefix)
+        else:
+            assert isinstance(full_word, bytes)
+            assert isinstance(prefix, bytes)
+            if full_word.startswith(prefix):
+                return True, len(prefix)
+
         return False, 0
 
     def check_all(self, word: str | bytes | int) -> bool:
@@ -135,9 +169,6 @@ class Terminal(Symbol):
 
         # Not a regex
         return repr(self._value)
-
-    def __hash__(self) -> int:
-        return hash((self._value, self._type))
 
     def __len__(self) -> int:
         return self.count_bytes()

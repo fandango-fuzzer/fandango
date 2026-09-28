@@ -1,4 +1,6 @@
-from collections.abc import Generator
+import gc
+from collections.abc import Generator, Iterator
+from contextlib import contextmanager
 from copy import deepcopy
 from typing import Optional
 
@@ -12,9 +14,25 @@ from fandango.language.tree import DerivationTree
 from fandango.utils import cache_size
 
 
+@contextmanager
+def _gc_paused() -> Iterator[None]:
+    """
+    Pause the cyclic garbage collector for the duration of the block.
+    """
+    was_enabled = gc.isenabled()
+    gc.disable()
+    try:
+        yield
+    finally:
+        if was_enabled:
+            gc.enable()
+
+
 class Parser:
     def __init__(self, grammar_rules: dict[NonTerminal, Node]):
+        self._grammar_rules = grammar_rules
         self._iter_parser = IterativeParser(grammar_rules)
+        self._iter_parsers_by_start: dict[NonTerminal, IterativeParser] = {}
         self._cache: LRUCache[
             tuple[
                 str | bytes,
@@ -22,7 +40,7 @@ class Parser:
                 ParsingMode,
                 int,
             ],
-            list[DerivationTree],
+            DerivationTree,
         ] = LRUCache(maxsize=cache_size())
 
     def _parse_forest(
@@ -37,10 +55,14 @@ class Parser:
         """
         Parse a forest of input trees from `word`.
         `start` is the start symbol (default: `<start>`).
-        if `allow_incomplete` is True, the function will return trees even if the input ends prematurely.
+        In `ParsingMode.INCOMPLETE`, trees are yielded even if the input ends prematurely.
         """
         self._iter_parser.new_parse(start, mode, hookin_parent, starter_bit)
-        for tree, _is_complete in self._iter_parser.consume(word):
+        self._iter_parser.consume(word)
+        for tree, _is_complete in self._iter_parser.tree_at(
+            self._iter_parser.consumed_length(),
+            incomplete=mode == ParsingMode.INCOMPLETE,
+        ):
             yield tree
 
     def parse_forest(
@@ -71,34 +93,36 @@ class Parser:
             start = NonTerminal(start)
 
         cache_key = (word, start, mode, hash(hookin_parent))
-        if cache_key in self._cache:
-            for tree in self._cache[cache_key]:
-                tree = deepcopy(tree)
-                if not include_controlflow:
-                    collapsed = self.collapse(tree)
-                    if collapsed is not None:
-                        yield collapsed
-                else:
-                    yield tree
-            return
+        last_yielded_tree = self._cache.get(cache_key)
+        if last_yielded_tree is not None:
+            with _gc_paused():
+                tree = deepcopy(last_yielded_tree)
+                result = tree if include_controlflow else self.collapse(tree)
+            if result is not None:
+                yield result
 
-        parsed_forest: list[DerivationTree] = []
-        for tree in self._parse_forest(
+        trees = self._parse_forest(
             word,
             start,
             mode=mode,
             hookin_parent=hookin_parent,
             starter_bit=starter_bit,
-        ):
-            tree = self._iter_parser.to_derivation_tree(tree)
-            parsed_forest.append(tree)
-            self._cache[cache_key] = parsed_forest
-            if include_controlflow:
-                yield tree
-            else:
-                collapsed = self.collapse(tree)
-                if collapsed is not None:
-                    yield collapsed
+        )
+        while True:
+            with _gc_paused():
+                parsed = next(trees, None)
+                if parsed is None:
+                    break
+                if last_yielded_tree is not None and hash(parsed) == hash(
+                    last_yielded_tree
+                ):
+                    continue
+                result = (
+                    deepcopy(parsed) if include_controlflow else self.collapse(parsed)
+                )
+            if result is not None:
+                self._cache[cache_key] = parsed
+                yield result
 
     def parse_multiple(
         self,
@@ -140,6 +164,11 @@ class Parser:
             include_controlflow=include_controlflow,
         )
         return next(tree_gen, None)
+
+    def iterative_parser(self, start: NonTerminal) -> IterativeParser:
+        if start not in self._iter_parsers_by_start:
+            self._iter_parsers_by_start[start] = IterativeParser(self._grammar_rules)
+        return self._iter_parsers_by_start[start]
 
     def collapse(self, tree: Optional[DerivationTree]) -> Optional[DerivationTree]:
         return self._iter_parser.collapse(tree)

@@ -19,9 +19,9 @@ class PrimerVisitor(NodeVisitor[float, float]):
 
     def __init__(self, rules: dict[NonTerminal, Node]):
         self._rules = rules
-        self._seen: set[int] = set()
+        self._visited_ids: set[int] = set()
         self._inf_loops: set[Node] = set()
-        self._changed = False
+        self._lowered = False
 
     def prime(self, raise_on_inf_loops: bool = True) -> None:
         """
@@ -31,17 +31,17 @@ class PrimerVisitor(NodeVisitor[float, float]):
         :param raise_on_inf_loops: If there are NonTerminals in the grammar that cannot
             be completed (distance_to_completion == float("inf")), raise a `FandangoValueError`.
         """
-        self._seen.clear()
         self._inf_loops.clear()
-        self._changed = False
-        for rule in self._rules.values():
-            self.visit(rule)
-        while self._changed:
-            self._changed = False
+        self._lowered = True
+        while self._lowered:
+            self._lowered = False
+            self._visited_ids.clear()
             for rule in self._rules.values():
                 self.visit(rule)
         self._inf_loops = {
-            n for n in self._inf_loops if n.distance_to_completion == float("inf")
+            node
+            for node in self._inf_loops
+            if node.distance_to_completion == float("inf")
         }
         if raise_on_inf_loops and self._inf_loops:
             raise FandangoValueError(
@@ -53,17 +53,17 @@ class PrimerVisitor(NodeVisitor[float, float]):
         return frozenset(self._inf_loops)
 
     def visit(self, node: Node) -> float:
-        if id(node) in self._seen:
+        node_id = id(node)
+        if node_id in self._visited_ids:
             return node.distance_to_completion
-        self._seen.add(id(node))
-        dist = super().visit(node)
-        if node.distance_to_completion > dist:
-            self._changed = True
-            node.distance_to_completion = dist
-        if dist == float("inf"):
+        self._visited_ids.add(node_id)
+        distance = super().visit(node)
+        if distance < node.distance_to_completion:
+            node.distance_to_completion = distance
+            self._lowered = True
+        if distance == float("inf"):
             self._inf_loops.add(node)
-        self._seen.remove(id(node))
-        return dist
+        return distance
 
     def visitAlternative(self, node: Alternative) -> float:
         return 1 + min(self.visit(child) for child in node.children())
@@ -72,8 +72,10 @@ class PrimerVisitor(NodeVisitor[float, float]):
         return 1 + sum(self.visit(child) for child in node.children())
 
     def visitRepetition(self, node: Repetition) -> float:
-        child_dist = self.visit(node.node)
-        return 1 + (node.min * child_dist)
+        child_distance = self.visit(node.node)
+        if node.min == 0:
+            return 1.0
+        return 1 + node.min * child_distance
 
     def visitStar(self, node: Star) -> float:
         return self.visitRepetition(node)
@@ -91,4 +93,4 @@ class PrimerVisitor(NodeVisitor[float, float]):
         return 1.0
 
     def visitCharSet(self, node: CharSet) -> float:
-        raise NotImplementedError("ChatSet not implemented.")
+        raise NotImplementedError("CharSet not implemented.")

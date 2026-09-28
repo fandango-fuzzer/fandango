@@ -3,6 +3,7 @@ from typing import Optional
 
 from fandango.errors import FandangoValueError
 from fandango.language import NonTerminal
+from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.parser.column import Column
 from fandango.language.grammar.parser.iterative_parser import IterativeParser
@@ -15,6 +16,20 @@ class PacketIterativeParser(IterativeParser):
         super().__init__(grammar_rules)
         self.reference_tree: Optional[DerivationTree] = None
         self.detailed_tree: Optional[DerivationTree] = None
+        self._consumed_history: Optional[str] = None
+
+    def parse_history(self, history: str) -> None:
+        if (
+            self._consumed_history is None
+            or not history.startswith(self._consumed_history)
+            or len(self._context_rules) != 0
+        ):
+            self.new_parse(NonTerminal("<start>"), ParsingMode.INCOMPLETE)
+            self._consumed_history = ""
+        continuation = history[len(self._consumed_history) :]
+        if continuation != "":
+            self.consume(continuation)
+        self._consumed_history = history
 
     def construct_incomplete_tree(
         self, state: ParseState, table: list[Column]

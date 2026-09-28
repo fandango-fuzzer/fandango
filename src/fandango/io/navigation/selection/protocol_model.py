@@ -31,7 +31,7 @@ class ProtocolModel:
             non_terminals = self.state_grammar_symbols
         messages: list[DerivationTree] = []
         for tree in trees:
-            for subtree in tree.flatten():
+            for subtree in tree.flattened():
                 if subtree.symbol in non_terminals:
                     messages.append(subtree)
         messages_by_nt: dict[NonTerminal, list[DerivationTree]] = {}

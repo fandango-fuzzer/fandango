@@ -2,6 +2,7 @@ import unittest
 from typing import TypeGuard
 
 from fandango.api import Fandango
+from fandango.errors import FandangoError
 from fandango.io.navigation.graph.grammarnavigator import GrammarNavigator
 from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.graph.reachability_checker import ReachabilityChecker
@@ -77,6 +78,46 @@ class TestGrammarGraph(unittest.TestCase):
 
         path_list = [n.node.to_symbol() for n in path_filtered]
         self.assertEqual(path_list, [NonTerminal("<puff>"), NonTerminal("<paff>")])
+
+    def test_k_path_repeating_a_state_is_found(self):
+        grammar = self.get_grammar(RESOURCES_ROOT / "navigation_io.fan")
+        navigator = GrammarNavigator(grammar)
+        path = navigator.astar_tree_w_controlflow(
+            destination_k_path=(
+                NonTerminal("<start>"),
+                NonTerminal("<test>"),
+                NonTerminal("<start>"),
+                NonTerminal("<test>"),
+                NonTerminal("<start>"),
+            )
+        )
+        assert path is not None
+        messages = [
+            node.node.to_symbol()
+            for node in path
+            if node is not None
+            and isinstance(node.node, NonTerminalNode)
+            and node.node.sender is not None
+        ]
+        self.assertEqual(
+            messages,
+            [
+                NonTerminal("<A>"),
+                NonTerminal("<D>"),
+                NonTerminal("<E>"),
+                NonTerminal("<A>"),
+                NonTerminal("<D>"),
+                NonTerminal("<E>"),
+            ],
+        )
+
+    def test_unreachable_k_path_from_start_raises(self):
+        grammar = self.get_grammar(RESOURCES_ROOT / "minimal_io.fan")
+        navigator = GrammarNavigator(grammar)
+        with self.assertRaises(FandangoError):
+            navigator.astar_tree_w_controlflow(
+                destination_k_path=(NonTerminal("<start>"), NonTerminal("<start>"))
+            )
 
     def test_packet_navigator(self):
         grammar = self.get_grammar(DOCS_ROOT / "smtp-extended.fan")

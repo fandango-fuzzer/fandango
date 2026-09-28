@@ -1,6 +1,6 @@
 import abc
 import enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from fandango.language.tree_value import TreeValue, TreeValueType
 
@@ -17,6 +17,7 @@ class Symbol(abc.ABC):
         self._value = value if isinstance(value, TreeValue) else TreeValue(value)
         self._type = type_
         self._is_regex = False
+        self._hash_cache: Optional[int] = None
 
     def check(
         self, word: str | int | bytes, incomplete: bool = False
@@ -53,9 +54,10 @@ class Symbol(abc.ABC):
     def __eq__(self, other: Any) -> bool:
         return type(self) is type(other) and self._value == other._value
 
-    @abc.abstractmethod
     def __hash__(self) -> int:
-        raise NotImplementedError
+        if self._hash_cache is None:
+            self._hash_cache = hash((self._value, self._type))
+        return self._hash_cache
 
     @abc.abstractmethod
     def format_as_spec(self) -> str:

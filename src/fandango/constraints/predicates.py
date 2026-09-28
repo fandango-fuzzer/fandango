@@ -31,7 +31,7 @@ def get_index_within(
 ) -> int:
     idx = 0
     index_counter_nts = [NonTerminal(symbol) for symbol in index_counter_symbols]
-    for val in scope.flatten():
+    for val in scope.flattened():
         if val == tree:
             return idx
         if val.symbol in index_counter_nts:

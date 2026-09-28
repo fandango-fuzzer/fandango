@@ -43,7 +43,6 @@ classifiers = [
 dependencies = [
     "ansi_styles>=0.2.2",
     "antlr4-python3-runtime>=4.13",
-    "astar>=0.99",
     "beartype>=0.21.0,!=0.22.6,!=0.22.7",
     "cachedir_tag>=0.0.3",
     "cachetools>=5.5.2",
