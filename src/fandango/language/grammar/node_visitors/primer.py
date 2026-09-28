@@ -1,16 +1,17 @@
+from collections.abc import Iterator
+
 from fandango.errors import FandangoValueError
-from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.char_set import CharSet
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
-from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
+from fandango.language.grammar.nodes.repetition import Repetition
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.symbols.non_terminal import NonTerminal
 
 
-class PrimerVisitor(NodeVisitor[float, float]):
+class PrimerVisitor:
     """
     Computes the `distance_to_completion` of every node reachable from a set of
     grammar rules: the number of nodes to call to create the smallest possible subtree
@@ -53,44 +54,57 @@ class PrimerVisitor(NodeVisitor[float, float]):
         return frozenset(self._inf_loops)
 
     def visit(self, node: Node) -> float:
+        root_results: list[float] = []
+        stack: list[tuple[Node, Iterator[Node], list[float]]] = []
+        self._enter(node, stack, root_results)
+        while stack:
+            current, children, results = stack[-1]
+            child = next(children, None)
+            if child is not None:
+                self._enter(child, stack, results)
+                continue
+            stack.pop()
+            distance = self._distance(current, results)
+            if distance < current.distance_to_completion:
+                current.distance_to_completion = distance
+                self._lowered = True
+            if distance == float("inf"):
+                self._inf_loops.add(current)
+            (stack[-1][2] if stack else root_results).append(distance)
+        return root_results[0]
+
+    def _enter(
+        self,
+        node: Node,
+        stack: list[tuple[Node, Iterator[Node], list[float]]],
+        results: list[float],
+    ) -> None:
+        """Push `node` onto `stack`, or append its known distance to `results`."""
         node_id = id(node)
         if node_id in self._visited_ids:
-            return node.distance_to_completion
+            results.append(node.distance_to_completion)
+            return
         self._visited_ids.add(node_id)
-        distance = super().visit(node)
-        if distance < node.distance_to_completion:
-            node.distance_to_completion = distance
-            self._lowered = True
-        if distance == float("inf"):
-            self._inf_loops.add(node)
-        return distance
+        stack.append((node, iter(self._children(node)), []))
 
-    def visitAlternative(self, node: Alternative) -> float:
-        return 1 + min(self.visit(child) for child in node.children())
+    def _children(self, node: Node) -> list[Node]:
+        if isinstance(node, NonTerminalNode):
+            return [self._rules[node.symbol]]
+        return node.children()
 
-    def visitConcatenation(self, node: Concatenation) -> float:
-        return 1 + sum(self.visit(child) for child in node.children())
-
-    def visitRepetition(self, node: Repetition) -> float:
-        child_distance = self.visit(node.node)
-        if node.min == 0:
+    def _distance(self, node: Node, child_distances: list[float]) -> float:
+        if isinstance(node, Alternative):
+            return 1 + min(child_distances)
+        if isinstance(node, Concatenation):
+            return 1 + sum(child_distances)
+        if isinstance(node, Repetition):
+            if node.min == 0:
+                return 1.0
+            return 1 + node.min * child_distances[0]
+        if isinstance(node, NonTerminalNode):
+            return 1 + child_distances[0]
+        if isinstance(node, TerminalNode):
             return 1.0
-        return 1 + node.min * child_distance
-
-    def visitStar(self, node: Star) -> float:
-        return self.visitRepetition(node)
-
-    def visitPlus(self, node: Plus) -> float:
-        return self.visitRepetition(node)
-
-    def visitOption(self, node: Option) -> float:
-        return self.visitRepetition(node)
-
-    def visitNonTerminalNode(self, node: NonTerminalNode) -> float:
-        return 1 + self.visit(self._rules[node.symbol])
-
-    def visitTerminalNode(self, node: TerminalNode) -> float:
-        return 1.0
-
-    def visitCharSet(self, node: CharSet) -> float:
-        raise NotImplementedError("CharSet not implemented.")
+        if isinstance(node, CharSet):
+            raise NotImplementedError("CharSet not implemented.")
+        raise TypeError(f"Unexpected node type: {type(node).__name__}")
