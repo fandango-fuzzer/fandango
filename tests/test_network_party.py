@@ -5,7 +5,12 @@ from typing import Optional
 import pytest
 
 from fandango.errors import FandangoError
-from fandango.io import ConnectionMode, FandangoIO, NetworkParty, UdpTcpProtocolImplementation
+from fandango.io import (
+    ConnectionMode,
+    FandangoIO,
+    NetworkParty,
+    UdpTcpProtocolImplementation,
+)
 
 GREETING = b"220 ready\r\n"
 

@@ -3,7 +3,7 @@ from fandango.evolution.algorithm.protocol import ProtocolAlgorithm
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.io.navigation.selection.coverage_tracker import CoverageTracker
 from fandango.language.grammar import FuzzingMode
-from fandango.language.symbols import NonTerminal
+from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree
 
 from .utils import RESOURCES_ROOT
@@ -50,7 +50,7 @@ def bruteforce_uncovered(selector, trees):
 
 
 def bruteforce_scores(selector, trees):
-    messages_by_nt = {}
+    messages_by_nt: dict[Symbol, list[DerivationTree]] = {}
     for tree in trees:
         for record in tree.protocol_msgs():
             messages_by_nt.setdefault(record.msg.symbol, []).append(record.msg)
