@@ -1,3 +1,4 @@
+import random
 from typing import Optional
 
 from fandango.io import FandangoIO
@@ -18,6 +19,7 @@ from fandango.language.tree import DerivationTree
 
 
 class PacketSelector:
+
     def __init__(
         self,
         grammar: Grammar,
@@ -26,6 +28,7 @@ class PacketSelector:
         diversity_k: int,
         max_messages_per_tree: int = 200,
     ):
+        self.RANDOM_END_PROBABILITY = 0.5
         self.start_symbol = NonTerminal("<start>")
         self.grammar = grammar
         self.io_instance = io_instance
@@ -150,3 +153,28 @@ class PacketSelector:
 
     def set_coverage_goal(self, goal: CoverageGoal) -> None:
         self._coverage_tracker.set_coverage_goal(goal)
+
+    def is_failed_forecast(self):
+        return (
+            len(self.get_next_parties()) == 0
+            and not self.is_complete()
+        )
+
+    def is_protocol_run_complete(self) -> bool:
+        if not self.is_complete():
+            return False
+        if len(self.get_next_parties()) == 0:
+            return True
+        if self.coverage_tracker.coverage_goal == CoverageGoal.RANDOM:
+            return random.random() < self.RANDOM_END_PROBABILITY
+        return self.is_guide_to_end()
+
+    def should_generate_next_packet(self) -> bool:
+        if len(self.next_packets) == 1:
+            for packet in self.next_packets:
+                if packet.node.sender == "TimerEvent":
+                    return False
+        return (
+            len(self.next_fuzzer_parties()) != 0
+            and not self.io_instance.received_msg()
+        )
