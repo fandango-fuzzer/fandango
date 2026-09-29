@@ -30,5 +30,6 @@ class MountingMutation(MutationOperator):
             solutions, mutated = GeneratorWithReturn(
                 self._mutation_operator.mutate(mounted_packet, grammar, evaluate_func)
             ).collect()
+            mutated = self._packet_mounter.original(mutated)
         yield from solutions
-        return individual if mutated is mounted_packet else mutated
+        return mutated

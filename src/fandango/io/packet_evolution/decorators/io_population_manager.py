@@ -13,6 +13,7 @@ from fandango.language.tree import DerivationTree
 class IoPopulationManager(PopulationManager):
     def __init__(
         self,
+        packet_mounter: PacketMounter,
         grammar: Grammar,
         start_symbol: str,
     ):
@@ -21,7 +22,11 @@ class IoPopulationManager(PopulationManager):
         self.fuzzable_packets: list[ForecastingPacket] = []
         self.fallback_packets: list[ForecastingPacket] = []
         self.allow_fallback_packets = False
-        self.packet_mounter = PacketMounter(grammar, start_symbol)
+        self.packet_mounter = packet_mounter
+
+    def individual_hash(self, individual: DerivationTree) -> int:
+        mount_point = individual.parent
+        return hash((mount_point and mount_point.get_root(), individual))
 
     def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
         packet_selection = list(self.fuzzable_packets)
@@ -33,7 +38,7 @@ class IoPopulationManager(PopulationManager):
         current_idx = (self._prev_packet_idx + 1) % len(packet_selection)
         current_pck = random.choice(packet_selection)
         mounting_option = random.choice(list(current_pck.paths))
-        fuzzed_packet = self.packet_mounter.fuzz_attached(
+        fuzzed_packet = self.packet_mounter.fuzz(
             current_pck, mounting_option, max_nodes
         )
 
@@ -45,4 +50,4 @@ class IoPopulationManager(PopulationManager):
     ) -> tuple[DerivationTree, int]:
         with self.packet_mounter.mounted_context(individual) as mounted_packet:
             fixed, fixes_made = super()._apply_suggestion(mounted_packet, suggestion)
-        return individual if fixed is mounted_packet else fixed, fixes_made
+            return self.packet_mounter.original(fixed), fixes_made

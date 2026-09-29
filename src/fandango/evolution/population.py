@@ -21,25 +21,27 @@ class PopulationManager:
     def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
         return self._grammar.fuzz(self._start_symbol, max_nodes)
 
-    @staticmethod
-    def _generate_population_hashes(
-        current_population: list[DerivationTree],
-    ) -> set[int]:
-        return {hash(ind) for ind in current_population}
+    def individual_hash(self, individual: DerivationTree) -> int:
+        return hash(individual)
 
-    @staticmethod
+    def unique(self, population: list[DerivationTree]) -> list[DerivationTree]:
+        unique_individuals: dict[int, DerivationTree] = {}
+        for ind in population:
+            unique_individuals.setdefault(self.individual_hash(ind), ind)
+        return list(unique_individuals.values())
+
     def add_unique_individual(
+        self,
         population: list[DerivationTree],
         candidate: DerivationTree,
         unique_set: set[int],
     ) -> bool:
-        new_hashes = PopulationManager._generate_population_hashes([candidate])
-        if len(new_hashes.intersection(unique_set)) == 0:
-            # If the candidate has a new hash, we can add it to the population
-            unique_set.update(new_hashes)
-            population.append(candidate)
-            return True
-        return False
+        candidate_hash = self.individual_hash(candidate)
+        if candidate_hash in unique_set:
+            return False
+        unique_set.add(candidate_hash)
+        population.append(candidate)
+        return True
 
     def _is_population_complete(
         self, unique_population: list[DerivationTree], population_size: int
@@ -72,9 +74,7 @@ class PopulationManager:
         :param target_population_size: The target size of the population.
         :return: A generator that yields solutions. The population is modified in place.
         """
-        unique_hashes = PopulationManager._generate_population_hashes(
-            current_population
-        )
+        unique_hashes = {self.individual_hash(ind) for ind in current_population}
         attempts = 0
         max_attempts = (target_population_size - len(current_population)) * 10
 
@@ -97,7 +97,7 @@ class PopulationManager:
                 )
             ).collect()
             if attempts < max_attempts:
-                if PopulationManager.add_unique_individual(
+                if self.add_unique_individual(
                     current_population, candidate, unique_hashes
                 ):
                     yield from found_solution

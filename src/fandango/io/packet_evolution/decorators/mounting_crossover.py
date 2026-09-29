@@ -23,10 +23,10 @@ class MountingCrossover(CrossoverOperator):
             children = self._crossover_operator.crossover(
                 grammar, mounted_parent1, mounted_parent2
             )
-        if children is None:
-            return None
-        child1, child2 = children
-        return (
-            parent1 if child1 is mounted_parent1 else child1,
-            parent2 if child2 is mounted_parent2 else child2,
-        )
+            if children is None:
+                return None
+            child1, child2 = children
+            return (
+                self._packet_mounter.original(child1),
+                self._packet_mounter.original(child2),
+            )

@@ -37,8 +37,6 @@ def _get_first_common_node(
 
 
 class RepetitionBoundsSuggestion(Suggestion):
-    repetition_ids_warned_about: set[str] = set()
-
     def __init__(
         self,
         ending_rep_tree: DerivationTree,
@@ -47,9 +45,7 @@ class RepetitionBoundsSuggestion(Suggestion):
         bound_len: int,
         goal_len: int,
         iter_id: int,
-        repetition_id: str,
-        repetition_node: Repetition,
-        bounds_constraint_str: str,
+        bounds_constraint: "RepetitionBoundsConstraint",
     ):
         """
         Suggestion to fix a failing tree for a repetition bounds constraint.
@@ -60,9 +56,7 @@ class RepetitionBoundsSuggestion(Suggestion):
         :param int bound_len: The length of the repetition bounds.
         :param int goal_len: The goal length of the repetition.
         :param int iter_id: The iteration ID of the repetition.
-        :param str repetition_id: The ID of the repetition.
-        :param Repetition repetition_node: The repetition node.
-        :param str bounds_constraint_str: The constraint's bounds as written in the spec.
+        :param RepetitionBoundsConstraint bounds_constraint: The constraint this suggestion fixes.
         """
         self._ending_rep_tree = ending_rep_tree
         self._starting_rep_value = starting_rep_value
@@ -70,9 +64,9 @@ class RepetitionBoundsSuggestion(Suggestion):
         self._bound_len = bound_len
         self._goal_len = goal_len
         self._iter_id = iter_id
-        self._repetition_id = repetition_id
-        self._repetition_node = repetition_node
-        self._bounds_constraint_str = bounds_constraint_str
+        self._repetition_id = bounds_constraint.repetition_id
+        self._repetition_node = bounds_constraint.repetition_node
+        self._bounds_constraint = bounds_constraint
         self.allow_repetition_full_delete = False
 
     def rec_set_allow_repetition_full_delete(
@@ -136,16 +130,6 @@ class RepetitionBoundsSuggestion(Suggestion):
         )
         return individual.size() + fewest_inserted_nodes > nodes.MAX_SAFE_NODES
 
-    def _warn_about_node_limit(self, nr_to_insert: int) -> None:
-        if self._repetition_id in self.repetition_ids_warned_about:
-            return
-        self.repetition_ids_warned_about.add(self._repetition_id)
-        LOGGER.warning(
-            f"Not repairing {self._bounds_constraint_str}: it needs "
-            f"{nr_to_insert} more repetitions, which would grow the tree past "
-            f"{nodes.MAX_SAFE_NODES} nodes"
-        )
-
     def _delete_repetitions(
         self, *, nr_to_delete: int, rep_iteration: int
     ) -> tuple[DerivationTree, DerivationTree]:
@@ -191,7 +175,7 @@ class RepetitionBoundsSuggestion(Suggestion):
         if self._goal_len > self._bound_len:
             nr_to_insert = self._goal_len - self._bound_len
             if self._insertion_exceeds_node_limit(individual, nr_to_insert):
-                self._warn_about_node_limit(nr_to_insert)
+                self._bounds_constraint.warn_about_node_limit(nr_to_insert)
                 return replacements
             try:
                 replacements.append(
@@ -320,6 +304,17 @@ class RepetitionBoundsConstraint(Constraint):
                 "RepetitionBoundsConstraint requires exactly one or zero searches for expr_data_max bound"
             )
         self.repetition_node = repetition_node
+        self._warned_about_node_limit = False
+
+    def warn_about_node_limit(self, nr_to_insert: int) -> None:
+        if self._warned_about_node_limit:
+            return
+        self._warned_about_node_limit = True
+        LOGGER.warning(
+            f"Not repairing {self.format_as_spec()}: it needs "
+            f"{nr_to_insert} more repetitions, which would grow the tree past "
+            f"{nodes.MAX_SAFE_NODES} nodes"
+        )
 
     def _compute_rep_bound(
         self,
@@ -468,9 +463,7 @@ class RepetitionBoundsConstraint(Constraint):
                             bound_len=bound_len,
                             goal_len=goal_len,
                             iter_id=iter_id,
-                            repetition_id=self.repetition_id,
-                            repetition_node=self.repetition_node,
-                            bounds_constraint_str=self.format_as_spec(),
+                            bounds_constraint=self,
                         )
                     )
                 failing_trees.append(FailingTree(first_iteration.parent, self))
