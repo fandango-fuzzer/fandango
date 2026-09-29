@@ -1,4 +1,3 @@
-import abc
 import random
 from collections import Counter
 from collections.abc import Callable, Generator, Sequence
@@ -22,90 +21,7 @@ from fandango.logger import LOGGER, print_exception
 from fandango.utils import cache_size
 
 
-class AbstractEvaluator(abc.ABC):
-    @property
-    @abc.abstractmethod
-    def expected_fitness(self) -> float: ...
-
-    @property
-    @abc.abstractmethod
-    def stop_criterion_met(self) -> bool: ...
-
-    @property
-    @abc.abstractmethod
-    def uses_diversity_bonus(self) -> bool: ...
-
-    @abc.abstractmethod
-    def evaluate_individual(
-        self, individual: DerivationTree
-    ) -> Generator[
-        DerivationTree, None, tuple[float, list[FailingTree], Suggestion]
-    ]: ...
-
-    @abc.abstractmethod
-    def evaluate_population(
-        self, population: list[DerivationTree]
-    ) -> Generator[
-        DerivationTree,
-        None,
-        list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
-    ]: ...
-
-    @abc.abstractmethod
-    def compute_mutation_pool(
-        self, population: list[DerivationTree]
-    ) -> list[DerivationTree]: ...
-
-    @abc.abstractmethod
-    def compute_diversity_bonus(
-        self,
-        individuals: list[DerivationTree],
-        fill_up: Optional[list[DerivationTree]] = None,
-    ) -> list[float]: ...
-
-    @abc.abstractmethod
-    def get_fitness_check_count(self) -> int: ...
-
-    @abc.abstractmethod
-    def flush_fitness_cache(self) -> None: ...
-
-    @abc.abstractmethod
-    def clear_constraint_caches(self) -> None: ...
-
-    @abc.abstractmethod
-    def reset(self) -> None: ...
-
-    @staticmethod
-    def select_elites(
-        evaluation: list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
-        elitism_rate: float,
-        population_size: int,
-    ) -> list[DerivationTree]:
-        return [
-            x[0]
-            for x in sorted(evaluation, key=lambda x: x[1], reverse=True)[
-                : int(elitism_rate * population_size)
-            ]
-        ]
-
-    @staticmethod
-    def tournament_selection(
-        evaluation: list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
-        tournament_size: int,
-    ) -> tuple[DerivationTree, DerivationTree]:
-        tournament = random.sample(evaluation, k=min(tournament_size, len(evaluation)))
-        tournament.sort(key=lambda x: x[1], reverse=True)
-        parent1 = tournament[0][0]
-        if len(tournament) == 2:
-            parent2 = tournament[1][0] if tournament[1][0] != parent1 else parent1
-        else:
-            parent2 = (
-                tournament[1][0] if tournament[1][0] != parent1 else tournament[2][0]
-            )
-        return parent1, parent2
-
-
-class Evaluator(AbstractEvaluator):
+class Evaluator:
     def __init__(
         self,
         grammar: Grammar,
@@ -400,3 +316,32 @@ class Evaluator(AbstractEvaluator):
                 )
             ]
         return evaluation
+
+    @staticmethod
+    def select_elites(
+        evaluation: list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
+        elitism_rate: float,
+        population_size: int,
+    ) -> list[DerivationTree]:
+        return [
+            x[0]
+            for x in sorted(evaluation, key=lambda x: x[1], reverse=True)[
+                : int(elitism_rate * population_size)
+            ]
+        ]
+
+    @staticmethod
+    def tournament_selection(
+        evaluation: list[tuple[DerivationTree, float, list[FailingTree], Suggestion]],
+        tournament_size: int,
+    ) -> tuple[DerivationTree, DerivationTree]:
+        tournament = random.sample(evaluation, k=min(tournament_size, len(evaluation)))
+        tournament.sort(key=lambda x: x[1], reverse=True)
+        parent1 = tournament[0][0]
+        if len(tournament) == 2:
+            parent2 = tournament[1][0] if tournament[1][0] != parent1 else parent1
+        else:
+            parent2 = (
+                tournament[1][0] if tournament[1][0] != parent1 else tournament[2][0]
+            )
+        return parent1, parent2

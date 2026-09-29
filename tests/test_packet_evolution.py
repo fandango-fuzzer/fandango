@@ -104,9 +104,7 @@ def manager(
 @pytest.fixture
 def evaluator(fandango: Fandango, manager: IoPopulationManager) -> MountingEvaluator:
     algorithm = SimpleGeneticAlgorithm(fandango.grammar, fandango.constraints)
-    algorithm.use_evaluator(partial(MountingEvaluator, manager.packet_mounter))
-    assert isinstance(algorithm.evaluator, MountingEvaluator)
-    return algorithm.evaluator
+    return algorithm.use_evaluator(partial(MountingEvaluator, manager.packet_mounter))
 
 
 def test_history_context_hangs_messages_back_into_history(

@@ -43,10 +43,9 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._start_symbol = NonTerminal("<start>")
         self._packet_algorithm = packet_algorithm
         self.grammar = packet_algorithm.grammar
-        self._population_manager = IoPopulationManager(
-            self.grammar, str(self._start_symbol)
+        self._population_manager = self._packet_algorithm.use_population_manager(
+            IoPopulationManager
         )
-        self._packet_algorithm.population_manager = self._population_manager
         self._packet_algorithm.use_evaluator(
             partial(MountingEvaluator, self._population_manager.packet_mounter)
         )

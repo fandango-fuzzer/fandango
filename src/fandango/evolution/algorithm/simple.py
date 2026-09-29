@@ -4,7 +4,7 @@ import random
 import time
 import warnings
 from collections.abc import Callable, Generator
-from typing import Iterable, Optional
+from typing import Iterable, Optional, TypeVar
 
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
@@ -22,7 +22,7 @@ from fandango.evolution.algorithm.base import (
     LoggerLevel,
 )
 from fandango.evolution.crossover import CrossoverOperator
-from fandango.evolution.evaluation import AbstractEvaluator, Evaluator
+from fandango.evolution.evaluation import Evaluator
 from fandango.evolution.mutation import MutationOperator
 from fandango.evolution.population import PopulationManager
 from fandango.evolution.profiler import Profiler
@@ -36,6 +36,9 @@ from fandango.logger import (
     print_exception,
     visualize_evaluation,
 )
+
+EvaluatorT = TypeVar("EvaluatorT", bound=Evaluator)
+PopulationManagerT = TypeVar("PopulationManagerT", bound=PopulationManager)
 
 
 class SimpleGeneticAlgorithm(GeneticAlgorithm):
@@ -98,10 +101,8 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
         self.stop_after_seconds = stop_after_seconds
 
         # Instantiate managers
-        self.population_manager = PopulationManager(
-            grammar,
-            start_symbol,
-        )
+        self._population_manager_args = (grammar, start_symbol)
+        self.population_manager = PopulationManager(*self._population_manager_args)
         self._evaluator_args = (
             grammar,
             constraints,
@@ -113,7 +114,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
             put,
             put_args,
         )
-        self.evaluator: AbstractEvaluator = Evaluator(*self._evaluator_args)
+        self.evaluator: Evaluator = Evaluator(*self._evaluator_args)
         self.adaptive_tuner = AdaptiveTuner(
             mutation_rate,
             crossover_rate,
@@ -139,11 +140,19 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
         self.mutations_made = 0
         self.time_taken = 0.0
 
-    def use_evaluator(
-        self, evaluator_factory: Callable[..., AbstractEvaluator]
-    ) -> None:
-        """Replaces the evaluator with one the factory builds from the evaluator's arguments."""
-        self.evaluator = evaluator_factory(*self._evaluator_args)
+    def use_evaluator(self, evaluator_factory: Callable[..., EvaluatorT]) -> EvaluatorT:
+        """Replaces the evaluator with one the factory builds from the evaluator's arguments, and returns it."""
+        evaluator = evaluator_factory(*self._evaluator_args)
+        self.evaluator = evaluator
+        return evaluator
+
+    def use_population_manager(
+        self, population_manager_factory: Callable[..., PopulationManagerT]
+    ) -> PopulationManagerT:
+        """Replaces the population manager with one the factory builds from the population manager's arguments, and returns it."""
+        population_manager = population_manager_factory(*self._population_manager_args)
+        self.population_manager = population_manager
+        return population_manager
 
     def _parse_and_deduplicate(
         self, population: Optional[list[DerivationTree | str]]
