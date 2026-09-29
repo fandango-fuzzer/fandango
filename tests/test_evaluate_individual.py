@@ -333,4 +333,3 @@ def test_weighted_fitness_rounding():
     assert fitness == 1.0
     assert failing_trees == []
     assert solutions == [individual]
-
