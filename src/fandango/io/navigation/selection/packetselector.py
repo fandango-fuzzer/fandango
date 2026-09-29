@@ -153,7 +153,7 @@ class PacketSelector:
     def set_coverage_goal(self, goal: CoverageGoal) -> None:
         self._coverage_tracker.set_coverage_goal(goal)
 
-    def is_failed_forecast(self):
+    def is_failed_forecast(self) -> bool:
         return len(self.get_next_parties()) == 0 and not self.is_complete()
 
     def is_protocol_run_complete(self) -> bool:
