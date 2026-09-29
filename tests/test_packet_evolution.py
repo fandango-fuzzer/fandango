@@ -154,10 +154,10 @@ def test_fix_uses_failing_trees_cached_from_equal_packet(
     evaluated_packet = attached_note(manager, "B\n", new_exchange)
     list(evaluator.evaluate_individual(evaluated_packet))
     equal_packet = attached_note(manager, "B\n", new_exchange)
-    _solutions, (_fitness, failing_trees, suggestion) = GeneratorWithReturn(
+    _, (_fitness, failing_trees, suggestion) = GeneratorWithReturn(
         evaluator.evaluate_individual(equal_packet)
     ).collect()
-    _solutions, (fixed_packet, _fixes_made) = GeneratorWithReturn(
+    _, (fixed_packet, _fixes_made) = GeneratorWithReturn(
         manager.fix_individual(
             equal_packet, failing_trees, suggestion, evaluator.evaluate_individual
         )

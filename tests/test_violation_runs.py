@@ -1,5 +1,6 @@
 #!/usr/bin/env pytest
 
+import logging
 import random
 import threading
 
@@ -18,16 +19,16 @@ with open(RESOURCES_ROOT / "violation_io.fan") as spec_file:
 def run_generate(
     replies: dict[str, str], spec: str = SPEC, remote_response_timeout: float = 15.0
 ):
-    """Runs generate() to its end and returns the algorithm and how it ended."""
     ended: list[str] = []
     algorithms = []
 
     def run() -> None:
-        # FandangoIO is bound to the context that builds the parties, so
-        # everything happens on this thread.
         random.seed(1)
         fandango = Fandango(
-            spec + f"\nREPLIES = {replies!r}\n", use_stdlib=False, use_cache=False
+            spec + f"\nREPLIES = {replies!r}\n",
+            use_stdlib=False,
+            use_cache=False,
+            logging_level=logging.ERROR,
         )
         fandango.init_population(mode=FuzzingMode.IO)
         algorithm = fandango.fandango
@@ -57,8 +58,6 @@ def test_all_runs_failing() -> None:
 
 
 def test_syntax_violation() -> None:
-    """Only HELLO fails. The guide target of a failed run must not carry
-    over, or Fandango keeps repeating it and never reaches full coverage."""
     algorithm, ended = run_generate({"PING;": "PONG;", "BYE;": "OK;"})
 
     assert ended == "returned"
