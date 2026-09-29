@@ -1,12 +1,10 @@
 import random
 from collections.abc import Iterator
-from functools import partial
 
 import pytest
 
 from fandango.api import Fandango
 from fandango.evolution import GeneratorWithReturn
-from fandango.evolution.algorithm.simple import SimpleGeneticAlgorithm
 from fandango.evolution.crossover import SimpleSubtreeCrossover
 from fandango.evolution.mutation import SimpleMutation
 from fandango.io.navigation.forecasting.forecasting_result import (
@@ -105,8 +103,14 @@ def manager(
 
 @pytest.fixture
 def evaluator(fandango: Fandango, manager: IoPopulationManager) -> MountingEvaluator:
-    algorithm = SimpleGeneticAlgorithm(fandango.grammar, fandango.constraints)
-    return algorithm.use_evaluator(partial(MountingEvaluator, manager.packet_mounter))
+    return MountingEvaluator(
+        packet_mounter=manager.packet_mounter,
+        grammar=fandango.grammar,
+        constraints=fandango.constraints,
+        expected_fitness=1.0,
+        diversity_k=5,
+        diversity_weight=1.0,
+    )
 
 
 def test_history_context_hangs_messages_back_into_history(
