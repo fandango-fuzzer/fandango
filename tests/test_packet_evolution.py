@@ -1,5 +1,6 @@
 import random
 from collections.abc import Iterator
+from functools import partial
 
 import pytest
 
@@ -102,10 +103,10 @@ def manager(
 
 @pytest.fixture
 def evaluator(fandango: Fandango, manager: IoPopulationManager) -> MountingEvaluator:
-    return MountingEvaluator(
-        SimpleGeneticAlgorithm(fandango.grammar, fandango.constraints).evaluator,
-        manager.packet_mounter,
-    )
+    algorithm = SimpleGeneticAlgorithm(fandango.grammar, fandango.constraints)
+    algorithm.use_evaluator(partial(MountingEvaluator, manager.packet_mounter))
+    assert isinstance(algorithm.evaluator, MountingEvaluator)
+    return algorithm.evaluator
 
 
 def test_history_context_hangs_messages_back_into_history(

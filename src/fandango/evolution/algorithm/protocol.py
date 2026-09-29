@@ -1,5 +1,6 @@
 import random
 from collections.abc import Generator
+from functools import partial
 from typing import Optional
 
 from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
@@ -46,9 +47,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             self.grammar, str(self._start_symbol)
         )
         self._packet_algorithm.population_manager = self._population_manager
-        self._packet_algorithm.evaluator = MountingEvaluator(
-            self._packet_algorithm.evaluator,
-            self._population_manager.packet_mounter,
+        self._packet_algorithm.use_evaluator(
+            partial(MountingEvaluator, self._population_manager.packet_mounter)
         )
         self._packet_algorithm.crossover_operator = MountingCrossover(
             self._packet_algorithm.crossover_operator,

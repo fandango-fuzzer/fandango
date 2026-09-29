@@ -102,7 +102,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
             grammar,
             start_symbol,
         )
-        self.evaluator: AbstractEvaluator = Evaluator(
+        self._evaluator_args = (
             grammar,
             constraints,
             expected_fitness,
@@ -113,6 +113,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
             put,
             put_args,
         )
+        self.evaluator: AbstractEvaluator = Evaluator(*self._evaluator_args)
         self.adaptive_tuner = AdaptiveTuner(
             mutation_rate,
             crossover_rate,
@@ -137,6 +138,12 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
         self.fixes_made = 0
         self.mutations_made = 0
         self.time_taken = 0.0
+
+    def use_evaluator(
+        self, evaluator_factory: Callable[..., AbstractEvaluator]
+    ) -> None:
+        """Replaces the evaluator with one the factory builds from the evaluator's arguments."""
+        self.evaluator = evaluator_factory(*self._evaluator_args)
 
     def _parse_and_deduplicate(
         self, population: Optional[list[DerivationTree | str]]
