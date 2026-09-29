@@ -13,6 +13,7 @@ from fandango.language.tree import DerivationTree
 class IoPopulationManager(PopulationManager):
     def __init__(
         self,
+        packet_mounter: PacketMounter,
         grammar: Grammar,
         start_symbol: str,
     ):
@@ -21,7 +22,7 @@ class IoPopulationManager(PopulationManager):
         self.fuzzable_packets: list[ForecastingPacket] = []
         self.fallback_packets: list[ForecastingPacket] = []
         self.allow_fallback_packets = False
-        self.packet_mounter = PacketMounter(grammar, start_symbol)
+        self.packet_mounter = packet_mounter
 
     def individual_hash(self, individual: DerivationTree) -> int:
         mount_point = individual.parent

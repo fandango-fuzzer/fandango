@@ -96,7 +96,9 @@ def last_exchange(history: DerivationTree) -> MountingPath:
 def manager(
     fandango: Fandango, history: DerivationTree
 ) -> Iterator[IoPopulationManager]:
-    manager = IoPopulationManager(fandango.grammar, str(START))
+    manager = IoPopulationManager(
+        PacketMounter(fandango.grammar, START), fandango.grammar, str(START)
+    )
     with manager.packet_mounter.history_context(history):
         yield manager
 

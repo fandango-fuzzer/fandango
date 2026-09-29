@@ -22,7 +22,7 @@ from fandango.io.packet_evolution.decorators.mounting_evaluator import (
     MountingEvaluator,
 )
 from fandango.io.packet_evolution.decorators.mounting_mutation import MountingMutation
-from fandango.io.packet_evolution.packet_mounter import MessageHolder
+from fandango.io.packet_evolution.packet_mounter import MessageHolder, PacketMounter
 from fandango.io.packetparser import parse_next_remote_packet
 from fandango.io.violation import FandangoRemoteViolation, RemoteViolationType
 from fandango.language.grammar import FuzzingMode
@@ -43,19 +43,22 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._start_symbol = NonTerminal("<start>")
         self._packet_algorithm = packet_algorithm
         self.grammar = packet_algorithm.grammar
+        self._packet_mounter = PacketMounter(
+            self.grammar, self._packet_algorithm.start_symbol
+        )
         self._population_manager = self._packet_algorithm.use_population_manager(
-            IoPopulationManager
+            partial(IoPopulationManager, self._packet_mounter)
         )
         self._packet_algorithm.use_evaluator(
-            partial(MountingEvaluator, self._population_manager.packet_mounter)
+            partial(MountingEvaluator, self._packet_mounter)
         )
         self._packet_algorithm.crossover_operator = MountingCrossover(
             self._packet_algorithm.crossover_operator,
-            self._population_manager.packet_mounter,
+            self._packet_mounter,
         )
         self._packet_algorithm.mutation_method = MountingMutation(
             self._packet_algorithm.mutation_method,
-            self._population_manager.packet_mounter,
+            self._packet_mounter,
         )
         self._protocol_tree: DerivationTree = DerivationTree(self._start_symbol)
         self._remote_response_timeout = remote_response_timeout
@@ -141,7 +144,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         if not self._io_instance.wait_until(self._io_instance.received_msg, timeout):
             raise self._gen_timeout_violation()
 
-        packet_mounter = self._population_manager.packet_mounter
+        packet_mounter = self._packet_mounter
         packet_sender = None
         packet_recipient = None
         packet_tree = None
@@ -202,9 +205,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         raise FandangoParseError("Remote response does not match constraints")
 
     def _filter_by_coverage(self, packet: DerivationTree) -> Optional[DerivationTree]:
-        with self._population_manager.packet_mounter.mounted_context(
-            packet
-        ) as mounted_packet:
+        with self._packet_mounter.mounted_context(packet) as mounted_packet:
             if self._packet_coverage_filter.filter(mounted_packet) is None:
                 return None
             return packet
@@ -289,7 +290,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         max_generations: Optional[int] = None,
         mode: FuzzingMode = FuzzingMode.COMPLETE,
     ) -> Generator[DerivationTree, None, None]:
-        packet_mounter = self._population_manager.packet_mounter
+        packet_mounter = self._packet_mounter
         iteration = 0
         while True:
             iteration += 1
