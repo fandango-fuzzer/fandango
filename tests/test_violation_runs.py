@@ -38,7 +38,7 @@ def run_generate(
             for _ in algorithm.generate():
                 pass
             ended.append("returned")
-        except BaseException as error:
+        except Exception as error:
             ended.append(type(error).__name__)
 
     runner = threading.Thread(target=run, daemon=True)
