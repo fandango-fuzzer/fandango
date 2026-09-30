@@ -82,18 +82,18 @@ class IoEvaluator(Evaluator):
             scoped[self._constraint_scopes.scope(packet_symbol, constraint)].append(
                 constraint
             )
-        message_constraints = scoped[ConstraintScope.INSIDE]
-        session_constraints = scoped[ConstraintScope.CROSSING]
+        inside_constraints = scoped[ConstraintScope.INSIDE]
+        crossing_constraints = scoped[ConstraintScope.CROSSING]
         unrelated_constraints = scoped[ConstraintScope.UNRELATED]
         message_fitness, message_failing, message_suggestion = (
-            super()._evaluate_constraints(self._mounted_packet, message_constraints)
+            super()._evaluate_constraints(self._mounted_packet, inside_constraints)
         )
         session_fitness, session_failing, session_suggestion = (
-            super()._evaluate_constraints(individual, session_constraints)
+            super()._evaluate_constraints(individual, crossing_constraints)
         )
         fitness = (
-            message_fitness * len(message_constraints)
-            + session_fitness * len(session_constraints)
+            message_fitness * len(inside_constraints)
+            + session_fitness * len(crossing_constraints)
             + len(unrelated_constraints)
         ) / len(constraints)
         return (
