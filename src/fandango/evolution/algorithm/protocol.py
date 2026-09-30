@@ -283,10 +283,10 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 f"Couldn't find solution for any packet: {nonterminals_str}"
             ) from None
 
-    def _is_attainable_coverage_complete(self) -> bool:
+    def _is_derivable_coverage_complete(self) -> bool:
         if self.coverage_goal == CoverageGoal.RANDOM:
             return False
-        return self._packet_selector.is_attainable_coverage_complete()
+        return self._packet_selector.is_derivable_coverage_complete()
 
     def _start_new_run(self) -> None:
         log_guidance_hint("Starting new protocol run.")
@@ -327,7 +327,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 self._packet_selector.add_completed_tree(final_tree)
                 self._packet_coverage_filter.add_completed_tree(final_tree)
                 yield final_tree
-                if self._is_attainable_coverage_complete():
+                if self._is_derivable_coverage_complete():
                     log_guidance_hint(
                         "Attainable coverage reached, stopping evolution."
                     )
@@ -380,7 +380,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                         f"Discarding remote response that could not be handled. "
                         f"Recording violation: {exc}"
                     )
-                    if self._is_attainable_coverage_complete():
+                    if self._is_derivable_coverage_complete():
                         log_guidance_hint(
                             "Attainable coverage reached, stopping evolution."
                         )
