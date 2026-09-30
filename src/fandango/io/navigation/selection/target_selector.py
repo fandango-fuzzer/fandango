@@ -49,10 +49,18 @@ class TargetSelector:
         uncovered_paths: list[KPath],
         is_derivable: Callable[[KPath], bool],
     ) -> bool:
-        trimmed_paths = self._trim_to_state_symbols(uncovered_paths)
-        return len(trimmed_paths) == len(uncovered_paths) and not any(
-            map(is_derivable, trimmed_paths)
+        return not any(
+            self._is_derivable_path(path, is_derivable) for path in uncovered_paths
         )
+
+    def _is_derivable_path(
+        self, path: KPath, is_derivable: Callable[[KPath], bool]
+    ) -> bool:
+        """True if the path trimmed to the state grammar, or else a message producing it, is derivable."""
+        targets = self._trim_to_state_symbols([path]) or [
+            (message,) for message in self._model.messages_producing(path[0])
+        ]
+        return any(map(is_derivable, targets))
 
     def _trim_to_state_symbols(self, uncovered_paths: list[KPath]) -> list[KPath]:
         """Trim each path back to its last state-grammar symbol; drop empties."""
