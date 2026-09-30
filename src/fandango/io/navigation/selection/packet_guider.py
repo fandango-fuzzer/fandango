@@ -115,8 +115,7 @@ class PacketGuider:
         self._prev_completed_count = completed_count
 
         new_msgs = self._new_msgs(is_new_tree)
-        for msg in new_msgs:
-            self._observe_seen_step(msg)
+        self._observe_messages(new_msgs)
         deviation = self._guide_path.follow(new_msgs)
         if deviation is not None:
             self._count_refused_step(deviation)
@@ -257,15 +256,19 @@ class PacketGuider:
         self._build_navigator_around_blocked_steps()
 
     def _count_refused_step(self, deviation: Deviation) -> None:
-        planned_packet, msg, step = deviation
-        if planned_packet is None or step is None:
+        planned, msg = deviation
+        if planned is None or planned.step is None:
             return
-        if msg.sender != planned_packet.sender or not self._is_external_party(
+        # If someone else sent the message we dont penalize the expected party.
+        if msg.sender != planned.packet.sender or not self._is_external_party(
             msg.sender
         ):
             return
-        assert msg.sender is not None
-        self._step_refusals.count_refusal(step, msg.sender)
+        sender = msg.sender
+        step = planned.step
+        assert sender is not None
+        assert step is not None
+        self._step_refusals.count_refusal(step, sender)
         self._build_navigator_around_blocked_steps()
 
     def _remember_messages(self) -> None:
