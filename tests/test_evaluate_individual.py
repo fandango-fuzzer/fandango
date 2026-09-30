@@ -1,4 +1,3 @@
-import logging
 from itertools import islice
 
 import pytest
@@ -9,7 +8,6 @@ from fandango.evolution.algorithm import DefaultAlgorithm
 from fandango.evolution.evaluation import Evaluator
 from fandango.language.parse.parse import parse
 from fandango.language.symbols.non_terminal import NonTerminal
-from fandango.logger import LOGGER
 from tests.utils import RESOURCES_ROOT
 
 

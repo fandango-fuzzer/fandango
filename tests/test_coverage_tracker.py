@@ -48,7 +48,7 @@ def bruteforce_uncovered(selector, trees):
 
 
 def bruteforce_scores(selector, trees):
-    messages_by_nt = {}
+    messages_by_nt: dict[NonTerminal, list[DerivationTree]] = {}
     for tree in trees:
         for symbol, messages in CoverageTracker._messages_grouped_by(
             tree, lambda packet_type: packet_type.symbol

@@ -4,7 +4,7 @@ import random
 import time
 import warnings
 from collections.abc import Callable, Generator
-from typing import Iterable, Optional, TypeVar
+from typing import Iterable, Optional
 
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue

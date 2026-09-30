@@ -1,6 +1,5 @@
 import random
 from collections.abc import Generator
-from functools import partial
 from typing import Optional
 
 from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError

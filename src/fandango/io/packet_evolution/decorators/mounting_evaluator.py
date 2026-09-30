@@ -1,5 +1,5 @@
 from collections.abc import Generator
-from typing import Any, Optional, Callable
+from typing import Callable, Optional
 
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.failing_tree import FailingTree, Suggestion
