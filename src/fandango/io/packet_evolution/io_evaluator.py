@@ -10,7 +10,10 @@ from fandango.constraints.failing_tree import (
 from fandango.constraints.soft import SoftValue
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.evaluation import Evaluator
-from fandango.io.constraints.constraint_scope import ConstraintScope, ConstraintScopeAnalyzer
+from fandango.io.constraints.constraint_scope import (
+    ConstraintScope,
+    ConstraintScopeAnalyzer,
+)
 from fandango.io.packet_evolution.packet_mounter import PacketMounter
 from fandango.language import Grammar
 from fandango.language.symbols import NonTerminal
