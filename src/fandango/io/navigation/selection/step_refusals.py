@@ -28,7 +28,7 @@ class StepRefusals:
         del self._blocked_count_by_step[step]
         if step in self._blocked_until_session_by_step:
             log_guidance_hint(
-                f"{party} took {step[0]} -> {step[1]}. Routing through it again."
+                f"{party} took {step.parent} -> {step.packet}. Routing through it again."
             )
             self._unblock(step)
 
@@ -44,7 +44,7 @@ class StepRefusals:
                 self._blocked_count_by_step[step] - 1
             )
             log_guidance_hint(
-                f"{party} refused {step[0]} -> {step[1]} {self.REFUSAL_LIMIT} times in a row. "
+                f"{party} refused {step.parent} -> {step.packet} {self.REFUSAL_LIMIT} times in a row. "
                 f"Routing around it for {sessions} sessions."
             )
             self._blocked_until_session_by_step[step] = self._session + sessions
@@ -54,7 +54,7 @@ class StepRefusals:
         self._session += 1
         for step, until_session in list(self._blocked_until_session_by_step.items()):
             if until_session <= self._session:
-                log_guidance_hint(f"Trying {step[0]} -> {step[1]} again.")
+                log_guidance_hint(f"Trying {step.parent} -> {step.packet} again.")
                 self._unblock(step)
                 self._refusals_in_a_row_by_step[step] = self.REFUSAL_LIMIT - 1
 
