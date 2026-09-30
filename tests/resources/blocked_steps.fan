@@ -1,8 +1,12 @@
 # <ok> after <a> is in the grammar, but the server always answers <a> with <err>.
 # <after_ok> can only be reached behind that <ok>, so the guider keeps aiming for it.
-<start> ::= <Fuzzer:Extern:hello> <rule> <Fuzzer:Extern:quit>
+# <note> is in the grammar, but the server always answers <bye> with <done>.
+# Blocking <note> leaves <notes> deriving nothing, so <closing> gets an Option around <done>.
+<start> ::= <Fuzzer:Extern:hello> <rule> <closing> <Fuzzer:Extern:quit>
 <rule> ::= (<Fuzzer:Extern:a> <Extern:Fuzzer:ok> <after_ok>) | (<Fuzzer:Extern:a> <Extern:Fuzzer:err>) | (<Fuzzer:Extern:c> <Extern:Fuzzer:ok>)
-<after_ok> ::= <Fuzzer:Extern:x>
+<after_ok> ::= <Fuzzer:Extern:x>+
+<closing> ::= <Fuzzer:Extern:bye> (<notes> | <Extern:Fuzzer:done>)
+<notes> ::= <Extern:Fuzzer:note>*
 <hello> ::= 'hello\n'
 <quit> ::= 'quit\n'
 <a> ::= 'a\n'
@@ -10,6 +14,9 @@
 <x> ::= 'x\n'
 <ok> ::= 'ok\n'
 <err> ::= 'err\n'
+<bye> ::= 'bye\n'
+<done> ::= 'done\n'
+<note> ::= 'note\n'
 
 
 class Fuzzer(FandangoParty):
@@ -21,6 +28,8 @@ class Fuzzer(FandangoParty):
             self.receive("err\n", "Extern")
         elif str(message) == "c\n":
             self.receive("ok\n", "Extern")
+        elif str(message) == "bye\n":
+            self.receive("done\n", "Extern")
 
     def start(self):
         pass
