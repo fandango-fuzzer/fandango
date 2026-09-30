@@ -118,7 +118,7 @@ class ConstraintScopeAnalyzer:
             NonTerminal, tuple[set[NonTerminal], set[NonTerminal]]
         ] = {}
 
-    def scope(
+    def analyse_scope(
         self, non_terminal: NonTerminal, constraint: Constraint
     ) -> ConstraintScope:
         """Returns where the constraint reads the tree, relative to messages of the type."""
