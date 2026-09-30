@@ -11,12 +11,10 @@ from fandango.io.navigation.forecasting.forecasting_result import (
     ForecastingPacket,
     MountingPath,
 )
-from fandango.io.packet_evolution.decorators.io_population_manager import (
-    IoPopulationManager,
-)
 from fandango.io.packet_evolution.decorators.mounting_crossover import MountingCrossover
-from fandango.io.packet_evolution.decorators.mounting_evaluator import IoEvaluator
 from fandango.io.packet_evolution.decorators.mounting_mutation import MountingMutation
+from fandango.io.packet_evolution.io_evaluator import IoEvaluator
+from fandango.io.packet_evolution.io_population_manager import IoPopulationManager
 from fandango.io.packet_evolution.packet_mounter import PacketMounter
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode

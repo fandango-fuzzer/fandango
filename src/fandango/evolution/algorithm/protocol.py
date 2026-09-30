@@ -14,10 +14,8 @@ from fandango.io.navigation.selection.packetselector import PacketSelector
 from fandango.io.packet_evolution.decorators.mounting_crossover import (
     MountingCrossover,
 )
-from fandango.io.packet_evolution.decorators.mounting_evaluator import (
-    IoEvaluator,
-)
 from fandango.io.packet_evolution.decorators.mounting_mutation import MountingMutation
+from fandango.io.packet_evolution.io_evaluator import IoEvaluator
 from fandango.io.packet_evolution.io_population_manager import (
     IoPopulationManager,
 )
