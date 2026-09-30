@@ -226,3 +226,43 @@ def test_refill_keeps_equal_packets_at_every_mount_point(
     list(manager.refill_population(population, evaluator.evaluate_individual, 10, 2))
     assert [str(packet) for packet in population] == ["A\n", "A\n"]
     assert population[0].parent is not population[1].parent
+
+
+def test_constraint_inside_message_ignores_earlier_messages(evaluator):
+    history = DerivationTree(
+        START,
+        [
+            DerivationTree(
+                EXCHANGE,
+                [
+                    note_tree("Fuzzer", "Extern", "A\n"),
+                    # Would fail constraint
+                    note_tree("Extern", "Fuzzer", "B\n"),
+                ],
+            )
+        ],
+    )
+    mounter = evaluator._packet_mounter
+    with mounter.history_context(history):
+        packet = note_tree("Fuzzer", "Extern", "A\n")
+        mounter.attach(
+            packet,
+            MountingPath(history, ((START, False), (EXCHANGE, True), (NOTE, False))),
+        )
+        _solutions, (fitness, failing_trees, _suggestion) = GeneratorWithReturn(
+            evaluator.evaluate_individual(packet)
+        ).collect()
+    assert fitness == 1.0
+    assert failing_trees == []
+
+
+def test_constraint_inside_message_fails_on_the_packet(
+    manager, evaluator, new_exchange
+):
+    # B not allowed in grammar
+    packet = attached_note(manager, "B\n", new_exchange)
+    _solutions, (fitness, failing_trees, _suggestion) = GeneratorWithReturn(
+        evaluator.evaluate_individual(packet)
+    ).collect()
+    assert fitness < 1.0
+    assert [str(failing.tree) for failing in failing_trees] == ["B\n"]
