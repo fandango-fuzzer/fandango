@@ -78,6 +78,10 @@ class PacketGuider:
         self._prev_session_msgs = []
         self._session_covered_k_paths.clear()
 
+    def observe_run_end(self, history_tree: DerivationTree) -> None:
+        self._history_tree = history_tree
+        self._observe_messages(self._new_msgs(False))
+
     def is_derivable_coverage_complete(self, uncovered_paths: list[KPath]) -> bool:
         return self._target_selector.is_every_path_underivable(
             uncovered_paths, self._navigator.is_derivable

@@ -36,7 +36,7 @@ class PacketSelector:
         self._forecast = ForecastView(grammar, io_instance, lambda: self.history_tree)
         self._target_selector = TargetSelector(self._model)
         self._step_refusals = StepRefusals()
-        self._guide = PacketGuider(
+        self._guider = PacketGuider(
             self._model,
             self._forecast,
             PacketNavigator(grammar, self.start_symbol),
@@ -73,6 +73,7 @@ class PacketSelector:
 
     def add_completed_tree(self, tree: DerivationTree) -> None:
         """Fold a finished protocol run into the coverage basis."""
+        self._guider.observe_run_end(self.history_tree)
         self.record_coverage(tree)
         self._last_completed_tree = tree
         self._completed_count += 1
@@ -81,7 +82,7 @@ class PacketSelector:
     def abort_run(self, tree: DerivationTree) -> None:
         """Add `tree` to the current tracked grammar coverage and abort the current guide."""
         self.record_coverage(tree)
-        self._guide.abort_run()
+        self._guider.abort_run()
         self._step_refusals.signal_session_end()
 
     def record_coverage(self, tree: DerivationTree) -> None:
@@ -91,7 +92,7 @@ class PacketSelector:
         self._coverage_tracker.reset()
         self._target_selector.reset()
         self._step_refusals.reset()
-        self._guide.reset()
+        self._guider.reset()
         self.history_tree = DerivationTree(NonTerminal("<start>"))
         self._next_packets = None
         self._last_completed_tree = None
@@ -108,9 +109,9 @@ class PacketSelector:
     def _ensure_next_packets(self) -> list[ForecastingPacket]:
         if self._next_packets is None:
             if self._coverage_tracker.coverage_goal == CoverageGoal.RANDOM:
-                self._next_packets = self._guide.find_packets()
+                self._next_packets = self._guider.find_packets()
                 return self._next_packets
-            self._next_packets = self._guide.select_next_packet(
+            self._next_packets = self._guider.select_next_packet(
                 self.history_tree,
                 self._last_completed_tree,
                 self._completed_count,
@@ -125,7 +126,7 @@ class PacketSelector:
 
     def is_guide_to_end(self) -> bool:
         self._ensure_next_packets()
-        return self._guide.is_guide_to_end
+        return self._guider.is_guide_to_end
 
     def is_complete(self) -> bool:
         return self._forecast.is_complete()
@@ -152,17 +153,17 @@ class PacketSelector:
         return self._coverage_tracker.coverage_percent()
 
     def is_derivable_coverage_complete(self) -> bool:
-        return self._guide.is_derivable_coverage_complete(
+        return self._guider.is_derivable_coverage_complete(
             self._coverage_tracker.uncovered_paths()
         )
 
     @property
     def max_messages_per_tree(self) -> int:
-        return self._guide.max_messages_per_tree
+        return self._guider.max_messages_per_tree
 
     @max_messages_per_tree.setter
     def max_messages_per_tree(self, count: int) -> None:
-        self._guide.max_messages_per_tree = count
+        self._guider.max_messages_per_tree = count
 
     def set_coverage_goal(self, goal: CoverageGoal) -> None:
         self._coverage_tracker.set_coverage_goal(goal)
