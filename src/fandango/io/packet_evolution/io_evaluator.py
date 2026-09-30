@@ -79,9 +79,9 @@ class IoEvaluator(Evaluator):
         packet_symbol = self._mounted_packet.symbol
         assert isinstance(packet_symbol, NonTerminal)
         for constraint in constraints:
-            scoped[self._constraint_scopes.analyse_scope(packet_symbol, constraint)].append(
-                constraint
-            )
+            scoped[
+                self._constraint_scopes.analyse_scope(packet_symbol, constraint)
+            ].append(constraint)
         inside_constraints = scoped[ConstraintScope.INSIDE]
         crossing_constraints = scoped[ConstraintScope.CROSSING]
         unrelated_constraints = scoped[ConstraintScope.UNRELATED]
