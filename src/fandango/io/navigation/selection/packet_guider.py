@@ -11,10 +11,9 @@ from fandango.io.navigation.selection.guide_path_tracker import (
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.step_refusals import StepRefusals
 from fandango.io.navigation.selection.target_selector import TargetSelector
-from fandango.io.navigation.step import to_packet_step
 from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols import NonTerminal, Symbol
-from fandango.language.tree import DerivationTree
+from fandango.language.tree import DerivationTree, index_by_reference
 from fandango.logger import log_guidance_hint
 
 
