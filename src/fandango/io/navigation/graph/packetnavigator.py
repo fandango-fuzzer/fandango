@@ -1,5 +1,5 @@
 from collections.abc import Generator
-from typing import NamedTuple, Optional
+from typing import Optional
 
 from fandango.io.navigation.graph.blocked_step_pruner import BlockedStepPruner
 from fandango.io.navigation.graph.grammarnavigator import GrammarNavigator
@@ -8,6 +8,7 @@ from fandango.io.navigation.graph.packetiterativeparser import (
 )
 from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConverter
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
+from fandango.io.navigation.route import PlannedPacket, Route
 from fandango.io.navigation.step import Step
 from fandango.language import DerivationTree, Grammar
 from fandango.language.grammar.grammar import KPath
@@ -17,12 +18,6 @@ from fandango.language.grammar.node_visitors.grammar_graph_converter import (
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.symbols.non_terminal import NonTerminal
-
-
-class Route(NamedTuple):
-    """A route and the steps that produce each packet along its path."""
-    symbols: list[Optional[PacketNonTerminal | NonTerminal]]
-    producing_steps: list[Optional[Step]]
 
 
 class PacketNavigator(GrammarNavigator):
@@ -121,21 +116,14 @@ class PacketNavigator(GrammarNavigator):
             current = current.parent
         return Step.of_path(path[::-1])
 
-    def _to_symbols(
-        self,
-        path: list[Optional[GrammarGraphNode]],
-    ) -> list[Optional[PacketNonTerminal | NonTerminal]]:
-        return self._to_route(path).symbols
-
     def _to_route(self, path: list[Optional[GrammarGraphNode]]) -> Route:
         path = list(
             filter(lambda n: n is None or isinstance(n.node, NonTerminalNode), path)
         )
-        route = Route([], [])
+        route: Route = []
         for n in path:
             if n is None:
-                route.symbols.append(None)
-                route.producing_steps.append(None)
+                route.append(None)
                 continue
             assert isinstance(n.node, NonTerminalNode)
             if n.node.sender is not None:
@@ -144,11 +132,9 @@ class PacketNavigator(GrammarNavigator):
                     n.node.recipient,
                     StateGrammarConverter.to_non_terminal(n.node.symbol),
                 )
-                route.symbols.append(packet)
-                route.producing_steps.append(self._step_of_graph_node(n))
+                route.append(PlannedPacket(packet, self._step_of_graph_node(n)))
             else:
-                route.symbols.append(NonTerminal(n.node.symbol.name()))
-                route.producing_steps.append(None)
+                route.append(NonTerminal(n.node.symbol.name()))
         return route
 
     def _includes_k_paths(
@@ -205,7 +191,7 @@ class PacketNavigator(GrammarNavigator):
             if path is None:
                 continue
             routes.append(self._to_route(path))
-        routes.sort(key=lambda route: len(route.symbols))
+        routes.sort(key=len)
         if len(routes) == 0:
             return None
         return routes[0]
@@ -232,17 +218,6 @@ class PacketNavigator(GrammarNavigator):
                 search_symbols.append(symbol)
         return tuple(search_symbols)
 
-    def astar_tree_symbols(
-        self,
-        *,
-        tree: DerivationTree,
-        destination_k_path: KPath,
-    ) -> Optional[list[PacketNonTerminal | NonTerminal | None]]:
-        path = self.astar_tree(tree=tree, destination_k_path=destination_k_path)
-        if path is None:
-            return None
-        return self._to_symbols(path)
-
     def astar_search_end_including_k_paths(
         self,
         tree: DerivationTree,
@@ -256,11 +231,11 @@ class PacketNavigator(GrammarNavigator):
         )
         for suggested_tree, is_complete in found_trees:
             if is_complete:
-                return Route([], [])
+                return []
             node_path = super().astar_search_end(suggested_tree)
             routes.append(self._to_route(list(node_path)))
 
         if len(routes) == 0:
             return None
-        routes.sort(key=lambda route: len(route.symbols))
+        routes.sort(key=len)
         return routes[0]

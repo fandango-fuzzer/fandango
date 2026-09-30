@@ -9,6 +9,7 @@ class PlannedPacket(NamedTuple):
     packet: PacketNonTerminal
     step: Optional[Step]
 
+
 RouteSymbol = NonTerminal | PlannedPacket | None
 
 Route = list[RouteSymbol]
