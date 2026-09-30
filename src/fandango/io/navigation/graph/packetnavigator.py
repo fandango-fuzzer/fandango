@@ -1,5 +1,5 @@
 from collections.abc import Generator
-from typing import Optional
+from typing import NamedTuple, Optional
 
 from fandango.io.navigation.graph.blocked_step_pruner import BlockedStepPruner
 from fandango.io.navigation.graph.grammarnavigator import GrammarNavigator
@@ -17,6 +17,12 @@ from fandango.language.grammar.node_visitors.grammar_graph_converter import (
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.symbols.non_terminal import NonTerminal
+
+
+class Route(NamedTuple):
+    """A route and the steps that produce each packet along its path."""
+    symbols: list[Optional[PacketNonTerminal | NonTerminal]]
+    producing_steps: list[Optional[Step]]
 
 
 class PacketNavigator(GrammarNavigator):
@@ -103,29 +109,47 @@ class PacketNavigator(GrammarNavigator):
                 yield suggested_tree, is_complete
 
     @staticmethod
+    def _step_of_graph_node(graph_node: GrammarGraphNode) -> Optional[Step]:
+        """The step that produces the packet of the graph node."""
+        path: list[NonTerminal] = []
+        current: Optional[GrammarGraphNode] = graph_node
+        while current is not None:
+            if not BlockedStepPruner.is_made_up(current.node):
+                symbol = current.node.to_symbol()
+                assert isinstance(symbol, NonTerminal)
+                path.append(symbol)
+            current = current.parent
+        return Step.of_path(path[::-1])
+
     def _to_symbols(
+        self,
         path: list[Optional[GrammarGraphNode]],
     ) -> list[Optional[PacketNonTerminal | NonTerminal]]:
+        return self._to_route(path).symbols
+
+    def _to_route(self, path: list[Optional[GrammarGraphNode]]) -> Route:
         path = list(
             filter(lambda n: n is None or isinstance(n.node, NonTerminalNode), path)
         )
-        symbol_path: list[Optional[PacketNonTerminal | NonTerminal]] = []
+        route = Route([], [])
         for n in path:
             if n is None:
-                symbol_path.append(None)
+                route.symbols.append(None)
+                route.producing_steps.append(None)
                 continue
             assert isinstance(n.node, NonTerminalNode)
             if n.node.sender is not None:
-                symbol_path.append(
-                    PacketNonTerminal(
-                        n.node.sender,
-                        n.node.recipient,
-                        StateGrammarConverter.to_non_terminal(n.node.symbol),
-                    )
+                packet = PacketNonTerminal(
+                    n.node.sender,
+                    n.node.recipient,
+                    StateGrammarConverter.to_non_terminal(n.node.symbol),
                 )
+                route.symbols.append(packet)
+                route.producing_steps.append(self._step_of_graph_node(n))
             else:
-                symbol_path.append(NonTerminal(n.node.symbol.name()))
-        return symbol_path
+                route.symbols.append(NonTerminal(n.node.symbol.name()))
+                route.producing_steps.append(None)
+        return route
 
     def _includes_k_paths(
         self, k_paths: set[KPath], controlflow_tree: DerivationTree
@@ -167,24 +191,24 @@ class PacketNavigator(GrammarNavigator):
         tree: DerivationTree,
         destination_k_path: KPath,
         included_k_paths: Optional[set[KPath]] = None,
-    ) -> Optional[list[Optional[PacketNonTerminal | NonTerminal]]]:
+    ) -> Optional[Route]:
         if included_k_paths is None:
             included_k_paths = set()
-        paths = []
+        routes: list[Route] = []
         found_trees, include_k_paths = self._find_trees_including_k_paths(
             included_k_paths, tree
         )
         for suggested_tree, _is_complete in found_trees:
-            path = self.astar_tree_symbols(
+            path = self.astar_tree(
                 tree=suggested_tree, destination_k_path=destination_k_path
             )
             if path is None:
                 continue
-            paths.append(path)
-        paths.sort(key=lambda path: len(path))
-        if len(paths) == 0:
+            routes.append(self._to_route(path))
+        routes.sort(key=lambda route: len(route.symbols))
+        if len(routes) == 0:
             return None
-        return paths[0]
+        return routes[0]
 
     def astar_tree(
         self,
@@ -223,24 +247,20 @@ class PacketNavigator(GrammarNavigator):
         self,
         tree: DerivationTree,
         included_k_paths: Optional[set[KPath]] = None,
-    ) -> Optional[list[PacketNonTerminal | NonTerminal]]:
+    ) -> Optional[Route]:
         if included_k_paths is None:
             included_k_paths = set()
-        paths: list[list[PacketNonTerminal | NonTerminal]] = []
+        routes: list[Route] = []
         found_trees, include_k_paths = self._find_trees_including_k_paths(
             included_k_paths, tree
         )
         for suggested_tree, is_complete in found_trees:
             if is_complete:
-                return []
+                return Route([], [])
             node_path = super().astar_search_end(suggested_tree)
-            path_symbols: list[PacketNonTerminal | NonTerminal] = []
-            for symbol in self._to_symbols(list(node_path)):
-                assert symbol is not None
-                path_symbols.append(symbol)
-            paths.append(path_symbols)
+            routes.append(self._to_route(list(node_path)))
 
-        if len(paths) == 0:
+        if len(routes) == 0:
             return None
-        paths.sort(key=lambda path: len(path))
-        return paths[0]
+        routes.sort(key=lambda route: len(route.symbols))
+        return routes[0]
