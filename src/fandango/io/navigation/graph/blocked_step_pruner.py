@@ -7,7 +7,7 @@ from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.char_set import CharSet
 from fandango.language.grammar.nodes.concatenation import Concatenation
-from fandango.language.grammar.nodes.node import Node
+from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
@@ -22,6 +22,8 @@ class Pruned(NamedTuple):
 class BlockedStepPruner(NodeVisitor[list[Pruned], Pruned]):
     """
     Removes the blocked steps from a state grammar, and every part of a rule that can only be derived through them.
+    An alternative left able to derive nothing is wrapped in an Option with an id of its own, which the original
+    grammar does not have. Analyse only trees parsed with the pruned grammar against it, never trees of another grammar.
     """
 
     def __init__(self, grammar_settings: Sequence[HasSettings]):
@@ -156,7 +158,9 @@ class BlockedStepPruner(NodeVisitor[list[Pruned], Pruned]):
             is_permutation=node.is_permutation,
         )
         if may_derive_nothing:
-            option = Option(remaining, self._grammar_settings, node.id)
+            option = Option(
+                remaining, self._grammar_settings, f"{NodeType.OPTION}:{node.id}"
+            )
             return Pruned(option)
         return Pruned(remaining)
 
