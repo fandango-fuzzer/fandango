@@ -39,21 +39,16 @@ class MessageHolder:
     def hang_messages_into(self, tree: DerivationTree) -> None:
         """Swaps the messages in the tree for the messages under root."""
         message_copies = [message.msg for message in tree.protocol_msgs()]
-        message_by_copy_id = {
-            id(message_copy): message.msg
-            for message_copy, message in zip(
-                message_copies, self.root.protocol_msgs(), strict=False
-            )
-        }
-        parents_of_copies = {
-            id(message_copy.parent): message_copy.parent
-            for message_copy in message_copies
-        }
-        for parent in parents_of_copies.values():
+        for message_copy, message in zip(
+            message_copies, self.root.protocol_msgs(), strict=False
+        ):
+            parent = message_copy.parent
             assert parent is not None
-            parent.set_children(
-                [message_by_copy_id.get(id(child), child) for child in parent.children]
-            )
+            children = list(parent.children)
+            index = index_by_reference(children, message_copy)
+            assert index is not None
+            children[index] = message.msg
+            parent.set_children(children)
 
 
 class PacketMounter:
@@ -77,9 +72,6 @@ class PacketMounter:
     Mounted: the packet is part of the skeleton's tree.
         The packet's parent is set to the mount point, and the mount point's children point to the packet as the last child.
         The skeleton's root is then the whole tree: the history's messages plus this packet.
-        mounted_context mounts a packet for its block. If a packet with an equal whole tree was mounted before in this history,
-        it mounts that earlier packet instead, as a stand-in (_first_mounted_packets_by_root_hash),
-        and the given packet stays attached; original maps the stand-in back (_packets_by_mounted_packet_id).
     History: the packet is part of the new history.
         commit mounts the packet and makes the skeleton's root the new history. The packet stays among the mount point's
         children and is now a message of the history. All skeletons of the old history are dropped.
@@ -93,10 +85,12 @@ class PacketMounter:
         self._grammar = grammar
         self._history_message_holders = MessageHolder(DerivationTree(start_symbol_nt))
         self._active_message_holders = self._history_message_holders
-        self._message_holders_by_root_id: dict[int, MessageHolder] = {}
+        self._message_holders_of_trees: list[MessageHolder] = []
         self._mount_points_by_mounting_path: dict[MountingPath, DerivationTree] = {}
         self._first_mounted_packets_by_root_hash: dict[int, DerivationTree] = {}
-        self._packets_by_mounted_packet_id: dict[int, DerivationTree] = {}
+        self._mounted_and_original_packets: list[
+            tuple[DerivationTree, DerivationTree]
+        ] = []
 
     @contextmanager
     def history_context(self, history: DerivationTree) -> Iterator[None]:
@@ -147,11 +141,12 @@ class PacketMounter:
             yield packet
             return
         first_equal_packet = self._mount_first_equal(packet)
-        self._packets_by_mounted_packet_id[id(first_equal_packet)] = packet
+        self._mounted_and_original_packets.append((first_equal_packet, packet))
         try:
             yield first_equal_packet
         finally:
-            del self._packets_by_mounted_packet_id[id(first_equal_packet)]
+            mounted_packet, _original = self._mounted_and_original_packets.pop()
+            assert mounted_packet is first_equal_packet
             self._unmount(first_equal_packet)
 
     def original(self, packet: DerivationTree) -> DerivationTree:
@@ -159,7 +154,10 @@ class PacketMounter:
         Returns any packet that is not a stand-in unchanged.
         Call it on an operator's result inside mounted_context, so a stand-in never ends up in the population.
         """
-        return self._packets_by_mounted_packet_id.get(id(packet), packet)
+        for mounted_packet, original_packet in self._mounted_and_original_packets:
+            if mounted_packet is packet:
+                return original_packet
+        return packet
 
     def commit(self, packet: DerivationTree) -> DerivationTree:
         """
@@ -176,7 +174,7 @@ class PacketMounter:
         """Makes the tree the new history: forgets everything built for the old one and points the messages' parents into the new history."""
         self._mount_points_by_mounting_path.clear()
         self._first_mounted_packets_by_root_hash.clear()
-        self._message_holders_by_root_id.clear()
+        self._message_holders_of_trees.clear()
         self._history_message_holders = self._message_holders(history)
         self._active_message_holders = self._history_message_holders
         self._history_message_holders.hold_messages()
@@ -231,9 +229,12 @@ class PacketMounter:
 
     def _message_holders(self, root: DerivationTree) -> MessageHolder:
         """Returns where the tree under root holds the messages; searches each tree once per history."""
-        if id(root) not in self._message_holders_by_root_id:
-            self._message_holders_by_root_id[id(root)] = MessageHolder(root)
-        return self._message_holders_by_root_id[id(root)]
+        for message_holders in self._message_holders_of_trees:
+            if message_holders.root is root:
+                return message_holders
+        message_holders = MessageHolder(root)
+        self._message_holders_of_trees.append(message_holders)
+        return message_holders
 
     def _mount_point(self, mounting_path: MountingPath) -> DerivationTree:
         """Returns the mounting path's mount point, building its skeleton on first use."""
@@ -255,7 +256,7 @@ class PacketMounter:
                 f"Could not collapse tree for {mounting_path.path}"
             )
         self._replace_message_copies(skeleton, mounting_path)
-        self._set_read_only_above_messages(skeleton)
+        self._set_skeleton_read_only(skeleton)
         hookin = DerivationTree(NonTerminal("<hookin>"))
         skeleton.append(mounting_path.path[1:-1], hookin, read_only_new_nodes=True)
         mount_point = hookin.parent
@@ -285,7 +286,7 @@ class PacketMounter:
         self._history_message_holders.hang_messages_into(skeleton)
 
     @staticmethod
-    def _set_read_only_above_messages(skeleton: DerivationTree) -> None:
+    def _set_skeleton_read_only(skeleton: DerivationTree) -> None:
         """Marks every skeleton node outside the messages read-only, the message nodes included; nodes inside the messages stay as they are."""
         pending = [skeleton]
         while pending:
