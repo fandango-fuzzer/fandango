@@ -151,8 +151,8 @@ class PacketSelector:
     def coverage_percent(self) -> float:
         return self._coverage_tracker.coverage_percent()
 
-    def is_attainable_coverage_complete(self) -> bool:
-        return self._guide.is_attainable_coverage_complete(
+    def is_derivable_coverage_complete(self) -> bool:
+        return self._guide.is_derivable_coverage_complete(
             self._coverage_tracker.uncovered_paths()
         )
 
