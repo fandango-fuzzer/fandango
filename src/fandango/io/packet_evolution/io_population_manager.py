@@ -38,9 +38,10 @@ class IoPopulationManager(PopulationManager):
         current_idx = (self._prev_packet_idx + 1) % len(packet_selection)
         current_pck = random.choice(packet_selection)
         mounting_option = random.choice(list(current_pck.paths))
-        fuzzed_packet = self.packet_mounter.fuzz(
-            current_pck, mounting_option, max_nodes
-        )
+        mount_point = self.packet_mounter.mount_point(mounting_option)
+        current_pck.node.fuzz(mount_point, self._grammar, max_nodes)
+        fuzzed_packet = mount_point.children[-1]
+        self.packet_mounter.attach(fuzzed_packet, mounting_option)
 
         self._prev_packet_idx = current_idx
         return fuzzed_packet

@@ -2,10 +2,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 
 from fandango.errors import FandangoValueError
-from fandango.io.navigation.forecasting.forecasting_result import (
-    ForecastingPacket,
-    MountingPath,
-)
+from fandango.io.navigation.forecasting.forecasting_result import MountingPath
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree, index_by_reference
@@ -76,7 +73,7 @@ class PacketMounter:
         The packet's parent is set to the mount point, but the mount point's children do not point to the packet.
         So get_root reaches the skeleton's root, but that tree does not contain the packet.
         Many packets can be attached to one mount point at once; population packets stay in this state.
-        fuzz returns a new attached packet, attach attaches the given one, and mounted_context brings a packet back to this state.
+        attach puts a packet into this state, also one fuzzed under mount_point, and mounted_context brings a packet back to it.
     Mounted: the packet is part of the skeleton's tree.
         The packet's parent is set to the mount point, and the mount point's children point to the packet as the last child.
         The skeleton's root is then the whole tree: the history's messages plus this packet.
@@ -113,20 +110,18 @@ class PacketMounter:
         finally:
             self._hold_messages_in(self._history_message_holders.root)
 
-    def fuzz(
-        self, packet: ForecastingPacket, mounting_path: MountingPath, max_nodes: int
-    ) -> DerivationTree:
-        """Fuzzes and returns a new packet from the forecast packet's grammar node, at the mounting path's mount point."""
+    def mount_point(self, mounting_path: MountingPath) -> DerivationTree:
+        """
+        Appends the requested path to the DerivationTree, adds parsed messages to it,
+        and returns the position in that tree, that would hold the packet at the position of `mounting_path`.
+        """
         mount_point = self._mount_point(mounting_path)
         self._hold_messages_in(mount_point.get_root())
-        packet.node.fuzz(mount_point, self._grammar, max_nodes)
-        fuzzed_packet = mount_point.children[-1]
-        self._unmount(fuzzed_packet)
-        return fuzzed_packet
+        return mount_point
 
     def attach(self, tree: DerivationTree, mounting_path: MountingPath) -> None:
         """
-        Attaches an existing packet, at the mounting path's mount point.
+        Attaches an existing packet, at the mounting path's mount point; a packet already under the mount point is taken out of its children.
         It stops being a stand-in for equal packets, since at another mount point its whole tree differs.
         """
         self._first_mounted_packets_by_root_hash = {
@@ -135,7 +130,8 @@ class PacketMounter:
             if first_equal_packet is not tree
         }
         mount_point = self._mount_point(mounting_path)
-        mount_point.add_child(tree)
+        if index_by_reference(mount_point.children, tree) is None:
+            mount_point.add_child(tree)
         self._unmount(tree)
 
     @contextmanager
