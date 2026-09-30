@@ -8,7 +8,7 @@ from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.graph.reachability_checker import ReachabilityChecker
 from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConverter
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.io.navigation.selection.packet_guide import PacketGuide
+from fandango.io.navigation.selection.packet_guider import PacketGuider
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.target_selector import TargetSelector
 from fandango.language import DerivationTree, NonTerminal
@@ -332,6 +332,6 @@ class TestTargetSelector(unittest.TestCase):
             )
         )
         for _ in range(10):
-            target = ts.select(all_paths, [])
-            self.assertFalse(PacketGuide._tuple_contains(a_follows_b, target))
-            self.assertFalse(PacketGuide._tuple_contains(b_follows_a, target))
+            target = ts.select(all_paths, [], lambda path: True)
+            self.assertFalse(PacketGuider._tuple_contains(a_follows_b, target))
+            self.assertFalse(PacketGuider._tuple_contains(b_follows_a, target))
