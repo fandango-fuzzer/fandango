@@ -1,6 +1,6 @@
 from collections import Counter
 
-from fandango.io.navigation.graph.prunedstategrammarconverter import Step
+from fandango.io.navigation.step import Step
 from fandango.logger import log_guidance_hint
 
 
