@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from fandango.errors import FandangoValueError
+from fandango.io.navigation.step import Step
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
@@ -75,6 +76,7 @@ class ForecastingResult:
     def __init__(self) -> None:
         self.parties_to_packets = dict[str, ForecastingNonTerminals]()
         self.complete_trees = set[DerivationTree]()
+        self.message_steps = list[set[Step]]()
 
     def get_msg_parties(self) -> set[str]:
         return set(self.parties_to_packets.keys())
