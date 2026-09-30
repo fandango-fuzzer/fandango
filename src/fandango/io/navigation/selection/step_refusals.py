@@ -6,7 +6,7 @@ from fandango.logger import log_guidance_hint
 
 class StepRefusals:
     """
-    Tracks which steps an external party refuses to take.
+    Tracks which steps an external party refuses to take and blocks and unblocks them.
     """
 
     REFUSAL_LIMIT = 3
