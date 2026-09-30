@@ -42,9 +42,8 @@ class PacketNavigator(GrammarNavigator):
         self._state_rules = state_rules
         self.blocked_steps = blocked_steps
         self._derivable_by_k_path: dict[KPath, bool] = {}
-        reduced_rules = BlockedStepPruner(grammar.grammar_settings).prune(
-            state_rules, start_symbol, blocked_steps
-        )
+        self._pruner = BlockedStepPruner(grammar.grammar_settings)
+        reduced_rules = self._pruner.prune(state_rules, start_symbol, blocked_steps)
         super().__init__(
             Grammar(
                 grammar_settings=grammar.grammar_settings,
@@ -103,13 +102,12 @@ class PacketNavigator(GrammarNavigator):
             if StateGrammarConverter.matches_history(suggested_tree, messages):
                 yield suggested_tree, is_complete
 
-    @staticmethod
-    def _step_of_graph_node(graph_node: GrammarGraphNode) -> Optional[Step]:
+    def _step_of_graph_node(self, graph_node: GrammarGraphNode) -> Optional[Step]:
         """The step that produces the packet of the graph node."""
         path: list[NonTerminal] = []
         current: Optional[GrammarGraphNode] = graph_node
         while current is not None:
-            if not BlockedStepPruner.is_made_up(current.node):
+            if not self._pruner.is_made_up(current.node):
                 symbol = current.node.to_symbol()
                 assert isinstance(symbol, NonTerminal)
                 path.append(symbol)
