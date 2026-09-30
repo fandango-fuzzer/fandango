@@ -60,7 +60,9 @@ class PacketNavigator(GrammarNavigator):
         self._parser = NavigatorPacketIterativeParser(reduced_rules)
         self.set_message_cost(1)
 
-    def gen_with_blocked_steps(self, blocked_steps: frozenset[Step]) -> "PacketNavigator":
+    def gen_with_blocked_steps(
+        self, blocked_steps: frozenset[Step]
+    ) -> "PacketNavigator":
         """Returns a new navigator for the same grammar that routes around the blocked steps."""
         return PacketNavigator(
             self._protocol_grammar, self._start_symbol, blocked_steps, self._state_rules
