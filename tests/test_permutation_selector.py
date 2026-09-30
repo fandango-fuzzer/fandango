@@ -6,6 +6,7 @@ from fandango.io import ConnectionMode, FandangoIO, FandangoParty
 from fandango.io.navigation.forecasting.forecast_view import ForecastView
 from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
+from fandango.io.navigation.route import PlannedPacket
 from fandango.io.navigation.selection.packet_guider import PacketGuider
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.step_refusals import StepRefusals
@@ -163,9 +164,15 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
 
     def test_out_of_order_permutation_peer_removed_from_guide_path(self):
         guide = self._make_guide()
-        pnt_a = PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>"))
-        pnt_b = PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>"))
-        pnt_c = PacketNonTerminal("StdOut", None, NonTerminal("<msg_c>"))
+        pnt_a = PlannedPacket(
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>")), None
+        )
+        pnt_b = PlannedPacket(
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>")), None
+        )
+        pnt_c = PlannedPacket(
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_c>")), None
+        )
 
         guide._guide_path.set_route([pnt_a, pnt_b, pnt_c])
         guide._guide_target = (NonTerminal("<msg_c>"),)
@@ -175,24 +182,32 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
         self.history = history
         self._select(guide)
 
-        self.assertEqual(guide._guide_path.symbols, [pnt_a, pnt_c])
+        self.assertEqual(guide._guide_path.route, [pnt_a, pnt_c])
 
     def test_guide_path_unchanged_when_no_new_messages(self):
         guide = self._make_guide()
-        pnt_a = PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>"))
-        pnt_b = PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>"))
+        pnt_a = PlannedPacket(
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>")), None
+        )
+        pnt_b = PlannedPacket(
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>")), None
+        )
 
         guide._guide_path.set_route([pnt_a, pnt_b])
         guide._guide_target = (NonTerminal("<msg_b>"),)
         guide._prev_session_msgs = []
         self._select(guide)
 
-        self.assertEqual(guide._guide_path.symbols, [pnt_a, pnt_b])
+        self.assertEqual(guide._guide_path.route, [pnt_a, pnt_b])
 
     def test_expected_message_advances_guide_path(self):
         guide = self._make_guide()
-        pnt_a = PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>"))
-        pnt_b = PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>"))
+        pnt_a = PlannedPacket(
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>")), None
+        )
+        pnt_b = PlannedPacket(
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>")), None
+        )
 
         guide._guide_path.set_route([pnt_a, pnt_b])
         guide._guide_target = (NonTerminal("<msg_b>"),)
@@ -202,13 +217,19 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
         self.history = history
         self._select(guide)
 
-        self.assertEqual(guide._guide_path.symbols, [pnt_b])
+        self.assertEqual(guide._guide_path.route, [pnt_b])
 
     def test_both_permutation_peers_out_of_order_both_consumed(self):
         guide = self._make_guide()
-        pnt_a = PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>"))
-        pnt_b = PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>"))
-        pnt_c = PacketNonTerminal("StdOut", None, NonTerminal("<msg_c>"))
+        pnt_a = PlannedPacket(
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>")), None
+        )
+        pnt_b = PlannedPacket(
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>")), None
+        )
+        pnt_c = PlannedPacket(
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_c>")), None
+        )
 
         guide._guide_path.set_route([pnt_a, pnt_b, pnt_c])
         guide._guide_target = (NonTerminal("<msg_c>"),)
@@ -217,13 +238,13 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
         assert history is not None
         self.history = history
         self._select(guide)
-        self.assertEqual(guide._guide_path.symbols, [pnt_a, pnt_c])
+        self.assertEqual(guide._guide_path.route, [pnt_a, pnt_c])
 
         history = self._parse("ba")
         assert history is not None
         self.history = history
         self._select(guide)
-        self.assertEqual(guide._guide_path.symbols, [pnt_c])
+        self.assertEqual(guide._guide_path.route, [pnt_c])
 
 
 if __name__ == "__main__":
