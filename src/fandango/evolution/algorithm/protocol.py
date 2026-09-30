@@ -18,7 +18,7 @@ from fandango.io.packet_evolution.decorators.mounting_crossover import (
     MountingCrossover,
 )
 from fandango.io.packet_evolution.decorators.mounting_evaluator import (
-    MountingEvaluator,
+    IoEvaluator,
 )
 from fandango.io.packet_evolution.decorators.mounting_mutation import MountingMutation
 from fandango.io.packet_evolution.packet_mounter import MessageHolder, PacketMounter
@@ -53,7 +53,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         )
         self._packet_algorithm.population_manager = self._population_manager
         old_evaluator = self._packet_algorithm.evaluator
-        self._packet_algorithm.evaluator = MountingEvaluator(
+        self._packet_algorithm.evaluator = IoEvaluator(
             packet_mounter=self._packet_mounter,
             grammar=self.grammar,
             constraints=self._packet_algorithm.constraints,
