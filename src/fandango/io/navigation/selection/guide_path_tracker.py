@@ -1,20 +1,16 @@
 from typing import NamedTuple, Optional
 
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.io.navigation.step import Step, to_packet_step
+from fandango.io.navigation.route import PlannedPacket, Route
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree
-
-GuidePathSymbol = PacketNonTerminal | NonTerminal | None
-"""A state, a packet, or None. (None marks the end of a session.)"""
 
 
 class Deviation(NamedTuple):
     """A message that did not follow the guide path."""
 
-    planned_packet: Optional[PacketNonTerminal]
+    planned: Optional[PlannedPacket]
     message: DerivationTree
-    planned_step: Optional[Step]
 
 
 class GuidePathTracker:
@@ -25,94 +21,77 @@ class GuidePathTracker:
 
     def __init__(self, permutation_groups: dict[NonTerminal, frozenset[NonTerminal]]):
         self._permutation_groups = permutation_groups
-        self._symbols: list[GuidePathSymbol] = []
-        self._parent_of_last_packet: Optional[NonTerminal] = None
+        self._route: Route = []
 
-    def set_route(
-        self,
-        symbols: list[GuidePathSymbol],
-        parent_of_last_packet: Optional[NonTerminal] = None,
-    ) -> None:
+    def set_route(self, route: Route) -> None:
         """Sets the given route as the route to follow."""
-        self._symbols = list(symbols)
-        self._parent_of_last_packet = parent_of_last_packet
+        self._route = list(route)
 
     def clear(self) -> None:
         self.set_route([])
 
     @property
-    def symbols(self) -> list[GuidePathSymbol]:
-        return list(self._symbols)
+    def route(self) -> Route:
+        return list(self._route)
 
     @property
     def is_empty(self) -> bool:
-        return len(self._symbols) == 0
+        return len(self._route) == 0
 
     @property
     def ends_run(self) -> bool:
         """True if the route leads to the end of the run."""
-        return None in self._symbols
+        return None in self._route
 
-    def next_packet(self) -> Optional[PacketNonTerminal]:
-        return next(
-            (x for x in self._symbols if isinstance(x, PacketNonTerminal)), None
-        )
+    def next_packet(self) -> Optional[PlannedPacket]:
+        next_planned = self._next_planned()
+        return None if next_planned is None else next_planned[1]
 
     def next_new_parent_states(self) -> list[Symbol]:
         """
         Parent states of the next packet that are not yet in the session tree.
         All states along the route if no packet is left.
         """
-        next_packet = self.next_packet()
-        if next_packet is None:
-            route = self._symbols
-        else:
-            route = self._symbols[: self._symbols.index(next_packet)]
+        next_planned = self._next_planned()
+        route = self._route if next_planned is None else self._route[: next_planned[0]]
         return [symbol for symbol in route if isinstance(symbol, NonTerminal)]
 
     def follow(self, new_messages: list[DerivationTree]) -> Optional[Deviation]:
         """Consumes the messages that arrive as planned; returns the first one that deviates, if any."""
         for message in new_messages:
-            planned_packet = self.next_packet()
-            planned_step = self._producing_step(planned_packet)
-            if planned_packet is None or planned_packet.symbol != message.symbol:
-                if self._consume_permutation_peer(planned_packet, message):
-                    continue
-                return Deviation(planned_packet, message, planned_step)
-            if planned_step is not None:
-                self._parent_of_last_packet = planned_step[0]
-            self._symbols = self._symbols[self._symbols.index(planned_packet) + 1 :]
+            assert isinstance(message.symbol, NonTerminal)
+            arrived = PacketNonTerminal(
+                message.sender, message.recipient, message.symbol
+            )
+            next_planned = self._next_planned()
+            if next_planned is not None and next_planned[1].packet == arrived:
+                self._route = self._route[next_planned[0] + 1 :]
+                continue
+            planned_packet = None if next_planned is None else next_planned[1]
+            if self._consume_permutation_peer(planned_packet, arrived):
+                continue
+            return Deviation(planned_packet, message)
+        return None
+
+    def _next_planned(self) -> Optional[tuple[int, PlannedPacket]]:
+        """The next planned packet and its index in the route."""
+        for index, planned_packet in enumerate(self._route):
+            if isinstance(planned_packet, PlannedPacket):
+                return index, planned_packet
         return None
 
     def _consume_permutation_peer(
-        self, planned_packet: Optional[PacketNonTerminal], message: DerivationTree
+        self, planned: Optional[PlannedPacket], arrived: PacketNonTerminal
     ) -> bool:
-        """Removes the message from the route if it is a permutation peer of the planned packet arriving out of order."""
-        assert isinstance(message.symbol, NonTerminal)
+        """Removes the arrived packet from the route if it is a permutation peer of the planned packet arriving out of order."""
         if (
-            planned_packet is None
-            or planned_packet.symbol not in self._permutation_groups
-            or message.symbol not in self._permutation_groups[planned_packet.symbol]
+            planned is None
+            or planned.packet.symbol not in self._permutation_groups
+            or arrived.symbol not in self._permutation_groups[planned.packet.symbol]
         ):
             return False
-        peer = PacketNonTerminal(message.sender, message.recipient, message.symbol)
-        if peer not in self._symbols:
-            return False
-        index = self._symbols.index(peer)
-        self._symbols = self._symbols[:index] + self._symbols[index + 1 :]
-        return True
-
-    def _producing_step(
-        self, packet_nonterminal: Optional[PacketNonTerminal]
-    ) -> Optional[Step]:
-        """The step that produces this given packet on the current route"""
-        if packet_nonterminal is None:
-            return None
-        planned = self._symbols[: self._symbols.index(packet_nonterminal)]
-        if None in planned:
-            planned = planned[len(planned) - planned[::-1].index(None) :]
-        parent = planned[-1] if len(planned) > 0 else self._parent_of_last_packet
-        if parent is None:
-            return None
-        assert isinstance(parent, NonTerminal)
-        return to_packet_step(parent, packet_nonterminal.symbol)
+        for index, symbol in enumerate(self._route):
+            if isinstance(symbol, PlannedPacket) and symbol.packet == arrived:
+                del self._route[index]
+                return True
+        return False
