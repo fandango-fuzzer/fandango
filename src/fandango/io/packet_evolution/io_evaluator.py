@@ -11,7 +11,7 @@ from fandango.language import Grammar
 from fandango.language.tree import DerivationTree
 
 
-class MountingEvaluator(Evaluator):
+class IoEvaluator(Evaluator):
     """Evaluates packets mounted into the session."""
 
     def __init__(

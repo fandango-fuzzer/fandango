@@ -15,7 +15,7 @@ from fandango.io.packet_evolution.decorators.io_population_manager import (
     IoPopulationManager,
 )
 from fandango.io.packet_evolution.decorators.mounting_crossover import MountingCrossover
-from fandango.io.packet_evolution.decorators.mounting_evaluator import MountingEvaluator
+from fandango.io.packet_evolution.decorators.mounting_evaluator import IoEvaluator
 from fandango.io.packet_evolution.decorators.mounting_mutation import MountingMutation
 from fandango.io.packet_evolution.packet_mounter import PacketMounter
 from fandango.language.grammar.nodes.concatenation import Concatenation
@@ -102,8 +102,8 @@ def manager(
 
 
 @pytest.fixture
-def evaluator(fandango: Fandango, manager: IoPopulationManager) -> MountingEvaluator:
-    return MountingEvaluator(
+def evaluator(fandango: Fandango, manager: IoPopulationManager) -> IoEvaluator:
+    return IoEvaluator(
         packet_mounter=manager.packet_mounter,
         grammar=fandango.grammar,
         constraints=fandango.constraints,
