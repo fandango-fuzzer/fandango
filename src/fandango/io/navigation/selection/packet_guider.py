@@ -4,16 +4,21 @@ from typing import Optional
 from fandango.io.navigation.forecasting.forecast_view import ForecastView
 from fandango.io.navigation.forecasting.forecasting_result import ForecastingPacket
 from fandango.io.navigation.graph.packetnavigator import PacketNavigator
-from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
+from fandango.io.navigation.selection.guide_path_tracker import (
+    Deviation,
+    GuidePathTracker,
+)
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
+from fandango.io.navigation.selection.step_refusals import StepRefusals
 from fandango.io.navigation.selection.target_selector import TargetSelector
+from fandango.io.navigation.step import to_packet_step
 from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree
 from fandango.logger import log_guidance_hint
 
 
-class PacketGuide:
+class PacketGuider:
     """
     Decides which packet(s) to send next.
     Follows a planned guide path toward the current coverage target,
@@ -26,6 +31,7 @@ class PacketGuide:
         model: ProtocolModel,
         forecast: ForecastView,
         navigator: PacketNavigator,
+        step_refusals: StepRefusals,
         target_selector: TargetSelector,
         max_messages_per_tree: int,
     ):
@@ -40,9 +46,10 @@ class PacketGuide:
         self._prev_completed_count = 0
         self._guide_to_end = False
         self._guide_target: Optional[KPath] = None
-        self._guide_path: list[PacketNonTerminal | NonTerminal | None] = []
+        self._guide_path = GuidePathTracker(model.permutation_groups)
         self._prev_session_msgs: list[DerivationTree] = []
         self._session_covered_k_paths: set[KPath] = set()
+        self._step_refusals = step_refusals
 
     @property
     def is_guide_to_end(self) -> bool:
@@ -61,15 +68,27 @@ class PacketGuide:
         self.abort_run()
         self._last_completed_tree = None
         self._prev_completed_count = 0
+        self._build_navigator_around_blocked_steps()
 
     def abort_run(self) -> None:
         """Forget the current guide target and start with a new DerivationTree."""
         self._history_tree = DerivationTree(NonTerminal("<start>"))
         self._guide_to_end = False
         self._guide_target = None
-        self._guide_path = []
+        self._guide_path.clear()
         self._prev_session_msgs = []
         self._session_covered_k_paths.clear()
+
+    def is_derivable_coverage_complete(self, uncovered_paths: list[KPath]) -> bool:
+        return self._target_selector.is_every_path_underivable(
+            uncovered_paths, self._navigator.is_derivable
+        )
+
+    def _build_navigator_around_blocked_steps(self) -> None:
+        """Builds a new navigator if the blocked steps changed."""
+        blocked_steps = self._step_refusals.blocked_steps
+        if blocked_steps != self._navigator.blocked_steps:
+            self._navigator = self._navigator.gen_with_blocked_steps(blocked_steps)
 
     def select_next_packet(
         self,
@@ -81,6 +100,7 @@ class PacketGuide:
     ) -> list[ForecastingPacket]:
         self._history_tree = history_tree
         self._last_completed_tree = last_completed_tree
+        self._build_navigator_around_blocked_steps()
 
         if len(self._forecast.next_fuzzer_parties()) == 0:
             current_external_parties = set(
@@ -94,8 +114,14 @@ class PacketGuide:
             self._session_covered_k_paths.clear()
         self._prev_completed_count = completed_count
 
+        new_msgs = self._new_msgs(is_new_tree)
+        for msg in new_msgs:
+            self._observe_seen_step(msg)
+        deviation = self._guide_path.follow(new_msgs)
+        if deviation is not None:
+            self._count_refused_step(deviation)
+
         uncovered_paths = get_uncovered_paths()
-        self._guide_to_end = False
         if (
             len(list(history_tree.protocol_msgs())) > self._max_messages_per_tree
             or len(uncovered_paths) == 0
@@ -108,39 +134,12 @@ class PacketGuide:
                 log_guidance_hint(
                     f"Current tree contains more then {self._max_messages_per_tree} messages. Guiding to end of tree."
                 )
-            self._guide_to_end = True
-            return self._get_guide_to_end_packet()
-
-        left_path = True
-        if len(self._guide_path) != 0:
-            left_path = False
-            for msg in self._new_msgs(is_new_tree):
-                old_next_packet = self._get_next_packet()
-                if old_next_packet is None or old_next_packet.symbol != msg.symbol:
-                    # Check if msg is a permutation peer arriving out of order
-                    assert isinstance(msg.symbol, NonTerminal)
-                    if (
-                        old_next_packet is not None
-                        and old_next_packet.symbol in self._model.permutation_groups
-                        and msg.symbol
-                        in self._model.permutation_groups[old_next_packet.symbol]
-                    ):
-                        msg_pnt = PacketNonTerminal(
-                            msg.sender, msg.recipient, msg.symbol
-                        )
-                        if msg_pnt in self._guide_path:
-                            idx = self._guide_path.index(msg_pnt)
-                            self._guide_path = (
-                                self._guide_path[:idx] + self._guide_path[idx + 1 :]
-                            )
-                            continue
-                    left_path = True
-                    break
-                self._guide_path = self._guide_path[
-                    self._guide_path.index(old_next_packet) + 1 :
-                ]
-
-        if self._guide_target is None or len(self._guide_path) == 0 or left_path:
+            self._plan_path_to_end()
+        elif (
+            self._guide_target is None
+            or self._guide_path.is_empty
+            or deviation is not None
+        ):
             if self._guide_target is not None:
                 should_covered_paths = self._session_covered_k_paths.union(
                     [self._guide_target]
@@ -149,7 +148,7 @@ class PacketGuide:
                     self._confirm_covered_path(self._guide_target)
 
             self._guide_target = self._target_selector.select(
-                uncovered_paths, get_coverage_scores()
+                uncovered_paths, get_coverage_scores(), self._navigator.is_derivable
             )
             found_guide_path = self._navigator.astar_tree_including_k_paths(
                 tree=history_tree,
@@ -162,49 +161,21 @@ class PacketGuide:
                 log_guidance_hint(
                     "No path from the current tree to the selected k-path. Guiding to end of tree."
                 )
-                self._guide_target = None
-                self._guide_path = []
-                self._guide_to_end = True
-                return self._get_guide_to_end_packet()
-            self._guide_path = found_guide_path
-        self._guide_to_end = (
-            len(list(filter(lambda p: p is None, self._guide_path))) > 0
-        )
-        selected_packets = []
-        next_packet = self._get_next_packet()
-        hookin_states: Optional[list[Symbol]] = None
-        if next_packet is not None:
-            assert self._guide_path is not None
-            packet_idx = self._guide_path.index(next_packet)
-            hookin_states = []
-            for symbol in self._guide_path[:packet_idx]:
-                if symbol is None:
-                    continue
-                assert isinstance(symbol, Symbol)
-                hookin_states.append(symbol)
-            packet_sender = next_packet.sender
-            packet_symbol = next_packet.symbol
-        else:
-            if self._guide_path is not None:
-                hookin_states = []
-                for symbol in self._guide_path:
-                    if symbol is None:
-                        continue
-                    assert isinstance(symbol, Symbol)
-                    hookin_states.append(symbol)
-            packet_sender = None
-            packet_symbol = None
+                self._plan_path_to_end()
+            else:
+                self._guide_path.set_route(
+                    found_guide_path, self._parent_of_last_message()
+                )
+        self._guide_to_end = self._guide_path.ends_run
 
-        selected_packets.extend(
-            self.find_packets(
-                sender=packet_sender,
-                hookin_states=hookin_states,
-                packet_symbol=packet_symbol,
-            )
+        next_packet = self._guide_path.next_packet()
+        selected_packets = self.find_packets(
+            sender=None if next_packet is None else next_packet.sender,
+            hookin_states=self._guide_path.next_new_parent_states(),
+            packet_symbol=None if next_packet is None else next_packet.symbol,
         )
-
         if len(selected_packets) == 0:
-            selected_packets.extend(self._forecast.get_fuzzer_packets())
+            selected_packets = self._forecast.get_fuzzer_packets()
         self._remember_messages()
         return selected_packets
 
@@ -239,7 +210,7 @@ class PacketGuide:
                     packet_hookin_states = tuple(
                         map(lambda y: y[0], filter(lambda x: x[1], hookin_path.path))
                     )
-                    if not PacketGuide._tuple_contains(
+                    if not PacketGuider._tuple_contains(
                         hookin_states_tp, packet_hookin_states
                     ):
                         continue
@@ -248,29 +219,16 @@ class PacketGuide:
                     packets.append(append_packet)
         return packets
 
-    def _get_guide_to_end_packet(self) -> list[ForecastingPacket]:
+    def _plan_path_to_end(self) -> None:
+        """Drops the target and follows a path to the end of the run from now on."""
+        self._guide_target = None
         path = self._navigator.astar_search_end_including_k_paths(
             self._history_tree, included_k_paths=self._session_covered_k_paths
         )
-        if path is None:
-            return []
-        if len(path) > 0:
-            next_packet = next(
-                filter(lambda x: isinstance(x, PacketNonTerminal), path), None
-            )
-            if next_packet is None:
-                return []
-            assert isinstance(next_packet, PacketNonTerminal)
-            return self.find_packets(
-                sender=next_packet.sender, packet_symbol=next_packet.symbol
-            )
-        return []
-
-    def _get_next_packet(self) -> Optional[PacketNonTerminal]:
-        if self._guide_path is None:
-            return None
-        return next(
-            (x for x in self._guide_path if isinstance(x, PacketNonTerminal)), None
+        # None marks the end of the run, as in the paths to a target.
+        self._guide_path.set_route(
+            [None] if path is None else [*path, None],
+            self._parent_of_last_message(),
         )
 
     def _is_tree_contains_paths(
@@ -283,6 +241,42 @@ class PacketGuide:
 
     def _confirm_covered_path(self, path: KPath) -> None:
         self._session_covered_k_paths.add(path)
+
+    def _parent_of_last_message(self) -> Optional[NonTerminal]:
+        """The rule the last message of the history stands in, where a route starting with a packet continues."""
+        last_message = next(self._history_tree.protocol_msgs(reverse=True), None)
+        if last_message is None or last_message.msg.parent is None:
+            return None
+        symbol = last_message.msg.parent.symbol
+        return symbol if isinstance(symbol, NonTerminal) else None
+
+    def _is_external_party(self, party: Optional[str]) -> bool:
+        return party is not None and not self._forecast.is_fuzzer_controlled(party)
+
+    def _observe_seen_step(self, msg: DerivationTree) -> None:
+        if not self._is_external_party(msg.sender):
+            return
+        parent = msg.parent
+        if parent is None or not isinstance(parent.symbol, NonTerminal):
+            return
+        assert isinstance(msg.symbol, NonTerminal)
+        assert msg.sender is not None
+        self._step_refusals.observe_taken(
+            to_packet_step(parent.symbol, msg.symbol), msg.sender
+        )
+        self._build_navigator_around_blocked_steps()
+
+    def _count_refused_step(self, deviation: Deviation) -> None:
+        planned_packet, msg, step = deviation
+        if planned_packet is None or step is None:
+            return
+        if msg.sender != planned_packet.sender or not self._is_external_party(
+            msg.sender
+        ):
+            return
+        assert msg.sender is not None
+        self._step_refusals.count_refusal(step, msg.sender)
+        self._build_navigator_around_blocked_steps()
 
     def _remember_messages(self) -> None:
         if self._history_tree is None:

@@ -10,7 +10,7 @@ from fandango.io.navigation.forecasting.forecasting_result import (
 )
 from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.selection.coverage_tracker import CoverageTracker
-from fandango.io.navigation.selection.packet_guide import PacketGuider
+from fandango.io.navigation.selection.packet_guider import PacketGuider
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.step_refusals import StepRefusals
 from fandango.io.navigation.selection.target_selector import TargetSelector
