@@ -33,9 +33,13 @@ class BlockedStepPruner(NodeVisitor[list[Pruned], Pruned]):
     def prune(
         self,
         state_rules: dict[NonTerminal, Node],
+        start_symbol: NonTerminal,
         blocked_steps: frozenset[Step],
     ) -> dict[NonTerminal, Node]:
-        """Returns the state rules without the blocked steps; rules left without a derivation are removed."""
+        """
+        Returns the state rules without the blocked steps.
+        Rules left without a derivation, or no longer reachable from the start symbol, are removed.
+        """
         # The blocked steps, and the edges into every rule removed on the way.
         self._blocked_edges = set(blocked_steps)
         # The edges into every rule that can only derive nothing any more.
@@ -57,7 +61,32 @@ class BlockedStepPruner(NodeVisitor[list[Pruned], Pruned]):
             for referring_symbol in referring_symbols.get(blocked_parent, set()):
                 edges.add((referring_symbol, blocked_parent))
                 pending.add(referring_symbol)
-        return rules
+        return self._reachable_rules(rules, start_symbol)
+
+    @staticmethod
+    def _reachable_rules(
+        rules: dict[NonTerminal, Node], start_symbol: NonTerminal
+    ) -> dict[NonTerminal, Node]:
+        reachable_symbols = {start_symbol}
+        pending_symbols = [start_symbol]
+        while pending_symbols:
+            symbol = pending_symbols.pop()
+            if symbol not in rules:
+                continue
+            pending_nodes = [rules[symbol]]
+            while pending_nodes:
+                node = pending_nodes.pop()
+                if isinstance(node, NonTerminalNode):
+                    if node.symbol not in reachable_symbols:
+                        reachable_symbols.add(node.symbol)
+                        pending_symbols.append(node.symbol)
+                    continue
+                pending_nodes.extend(node.children())
+        return {
+            symbol: body
+            for symbol, body in rules.items()
+            if symbol in reachable_symbols
+        }
 
     @staticmethod
     def _find_referring_symbols(
