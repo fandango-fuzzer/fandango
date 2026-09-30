@@ -11,9 +11,6 @@ from fandango.io.coverage_filter import PacketCoverageFilter
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.io.navigation.selection.coverage_tracker import KPathCounts
 from fandango.io.navigation.selection.packetselector import PacketSelector
-from fandango.io.packet_evolution.decorators.io_population_manager import (
-    IoPopulationManager,
-)
 from fandango.io.packet_evolution.decorators.mounting_crossover import (
     MountingCrossover,
 )
@@ -21,6 +18,9 @@ from fandango.io.packet_evolution.decorators.mounting_evaluator import (
     IoEvaluator,
 )
 from fandango.io.packet_evolution.decorators.mounting_mutation import MountingMutation
+from fandango.io.packet_evolution.io_population_manager import (
+    IoPopulationManager,
+)
 from fandango.io.packet_evolution.packet_mounter import MessageHolder, PacketMounter
 from fandango.io.packetparser import parse_next_remote_packet
 from fandango.io.violation import FandangoRemoteViolation, RemoteViolationType
