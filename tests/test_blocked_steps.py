@@ -12,6 +12,7 @@ from fandango.language.grammar import FuzzingMode, ParsingMode
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.parse.parse import parse
 from fandango.language.symbols import NonTerminal
+from fandango.language.tree import DerivationTree
 from tests.utils import RESOURCES_ROOT
 
 SESSIONS = 30
@@ -69,6 +70,66 @@ class TestBlockedSteps(unittest.TestCase):
         self.assertTrue(any("c\nok\n" in text for text, _ in sessions))
         _, blocked_at_stop = sessions[-1]
         self.assertEqual(blocked_at_stop, {self.ok_after_a, self.note})
+
+
+class TestStep(unittest.TestCase):
+    def test_of_path_keeps_only_the_control_flow_below_the_parent_rule(self):
+        step = Step.of_path(
+            [
+                NonTerminal("<start>"),
+                NonTerminal("<__concatenation:1>"),
+                NonTerminal("<rule>"),
+                NonTerminal("<__alternative:1>"),
+                NonTerminal("<__concatenation:2>"),
+                NonTerminal("<_packet_a>"),
+            ]
+        )
+        self.assertEqual(
+            step,
+            Step(
+                NonTerminal("<rule>"),
+                (NonTerminal("<__alternative:1>"), NonTerminal("<__concatenation:2>")),
+                NonTerminal("<_packet_a>"),
+            ),
+        )
+
+    def test_of_message_tells_occurrences_of_the_same_packet_apart(self):
+        """
+        <rule> -> <__alternative:1> -> <__concatenation:2> -> <_packet_a>
+               -> <__star:1> -> <_packet_a>
+        """
+        in_concatenation = DerivationTree(NonTerminal("<_packet_a>"))
+        in_star = DerivationTree(NonTerminal("<_packet_a>"))
+        DerivationTree(
+            NonTerminal("<rule>"),
+            [
+                DerivationTree(
+                    NonTerminal("<__alternative:1>"),
+                    [
+                        DerivationTree(
+                            NonTerminal("<__concatenation:2>"), [in_concatenation]
+                        )
+                    ],
+                ),
+                DerivationTree(NonTerminal("<__star:1>"), [in_star]),
+            ],
+        )
+        self.assertEqual(
+            Step.of_message(in_concatenation),
+            Step(
+                NonTerminal("<rule>"),
+                (NonTerminal("<__alternative:1>"), NonTerminal("<__concatenation:2>")),
+                NonTerminal("<_packet_a>"),
+            ),
+        )
+        self.assertEqual(
+            Step.of_message(in_star),
+            Step(
+                NonTerminal("<rule>"),
+                (NonTerminal("<__star:1>"),),
+                NonTerminal("<_packet_a>"),
+            ),
+        )
 
 
 STEP = Step(NonTerminal("<rule>"), (), NonTerminal("<_packet_ok>"))
