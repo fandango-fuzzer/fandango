@@ -1,6 +1,5 @@
 import random
 from collections.abc import Generator
-from functools import partial
 from typing import Optional
 
 from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
@@ -46,11 +45,23 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._packet_mounter = PacketMounter(
             self.grammar, self._packet_algorithm.start_symbol
         )
-        self._population_manager = self._packet_algorithm.use_population_manager(
-            partial(IoPopulationManager, self._packet_mounter)
+        # We need to find a better way to initialize components and share parameters
+        self._population_manager = IoPopulationManager(
+            packet_mounter=self._packet_mounter,
+            grammar=self.grammar,
+            start_symbol=str(self._start_symbol),
         )
-        self._packet_algorithm.use_evaluator(
-            partial(MountingEvaluator, self._packet_mounter)
+        self._packet_algorithm.population_manager = self._population_manager
+        old_evaluator = self._packet_algorithm.evaluator
+        self._packet_algorithm.evaluator = MountingEvaluator(
+            packet_mounter=self._packet_mounter,
+            grammar=self.grammar,
+            constraints=self._packet_algorithm.constraints,
+            expected_fitness=old_evaluator.expected_fitness,
+            diversity_k=self._packet_algorithm.diversity_k,
+            diversity_weight=old_evaluator._diversity_weight,
+            stop_criterion=old_evaluator._stop_criterion,
+            use_fcc=False,
         )
         self._packet_algorithm.crossover_operator = MountingCrossover(
             self._packet_algorithm.crossover_operator,

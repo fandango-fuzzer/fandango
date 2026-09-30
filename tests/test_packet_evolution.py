@@ -1,12 +1,10 @@
 import random
 from collections.abc import Iterator
-from functools import partial
 
 import pytest
 
 from fandango.api import Fandango
 from fandango.evolution import GeneratorWithReturn
-from fandango.evolution.algorithm.simple import SimpleGeneticAlgorithm
 from fandango.evolution.crossover import SimpleSubtreeCrossover
 from fandango.evolution.mutation import SimpleMutation
 from fandango.io.navigation.forecasting.forecasting_result import (
@@ -105,8 +103,14 @@ def manager(
 
 @pytest.fixture
 def evaluator(fandango: Fandango, manager: IoPopulationManager) -> MountingEvaluator:
-    algorithm = SimpleGeneticAlgorithm(fandango.grammar, fandango.constraints)
-    return algorithm.use_evaluator(partial(MountingEvaluator, manager.packet_mounter))
+    return MountingEvaluator(
+        packet_mounter=manager.packet_mounter,
+        grammar=fandango.grammar,
+        constraints=fandango.constraints,
+        expected_fitness=1.0,
+        diversity_k=5,
+        diversity_weight=1.0,
+    )
 
 
 def test_history_context_hangs_messages_back_into_history(
@@ -150,10 +154,10 @@ def test_fix_uses_failing_trees_cached_from_equal_packet(
     evaluated_packet = attached_note(manager, "B\n", new_exchange)
     list(evaluator.evaluate_individual(evaluated_packet))
     equal_packet = attached_note(manager, "B\n", new_exchange)
-    _solutions, (_fitness, failing_trees, suggestion) = GeneratorWithReturn(
+    _, (_fitness, failing_trees, suggestion) = GeneratorWithReturn(
         evaluator.evaluate_individual(equal_packet)
     ).collect()
-    _solutions, (fixed_packet, _fixes_made) = GeneratorWithReturn(
+    _, (fixed_packet, _fixes_made) = GeneratorWithReturn(
         manager.fix_individual(
             equal_packet, failing_trees, suggestion, evaluator.evaluate_individual
         )

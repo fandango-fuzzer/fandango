@@ -14,6 +14,11 @@ def io_with(*messages: tuple[str, str, str | bytes]) -> FandangoIO:
     return io
 
 
+def test_a_message_stays_whole() -> None:
+    io = io_with(("Extern", "Fuzzer", "ping\n"))
+    assert io.get_received_msgs() == [("Extern", "Fuzzer", "ping\n")]
+
+
 def test_blocks_come_back_as_they_arrived() -> None:
     io = io_with(
         ("Extern", "Fuzzer", "pi"),
@@ -33,6 +38,15 @@ def test_blocks_ignore_other_senders() -> None:
     assert io.pending_blocks("Other") == ["XX"]
 
 
+def test_unknown_sender_has_no_blocks() -> None:
+    assert io_with(("Extern", "Fuzzer", "ab")).pending_blocks("Nobody") == []
+
+
+def test_an_empty_message_is_no_block() -> None:
+    io = io_with(("Extern", "Fuzzer", "ab"), ("Extern", "Fuzzer", ""))
+    assert io.pending_blocks("Extern") == ["ab"]
+
+
 def test_empty_messages_alone_leave_nothing_received() -> None:
     io = io_with(("Extern", "Fuzzer", ""), ("Extern", "Fuzzer", b""))
     assert io.pending_blocks("Extern") == []
@@ -42,6 +56,17 @@ def test_empty_messages_alone_leave_nothing_received() -> None:
 def test_blocks_do_not_mix_text_and_bytes() -> None:
     io = io_with(("Extern", "Fuzzer", "ab"), ("Extern", "Fuzzer", b"\x01"))
     assert io.pending_blocks("Extern") == ["ab"]
+
+
+def test_blocks_keep_bytes_as_bytes() -> None:
+    io = io_with(("Extern", "Fuzzer", b"\x01"), ("Extern", "Fuzzer", b"\x02\x03"))
+    assert io.pending_blocks("Extern") == [b"\x01", b"\x02\x03"]
+
+
+def test_drop_removes_whole_messages() -> None:
+    io = io_with(("Extern", "Fuzzer", "ping\n"), ("Extern", "Fuzzer", "pong\n"))
+    io.drop_received("Extern", 5)
+    assert io.pending_blocks("Extern") == ["pong\n"]
 
 
 def test_drop_trims_a_partial_message() -> None:
@@ -65,6 +90,12 @@ def test_drop_leaves_other_senders_alone() -> None:
     io.drop_received("Extern", 5)
     assert io.pending_blocks("Extern") == []
     assert io.pending_blocks("Other") == ["keep"]
+
+
+def test_drop_nothing_changes_nothing() -> None:
+    io = io_with(("Extern", "Fuzzer", "ping\n"))
+    io.drop_received("Extern", 0)
+    assert io.pending_blocks("Extern") == ["ping\n"]
 
 
 def test_drop_more_than_there_is_empties_the_sender() -> None:

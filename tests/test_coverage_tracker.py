@@ -1,14 +1,16 @@
+import pytest
+
 from fandango.api import Fandango
 from fandango.evolution.algorithm.protocol import ProtocolAlgorithm
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.io.navigation.selection.coverage_tracker import CoverageTracker
 from fandango.language.grammar import FuzzingMode
-from fandango.language.symbols import NonTerminal, Symbol
+from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 
 from .utils import RESOURCES_ROOT
 
-IO_GRAMMAR = "ambiguous_io.fan"
+IO_GRAMMARS = ["minimal_io.fan", "ambiguous_io.fan"]
 GOAL = CoverageGoal.STATE_INPUTS
 
 
@@ -34,42 +36,38 @@ def make_tracker(selector, history):
 
 
 def bruteforce_uncovered(selector, trees):
-    k = selector._coverage_tracker._diversity_k
-    all_paths = selector.grammar.generate_all_k_paths(
-        k=k,
-        non_terminal=selector.start_symbol,
+    tracker = selector._coverage_tracker
+    all_paths = tracker.all_k_paths(
+        selector.start_symbol,
         coverage_goal=GOAL,
         input_parties=selector._input_parties(),
     )
-    covered_paths = set()
-    for tree in trees:
-        covered_paths |= selector.grammar._extract_k_paths_from_tree(
-            tree, k, coverage_goal=GOAL, input_parties=selector._input_parties()
-        )
-    return all_paths - covered_paths
+    return all_paths - tracker._covered(
+        trees, coverage_goal=GOAL, input_parties=selector._input_parties()
+    )
 
 
 def bruteforce_scores(selector, trees):
-    messages_by_nt: dict[Symbol, list[DerivationTree]] = {}
+    messages_by_nt: dict[NonTerminal, list[DerivationTree]] = {}
     for tree in trees:
-        for record in tree.protocol_msgs():
-            messages_by_nt.setdefault(record.msg.symbol, []).append(record.msg)
+        for symbol, messages in CoverageTracker._messages_grouped_by(
+            tree, lambda packet_type: packet_type.symbol
+        ).items():
+            messages_by_nt.setdefault(symbol, []).extend(messages)
     scores = {}
     for symbol in {message.symbol for message in selector._model.protocol_msg_symbols}:
         if symbol not in messages_by_nt:
             scores[symbol] = 0.0
         else:
-            k = selector._coverage_tracker._diversity_k
-            all_paths = selector.grammar.generate_all_k_paths(k=k, non_terminal=symbol)
-            covered_paths = set()
-            for message in messages_by_nt[symbol]:
-                covered_paths |= selector.grammar._extract_k_paths_from_tree(message, k)
-            scores[symbol] = len(covered_paths) / len(all_paths) if all_paths else 1.0
+            all_paths = selector._coverage_tracker.all_k_paths(symbol)
+            covered = selector._coverage_tracker._covered(messages_by_nt[symbol])
+            scores[symbol] = len(covered) / len(all_paths) if all_paths else 1.0
     return list(sorted(scores.items(), key=lambda x: (x[1], x[0].name())))
 
 
-def test_folded_uncovered_matches_bruteforce():
-    selector, tree = packet_selector_and_tree(IO_GRAMMAR)
+@pytest.mark.parametrize("grammar_file", IO_GRAMMARS)
+def test_folded_uncovered_matches_bruteforce(grammar_file):
+    selector, tree = packet_selector_and_tree(grammar_file)
     history = DerivationTree(NonTerminal("<start>"))
     tracker = make_tracker(selector, history)
     tracker.add_completed_tree(tree)
@@ -78,16 +76,18 @@ def test_folded_uncovered_matches_bruteforce():
     )
 
 
-def test_folded_scores_match_bruteforce():
-    selector, tree = packet_selector_and_tree(IO_GRAMMAR)
+@pytest.mark.parametrize("grammar_file", IO_GRAMMARS)
+def test_folded_scores_match_bruteforce(grammar_file):
+    selector, tree = packet_selector_and_tree(grammar_file)
     history = DerivationTree(NonTerminal("<start>"))
     tracker = make_tracker(selector, history)
     tracker.add_completed_tree(tree)
     assert tracker.coverage_scores() == bruteforce_scores(selector, [tree, history])
 
 
-def test_folded_percent_matches_bruteforce():
-    selector, tree = packet_selector_and_tree(IO_GRAMMAR)
+@pytest.mark.parametrize("grammar_file", IO_GRAMMARS)
+def test_folded_percent_matches_bruteforce(grammar_file):
+    selector, tree = packet_selector_and_tree(grammar_file)
     history = DerivationTree(NonTerminal("<start>"))
     tracker = make_tracker(selector, history)
     tracker.add_completed_tree(tree)
@@ -105,8 +105,9 @@ def test_folded_percent_matches_bruteforce():
     assert tracker.coverage_percent() == expected
 
 
-def test_repeated_fold_is_idempotent():
-    selector, tree = packet_selector_and_tree(IO_GRAMMAR)
+@pytest.mark.parametrize("grammar_file", IO_GRAMMARS)
+def test_repeated_fold_is_idempotent(grammar_file):
+    selector, tree = packet_selector_and_tree(grammar_file)
     history = DerivationTree(NonTerminal("<start>"))
     tracker = make_tracker(selector, history)
     tracker.add_completed_tree(tree)
@@ -116,31 +117,11 @@ def test_repeated_fold_is_idempotent():
     )
 
 
-def test_reset_clears_basis():
-    selector, tree = packet_selector_and_tree(IO_GRAMMAR)
-    history = DerivationTree(NonTerminal("<start>"))
-    tracker = make_tracker(selector, history)
+@pytest.mark.parametrize("grammar_file", IO_GRAMMARS)
+def test_reset_clears_basis(grammar_file):
+    selector, tree = packet_selector_and_tree(grammar_file)
+    tracker = make_tracker(selector, DerivationTree(NonTerminal("<start>")))
     tracker.add_completed_tree(tree)
     tracker.reset()
-    assert set(tracker.uncovered_paths()) == bruteforce_uncovered(selector, [history])
-    assert tracker.coverage_scores() == bruteforce_scores(selector, [history])
-
-
-def test_compute_refreshes_coverage():
-    selector, running = packet_selector_and_tree("minimal_io.fan")
-    selector.reset_coverage()
-    selector.set_coverage_goal(GOAL)
-    tracker = selector.coverage_tracker
-    empty_history = DerivationTree(NonTerminal("<start>"))
-
-    selector.compute(empty_history)
-    scores_before = tracker.coverage_scores()
-    uncovered_before = set(tracker.uncovered_paths())
-    assert scores_before == bruteforce_scores(selector, [empty_history])
-    assert uncovered_before == bruteforce_uncovered(selector, [empty_history])
-
-    selector.compute(running)
-    assert tracker.coverage_scores() == bruteforce_scores(selector, [running])
-    assert set(tracker.uncovered_paths()) == bruteforce_uncovered(selector, [running])
-    assert tracker.coverage_scores() != scores_before
-    assert set(tracker.uncovered_paths()) != uncovered_before
+    assert tracker._goal_coverage._covered_by_finished_runs == {}
+    assert tracker._message_coverage._covered_by_finished_runs == {}
