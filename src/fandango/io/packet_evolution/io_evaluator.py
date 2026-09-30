@@ -1,19 +1,23 @@
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 from typing import Callable, Optional
 
 from fandango.constraints.constraint import Constraint
-from fandango.constraints.failing_tree import FailingTree, Suggestion
+from fandango.constraints.failing_tree import (
+    ApplyAllSuggestions,
+    FailingTree,
+    Suggestion,
+)
 from fandango.constraints.soft import SoftValue
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.evaluation import Evaluator
+from fandango.io.constraints.constraint_scope import ConstraintScope, ConstraintScopeAnalyzer
 from fandango.io.packet_evolution.packet_mounter import PacketMounter
 from fandango.language import Grammar
+from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 
 
 class IoEvaluator(Evaluator):
-    """Evaluates packets mounted into the session."""
-
     def __init__(
         self,
         packet_mounter: PacketMounter,
@@ -39,14 +43,58 @@ class IoEvaluator(Evaluator):
             put_args=put_args,
         )
         self._packet_mounter = packet_mounter
+        self._constraint_scopes = ConstraintScopeAnalyzer(self._grammar)
+        self._mounted_packet: Optional[DerivationTree] = None
 
     def evaluate_individual(
         self, individual: DerivationTree
     ) -> Generator[DerivationTree, None, tuple[float, list[FailingTree], Suggestion]]:
         with self._packet_mounter.mounted_context(individual) as mounted_packet:
-            solutions, evaluation = GeneratorWithReturn(
-                super().evaluate_individual(mounted_packet.get_root())
-            ).collect()
+            self._mounted_packet = mounted_packet
+            try:
+                solutions, evaluation = GeneratorWithReturn(
+                    super().evaluate_individual(mounted_packet.get_root())
+                ).collect()
+            finally:
+                self._mounted_packet = None
         if solutions:
             yield individual
         return evaluation
+
+    def _evaluate_constraints(
+        self, individual: DerivationTree, constraints: Sequence[Constraint]
+    ) -> tuple[float, list[FailingTree], Suggestion]:
+        if (
+            self._mounted_packet is None
+            or not constraints
+            or not isinstance(self._mounted_packet.symbol, NonTerminal)
+        ):
+            return super()._evaluate_constraints(individual, constraints)
+        scoped: dict[ConstraintScope, list[Constraint]] = {
+            scope: [] for scope in ConstraintScope
+        }
+        packet_symbol = self._mounted_packet.symbol
+        assert isinstance(packet_symbol, NonTerminal)
+        for constraint in constraints:
+            scoped[self._constraint_scopes.scope(packet_symbol, constraint)].append(
+                constraint
+            )
+        message_constraints = scoped[ConstraintScope.INSIDE]
+        session_constraints = scoped[ConstraintScope.CROSSING]
+        unrelated_constraints = scoped[ConstraintScope.UNRELATED]
+        message_fitness, message_failing, message_suggestion = (
+            super()._evaluate_constraints(self._mounted_packet, message_constraints)
+        )
+        session_fitness, session_failing, session_suggestion = (
+            super()._evaluate_constraints(individual, session_constraints)
+        )
+        fitness = (
+            message_fitness * len(message_constraints)
+            + session_fitness * len(session_constraints)
+            + len(unrelated_constraints)
+        ) / len(constraints)
+        return (
+            fitness,
+            [*message_failing, *session_failing],
+            ApplyAllSuggestions([message_suggestion, session_suggestion]),
+        )
