@@ -8,6 +8,7 @@ from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.graph.reachability_checker import ReachabilityChecker
 from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConverter
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
+from fandango.io.navigation.route import PlannedPacket
 from fandango.io.navigation.selection.packet_guider import PacketGuider
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.target_selector import TargetSelector
@@ -127,12 +128,15 @@ class TestGrammarGraph(unittest.TestCase):
             mode=ParsingMode.INCOMPLETE,
             include_controlflow=True,
         )
-        packet_tree, _ = next(navigator.get_controlflow_tree(tree=tree_to_continue))
-        path = navigator.astar_tree_symbols(
-            tree=packet_tree, destination_k_path=(NonTerminal("<end_data>"),)
+        route = navigator.astar_tree_including_k_paths(
+            tree=tree_to_continue, destination_k_path=(NonTerminal("<end_data>"),)
         )
+        assert route is not None
         self.assertEqual(
-            path,
+            [
+                symbol.packet if isinstance(symbol, PlannedPacket) else symbol
+                for symbol in route
+            ],
             [
                 PacketNonTerminal("StdOut", None, NonTerminal("<hello>")),
                 NonTerminal("<mail_from>"),
@@ -155,12 +159,11 @@ class TestGrammarGraph(unittest.TestCase):
             mode=ParsingMode.INCOMPLETE,
             include_controlflow=True,
         )
-        packet_tree, _ = next(navigator.get_controlflow_tree(tree=tree_to_continue))
-        path = navigator.astar_tree_symbols(
-            tree=packet_tree, destination_k_path=(NonTerminal("<helo>"),)
+        route = navigator.astar_tree_including_k_paths(
+            tree=tree_to_continue, destination_k_path=(NonTerminal("<helo>"),)
         )
-        assert path is not None
-        if None not in path:
+        assert route is not None
+        if None not in route:
             self.assertFalse("Expected symbol to be not reachable")
 
     def test_packet_navigator_symbol_not_extensible(self):
@@ -305,9 +308,7 @@ class Server(FandangoParty):
         self.assertTrue(result.completable_by_extension)
 
         navigator = PacketNavigator(grammar, NonTerminal("<start>"))
-        path = navigator.astar_tree_symbols(
-            tree=hist_tree, destination_k_path=dest_k_path
-        )
+        path = navigator.astar_tree(tree=hist_tree, destination_k_path=dest_k_path)
         self.assertIsNotNone(path)
 
 

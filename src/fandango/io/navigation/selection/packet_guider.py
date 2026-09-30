@@ -241,17 +241,17 @@ class PacketGuider:
     def _is_external_party(self, party: Optional[str]) -> bool:
         return party is not None and not self._forecast.is_fuzzer_controlled(party)
 
-    def _observe_seen_step(self, msg: DerivationTree) -> None:
-        if not self._is_external_party(msg.sender):
-            return
-        parent = msg.parent
-        if parent is None or not isinstance(parent.symbol, NonTerminal):
-            return
-        assert isinstance(msg.symbol, NonTerminal)
-        assert msg.sender is not None
-        self._step_refusals.observe_taken(
-            to_packet_step(parent.symbol, msg.symbol), msg.sender
-        )
+    def _observe_messages(self, messages: list[DerivationTree]) -> None:
+        """Counts the steps that may have produced the external messages of the history as taken."""
+        history_messages = [record.msg for record in self._history_tree.protocol_msgs()]
+        message_steps = self._forecast.result.message_steps
+        for message in messages:
+            index = index_by_reference(history_messages, message)
+            if index is None or not self._is_external_party(message.sender):
+                continue
+            assert message.sender is not None
+            for step in message_steps[index]:
+                self._step_refusals.observe_taken(step, message.sender)
         self._build_navigator_around_blocked_steps()
 
     def _count_refused_step(self, deviation: Deviation) -> None:
