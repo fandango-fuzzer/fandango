@@ -39,6 +39,9 @@ class ForecastView:
     def is_complete(self) -> bool:
         return len(self.result.complete_trees) != 0
 
+    def is_fuzzer_controlled(self, party: str) -> bool:
+        return self._io_instance.parties[party].is_fuzzer_controlled()
+
     def next_fuzzer_parties(
         self,
         show_fuzzer_controlled: bool = True,
