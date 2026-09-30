@@ -283,8 +283,10 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 f"Couldn't find solution for any packet: {nonterminals_str}"
             ) from None
 
-    def _is_coverage_complete(self) -> bool:
-        return self.coverage_percent() == 1.0
+    def _is_attainable_coverage_complete(self) -> bool:
+        if self.coverage_goal == CoverageGoal.RANDOM:
+            return False
+        return self._packet_selector.is_attainable_coverage_complete()
 
     def _start_new_run(self) -> None:
         log_guidance_hint("Starting new protocol run.")
@@ -325,8 +327,10 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 self._packet_selector.add_completed_tree(final_tree)
                 self._packet_coverage_filter.add_completed_tree(final_tree)
                 yield final_tree
-                if self._is_coverage_complete():
-                    log_guidance_hint("Full coverage reached, stopping evolution.")
+                if self._is_attainable_coverage_complete():
+                    log_guidance_hint(
+                        "Attainable coverage reached, stopping evolution."
+                    )
                     return None
                 self._start_new_run()
                 continue
@@ -376,8 +380,10 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                         f"Discarding remote response that could not be handled. "
                         f"Recording violation: {exc}"
                     )
-                    if self._is_coverage_complete():
-                        log_guidance_hint("Full coverage reached, stopping evolution.")
+                    if self._is_attainable_coverage_complete():
+                        log_guidance_hint(
+                            "Attainable coverage reached, stopping evolution."
+                        )
                         return None
                     self._start_new_run()
                     continue
@@ -404,6 +410,6 @@ class ProtocolAlgorithm(GeneticAlgorithm):
 
     def reset(self) -> None:
         self._packet_algorithm.reset()
-        self._packet_selector.reset_coverage()
+        self._packet_selector.reset()
         self._packet_coverage_filter.reset()
         self._protocol_tree = DerivationTree(self._start_symbol)
