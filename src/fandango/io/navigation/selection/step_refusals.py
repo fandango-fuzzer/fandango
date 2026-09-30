@@ -20,7 +20,7 @@ class StepRefusals:
         return self._refused_steps
 
     def observe_taken(self, step: Step, party: str) -> None:
-        """Records that the party took the step: its refusals start over, and it is allowed again if it was refused."""
+        """Records that the party took the step. Refuse counters are reset. Step is unblocked if blocked."""
         del self._refusals_in_a_row_by_step[step]
         if step in self._refused_steps:
             log_guidance_hint(
@@ -29,7 +29,7 @@ class StepRefusals:
             self._refused_steps = self._refused_steps - {step}
 
     def count_refusal(self, step: Step, party: str) -> None:
-        """Counts that the party deviated from the step; refuses the step after REFUSAL_LIMIT deviations in a row."""
+        """Counts that the party deviated from the step. Blocks the step afer REFUSAL_LIMIT calls of counte_refusal."""
         self._refusals_in_a_row_by_step[step] += 1
         if (
             self._refusals_in_a_row_by_step[step] >= self.REFUSAL_LIMIT
