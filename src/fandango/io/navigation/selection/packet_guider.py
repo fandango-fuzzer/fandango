@@ -163,16 +163,14 @@ class PacketGuider:
                 )
                 self._plan_path_to_end()
             else:
-                self._guide_path.set_route(
-                    found_guide_path, self._parent_of_last_message()
-                )
+                self._guide_path.set_route(found_guide_path)
         self._guide_to_end = self._guide_path.ends_run
 
         next_packet = self._guide_path.next_packet()
         selected_packets = self.find_packets(
-            sender=None if next_packet is None else next_packet.sender,
+            sender=None if next_packet is None else next_packet.packet.sender,
             hookin_states=self._guide_path.next_new_parent_states(),
-            packet_symbol=None if next_packet is None else next_packet.symbol,
+            packet_symbol=None if next_packet is None else next_packet.packet.symbol,
         )
         if len(selected_packets) == 0:
             selected_packets = self._forecast.get_fuzzer_packets()
@@ -226,10 +224,10 @@ class PacketGuider:
             self._history_tree, included_k_paths=self._session_covered_k_paths
         )
         # None marks the end of the run, as in the paths to a target.
-        self._guide_path.set_route(
-            [None] if path is None else [*path, None],
-            self._parent_of_last_message(),
-        )
+        if path is None:
+            self._guide_path.set_route([None])
+        else:
+            self._guide_path.set_route([*path, None])
 
     def _is_tree_contains_paths(
         self, paths: set[tuple[Symbol, ...]], tree: DerivationTree
@@ -241,14 +239,6 @@ class PacketGuider:
 
     def _confirm_covered_path(self, path: KPath) -> None:
         self._session_covered_k_paths.add(path)
-
-    def _parent_of_last_message(self) -> Optional[NonTerminal]:
-        """The rule the last message of the history stands in, where a route starting with a packet continues."""
-        last_message = next(self._history_tree.protocol_msgs(reverse=True), None)
-        if last_message is None or last_message.msg.parent is None:
-            return None
-        symbol = last_message.msg.parent.symbol
-        return symbol if isinstance(symbol, NonTerminal) else None
 
     def _is_external_party(self, party: Optional[str]) -> bool:
         return party is not None and not self._forecast.is_fuzzer_controlled(party)
