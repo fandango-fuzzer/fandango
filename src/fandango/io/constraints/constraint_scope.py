@@ -76,7 +76,6 @@ class _AccessPointCollector(ConstraintVisitor):
         statement: Constraint,
     ) -> None:
         self._add_access_point(search.get_access_points(include_base=True))
-        # The statement reads the bound variable from the scope, not the tree.
         inner = _AccessPointCollector(self._repetition_owners)
         inner.visit(statement)
         if inner.symbols is None:
@@ -121,7 +120,8 @@ class ConstraintScopeAnalyzer:
     def analyse_scope(
         self, non_terminal: NonTerminal, constraint: Constraint
     ) -> ConstraintScope:
-        """Returns where the constraint reads the tree, relative to messages of the type."""
+        """Checks if the constraint depends only on children of the current tree (INSIDE), is completely
+        unrelated (UNRELATED) to the tree, or depends on this and other trees (CROSSING)."""
         access_points = self._access_points_of(constraint)
         symbols_going_down, symbols_going_up = self._inside_and_above_of(non_terminal)
 
