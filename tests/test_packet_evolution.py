@@ -4,9 +4,15 @@ from collections.abc import Iterator
 import pytest
 
 from fandango.api import Fandango
+from fandango.constraints.constraint import Constraint
+from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.crossover import SimpleSubtreeCrossover
 from fandango.evolution.mutation import SimpleMutation
+from fandango.io.constraints.constraint_scope import (
+    ConstraintScope,
+    ConstraintScopeAnalyzer,
+)
 from fandango.io.navigation.forecasting.forecasting_result import (
     ForecastingPacket,
     MountingPath,
@@ -18,6 +24,7 @@ from fandango.io.packet_evolution.io_population_manager import IoPopulationManag
 from fandango.io.packet_evolution.packet_mounter import PacketMounter
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.parse.parse import parse
 from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
 
@@ -266,3 +273,64 @@ def test_constraint_inside_message_fails_on_the_packet(
     ).collect()
     assert fitness < 1.0
     assert [str(failing.tree) for failing in failing_trees] == ["B\n"]
+
+
+def test_constraint_scopes():
+    k_path_io = (RESOURCES_ROOT / "k_path_io.fan").read_text()
+    cmd = NonTerminal("<cmd>")
+    reply = NonTerminal("<reply>")
+    cases = [
+        ("str(<verb>) == 'GET'", ConstraintScope.INSIDE, ConstraintScope.UNRELATED),
+        (
+            "forall <a> in <arg>: len(str(<a>)) < 5",
+            ConstraintScope.INSIDE,
+            ConstraintScope.UNRELATED,
+        ),
+        ("str(<code>) == '200'", ConstraintScope.UNRELATED, ConstraintScope.INSIDE),
+        (
+            "str(<verb>) == 'GET' or str(<code>) == '200'",
+            ConstraintScope.CROSSING,
+            ConstraintScope.CROSSING,
+        ),
+        (
+            "str(<exchange>.<cmd>) != ''",
+            ConstraintScope.CROSSING,
+            ConstraintScope.CROSSING,
+        ),
+        (
+            "forall <d> in <start>..<digit>: str(<d>) == '0'",
+            ConstraintScope.CROSSING,
+            ConstraintScope.CROSSING,
+        ),
+        ("len(str(<start>)) > 0", ConstraintScope.CROSSING, ConstraintScope.CROSSING),
+    ]
+    for constraint_text, cmd_scope, reply_scope in cases:
+        grammar, constraints = parse(
+            k_path_io + f"\nwhere {constraint_text}\n",
+            use_stdlib=False,
+            use_cache=False,
+        )
+        assert grammar is not None
+        (constraint,) = constraints
+        assert isinstance(constraint, Constraint)
+        scopes = ConstraintScopeAnalyzer(grammar)
+        assert scopes.analyse_scope(cmd, constraint) == cmd_scope, constraint_text
+        assert scopes.analyse_scope(reply, constraint) == reply_scope, constraint_text
+
+    reply_rule = "<reply> ::= <code>\n"
+    assert reply_rule in k_path_io
+    grammar, constraints = parse(
+        k_path_io.replace(
+            reply_rule,
+            "<reply> ::= <code> ' ' <n> <text>{int(<n>)}\n"
+            "<n> ::= '1' | '2'\n"
+            "<text> ::= 'a' | 'b'\n",
+        ),
+        use_stdlib=False,
+        use_cache=False,
+    )
+    assert grammar is not None
+    (bounds,) = [c for c in constraints if isinstance(c, RepetitionBoundsConstraint)]
+    scopes = ConstraintScopeAnalyzer(grammar)
+    assert scopes.analyse_scope(cmd, bounds) == ConstraintScope.UNRELATED
+    assert scopes.analyse_scope(reply, bounds) == ConstraintScope.INSIDE
