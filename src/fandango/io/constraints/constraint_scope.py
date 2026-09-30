@@ -106,6 +106,8 @@ class ConstraintScopeAnalyzer:
                 if isinstance(node, Repetition):
                     self._repetition_owners[node.id] = symbol
                 pending.extend(node.children())
+            if symbol in grammar.generators:
+                children |= grammar.generator_dependencies(symbol)
             self._children[symbol] = children
         self._parents: dict[NonTerminal, set[NonTerminal]] = {}
         for symbol, children in self._children.items():
