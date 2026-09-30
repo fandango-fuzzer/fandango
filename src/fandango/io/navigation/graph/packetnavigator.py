@@ -1,27 +1,48 @@
 from collections.abc import Generator
 from typing import Optional
 
+from fandango.io.navigation.graph.blocked_step_pruner import BlockedStepPruner
 from fandango.io.navigation.graph.grammarnavigator import GrammarNavigator
 from fandango.io.navigation.graph.packetiterativeparser import (
     NavigatorPacketIterativeParser,
 )
 from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConverter
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
+from fandango.io.navigation.step import Step
 from fandango.language import DerivationTree, Grammar
 from fandango.language.grammar.grammar import KPath
 from fandango.language.grammar.node_visitors.grammar_graph_converter import (
     GrammarGraphNode,
 )
+from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.symbols.non_terminal import NonTerminal
 
 
 class PacketNavigator(GrammarNavigator):
-    def __init__(self, grammar: Grammar, start_symbol: Optional[NonTerminal] = None):
+    def __init__(
+        self,
+        grammar: Grammar,
+        start_symbol: Optional[NonTerminal] = None,
+        blocked_steps: frozenset[Step] = frozenset(),
+        state_rules: Optional[dict[NonTerminal, Node]] = None,
+    ):
+        """
+        Navigates the state grammar of the grammar, around the blocked steps.
+        state_rules is that state grammar if it was already built, as with_blocked_steps passes it on.
+        """
         if start_symbol is None:
             start_symbol = NonTerminal("<start>")
-        reduced_rules = StateGrammarConverter(grammar.grammar_settings).process(
-            grammar.rules, start_symbol
+        if state_rules is None:
+            state_rules = StateGrammarConverter(grammar.grammar_settings).process(
+                grammar.rules, start_symbol
+            )
+        self._protocol_grammar = grammar
+        self._state_rules = state_rules
+        self.blocked_steps = blocked_steps
+        self._derivable_by_k_path: dict[KPath, bool] = {}
+        reduced_rules = BlockedStepPruner(grammar.grammar_settings).prune(
+            state_rules, start_symbol, blocked_steps
         )
         super().__init__(
             Grammar(
@@ -38,6 +59,27 @@ class PacketNavigator(GrammarNavigator):
         )
         self._parser = NavigatorPacketIterativeParser(reduced_rules)
         self.set_message_cost(1)
+
+    def gen_with_blocked_steps(self, blocked_steps: frozenset[Step]) -> "PacketNavigator":
+        """Returns a new navigator for the same grammar that routes around the blocked steps."""
+        return PacketNavigator(
+            self._protocol_grammar, self._start_symbol, blocked_steps, self._state_rules
+        )
+
+    def is_derivable(self, destination_k_path: KPath) -> bool:
+        """True if the k-path still exists in the grammar without the blocked steps."""
+        if len(self.blocked_steps) == 0 or len(destination_k_path) == 0:
+            return True
+        derivable = self._derivable_by_k_path.get(destination_k_path)
+        if derivable is None:
+            names = [str(symbol) for symbol in self._search_k_path(destination_k_path)]
+            references = self._reference_graph()
+            derivable = names[0] in references and all(
+                child in references.get(parent, ())
+                for parent, child in zip(names, names[1:], strict=False)
+            )
+            self._derivable_by_k_path[destination_k_path] = derivable
+        return derivable
 
     def get_controlflow_tree(
         self, tree: DerivationTree
@@ -148,18 +190,21 @@ class PacketNavigator(GrammarNavigator):
         tree: DerivationTree,
         destination_k_path: KPath,
     ) -> Optional[list[GrammarGraphNode | None]]:
-        search_destination_symbols = []
-        for symbol in destination_k_path:
+        path = super().astar_tree(
+            tree=tree, destination_k_path=self._search_k_path(destination_k_path)
+        )
+        return path
+
+    def _search_k_path(self, k_path: KPath) -> KPath:
+        search_symbols = []
+        for symbol in k_path:
             if symbol in self._packet_symbols:
-                search_destination_symbols.append(
+                search_symbols.append(
                     StateGrammarConverter.to_packet_non_terminal(symbol)
                 )
             else:
-                search_destination_symbols.append(symbol)
-        path = super().astar_tree(
-            tree=tree, destination_k_path=tuple(search_destination_symbols)
-        )
-        return path
+                search_symbols.append(symbol)
+        return tuple(search_symbols)
 
     def astar_tree_symbols(
         self,
