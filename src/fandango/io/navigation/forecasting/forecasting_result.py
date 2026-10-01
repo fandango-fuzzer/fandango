@@ -29,7 +29,7 @@ class MountingPath:
         path: tuple[tuple[NonTerminal, bool], ...],
     ) -> tuple[tuple[NonTerminal, bool], ...]:
         return tuple(
-            (nt, new_node) for nt, new_node in path if not nt.name().startswith("<__")
+            (nt, new_node) for nt, new_node in path if not Step.is_control_flow(nt)
         )
 
     def __hash__(self) -> int:
@@ -49,6 +49,11 @@ class ForecastingPacket:
 
     def add_path(self, path: MountingPath) -> None:
         self.paths.add(path)
+
+    def __repr__(self) -> str:
+        return (
+            f"ForecastingPacket({self.node.format_as_spec()}, {len(self.paths)} paths)"
+        )
 
 
 class ForecastingNonTerminals:
@@ -70,6 +75,9 @@ class ForecastingNonTerminals:
                 self.nt_to_packet[packet.node.symbol].add_path(path)
         else:
             self.nt_to_packet[packet.node.symbol] = packet
+
+    def __repr__(self) -> str:
+        return f"ForecastingNonTerminals({list(self.nt_to_packet.values())!r})"
 
 
 class ForecastingResult:
@@ -107,3 +115,9 @@ class ForecastingResult:
                 self.add_packet(party, fp)
         self.complete_trees.update(other.complete_trees)
         return self
+
+    def __repr__(self) -> str:
+        return (
+            f"ForecastingResult({self.parties_to_packets!r}, complete_trees={len(self.complete_trees)}, "
+            f"message_steps for {len(self.message_steps)} messages)"
+        )

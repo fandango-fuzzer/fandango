@@ -80,3 +80,6 @@ class ForecastView:
 
     def get_next_parties(self) -> list[str]:
         return list(self.result.get_msg_parties())
+
+    def __repr__(self) -> str:
+        return f"ForecastView(result={self._result!r})"
