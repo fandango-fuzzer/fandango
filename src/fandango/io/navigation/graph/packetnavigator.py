@@ -59,6 +59,8 @@ class PacketNavigator(GrammarNavigator):
         )
         self._parser = NavigatorPacketIterativeParser(reduced_rules)
         self.set_message_cost(1)
+        self.last_target_step: Optional[Step] = None
+        """The step to the target of the last route, if that target is not a packet."""
 
     def gen_with_blocked_steps(
         self, blocked_steps: frozenset[Step]
@@ -178,7 +180,7 @@ class PacketNavigator(GrammarNavigator):
     ) -> Optional[Route]:
         if included_k_paths is None:
             included_k_paths = set()
-        routes: list[Route] = []
+        routes: list[tuple[Route, Optional[GrammarGraphNode]]] = []
         found_trees, include_k_paths = self._find_trees_including_k_paths(
             included_k_paths, tree
         )
@@ -188,11 +190,20 @@ class PacketNavigator(GrammarNavigator):
             )
             if path is None:
                 continue
-            routes.append(self._to_route(path))
-        routes.sort(key=len)
+            routes.append((self._to_route(path), path[-1] if len(path) != 0 else None))
+        self.last_target_step = None
         if len(routes) == 0:
             return None
-        return routes[0]
+        route, target = min(
+            routes, key=lambda route_and_target: len(route_and_target[0])
+        )
+        if (
+            target is not None
+            and isinstance(target.node, NonTerminalNode)
+            and target.node.sender is None
+        ):
+            self.last_target_step = self._step_of_graph_node(target)
+        return route
 
     def astar_tree(
         self,

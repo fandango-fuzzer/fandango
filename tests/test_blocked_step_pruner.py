@@ -88,6 +88,22 @@ class TestBlockedStepPruner(unittest.TestCase):
         ]
         self.assertIn(self._step("hello\nc\nok\nbye\ndone\n"), planned_steps)
 
+    def test_route_to_a_target_without_packet_gives_the_step_to_it(self):
+        navigator = PacketNavigator(self.grammar)
+        history = self.grammar.parse(
+            "hello\n", mode=ParsingMode.INCOMPLETE, include_controlflow=True
+        )
+        assert history is not None
+        route = navigator.astar_tree_including_k_paths(
+            tree=history, destination_k_path=(AFTER_OK,)
+        )
+        assert route is not None and navigator.last_target_step is not None
+        self.assertEqual(navigator.last_target_step.packet, AFTER_OK)
+        blocked = navigator.gen_with_blocked_steps(
+            frozenset([navigator.last_target_step])
+        )
+        self.assertFalse(blocked.is_derivable((AFTER_OK,)))
+
 
 if __name__ == "__main__":
     unittest.main()

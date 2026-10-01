@@ -11,6 +11,7 @@ from fandango.io.navigation.selection.guide_path_tracker import (
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.step_refusals import StepRefusals
 from fandango.io.navigation.selection.target_selector import TargetSelector
+from fandango.io.navigation.step import Step
 from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree, index_by_reference
@@ -45,6 +46,7 @@ class PacketGuider:
         self._prev_completed_count = 0
         self._guide_to_end = False
         self._guide_target: Optional[KPath] = None
+        self._target_step: Optional[Step] = None
         self._guide_path = GuidePathTracker(model.permutation_groups)
         self._prev_session_msgs: list[DerivationTree] = []
         self._session_covered_k_paths: set[KPath] = set()
@@ -117,6 +119,9 @@ class PacketGuider:
             self._session_covered_k_paths.clear()
         self._prev_completed_count = completed_count
 
+        route_followed = not is_new_tree and self._guide_path.next_packet() is None
+        followed_target = self._guide_target if route_followed else None
+        followed_target_step = self._target_step
         new_msgs = self._new_msgs(is_new_tree)
         self._observe_messages(new_msgs)
         deviation = self._guide_path.follow(new_msgs)
@@ -166,14 +171,32 @@ class PacketGuider:
                 self._plan_path_to_end()
             else:
                 self._guide_path.set_route(found_guide_path)
+                self._target_step = self._navigator.last_target_step
         self._guide_to_end = self._guide_path.ends_run
 
         next_packet = self._guide_path.next_packet()
-        selected_packets = self.find_packets(
-            sender=None if next_packet is None else next_packet.packet.sender,
-            hookin_states=self._guide_path.next_new_parent_states(),
-            packet_symbol=None if next_packet is None else next_packet.packet.symbol,
-        )
+        sender = None if next_packet is None else next_packet.packet.sender
+        hookin_states = self._guide_path.next_new_parent_states()
+        packet_symbol = None if next_packet is None else next_packet.packet.symbol
+        selected_packets = []
+        if (
+            followed_target is not None
+            and followed_target != self._guide_target
+            and followed_target not in self._session_covered_k_paths
+        ):
+            # Keep the followed target if a packet can; if none can, the last answer left it.
+            selected_packets = self.find_packets(
+                sender=sender,
+                hookin_states=hookin_states,
+                packet_symbol=packet_symbol,
+                required_k_paths=self._session_covered_k_paths.union([followed_target]),
+            )
+            if len(selected_packets) == 0 and len(new_msgs) != 0:
+                self._count_refused_target(followed_target_step, new_msgs[-1])
+        if len(selected_packets) == 0:
+            selected_packets = self.find_packets(
+                sender=sender, hookin_states=hookin_states, packet_symbol=packet_symbol
+            )
         if len(selected_packets) == 0:
             selected_packets = self._forecast.get_fuzzer_packets()
         self._remember_messages()
@@ -185,7 +208,10 @@ class PacketGuider:
         sender: Optional[str] = None,
         hookin_states: Optional[list[Symbol]] = None,
         packet_symbol: Optional[NonTerminal] = None,
+        required_k_paths: Optional[set[KPath]] = None,
     ) -> list[ForecastingPacket]:
+        if required_k_paths is None:
+            required_k_paths = self._session_covered_k_paths
         packets = []
         hookin_states_tp: tuple[Symbol, ...] = tuple()
         if hookin_states is not None:
@@ -204,7 +230,7 @@ class PacketGuider:
                 append_packet = ForecastingPacket(packet.node)
                 for hookin_path in packet.paths:
                     if not self._is_tree_contains_paths(
-                        self._session_covered_k_paths, hookin_path.tree
+                        required_k_paths, hookin_path.tree
                     ):
                         continue
                     packet_hookin_states = tuple(
@@ -272,6 +298,15 @@ class PacketGuider:
         assert sender is not None
         assert step is not None
         self._step_refusals.count_refusal(step, sender)
+        self._build_navigator_around_blocked_steps()
+
+    def _count_refused_target(
+        self, step: Optional[Step], message: DerivationTree
+    ) -> None:
+        if step is None or not self._is_external_party(message.sender):
+            return
+        assert message.sender is not None
+        self._step_refusals.count_refusal(step, message.sender)
         self._build_navigator_around_blocked_steps()
 
     def _remember_messages(self) -> None:
