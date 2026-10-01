@@ -12,6 +12,9 @@ class Deviation(NamedTuple):
     planned: Optional[PlannedPacket]
     message: DerivationTree
 
+    def __repr__(self) -> str:
+        return f"Deviation(planned={self.planned!r}, message={self.message.symbol!r})"
+
 
 class GuidePathTracker:
     """
@@ -95,3 +98,6 @@ class GuidePathTracker:
                 del self._route[index]
                 return True
         return False
+
+    def __repr__(self) -> str:
+        return f"GuidePathTracker(route={self._route!r})"
