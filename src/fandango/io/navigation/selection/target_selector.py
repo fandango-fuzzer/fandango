@@ -1,3 +1,4 @@
+from collections import Counter
 from collections.abc import Callable
 
 from fandango.io.navigation.coverage.powerschedule import (
@@ -20,11 +21,15 @@ class TargetSelector:
             map(lambda x: x.symbol, self._model.protocol_msg_symbols)
         )
         self._state_target_by_path: dict[KPath, KPath] = {}
+        self._uncovered: set[KPath] = set()
+        self._open_below: Counter[KPath] = Counter()
 
     def reset(self) -> None:
         """Forget the targets chosen so far, as after construction."""
         self._msg_power_schedule = PowerScheduleCoverage()
         self._state_path_power_schedule = PowerScheduleKPath()
+        self._uncovered = set()
+        self._open_below = Counter()
 
     def select(
         self,
@@ -33,12 +38,8 @@ class TargetSelector:
         is_derivable: Callable[[KPath], bool],
     ) -> KPath:
         unreached_paths = set(uncovered_paths)
-        uncovered_paths = list(
-            filter(
-                is_derivable,
-                dict.fromkeys(self._trim_to_state_symbols(uncovered_paths)),
-            )
-        )
+        self._update_open_below(unreached_paths)
+        uncovered_paths = list(filter(is_derivable, self._open_below))
         if len(uncovered_paths) == 0:
             derivable_scores = [
                 (message, score)
@@ -59,6 +60,22 @@ class TargetSelector:
         selected_path = s_ps.choose()
         s_ps.add_past_target(selected_path)
         return selected_path
+
+    def _update_open_below(self, uncovered: set[KPath]) -> None:
+        """Updated the cached counts of k-paths that are currently uncovered."""
+        newly_uncovered = uncovered - self._uncovered
+        newly_covered = self._uncovered - uncovered
+        for path in newly_uncovered:
+            target = self._state_target_of(path)
+            if len(target) != 0:
+                self._open_below[target] += 1
+        for path in newly_covered:
+            target = self._state_target_of(path)
+            if len(target) != 0:
+                self._open_below[target] -= 1
+                if self._open_below[target] == 0:
+                    del self._open_below[target]
+        self._uncovered = uncovered
 
     def is_every_path_underivable(
         self,
