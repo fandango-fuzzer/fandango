@@ -36,6 +36,10 @@ class StepRefusals:
             )
             self._unblock(step)
 
+    def is_block_deferred(self, step: Step) -> bool:
+        """True if the step is refused is not being blacklisted till the session ends."""
+        return step in self._party_by_deferred_step
+
     def count_refusal(self, step: Step, party: str) -> None:
         """
         Counts that the party deviated from the step. Blocks the step after REFUSAL_LIMIT calls.
