@@ -131,6 +131,10 @@ class PacketSelector:
     def is_complete(self) -> bool:
         return self._forecast.is_complete()
 
+    def is_run_abandoned(self) -> bool:
+        self._ensure_next_packets()
+        return self._guider.abandons_run
+
     def next_fuzzer_parties(
         self,
         show_fuzzer_controlled: bool = True,

@@ -335,6 +335,12 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 self._start_new_run()
                 continue
 
+            if self._packet_selector.is_run_abandoned():
+                self._packet_selector.abort_run(self._protocol_tree)
+                self._packet_coverage_filter.add_completed_tree(self._protocol_tree)
+                self._start_new_run()
+                continue
+
             if self._packet_selector.should_generate_next_packet():
                 self._packet_algorithm.reset()
                 with packet_mounter.history_context(self._protocol_tree):

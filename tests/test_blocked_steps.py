@@ -183,8 +183,10 @@ class TestStepRefusals(unittest.TestCase):
         self.refusals.observe_taken(STEP, "Extern")
         self._refuse(StepRefusals.REFUSAL_LIMIT)
         self.assertNotIn(STEP, self.refusals.blocked_steps)
+        self.assertTrue(self.refusals.is_block_deferred(STEP))
         self._end_sessions(1)
         self.assertIn(STEP, self.refusals.blocked_steps)
+        self.assertFalse(self.refusals.is_block_deferred(STEP))
 
     def test_block_expires_after_its_sessions(self):
         self._refuse(StepRefusals.REFUSAL_LIMIT)

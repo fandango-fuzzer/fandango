@@ -15,7 +15,7 @@ from fandango.io.navigation.step import Step
 from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree, index_by_reference
-from fandango.logger import log_guidance_hint
+from fandango.logger import LOGGER, log_guidance_hint
 
 
 class PacketGuider:
@@ -45,6 +45,7 @@ class PacketGuider:
         self._last_completed_tree: Optional[DerivationTree] = None
         self._prev_completed_count = 0
         self._guide_to_end = False
+        self._abandons_run = False
         self._guide_target: Optional[KPath] = None
         self._target_step: Optional[Step] = None
         self._guide_path = GuidePathTracker(model.permutation_groups)
@@ -55,6 +56,11 @@ class PacketGuider:
     @property
     def is_guide_to_end(self) -> bool:
         return self._guide_to_end
+
+    @property
+    def abandons_run(self) -> bool:
+        """True if the run cannot be guided to its end and should be aborted."""
+        return self._abandons_run
 
     @property
     def max_messages_per_tree(self) -> int:
@@ -75,6 +81,7 @@ class PacketGuider:
         """Forget the current guide target and start with a new DerivationTree."""
         self._history_tree = DerivationTree(NonTerminal("<start>"))
         self._guide_to_end = False
+        self._abandons_run = False
         self._guide_target = None
         self._guide_path.clear()
         self._prev_session_msgs = []
@@ -127,6 +134,12 @@ class PacketGuider:
         deviation = self._guide_path.follow(new_msgs)
         if deviation is not None:
             self._count_refused_step(deviation)
+            if self._is_end_route_refused(deviation):
+                LOGGER.warning(
+                    "FANDANGOPANIC: Observed derivation of planned protocol path twice for the same transition. "
+                    f"Hard-terminating protocol session. Observed derivation {deviation}"
+                )
+                self._abandons_run = True
 
         uncovered_paths = get_uncovered_paths()
         if (
@@ -291,6 +304,17 @@ class PacketGuider:
         assert msg.sender is not None
         self._step_refusals.count_refusal(planned.step, msg.sender)
         self._build_navigator_around_blocked_steps()
+
+    def _is_end_route_refused(self, deviation: Deviation) -> bool:
+        """
+        True if the party refused a step of the route to the end of the run and that step's block is deferred.
+        """
+        planned, _message = deviation
+        return (
+            self._guide_to_end
+            and planned is not None
+            and self._step_refusals.is_block_deferred(planned.step)
+        )
 
     def _count_refused_target(
         self, step: Optional[Step], message: DerivationTree
