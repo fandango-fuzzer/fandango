@@ -15,6 +15,9 @@ class Step(NamedTuple):
 
     path: tuple[NonTerminal, ...]
 
+    def __repr__(self) -> str:
+        return f"Step({'/'.join(symbol.name() for symbol in self.path)})"
+
     @property
     def packet(self) -> NonTerminal:
         return self.path[-1]
