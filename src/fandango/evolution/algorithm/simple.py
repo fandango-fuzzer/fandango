@@ -8,7 +8,11 @@ from typing import Iterable, Optional
 
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
-from fandango.errors import FandangoParseError, FandangoValueError
+from fandango.errors import (
+    FandangoFailedError,
+    FandangoParseError,
+    FandangoValueError,
+)
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.adaptation import AdaptiveTuner
 from fandango.evolution.algorithm.base import (
@@ -191,6 +195,11 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
 
             timer.increment(len(self.population))
 
+        if not self.population:
+            raise FandangoFailedError(
+                "Could not generate a single individual; see the warnings above"
+            )
+
         LOGGER.info(
             f"Initial population generated in {time.time() - st_time:.2f} seconds"
         )
@@ -216,7 +225,9 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
             )
             timer.increment(len(new_population))
 
-        unique_hashes = {hash(ind) for ind in new_population}
+        unique_hashes = {
+            self.population_manager.individual_hash(ind) for ind in new_population
+        }
         return new_population, unique_hashes
 
     def _perform_crossover(
@@ -424,7 +435,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
                 new_population = self._perform_destruction(new_population)
 
             # Ensure Uniqueness & Fill Population
-            new_population = list(set(new_population))
+            new_population = self.population_manager.unique(new_population)
             yield from self.population_manager.refill_population(
                 new_population,
                 self.evaluator.evaluate_individual,
@@ -436,10 +447,12 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
             for ind in new_population:
                 (
                     _fitness,
-                    _failing_trees,
+                    failing_trees,
                     suggestion,
                 ) = yield from self.evaluator.evaluate_individual(ind)
-                ind, num_fixes = self.population_manager.fix_individual(ind, suggestion)
+                ind, num_fixes = yield from self.population_manager.fix_individual(
+                    ind, failing_trees, suggestion, self.evaluator.evaluate_individual
+                )
                 self.population.append(ind)
                 self.fixes_made += num_fixes
 
@@ -521,8 +534,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
 
     def reset(self) -> None:
         self.evaluator.flush_fitness_cache()
-        self.evaluator._solution_set.clear()
-        self.evaluator._fitness_cache.clear()
+        self.evaluator.reset()
         self.population.clear()
         self.evaluation.clear()
         self._initial_solutions.clear()

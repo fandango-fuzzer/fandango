@@ -48,6 +48,6 @@ def write_coverage_log(fandango, output_folder_name, id_nr, time_start):
             f"Nr trees generated: {len(fandango.packet_selector._all_derivation_trees())}\n"
         )
         f.write(
-            f"Nr messages exchanged: {sum(len(sol.protocol_msgs()) for sol in fandango.packet_selector._all_derivation_trees())}\n"
+            f"Nr messages exchanged: {sum(len(list(sol.protocol_msgs())) for sol in fandango.packet_selector._all_derivation_trees())}\n"
         )
         f.write(f"Overall time elapsed: {time.time() - time_start:.2f}s\n")

@@ -2,6 +2,8 @@ import copy
 import warnings
 from collections import deque
 from collections.abc import Callable, Generator, Iterable, Iterator
+from contextlib import contextmanager
+from functools import partial
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
 from fandango.language.symbols import NonTerminal, Slice, Symbol, Terminal
@@ -61,7 +63,7 @@ class PathStep:
         return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
 
     def __hash__(self) -> int:
-        return hash(tuple(sorted(self.__dict__.items())))
+        return hash(self.index)
 
 
 class SourceStep(PathStep):
@@ -269,24 +271,25 @@ class DerivationTree:
             stack.extend(node._children)
             stack.extend(node._sources)
 
-    def protocol_msgs(self) -> list[ProtocolMessage]:
+    def protocol_msgs(self, reverse: bool = False) -> Iterator[ProtocolMessage]:
         """
-        Returns a list of all protocol messages present in the current DerivationTree and children.
+        Yields all protocol messages present in the current DerivationTree and children, last message first if reverse is set.
         """
-        messages: list[ProtocolMessage] = []
         pending: list[DerivationTree] = [self]
         while pending:
             node = pending.pop()
             if not isinstance(node.symbol, NonTerminal):
                 continue
             if node.sender is not None:
-                messages.append(ProtocolMessage(node.sender, node.recipient, node))
+                yield ProtocolMessage(node.sender, node.recipient, node)
                 continue
-            pending.extend(reversed(node._children))
-        return messages
+            pending.extend(node._children if reverse else reversed(node._children))
 
     def append(
-        self, hookin_path: tuple[tuple[NonTerminal, bool], ...], tree: "DerivationTree"
+        self,
+        hookin_path: tuple[tuple[NonTerminal, bool], ...],
+        tree: "DerivationTree",
+        read_only_new_nodes: bool = False,
     ) -> None:
         """
         Appends a given DerivationTree to the current subtree at the specified hookin_path.
@@ -294,20 +297,21 @@ class DerivationTree:
         :param hookin_path: A tuple of (NonTerminal, bool) pairs indicating the path to append the tree. If the bool
         is set to true, a new node is created for the NonTerminal.
         :param tree: The DerivationTree to append.
+        :param read_only_new_nodes: If True, the nodes created along hookin_path are read-only.
         """
         if len(hookin_path) == 0:
             self.add_child(tree)
             return
         next_nt, add_new_node = hookin_path[0]
         if add_new_node:
-            self.add_child(DerivationTree(next_nt))
+            self.add_child(DerivationTree(next_nt, read_only=read_only_new_nodes))
         elif (
             len(self.children) == 0
             or not isinstance(self.children[-1].symbol, NonTerminal)
             or self.children[-1].symbol.name() != next_nt.name()
         ):
             raise ValueError("Invalid hookin_path!")
-        self.children[-1].append(hookin_path[1:], tree)
+        self.children[-1].append(hookin_path[1:], tree, read_only_new_nodes)
 
     def set_children(self, children: list["DerivationTree"]) -> None:
         self._children = children
@@ -445,7 +449,6 @@ class DerivationTree:
                 child for child in node._children if child.hash_cache is None
             )
 
-        result = 0
         for node in reversed(unhashed):
             node.hash_cache = hash(
                 (
@@ -455,8 +458,8 @@ class DerivationTree:
                     tuple(hash(child) for child in node._children),
                 )
             )
-            result = node.hash_cache
-        return result
+        assert self.hash_cache is not None
+        return self.hash_cache
 
     def __tree__(self) -> TreeTuple[Symbol]:
         return self.symbol, [child.__tree__() for child in self._children]
@@ -752,7 +755,7 @@ class DerivationTree:
         ref_tree = self.split_end(copy_tree)
         assert ref_tree.parent is not None
         ref_tree = ref_tree.parent
-        ref_tree.set_children(ref_tree.children[:-1])
+        ref_tree.remove_child(index=-1)
         return ref_tree
 
     def get_root(self, stop_at_argument_begin: bool = False) -> "DerivationTree":
@@ -763,9 +766,25 @@ class DerivationTree:
             root = root.parent
         return root
 
-    def _split_end(self) -> "DerivationTree":
+    @contextmanager
+    def split_end_context(self) -> Iterator["DerivationTree"]:
+        """
+        Like split_end(copy_tree=False), but restores the tree after the block.
+        """
+        undo: list[Callable[[], None]] = []
+        try:
+            yield self._split_end(undo)
+        finally:
+            for restore in reversed(undo):
+                restore()
+
+    def _split_end(
+        self, undo: Optional[list[Callable[[], None]]] = None
+    ) -> "DerivationTree":
         if self.parent is None or self in self.parent.sources:
             if self.parent is not None:
+                if undo is not None:
+                    undo.append(partial(setattr, self, "_parent", self.parent))
                 self._parent = None
             return self
         me_idx = index_by_reference(self.parent.children, self)
@@ -773,7 +792,9 @@ class DerivationTree:
             # Handle error or fallback — for example:
             raise ValueError("self not found in parent's children")
         keep_children = self.parent.children[: (me_idx + 1)]
-        parent = self.parent._split_end()
+        parent = self.parent._split_end(undo)
+        if undo is not None:
+            undo.append(partial(parent.set_children, parent.children))
         parent.set_children(keep_children)
         return self
 
@@ -812,21 +833,38 @@ class DerivationTree:
         self,
         grammar: "fandango.language.grammar.grammar.Grammar",  # full path to avoid circular import
         replacements: list[tuple["DerivationTree", "DerivationTree"]],
-        path_to_replacement: Optional[
-            dict[tuple[PathStep, ...], "DerivationTree"]
-        ] = None,
         current_path: Optional[tuple[PathStep, ...]] = None,
     ) -> "DerivationTree":
         """
         Replace the subtree rooted at the given node with the new subtree.
         """
-        if path_to_replacement is None:
-            path_to_replacement = dict()
-            for replacee, replacement in replacements:
-                path_to_replacement[replacee.get_choices_path()] = replacement
+        path_to_replacement = dict()
+        for replacee, replacement in replacements:
+            path_to_replacement[replacee.get_choices_path()] = replacement
 
+        replacement_path_prefixes = {
+            path[:length]
+            for path in path_to_replacement
+            for length in range(len(path) + 1)
+        }
         if current_path is None:
             current_path = self.get_choices_path()
+
+        return self._replace_multiple(
+            grammar, path_to_replacement, replacement_path_prefixes, current_path
+        )
+
+    def _replace_multiple(
+        self,
+        grammar: "fandango.language.grammar.grammar.Grammar",  # full path to avoid circular import
+        path_to_replacement: dict[tuple[PathStep, ...], "DerivationTree"],
+        replacement_path_prefixes: set[tuple[PathStep, ...]],
+        current_path: tuple[PathStep, ...],
+    ) -> "DerivationTree":
+        if current_path not in replacement_path_prefixes:
+            unchanged_copy = self.deepcopy(copy_parent=False)
+            unchanged_copy._parent = self.parent
+            return unchanged_copy
 
         if (
             current_path in path_to_replacement
@@ -841,10 +879,10 @@ class DerivationTree:
             new_children = []
             for i, child in enumerate(new_subtree._children):
                 new_children.append(
-                    child.replace_multiple(
+                    child._replace_multiple(
                         grammar,
-                        replacements,
                         path_to_replacement,
+                        replacement_path_prefixes,
                         current_path + (ChildStep(i),),
                     )
                 )
@@ -857,20 +895,20 @@ class DerivationTree:
         new_children = []
         sources = []
         for i, param in enumerate(self._sources):
-            new_param = param.replace_multiple(
+            new_param = param._replace_multiple(
                 grammar,
-                replacements,
                 path_to_replacement,
+                replacement_path_prefixes,
                 current_path + (SourceStep(i),),
             )
             sources.append(new_param)
             if new_param != param:
                 regen_children = True
         for i, child in enumerate(self._children):
-            new_child = child.replace_multiple(
+            new_child = child._replace_multiple(
                 grammar,
-                replacements,
                 path_to_replacement,
+                replacement_path_prefixes,
                 current_path + (ChildStep(i),),
             )
             new_children.append(new_child)
@@ -967,6 +1005,10 @@ class DerivationTree:
         Return the parent node of the current node.
         """
         return self._parent
+
+    @parent.setter
+    def parent(self, parent: Optional["DerivationTree"]) -> None:
+        self._parent = parent
 
     def children_values(self) -> list[TreeValue]:
         """

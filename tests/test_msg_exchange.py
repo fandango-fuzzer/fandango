@@ -14,7 +14,7 @@ def test_msg_exchange():
     assert len(result_list) == 1
     result = result_list[0]
     assert isinstance(result, DerivationTree)
-    messages = result.protocol_msgs()
+    messages = list(result.protocol_msgs())
     assert len(messages) == 4
     assert messages[0].sender == "Fuzzer"
     assert messages[0].recipient == "Extern"

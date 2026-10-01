@@ -1,10 +1,10 @@
 from collections.abc import Callable
 from typing import Optional
 
-from fandango.io.navigation.graph.packetforecaster import ForecastingPacket
+from fandango.io.navigation.forecasting.forecast_view import ForecastView
+from fandango.io.navigation.forecasting.forecasting_result import ForecastingPacket
 from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.io.navigation.selection.forecast_view import ForecastView
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.target_selector import TargetSelector
 from fandango.language.grammar.grammar import KPath
@@ -97,7 +97,7 @@ class PacketGuide:
         uncovered_paths = get_uncovered_paths()
         self._guide_to_end = False
         if (
-            len(history_tree.protocol_msgs()) > self._max_messages_per_tree
+            len(list(history_tree.protocol_msgs())) > self._max_messages_per_tree
             or len(uncovered_paths) == 0
         ):
             if len(uncovered_paths) == 0:

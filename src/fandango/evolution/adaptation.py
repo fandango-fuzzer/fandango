@@ -4,6 +4,7 @@ from typing import Optional
 from fandango.constraints.failing_tree import FailingTree, Suggestion
 from fandango.evolution.evaluation import Evaluator
 from fandango.language import DerivationTree
+from fandango.language.grammar import nodes
 from fandango.logger import LOGGER
 
 
@@ -19,7 +20,7 @@ class AdaptiveTuner:
         max_nodes: int,
         max_nodes_rate: float,
         max_safe_repetition: int = 1000,  # default safe max repetition cap
-        max_safe_nodes: int = 5000,  # default safe max nodes cap
+        max_safe_nodes: int = nodes.MAX_SAFE_NODES,
     ):
         self.initial_mutation_rate = initial_mutation_rate
         self.initial_crossover_rate = initial_crossover_rate

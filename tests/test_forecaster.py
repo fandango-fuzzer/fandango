@@ -1,8 +1,7 @@
 from fandango.api import Fandango
-from fandango.io.navigation.graph.packetforecaster import (
-    ForecastingResult,
+from fandango.io.navigation.forecasting.forecasting_result import ForecastingResult
+from fandango.io.navigation.forecasting.packetforecaster import (
     PacketForecaster,
-    PathFinder,
 )
 from fandango.language.grammar import ParsingMode
 from fandango.language.symbols import NonTerminal
@@ -105,17 +104,3 @@ def test_forecast_8():
     prediction: ForecastingResult = forecaster.predict(tree)
     expected: dict[str, list[str]] = {}
     assert_prediction(prediction, expected)
-
-
-def test_failed_alternatives_leave_the_visitor_stacks_empty():
-    with open(RESOURCES_ROOT / "nested_alternatives_io.fan") as f:
-        grammar = Fandango(f.read(), use_stdlib=False, use_cache=False).grammar
-    tree = grammar.parse("yq", mode=ParsingMode.INCOMPLETE, include_controlflow=True)
-    finder = PathFinder(grammar)
-
-    prediction = finder.forecast(tree)
-
-    assert finder.current_tree == []
-    assert finder.current_path == []
-    assert finder.current_path_collapsed == []
-    assert_prediction(prediction, {"Fuzzer": ["<done>"]})

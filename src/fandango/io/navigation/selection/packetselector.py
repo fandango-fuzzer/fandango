@@ -1,14 +1,15 @@
+import random
 from typing import Optional
 
 from fandango.io import FandangoIO
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
-from fandango.io.navigation.graph.packetforecaster import (
+from fandango.io.navigation.forecasting.forecast_view import ForecastView
+from fandango.io.navigation.forecasting.forecasting_result import (
     ForecastingPacket,
     ForecastingResult,
 )
 from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.selection.coverage_tracker import CoverageTracker
-from fandango.io.navigation.selection.forecast_view import ForecastView
 from fandango.io.navigation.selection.packet_guide import PacketGuide
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.target_selector import TargetSelector
@@ -26,12 +27,13 @@ class PacketSelector:
         diversity_k: int,
         max_messages_per_tree: int = 200,
     ):
+        self.RANDOM_END_PROBABILITY = 0.5
         self.start_symbol = NonTerminal("<start>")
         self.grammar = grammar
         self.io_instance = io_instance
         self._model = ProtocolModel(grammar, self.start_symbol)
         self._forecast = ForecastView(grammar, io_instance, lambda: self.history_tree)
-        self._target_selector = TargetSelector(grammar, self.start_symbol, self._model)
+        self._target_selector = TargetSelector(self._model)
         self._guide = PacketGuide(
             self._model,
             self._forecast,
@@ -42,7 +44,6 @@ class PacketSelector:
         self.history_tree: DerivationTree = DerivationTree(NonTerminal("<start>"))
         self._last_completed_tree: Optional[DerivationTree] = None
         self._completed_count = 0
-        self._coverage_goal = CoverageGoal.STATE_INPUTS
         self._coverage_tracker = CoverageTracker(
             grammar,
             diversity_k,
@@ -50,7 +51,7 @@ class PacketSelector:
             self.start_symbol,
             self._input_parties,
             lambda: self.history_tree,
-            self._coverage_goal,
+            CoverageGoal.STATE_INPUTS,
         )
         self._next_packets: Optional[list[ForecastingPacket]] = None
         self.compute(history_tree)
@@ -88,12 +89,16 @@ class PacketSelector:
         self._completed_count = 0
 
     @property
+    def coverage_tracker(self) -> CoverageTracker:
+        return self._coverage_tracker
+
+    @property
     def forecasting_result(self) -> ForecastingResult:
         return self._forecast.result
 
     def _ensure_next_packets(self) -> list[ForecastingPacket]:
         if self._next_packets is None:
-            if self._coverage_goal == CoverageGoal.RANDOM:
+            if self._coverage_tracker.coverage_goal == CoverageGoal.RANDOM:
                 self._next_packets = self._guide.find_packets()
                 return self._next_packets
             self._next_packets = self._guide.select_next_packet(
@@ -146,5 +151,25 @@ class PacketSelector:
         self._guide.max_messages_per_tree = count
 
     def set_coverage_goal(self, goal: CoverageGoal) -> None:
-        self._coverage_goal = goal
         self._coverage_tracker.set_coverage_goal(goal)
+
+    def is_failed_forecast(self) -> bool:
+        return len(self.get_next_parties()) == 0 and not self.is_complete()
+
+    def is_protocol_run_complete(self) -> bool:
+        if not self.is_complete():
+            return False
+        if len(self.get_next_parties()) == 0:
+            return True
+        if self.coverage_tracker.coverage_goal == CoverageGoal.RANDOM:
+            return random.random() < self.RANDOM_END_PROBABILITY
+        return self.is_guide_to_end()
+
+    def should_generate_next_packet(self) -> bool:
+        if len(self.next_packets) == 1:
+            for packet in self.next_packets:
+                if packet.node.sender == "TimerEvent":
+                    return False
+        return (
+            len(self.next_fuzzer_parties()) != 0 and not self.io_instance.received_msg()
+        )

@@ -14,6 +14,7 @@ import threading
 import time
 from _contextvars import ContextVar
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from typing import IO, Hashable, Optional
 from uuid import UUID
 
@@ -861,6 +862,8 @@ class TimerEvent(FandangoParty):
 
 
 class FandangoIO(object):
+    POLL_INTERVAL = 0.025
+
     """
     Singleton class for managing all `FandangoParty` parties.
     This object keeps track of all communication parties and relates them to Fandango.
@@ -896,6 +899,14 @@ class FandangoIO(object):
         self.receive: list[tuple[str, str, str | bytes]] = []
         self.parties: dict[str, FandangoParty] = {}
         self.receive_lock = threading.Lock()
+
+    def wait_until(self, is_done: Callable[[], bool], timeout: float) -> bool:
+        started = time.time()
+        while not is_done():
+            if 0 <= timeout < time.time() - started:
+                return False
+            time.sleep(self.POLL_INTERVAL)
+        return True
 
     def reset_parties(self) -> None:
         """
