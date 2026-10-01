@@ -1,11 +1,15 @@
 from collections.abc import Generator
 from typing import Optional
 
-from fandango.io.navigation.graph.blocked_step_pruner import BlockedStepPruner
+from fandango.io.navigation.graph.blocked_step_pruner import (
+    BlockedStepPruner,
+    KPathTranslation,
+)
 from fandango.io.navigation.graph.grammarnavigator import GrammarNavigator
 from fandango.io.navigation.graph.packetiterativeparser import (
     NavigatorPacketIterativeParser,
 )
+from fandango.io.navigation.graph.rule_recursion_tester import RuleRecursionTester
 from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConverter
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.route import PlannedPacket, Route
@@ -31,6 +35,8 @@ class PacketNavigator(GrammarNavigator):
         """
         Navigates the state grammar of the grammar, around the blocked steps.
         state_rules is that state grammar if it was already built, as with_blocked_steps passes it on.
+        The pruner copies rules to block steps only in their context. The k-paths searched for are translated into
+        those of the copies, the routes found back into the state grammar.
         """
         if start_symbol is None:
             start_symbol = NonTerminal("<start>")
@@ -40,10 +46,11 @@ class PacketNavigator(GrammarNavigator):
             )
         self._protocol_grammar = grammar
         self._state_rules = state_rules
+        self._references = RuleRecursionTester(state_rules)
         self.blocked_steps = blocked_steps
-        self._derivable_by_k_path: dict[KPath, bool] = {}
         self._pruner = BlockedStepPruner(grammar.grammar_settings)
         reduced_rules = self._pruner.prune(state_rules, start_symbol, blocked_steps)
+        self._k_paths = KPathTranslation(reduced_rules)
         super().__init__(
             Grammar(
                 grammar_settings=grammar.grammar_settings,
@@ -74,16 +81,10 @@ class PacketNavigator(GrammarNavigator):
         """True if the k-path still exists in the grammar without the blocked steps."""
         if len(self.blocked_steps) == 0 or len(destination_k_path) == 0:
             return True
-        derivable = self._derivable_by_k_path.get(destination_k_path)
-        if derivable is None:
-            names = [str(symbol) for symbol in self._search_k_path(destination_k_path)]
-            references = self._reference_graph()
-            derivable = names[0] in references and all(
-                child in references.get(parent, ())
-                for parent, child in zip(names, names[1:], strict=False)
-            )
-            self._derivable_by_k_path[destination_k_path] = derivable
-        return derivable
+        return len(self._pruned_k_paths(destination_k_path)) != 0
+
+    def _pruned_k_paths(self, k_path: KPath) -> list[KPath]:
+        return self._k_paths.pruned_k_paths(self._search_k_path(k_path))
 
     def get_controlflow_tree(
         self, tree: DerivationTree
@@ -104,7 +105,7 @@ class PacketNavigator(GrammarNavigator):
             if StateGrammarConverter.matches_history(suggested_tree, messages):
                 yield suggested_tree, is_complete
 
-    def _step_of_graph_node(self, graph_node: GrammarGraphNode) -> Optional[Step]:
+    def _step_of_graph_node(self, graph_node: GrammarGraphNode) -> Step:
         """The step that produces the packet of the graph node."""
         path: list[NonTerminal] = []
         current: Optional[GrammarGraphNode] = graph_node
@@ -112,9 +113,9 @@ class PacketNavigator(GrammarNavigator):
             if not self._pruner.is_made_up(current.node):
                 symbol = current.node.to_symbol()
                 assert isinstance(symbol, NonTerminal)
-                path.append(symbol)
+                path.append(self._pruner.original(symbol))
             current = current.parent
-        return Step.of_path(path[::-1])
+        return Step.of_path(path[::-1], self._references.is_recursive_call)
 
     def _to_route(self, path: list[Optional[GrammarGraphNode]]) -> Route:
         path = list(
@@ -134,7 +135,7 @@ class PacketNavigator(GrammarNavigator):
                 )
                 route.append(PlannedPacket(packet, self._step_of_graph_node(n)))
             else:
-                route.append(NonTerminal(n.node.symbol.name()))
+                route.append(self._pruner.original(n.node.symbol))
         return route
 
     def _includes_k_paths(
@@ -155,7 +156,15 @@ class PacketNavigator(GrammarNavigator):
         col_tree = self.grammar.collapse(controlflow_tree)
         if col_tree is None:
             return False
-        covered_k_paths = self.grammar._extract_k_paths_from_tree(col_tree, k)
+        covered_k_paths = {
+            tuple(
+                self._pruner.original(symbol)
+                if isinstance(symbol, NonTerminal)
+                else symbol
+                for symbol in k_path
+            )
+            for k_path in self.grammar._extract_k_paths_from_tree(col_tree, k)
+        }
         return len(packet_k_paths.difference(covered_k_paths)) == 0
 
     def _find_trees_including_k_paths(
@@ -211,10 +220,12 @@ class PacketNavigator(GrammarNavigator):
         tree: DerivationTree,
         destination_k_path: KPath,
     ) -> Optional[list[GrammarGraphNode | None]]:
-        path = super().astar_tree(
-            tree=tree, destination_k_path=self._search_k_path(destination_k_path)
-        )
-        return path
+        paths = []
+        for pruned_k_path in self._pruned_k_paths(destination_k_path):
+            path = super().astar_tree(tree=tree, destination_k_path=pruned_k_path)
+            if path is not None:
+                paths.append(path)
+        return min(paths, key=len, default=None)
 
     def _search_k_path(self, k_path: KPath) -> KPath:
         search_symbols = []
@@ -248,3 +259,9 @@ class PacketNavigator(GrammarNavigator):
             return None
         routes.sort(key=len)
         return routes[0]
+
+    def __repr__(self) -> str:
+        return (
+            f"PacketNavigator({len(self.grammar.rules)} rules, "
+            f"blocked_steps={sorted(self.blocked_steps, key=repr)!r}, {self._k_paths!r})"
+        )

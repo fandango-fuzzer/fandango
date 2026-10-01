@@ -188,3 +188,6 @@ class PacketSelector:
         return (
             len(self.next_fuzzer_parties()) != 0 and not self.io_instance.received_msg()
         )
+
+    def __repr__(self) -> str:
+        return f"PacketSelector(start={self.start_symbol!r}, completed={self._completed_count}, {self._guider!r})"
