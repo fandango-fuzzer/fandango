@@ -1,3 +1,4 @@
+import math
 from collections.abc import Callable, Generator
 from typing import Optional
 
@@ -122,24 +123,25 @@ class PopulationManager:
             ],
         ],
     ) -> Generator[DerivationTree, None, tuple[DerivationTree, int]]:
+        """
+        Applies suggestions as long as each round increases the fitness.
+        Cap max rounds at ceil(log2(n)) rounds, n being the number of initially failing constraints.
+        """
         fixes_made = 0
-        fix_round_count = 0
-        failing_constraints = frozenset(tree.cause for tree in failing_trees)
-        involved_constraints = set(failing_constraints)
-        seen_failing_constraints = {failing_constraints}
-        while failing_constraints and fix_round_count < len(involved_constraints):
+        fitness = 0.0
+        failing_constraint_count = len({tree.cause for tree in failing_trees})
+        max_fix_rounds = math.ceil(math.log2(max(failing_constraint_count, 2)))
+        for _ in range(max_fix_rounds if failing_trees else 0):
             fixed, round_fixes_made = self._apply_suggestion(individual, suggestion)
             if round_fixes_made == 0:
                 break
-            fix_round_count += 1
-            fixes_made += round_fixes_made
-            _fitness, failing_trees, suggestion = yield from eval_individual(fixed)
-            individual = fixed
-            failing_constraints = frozenset(tree.cause for tree in failing_trees)
-            if failing_constraints in seen_failing_constraints:
+            new_fitness, failing_trees, suggestion = yield from eval_individual(fixed)
+            if new_fitness <= fitness:
                 break
-            seen_failing_constraints.add(failing_constraints)
-            involved_constraints |= failing_constraints
+            individual, fitness = fixed, new_fitness
+            fixes_made += round_fixes_made
+            if not failing_trees:
+                break
         return individual, fixes_made
 
     def _apply_suggestion(
