@@ -25,6 +25,12 @@ class FandangoParseError(FandangoError, SyntaxError):
         self.position = position
 
 
+class FandangoGeneratorError(FandangoParseError):
+    def __init__(self, message: str, symbol: str):
+        super().__init__(message)
+        self.symbol = symbol
+
+
 class FandangoSyntaxError(FandangoError, SyntaxError):
     """Error during parsing a Fandango spec"""
 

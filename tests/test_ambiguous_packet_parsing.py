@@ -17,7 +17,7 @@ import unittest
 
 from fandango.api import Fandango
 from fandango.io import FandangoIO
-from fandango.io.navigation.graph.packetforecaster import PacketForecaster
+from fandango.io.navigation.forecasting.packetforecaster import PacketForecaster
 from fandango.io.packetparser import parse_next_remote_packet
 from fandango.language.grammar import FuzzingMode, ParsingMode
 from fandango.language.symbols import NonTerminal
@@ -121,7 +121,7 @@ class TestConstraintDisambiguation(unittest.TestCase):
 
         self.assertEqual(len(result_list), 1)
         result = result_list[0]
-        messages = result.protocol_msgs()
+        messages = list(result.protocol_msgs())
         self.assertEqual(len(messages), 3)
 
         # First message: Fuzzer sends the query

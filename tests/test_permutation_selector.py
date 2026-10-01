@@ -3,9 +3,9 @@ from typing import Optional
 
 from fandango.api import Fandango
 from fandango.io import ConnectionMode, FandangoIO, FandangoParty
+from fandango.io.navigation.forecasting.forecast_view import ForecastView
 from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.io.navigation.selection.forecast_view import ForecastView
 from fandango.io.navigation.selection.packet_guide import PacketGuide
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.target_selector import TargetSelector
@@ -139,7 +139,7 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
         model = ProtocolModel(self.grammar, start)
         forecast = _StubForecast(self.grammar, _make_test_io(), lambda: self.history)
         navigator = PacketNavigator(self.grammar, start)
-        target_selector = TargetSelector(self.grammar, start, model)
+        target_selector = TargetSelector(model)
         return PacketGuide(
             model, forecast, navigator, target_selector, max_messages_per_tree=200
         )

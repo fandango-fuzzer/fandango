@@ -42,34 +42,20 @@ class PacketNavigator(GrammarNavigator):
     def get_controlflow_tree(
         self, tree: DerivationTree
     ) -> Generator[tuple[DerivationTree, bool], None, None]:
-        history_nts = ""
-        for r_msg in tree.protocol_msgs():
-            assert isinstance(r_msg.msg.symbol, NonTerminal)
-            history_nts += r_msg.msg.symbol.name()
-
-        if history_nts == "":
+        messages = list(tree.protocol_msgs())
+        if not messages:
             yield DerivationTree(NonTerminal("<start>")), False
             return
-        self._parser.detailed_tree = tree
+        history_nts = ""
+        for message in messages:
+            assert isinstance(message.msg.symbol, NonTerminal)
+            history_nts += message.msg.symbol.name()
         self._parser.reference_tree = tree
         self._parser.parse_history(history_nts)
         for suggested_tree, is_complete in self._parser.tree_at(
             self._parser.consumed_length(), incomplete=True
         ):
-            for orig_r_msg, r_msg in zip(
-                tree.protocol_msgs(), suggested_tree.protocol_msgs(), strict=False
-            ):
-                assert isinstance(r_msg.msg.symbol, NonTerminal)
-                assert isinstance(orig_r_msg.msg.symbol, NonTerminal)
-                if (
-                    r_msg.msg.symbol.name()[9:] == orig_r_msg.msg.symbol.name()[1:]
-                    and r_msg.sender == orig_r_msg.sender
-                    and r_msg.recipient == orig_r_msg.recipient
-                ):
-                    pass  # Todo set children for computed length repetitions
-                else:
-                    break
-            else:
+            if StateGrammarConverter.matches_history(suggested_tree, messages):
                 yield suggested_tree, is_complete
 
     @staticmethod

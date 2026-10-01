@@ -66,10 +66,8 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
             return self._alternative_steps(node)
         if isinstance(node, Repetition):
             return self._repetition_steps(node)
-        if isinstance(node, TerminalNode):
-            return self._terminal_steps(node)
-        if isinstance(node, CharSet):
-            return self._char_set_steps(node)
+        if isinstance(node, (TerminalNode, CharSet)):
+            return self._leaf_steps(node)
         raise FandangoValueError(f"No visit steps for {type(node).__name__}")
 
     def on_enter_controlflow(self, expected_nt: str) -> None:
@@ -127,13 +125,10 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
         tree = self.current_tree[-1]
         return self.onTerminalNodeVisit(node, tree is None)
 
-    def _terminal_steps(self, node: TerminalNode) -> VisitSteps:
+    def _leaf_steps(self, node: TerminalNode | CharSet) -> VisitSteps:
         yield from ()
-        return self.visitTerminalNode(node)
-
-    def _char_set_steps(self, node: CharSet) -> VisitSteps:
-        yield from ()
-        return self.visitCharSet(node)
+        continue_exploring: bool = node.accept(self)
+        return continue_exploring
 
     def _concatenation_steps(self, node: Concatenation) -> VisitSteps:
         self.on_enter_controlflow(f"<__{node.id}>")
@@ -217,16 +212,21 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
         rep_min = node.min
         rep_max = node.max
         if node.bounds_constraint:
-            prefix_tree = None
-            for tree_list in self.current_tree[::-1]:
-                if tree_list is None or len(tree_list) != 0:
-                    continue
-                prefix_tree = tree_list[-1].prefix()
-                prefix_tree = self.grammar.collapse(prefix_tree.get_root())
-                break
-            assert prefix_tree is not None
-            rep_min, _ = node.bounds_constraint.min(prefix_tree)
-            rep_max, _ = node.bounds_constraint.max(prefix_tree)
+            context_end: Optional[DerivationTree]
+            if tree:
+                context_end = tree[0]
+            else:
+                context_end = next(
+                    (
+                        tree_list[-1]
+                        for tree_list in reversed(self.current_tree)
+                        if tree_list
+                    ),
+                    None,
+                )
+            context_includes_end = not tree
+            rep_min, _ = node.bounds_constraint.min(context_end, context_includes_end)
+            rep_max, _ = node.bounds_constraint.max(context_end, context_includes_end)
         if not last_complete:
             return False
         if tree_len < rep_max:

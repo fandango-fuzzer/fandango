@@ -1,13 +1,11 @@
-import random
+import math
 from collections.abc import Callable, Generator
 from typing import Optional
 
 from fandango.constraints.failing_tree import FailingTree, Suggestion
-from fandango.errors import FandangoValueError
+from fandango.errors import FandangoGeneratorError
 from fandango.evolution import GeneratorWithReturn
-from fandango.io.navigation.graph.packetforecaster import ForecastingPacket
 from fandango.language.grammar.grammar import Grammar
-from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
 
@@ -24,25 +22,27 @@ class PopulationManager:
     def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
         return self._grammar.fuzz(self._start_symbol, max_nodes)
 
-    @staticmethod
-    def _generate_population_hashes(
-        current_population: list[DerivationTree],
-    ) -> set[int]:
-        return {hash(ind) for ind in current_population}
+    def individual_hash(self, individual: DerivationTree) -> int:
+        return hash(individual)
 
-    @staticmethod
+    def unique(self, population: list[DerivationTree]) -> list[DerivationTree]:
+        unique_individuals: dict[int, DerivationTree] = {}
+        for ind in population:
+            unique_individuals.setdefault(self.individual_hash(ind), ind)
+        return list(unique_individuals.values())
+
     def add_unique_individual(
+        self,
         population: list[DerivationTree],
         candidate: DerivationTree,
         unique_set: set[int],
     ) -> bool:
-        new_hashes = PopulationManager._generate_population_hashes([candidate])
-        if len(new_hashes.intersection(unique_set)) == 0:
-            # If the candidate has a new hash, we can add it to the population
-            unique_set.update(new_hashes)
-            population.append(candidate)
-            return True
-        return False
+        candidate_hash = self.individual_hash(candidate)
+        if candidate_hash in unique_set:
+            return False
+        unique_set.add(candidate_hash)
+        population.append(candidate)
+        return True
 
     def _is_population_complete(
         self, unique_population: list[DerivationTree], population_size: int
@@ -75,9 +75,7 @@ class PopulationManager:
         :param target_population_size: The target size of the population.
         :return: A generator that yields solutions. The population is modified in place.
         """
-        unique_hashes = PopulationManager._generate_population_hashes(
-            current_population
-        )
+        unique_hashes = {self.individual_hash(ind) for ind in current_population}
         attempts = 0
         max_attempts = (target_population_size - len(current_population)) * 10
 
@@ -85,19 +83,22 @@ class PopulationManager:
             not self._is_population_complete(current_population, target_population_size)
             and attempts < max_attempts
         ):
-            individual = self._generate_population_entry(max_nodes)
+            try:
+                individual = self._generate_population_entry(max_nodes)
+            except FandangoGeneratorError as error:
+                self._grammar.warn_about_generator_error(error)
+                attempts += 1
+                continue
             found_solution, (_fitness, failing_trees, suggestion) = GeneratorWithReturn(
                 eval_individual(individual)
             ).collect()
-            candidate, _fixes_made = self.fix_individual(
-                individual,
-                suggestion,
-            )
-            new_found_solution, (_new_fitness, _new_failing_trees, suggestion) = (
-                GeneratorWithReturn(eval_individual(candidate)).collect()
-            )
+            new_found_solution, (candidate, _fixes_made) = GeneratorWithReturn(
+                self.fix_individual(
+                    individual, failing_trees, suggestion, eval_individual
+                )
+            ).collect()
             if attempts < max_attempts:
-                if PopulationManager.add_unique_individual(
+                if self.add_unique_individual(
                     current_population, candidate, unique_hashes
                 ):
                     yield from found_solution
@@ -113,57 +114,48 @@ class PopulationManager:
     def fix_individual(
         self,
         individual: DerivationTree,
-        suggestion: Optional[Suggestion] = None,
-    ) -> tuple[DerivationTree, int]:
+        failing_trees: list[FailingTree],
+        suggestion: Suggestion,
+        eval_individual: Callable[
+            [DerivationTree],
+            Generator[
+                DerivationTree, None, tuple[float, list[FailingTree], Suggestion]
+            ],
+        ],
+    ) -> Generator[DerivationTree, None, tuple[DerivationTree, int]]:
+        """
+        Applies suggestions as long as each round increases the fitness and yields no solution.
+        Cap max rounds at ceil(log2(n)) rounds, n being the number of initially failing constraints.
+        """
         fixes_made = 0
-        if suggestion:
-            suggested_replacements = suggestion.get_replacements(
-                individual, self._grammar
-            )
-            individual = individual.replace_multiple(
-                self._grammar, suggested_replacements
-            )
-            fixes_made += len(suggested_replacements)
-
+        fitness = 0.0
+        failing_constraint_count = len({tree.cause for tree in failing_trees})
+        max_fix_rounds = math.ceil(math.log2(max(failing_constraint_count, 2)))
+        for _ in range(max_fix_rounds if failing_trees else 0):
+            fixed, round_fixes_made = self._apply_suggestion(individual, suggestion)
+            if round_fixes_made == 0:
+                break
+            evaluation = GeneratorWithReturn(eval_individual(fixed))
+            found_solution = False
+            for solution in evaluation:
+                found_solution = True
+                yield solution
+            new_fitness, failing_trees, suggestion = evaluation.return_value
+            if new_fitness <= fitness:
+                break
+            individual, fitness = fixed, new_fitness
+            fixes_made += round_fixes_made
+            if found_solution:
+                break
         return individual, fixes_made
 
-
-class IoPopulationManager(PopulationManager):
-    def __init__(
-        self,
-        grammar: Grammar,
-        start_symbol: str,
-    ):
-        super().__init__(grammar, start_symbol)
-        self._prev_packet_idx = 0
-        self.fuzzable_packets: list[ForecastingPacket] = []
-        self.fallback_packets: list[ForecastingPacket] = []
-        self.allow_fallback_packets = False
-
-    def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
-        if self.fuzzable_packets is None or len(self.fuzzable_packets) == 0:
-            return DerivationTree(NonTerminal(self._start_symbol))
-        packet_selection = list(self.fuzzable_packets)
-        if self.allow_fallback_packets:
-            packet_selection.extend(self.fallback_packets)
-
-        current_idx = (self._prev_packet_idx + 1) % len(packet_selection)
-        current_pck = random.choice(packet_selection)
-        mounting_option = random.choice(list(current_pck.paths))
-
-        tree = self._grammar.collapse(mounting_option.tree)
-        if tree is None:
-            raise FandangoValueError(
-                f"Could not collapse tree for {mounting_option.path} in packet {current_pck.node}"
-            )
-        tree.set_all_read_only(True)
-        dummy = DerivationTree(NonTerminal("<hookin>"))
-        tree.append(mounting_option.path[1:-1], dummy)
-
-        fuzz_point = dummy.parent
-        assert fuzz_point is not None
-        fuzz_point.set_children(fuzz_point.children[:-1])
-        current_pck.node.fuzz(fuzz_point, self._grammar, max_nodes)
-
-        self._prev_packet_idx = current_idx
-        return tree
+    def _apply_suggestion(
+        self, individual: DerivationTree, suggestion: Optional[Suggestion]
+    ) -> tuple[DerivationTree, int]:
+        if not suggestion:
+            return individual, 0
+        suggested_replacements = suggestion.get_replacements(individual, self._grammar)
+        return (
+            individual.replace_multiple(self._grammar, suggested_replacements),
+            len(suggested_replacements),
+        )
