@@ -9,6 +9,7 @@ from fandango.io.navigation.forecasting.forecasting_result import (
     MountingPath,
 )
 from fandango.io.navigation.graph.packetiterativeparser import PacketIterativeParser
+from fandango.io.navigation.graph.rule_recursion_tester import RuleRecursionTester
 from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConverter
 from fandango.io.navigation.graph.visitor.continuing_nodevisitor import (
     ContinuingNodeVisitor,
@@ -86,6 +87,7 @@ class PacketForecaster:
         )
         self.grammar = grammar
         self._parser = PacketIterativeParser(reduced_rules)
+        self._references = RuleRecursionTester(reduced_rules)
 
     def predict(self, tree: DerivationTree) -> ForecastingResult:
         """
@@ -114,9 +116,11 @@ class PacketForecaster:
                 for steps, placeholder in zip(
                     message_steps, suggested_tree.protocol_msgs(), strict=False
                 ):
-                    step = Step.of_message(placeholder.msg)
-                    if step is not None:
-                        steps.add(step)
+                    steps.add(
+                        Step.of_message(
+                            placeholder.msg, self._references.is_recursive_call
+                        )
+                    )
                 options = options.union(
                     finder.forecast(suggested_tree, session_messages)
                 )
@@ -124,3 +128,8 @@ class PacketForecaster:
                     options.complete_trees.add(finder.collapsed_tree)
         options.message_steps = message_steps
         return options
+
+    def __repr__(self) -> str:
+        return (
+            f"PacketForecaster({len(self.grammar.rules)} rules, {self._references!r})"
+        )
