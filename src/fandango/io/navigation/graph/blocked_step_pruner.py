@@ -50,7 +50,6 @@ class BlockedStepPruner(NodeVisitor[list[Pruned], Pruned]):
         self._current_path: list[NonTerminal] = []
         self._made_up_ids: set[str] = set()
 
-
     def prune(
         self,
         state_rules: dict[NonTerminal, Node],

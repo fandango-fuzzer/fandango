@@ -21,7 +21,7 @@ from fandango.language.grammar.node_visitors.grammar_graph_converter import (
 )
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
-from fandango.language.symbols.non_terminal import NonTerminal
+from fandango.language.symbols import NonTerminal, Symbol
 
 
 class PacketNavigator(GrammarNavigator):
@@ -48,6 +48,10 @@ class PacketNavigator(GrammarNavigator):
         self._state_rules = state_rules
         self._references = RuleRecursionTester(state_rules)
         self.blocked_steps = blocked_steps
+        self._history_of_contained_k_paths: tuple[
+            tuple[Optional[str], Optional[str], Symbol], ...
+        ] = tuple()
+        self._contained_by_k_paths: dict[frozenset[KPath], bool] = {}
         self._pruner = BlockedStepPruner(grammar.grammar_settings)
         reduced_rules = self._pruner.prune(state_rules, start_symbol, blocked_steps)
         self._k_paths = KPathTranslation(reduced_rules)
@@ -76,6 +80,21 @@ class PacketNavigator(GrammarNavigator):
         return PacketNavigator(
             self._protocol_grammar, self._start_symbol, blocked_steps, self._state_rules
         )
+
+    def contains_k_paths(self, k_paths: set[KPath], tree: DerivationTree) -> bool:
+        """True if a control-flow tree the messages held by tree contains the requested k-paths."""
+        history = tuple(
+            (record.sender, record.recipient, record.msg.symbol)
+            for record in tree.protocol_msgs()
+        )
+        if history != self._history_of_contained_k_paths:
+            self._history_of_contained_k_paths = history
+            self._contained_by_k_paths.clear()
+        key = frozenset(k_paths)
+        if key not in self._contained_by_k_paths:
+            _trees, contained = self._find_trees_including_k_paths(k_paths, tree)
+            self._contained_by_k_paths[key] = contained
+        return self._contained_by_k_paths[key]
 
     def is_derivable(self, destination_k_path: KPath) -> bool:
         """True if the k-path still exists in the grammar without the blocked steps."""
