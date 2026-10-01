@@ -11,6 +11,7 @@ from fandango.io.navigation.selection.packet_guider import PacketGuider
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.step_refusals import StepRefusals
 from fandango.io.navigation.selection.target_selector import TargetSelector
+from fandango.io.navigation.step import Step
 from fandango.language import DerivationTree, NonTerminal
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.grammar import Grammar
@@ -18,6 +19,8 @@ from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from tests.utils import RESOURCES_ROOT
+
+UNUSED_STEP = Step((NonTerminal("<start>"),))
 
 
 def _load_grammar() -> Grammar:
@@ -165,13 +168,13 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
     def test_out_of_order_permutation_peer_removed_from_guide_path(self):
         guide = self._make_guide()
         pnt_a = PlannedPacket(
-            PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>")), None
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>")), UNUSED_STEP
         )
         pnt_b = PlannedPacket(
-            PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>")), None
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>")), UNUSED_STEP
         )
         pnt_c = PlannedPacket(
-            PacketNonTerminal("StdOut", None, NonTerminal("<msg_c>")), None
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_c>")), UNUSED_STEP
         )
 
         guide._guide_path.set_route([pnt_a, pnt_b, pnt_c])
@@ -187,10 +190,10 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
     def test_guide_path_unchanged_when_no_new_messages(self):
         guide = self._make_guide()
         pnt_a = PlannedPacket(
-            PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>")), None
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>")), UNUSED_STEP
         )
         pnt_b = PlannedPacket(
-            PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>")), None
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>")), UNUSED_STEP
         )
 
         guide._guide_path.set_route([pnt_a, pnt_b])
@@ -203,10 +206,10 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
     def test_expected_message_advances_guide_path(self):
         guide = self._make_guide()
         pnt_a = PlannedPacket(
-            PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>")), None
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>")), UNUSED_STEP
         )
         pnt_b = PlannedPacket(
-            PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>")), None
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>")), UNUSED_STEP
         )
 
         guide._guide_path.set_route([pnt_a, pnt_b])
@@ -222,13 +225,13 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
     def test_both_permutation_peers_out_of_order_both_consumed(self):
         guide = self._make_guide()
         pnt_a = PlannedPacket(
-            PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>")), None
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>")), UNUSED_STEP
         )
         pnt_b = PlannedPacket(
-            PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>")), None
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>")), UNUSED_STEP
         )
         pnt_c = PlannedPacket(
-            PacketNonTerminal("StdOut", None, NonTerminal("<msg_c>")), None
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_c>")), UNUSED_STEP
         )
 
         guide._guide_path.set_route([pnt_a, pnt_b, pnt_c])
