@@ -162,7 +162,7 @@ def test_fix_uses_failing_trees_cached_from_equal_packet(
     _, (_fitness, failing_trees, suggestion) = GeneratorWithReturn(
         evaluator.evaluate_individual(equal_packet)
     ).collect()
-    _, (fixed_packet, _fixes_made) = GeneratorWithReturn(
+    _, (fixed_packet, _) = GeneratorWithReturn(
         manager.fix_individual(
             equal_packet, failing_trees, suggestion, evaluator.evaluate_individual
         )
@@ -179,7 +179,7 @@ def test_mutation_uses_failing_trees_cached_from_equal_packet(
     list(evaluator.evaluate_individual(evaluated_packet))
     equal_packet = attached_note(manager, "B\n", new_exchange)
     mutation = MountingMutation(SimpleMutation(), manager.packet_mounter)
-    _solutions, mutated_packet = GeneratorWithReturn(
+    _, mutated_packet = GeneratorWithReturn(
         mutation.mutate(equal_packet, fandango.grammar, evaluator.evaluate_individual)
     ).collect()
     assert is_attached(mutated_packet)
@@ -256,7 +256,7 @@ def test_constraint_inside_message_ignores_earlier_messages(evaluator):
             packet,
             MountingPath(history, ((START, False), (EXCHANGE, True), (NOTE, False))),
         )
-        _solutions, (fitness, failing_trees, _suggestion) = GeneratorWithReturn(
+        _, (fitness, failing_trees, _) = GeneratorWithReturn(
             evaluator.evaluate_individual(packet)
         ).collect()
     assert fitness == 1.0
@@ -268,7 +268,7 @@ def test_constraint_inside_message_fails_on_the_packet(
 ):
     # B not allowed in grammar
     packet = attached_note(manager, "B\n", new_exchange)
-    _solutions, (fitness, failing_trees, _suggestion) = GeneratorWithReturn(
+    _, (fitness, failing_trees, _) = GeneratorWithReturn(
         evaluator.evaluate_individual(packet)
     ).collect()
     assert fitness < 1.0
