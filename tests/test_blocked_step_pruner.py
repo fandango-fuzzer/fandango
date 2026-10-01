@@ -26,7 +26,6 @@ FAILED = NonTerminal("<_packet_failed>")
 
 
 def load_blocked_steps_grammar(name: str = "blocked_steps.fan") -> Grammar:
-    """The grammar of resources/blocked_steps.fan."""
     with open(RESOURCES_ROOT / name) as spec:
         grammar, _ = parse(spec, use_stdlib=True, use_cache=False)
     assert grammar is not None
@@ -34,7 +33,6 @@ def load_blocked_steps_grammar(name: str = "blocked_steps.fan") -> Grammar:
 
 
 def step_of_last_message(grammar: Grammar, messages: str) -> Step:
-    """The step that produced the last of the messages, as the forecaster observes it."""
     history = grammar.parse(
         messages, mode=ParsingMode.INCOMPLETE, include_controlflow=True
     )
@@ -181,32 +179,15 @@ class TestBlockedStepInContext(unittest.TestCase):
             planned_steps,
         )
 
-    def test_step_without_recursive_call_above_is_blocked_on_its_path_from_start(self):
-        grammar = load_blocked_steps_grammar("blocked_first_login.fan")
-        navigator = PacketNavigator(grammar)
-        first_login = grammar.parse(
-            "login\nsuccess\n", mode=ParsingMode.INCOMPLETE, include_controlflow=True
+    def test_step_without_recursive_call_above_starts_at_the_start_symbol(self):
+        first_success = step_of_last_message(self.grammar, "login\nsuccess\n")
+        self.assertEqual(first_success.path[0], START)
+        self.assertEqual(self.second_success.path[0], LOGGED_IN)
+        blocked = PacketNavigator(self.grammar).gen_with_blocked_steps(
+            frozenset([first_success])
         )
-        assert first_login is not None
-        route = navigator.astar_tree_including_k_paths(
-            tree=first_login, destination_k_path=(LOGGED_IN, EXCHANGE_LOGIN, SUCCESS)
-        )
-        assert route is not None
-        (second_success,) = [
-            symbol.step
-            for symbol in route
-            if isinstance(symbol, PlannedPacket)
-            and symbol.step is not None
-            and symbol.step.packet == SUCCESS
-        ]
-        self.assertEqual(
-            second_success,
-            step_of_last_message(grammar, "login\nsuccess\nlogin\nsuccess\n"),
-        )
-        blocked = navigator.gen_with_blocked_steps(frozenset([second_success]))
-        self.assertTrue(any(True for _ in blocked.get_controlflow_tree(first_login)))
-        self.assertFalse(blocked.is_derivable((START, LOGGED_IN, EXCHANGE_LOGIN)))
-        self.assertTrue(blocked.is_derivable((LOGGED_IN, LOGGED_IN, EXCHANGE_LOGIN)))
+        self.assertFalse(blocked.is_derivable((START, EXCHANGE_LOGIN, SUCCESS)))
+        self.assertTrue(blocked.is_derivable((LOGGED_IN, EXCHANGE_LOGIN, SUCCESS)))
 
 
 if __name__ == "__main__":
