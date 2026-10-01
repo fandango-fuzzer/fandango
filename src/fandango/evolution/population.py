@@ -124,7 +124,7 @@ class PopulationManager:
         ],
     ) -> Generator[DerivationTree, None, tuple[DerivationTree, int]]:
         """
-        Applies suggestions as long as each round increases the fitness.
+        Applies suggestions as long as each round increases the fitness and yields no solution.
         Cap max rounds at ceil(log2(n)) rounds, n being the number of initially failing constraints.
         """
         fixes_made = 0
@@ -135,12 +135,17 @@ class PopulationManager:
             fixed, round_fixes_made = self._apply_suggestion(individual, suggestion)
             if round_fixes_made == 0:
                 break
-            new_fitness, failing_trees, suggestion = yield from eval_individual(fixed)
+            evaluation = GeneratorWithReturn(eval_individual(fixed))
+            found_solution = False
+            for solution in evaluation:
+                found_solution = True
+                yield solution
+            new_fitness, failing_trees, suggestion = evaluation.return_value
             if new_fitness <= fitness:
                 break
             individual, fitness = fixed, new_fitness
             fixes_made += round_fixes_made
-            if not failing_trees:
+            if found_solution:
                 break
         return individual, fixes_made
 
