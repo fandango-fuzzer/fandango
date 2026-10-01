@@ -28,6 +28,7 @@ class TargetSelector:
         coverage_scores: list[tuple[NonTerminal, float]],
         is_derivable: Callable[[KPath], bool],
     ) -> KPath:
+        unreached_paths = set(uncovered_paths)
         uncovered_paths = list(
             filter(is_derivable, self._trim_to_state_symbols(uncovered_paths))
         )
@@ -38,6 +39,14 @@ class TargetSelector:
                 if is_derivable((message,))
             ]
             return (self._least_covered_message(derivable_scores or coverage_scores),)
+        unreached_targets = [
+            path for path in uncovered_paths if path in unreached_paths
+        ]
+        if len(unreached_targets) != 0:
+            shallowest = min(map(len, unreached_targets))
+            uncovered_paths = [
+                path for path in unreached_targets if len(path) == shallowest
+            ]
         s_ps = self._state_path_power_schedule
         s_ps.assign_energy_k_path(uncovered_paths)
         selected_path = s_ps.choose()
