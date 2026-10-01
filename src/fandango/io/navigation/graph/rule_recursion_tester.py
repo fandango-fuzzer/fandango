@@ -4,12 +4,14 @@ from fandango.language.symbols.non_terminal import NonTerminal
 
 
 class RuleRecursionTester:
-
     def __init__(self, rules: dict[NonTerminal, Node]):
         self._references = {
             symbol: self.referenced_symbols(body) for symbol, body in rules.items()
         }
         self._derivable_by_symbol: dict[NonTerminal, set[NonTerminal]] = {}
+
+    def __repr__(self) -> str:
+        return f"RuleRecursionTester({len(self._references)} rules)"
 
     @staticmethod
     def referenced_symbols(body: Node) -> set[NonTerminal]:
@@ -24,7 +26,9 @@ class RuleRecursionTester:
                 pending.extend(node.children())
         return referenced
 
-    def is_recursive_call(self, calling_symbol: NonTerminal, called_symbol: NonTerminal) -> bool:
+    def is_recursive_call(
+        self, calling_symbol: NonTerminal, called_symbol: NonTerminal
+    ) -> bool:
         """True if the reference from calling_symbol to called_symbol is a recursive call."""
         derivable = self._derivable_by_symbol.get(called_symbol)
         if derivable is None:
