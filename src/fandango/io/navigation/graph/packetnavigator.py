@@ -55,6 +55,7 @@ class PacketNavigator(GrammarNavigator):
         self._pruner = BlockedStepPruner(grammar.grammar_settings)
         reduced_rules = self._pruner.prune(state_rules, start_symbol, blocked_steps)
         self._k_paths = KPathTranslation(reduced_rules)
+        self._pruned_k_paths_by_k_path: dict[KPath, list[KPath]] = {}
         super().__init__(
             Grammar(
                 grammar_settings=grammar.grammar_settings,
@@ -103,7 +104,11 @@ class PacketNavigator(GrammarNavigator):
         return len(self._pruned_k_paths(destination_k_path)) != 0
 
     def _pruned_k_paths(self, k_path: KPath) -> list[KPath]:
-        return self._k_paths.pruned_k_paths(self._search_k_path(k_path))
+        pruned = self._pruned_k_paths_by_k_path.get(k_path)
+        if pruned is None:
+            pruned = self._k_paths.to_pruned_k_paths(self._search_k_path(k_path))
+            self._pruned_k_paths_by_k_path[k_path] = pruned
+        return pruned
 
     def get_controlflow_tree(
         self, tree: DerivationTree

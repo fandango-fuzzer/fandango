@@ -34,7 +34,10 @@ class TargetSelector:
     ) -> KPath:
         unreached_paths = set(uncovered_paths)
         uncovered_paths = list(
-            filter(is_derivable, self._trim_to_state_symbols(uncovered_paths))
+            filter(
+                is_derivable,
+                dict.fromkeys(self._trim_to_state_symbols(uncovered_paths)),
+            )
         )
         if len(uncovered_paths) == 0:
             derivable_scores = [
