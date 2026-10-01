@@ -16,6 +16,10 @@ class TargetSelector:
         self._model = model
         self._msg_power_schedule = PowerScheduleCoverage()
         self._state_path_power_schedule = PowerScheduleKPath()
+        self._protocol_msg_symbols = set(
+            map(lambda x: x.symbol, self._model.protocol_msg_symbols)
+        )
+        self._state_target_by_path: dict[KPath, KPath] = {}
 
     def reset(self) -> None:
         """Forget the targets chosen so far, as after construction."""
@@ -73,11 +77,15 @@ class TargetSelector:
 
     def _trim_to_state_symbols(self, uncovered_paths: list[KPath]) -> list[KPath]:
         """Trim each path back to its last state-grammar symbol; drop empties."""
-        uncovered_paths = list(uncovered_paths)
-        protocol_msg_symbols = set(
-            map(lambda x: x.symbol, self._model.protocol_msg_symbols)
-        )
-        for list_idx, path in enumerate(list(uncovered_paths)):
+        return [
+            target
+            for target in map(self._state_target_of, uncovered_paths)
+            if len(target) > 0
+        ]
+
+    def _state_target_of(self, path: KPath) -> KPath:
+        target = self._state_target_by_path.get(path)
+        if target is None:
             path_last_state_cutoff = len(path) + 1
             in_state_area = True
             # Make sure that parts of the k-path are in the state area of the grammar. Ignore otherwise
@@ -89,12 +97,12 @@ class TargetSelector:
             if in_state_area:
                 for path_idx, symbol in enumerate(path):
                     # Truncate k-path at first occurrence of a message symbol
-                    if symbol in protocol_msg_symbols:
+                    if symbol in self._protocol_msg_symbols:
                         path_last_state_cutoff = path_idx + 1
                         break
-            remaining_path = path[:path_last_state_cutoff]
-            uncovered_paths[list_idx] = remaining_path
-        return list(filter(lambda x: len(x) > 0, uncovered_paths))
+            target = path[:path_last_state_cutoff]
+            self._state_target_by_path[path] = target
+        return target
 
     def _least_covered_message(
         self, coverage_scores: list[tuple[NonTerminal, float]]
