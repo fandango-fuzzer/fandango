@@ -28,7 +28,7 @@ class BlockedStepPruner(NodeVisitor[list[Pruned], Pruned]):
     Removes the blocked steps from a state grammar.
     """
 
-    COPY_MARK = "#"
+    COPY_MARK = "#Pr#"
 
     @staticmethod
     def original(symbol: NonTerminal) -> NonTerminal:
@@ -287,7 +287,6 @@ class KPathTranslation:
             self._instances.setdefault(BlockedStepPruner.original(symbol), []).append(
                 symbol
             )
-        self._translations: dict[KPath, list[KPath]] = {}
 
     def __repr__(self) -> str:
         copies = {
@@ -297,16 +296,17 @@ class KPathTranslation:
         }
         return f"KPathTranslation({len(self._references)} rules, copies={copies})"
 
-    def pruned_k_paths(self, k_path: KPath) -> list[KPath]:
-        translation = self._translations.get(k_path)
-        if translation is None:
-            translation = [()]
-            for original_symbol in k_path:
-                translation = [
-                    path + (symbol,)
-                    for path in translation
-                    for symbol in self._instances.get(original_symbol, ())
-                    if len(path) == 0 or symbol in self._references[path[-1]]
-                ]
-            self._translations[k_path] = translation
-        return translation
+    def to_pruned_k_paths(self, k_path: KPath) -> list[KPath]:
+        """
+        Translates a k-path of the state grammar into those of the pruned grammar.
+        """
+        paths: list[KPath] = [()]
+        for original_symbol in k_path:
+            extended_paths: list[KPath] = []
+            for path in paths:
+                for symbol in self._instances.get(original_symbol, ()):
+                    is_first = len(path) == 0
+                    if is_first or symbol in self._references[path[-1]]:
+                        extended_paths.append(path + (symbol,))
+            paths = extended_paths
+        return paths

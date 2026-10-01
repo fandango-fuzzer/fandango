@@ -257,9 +257,7 @@ class PacketGuider:
         else:
             self._guide_path.set_route([*path, None])
 
-    def _is_tree_contains_paths(
-        self, paths: set[KPath], tree: DerivationTree
-    ) -> bool:
+    def _is_tree_contains_paths(self, paths: set[KPath], tree: DerivationTree) -> bool:
         return self._navigator.contains_k_paths(paths, tree)
 
     def _confirm_covered_path(self, path: KPath) -> None:
