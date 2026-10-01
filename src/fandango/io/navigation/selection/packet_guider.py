@@ -286,18 +286,15 @@ class PacketGuider:
 
     def _count_refused_step(self, deviation: Deviation) -> None:
         planned, msg = deviation
-        if planned is None or planned.step is None:
+        if planned is None:
             return
         # If someone else sent the message we dont penalize the expected party.
         if msg.sender != planned.packet.sender or not self._is_external_party(
             msg.sender
         ):
             return
-        sender = msg.sender
-        step = planned.step
-        assert sender is not None
-        assert step is not None
-        self._step_refusals.count_refusal(step, sender)
+        assert msg.sender is not None
+        self._step_refusals.count_refusal(planned.step, msg.sender)
         self._build_navigator_around_blocked_steps()
 
     def _count_refused_target(
@@ -346,3 +343,10 @@ class PacketGuider:
             if full[i : i + n] == sub:
                 return True
         return False
+
+    def __repr__(self) -> str:
+        return (
+            f"PacketGuider(target={self._guide_target!r}, target_step={self._target_step!r}, "
+            f"guide_to_end={self._guide_to_end}, {self._guide_path!r}, "
+            f"session_covered={len(self._session_covered_k_paths)}, {self._step_refusals!r})"
+        )
