@@ -2,6 +2,8 @@ from collections.abc import Callable, Sequence
 from itertools import pairwise
 from typing import NamedTuple, Optional
 
+from sqlalchemy.util import symbol
+
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree
 
@@ -16,7 +18,7 @@ class Step(NamedTuple):
     path: tuple[NonTerminal, ...]
 
     def __repr__(self) -> str:
-        return f"Step({'/'.join(symbol.name() for symbol in self.path)})"
+        return f"Step({'/'.join(symbol.name() if not self.is_control_flow(symbol) else '...' for symbol in self.path)})"
 
     @property
     def packet(self) -> NonTerminal:
