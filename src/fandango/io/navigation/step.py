@@ -2,8 +2,6 @@ from collections.abc import Callable, Sequence
 from itertools import pairwise
 from typing import NamedTuple, Optional
 
-from sqlalchemy.util import symbol
-
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree
 
