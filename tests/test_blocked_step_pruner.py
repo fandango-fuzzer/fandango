@@ -90,12 +90,12 @@ class TestBlockedStepPruner(unittest.TestCase):
             "hello\nc\nok\nbye\n", mode=ParsingMode.INCOMPLETE, include_controlflow=True
         )
         assert history is not None
-        route = navigator.astar_tree_including_k_paths(
+        guide = navigator.astar_tree_including_k_paths(
             tree=history, destination_k_path=(CLOSING, NonTerminal("<done>"))
         )
-        assert route is not None
+        assert guide is not None
         planned_steps = [
-            symbol.step for symbol in route if isinstance(symbol, PlannedPacket)
+            symbol.step for symbol in guide.route if isinstance(symbol, PlannedPacket)
         ]
         self.assertIn(self._step("hello\nc\nok\nbye\ndone\n"), planned_steps)
 
@@ -105,14 +105,12 @@ class TestBlockedStepPruner(unittest.TestCase):
             "hello\n", mode=ParsingMode.INCOMPLETE, include_controlflow=True
         )
         assert history is not None
-        route = navigator.astar_tree_including_k_paths(
+        guide = navigator.astar_tree_including_k_paths(
             tree=history, destination_k_path=(AFTER_OK,)
         )
-        assert route is not None and navigator.last_target_step is not None
-        self.assertEqual(navigator.last_target_step.packet, AFTER_OK)
-        blocked = navigator.gen_with_blocked_steps(
-            frozenset([navigator.last_target_step])
-        )
+        assert guide is not None and guide.target_step is not None
+        self.assertEqual(guide.target_step.packet, AFTER_OK)
+        blocked = navigator.gen_with_blocked_steps(frozenset([guide.target_step]))
         self.assertFalse(blocked.is_derivable((AFTER_OK,)))
 
     def test_route_to_a_target_gives_the_packets_inside_it(self):
@@ -121,10 +119,11 @@ class TestBlockedStepPruner(unittest.TestCase):
             "hello\n", mode=ParsingMode.INCOMPLETE, include_controlflow=True
         )
         assert history is not None
-        navigator.astar_tree_including_k_paths(
+        guide = navigator.astar_tree_including_k_paths(
             tree=history, destination_k_path=(CLOSING,)
         )
-        (bye,) = navigator.last_target_packets
+        assert guide is not None
+        (bye,) = guide.target_packets
         self.assertEqual(bye.packet.symbol, NonTerminal("<bye>"))
         self.assertEqual(bye.step.packet, NonTerminal("<_packet_bye>"))
 
@@ -179,13 +178,13 @@ class TestBlockedStepInContext(unittest.TestCase):
             "login\nsuccess\n", mode=ParsingMode.INCOMPLETE, include_controlflow=True
         )
         assert history is not None
-        route = navigator.astar_tree_including_k_paths(
+        guide = navigator.astar_tree_including_k_paths(
             tree=history, destination_k_path=(LOGGED_IN, EXCHANGE_LOGIN, FAILED)
         )
-        assert route is not None
-        self.assertIn(EXCHANGE_LOGIN, route)
+        assert guide is not None
+        self.assertIn(EXCHANGE_LOGIN, guide.route)
         planned_steps = [
-            symbol.step for symbol in route if isinstance(symbol, PlannedPacket)
+            symbol.step for symbol in guide.route if isinstance(symbol, PlannedPacket)
         ]
         self.assertIn(
             step_of_last_message(self.grammar, "login\nsuccess\nlogin\nfailed\n"),

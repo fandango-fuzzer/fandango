@@ -6,7 +6,7 @@ from fandango.io import ConnectionMode, FandangoIO, FandangoParty
 from fandango.io.navigation.forecasting.forecast_view import ForecastView
 from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.io.navigation.route import PlannedPacket
+from fandango.io.navigation.route import GuidePath, PlannedPacket
 from fandango.io.navigation.selection.packet_guider import PacketGuider
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.step_refusals import StepRefusals
@@ -177,7 +177,7 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
             PacketNonTerminal("StdOut", None, NonTerminal("<msg_c>")), UNUSED_STEP
         )
 
-        guide._guide_path.set_route([pnt_a, pnt_b, pnt_c])
+        guide._guide_path.set_guide_path(GuidePath([pnt_a, pnt_b, pnt_c]))
         guide._guide_target = (NonTerminal("<msg_c>"),)
         guide._prev_session_msgs = []
         history = self._parse("b")
@@ -196,7 +196,7 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
             PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>")), UNUSED_STEP
         )
 
-        guide._guide_path.set_route([pnt_a, pnt_b])
+        guide._guide_path.set_guide_path(GuidePath([pnt_a, pnt_b]))
         guide._guide_target = (NonTerminal("<msg_b>"),)
         guide._prev_session_msgs = []
         self._select(guide)
@@ -212,7 +212,7 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
             PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>")), UNUSED_STEP
         )
 
-        guide._guide_path.set_route([pnt_a, pnt_b])
+        guide._guide_path.set_guide_path(GuidePath([pnt_a, pnt_b]))
         guide._guide_target = (NonTerminal("<msg_b>"),)
         guide._prev_session_msgs = []
         history = self._parse("a")
@@ -234,7 +234,7 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
             PacketNonTerminal("StdOut", None, NonTerminal("<msg_c>")), UNUSED_STEP
         )
 
-        guide._guide_path.set_route([pnt_a, pnt_b, pnt_c])
+        guide._guide_path.set_guide_path(GuidePath([pnt_a, pnt_b, pnt_c]))
         guide._guide_target = (NonTerminal("<msg_c>"),)
         guide._prev_session_msgs = []
         history = self._parse("b")

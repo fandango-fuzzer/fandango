@@ -1,7 +1,8 @@
 from typing import NamedTuple, Optional
 
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.io.navigation.route import PlannedPacket, Route
+from fandango.io.navigation.route import GuidePath, PlannedPacket, Route
+from fandango.io.navigation.step import Step
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree
 
@@ -25,13 +26,29 @@ class GuidePathTracker:
     def __init__(self, permutation_groups: dict[NonTerminal, frozenset[NonTerminal]]):
         self._permutation_groups = permutation_groups
         self._route: Route = []
+        self._target_step: Optional[Step] = None
+        self._target_packets: tuple[PlannedPacket, ...] = ()
 
-    def set_route(self, route: Route) -> None:
-        """Sets the given route as the route to follow."""
-        self._route = list(route)
+    def set_guide_path(
+        self,
+        guide_path: GuidePath,
+    ) -> None:
+        """Sets the route to follow, with the step into its target and the packets inside the target, if any."""
+        self._route = list(guide_path.route)
+        self._target_step = guide_path.target_step
+        self._target_packets = guide_path.target_packets
+
+    def refused_step(self, sender: str) -> Optional[Step]:
+        """The step the sender refused by answering otherwise after the route: to its first packet inside the target, else into the target."""
+        return next(
+            (p.step for p in self._target_packets if p.packet.sender == sender),
+            self._target_step,
+        )
 
     def clear(self) -> None:
-        self.set_route([])
+        self._route = []
+        self._target_step = None
+        self._target_packets = ()
 
     @property
     def route(self) -> Route:
@@ -100,4 +117,4 @@ class GuidePathTracker:
         return False
 
     def __repr__(self) -> str:
-        return f"GuidePathTracker(route={self._route!r})"
+        return f"GuidePathTracker(route={self._route!r}, target_step={self._target_step!r})"

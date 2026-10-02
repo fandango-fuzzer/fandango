@@ -12,7 +12,7 @@ from fandango.io.navigation.graph.packetiterativeparser import (
 from fandango.io.navigation.graph.rule_recursion_tester import RuleRecursionTester
 from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConverter
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.io.navigation.route import PlannedPacket, Route
+from fandango.io.navigation.route import GuidePath, PlannedPacket, Route
 from fandango.io.navigation.step import Step
 from fandango.language import DerivationTree, Grammar
 from fandango.language.grammar.grammar import KPath
@@ -73,8 +73,6 @@ class PacketNavigator(GrammarNavigator):
         self._packet_symbols = packet_symbols
         self._parser = NavigatorPacketIterativeParser(reduced_rules)
         self.set_message_cost(1)
-        self.last_target_step: Optional[Step] = None
-        self.last_target_packets: list[PlannedPacket] = []
 
     def gen_with_blocked_steps(
         self, blocked_steps: frozenset[Step]
@@ -173,7 +171,7 @@ class PacketNavigator(GrammarNavigator):
         )
         return PlannedPacket(packet, self._step_of_graph_node(graph_node))
 
-    def _packets_within(self, target: GrammarGraphNode) -> list[PlannedPacket]:
+    def _packets_within(self, target: GrammarGraphNode) -> tuple[PlannedPacket, ...]:
         """The packets inside target along its continuation, as far as the continuation does not branch."""
         packets: list[PlannedPacket] = []
         visited = {id(target.node)}
@@ -188,7 +186,7 @@ class PacketNavigator(GrammarNavigator):
                 and current.node.sender is not None
             ):
                 packets.append(self._planned_packet(current))
-        return packets
+        return tuple(packets)
 
     @staticmethod
     def _is_within(graph_node: GrammarGraphNode, ancestor: GrammarGraphNode) -> bool:
@@ -247,7 +245,7 @@ class PacketNavigator(GrammarNavigator):
         tree: DerivationTree,
         destination_k_path: KPath,
         included_k_paths: Optional[set[KPath]] = None,
-    ) -> Optional[Route]:
+    ) -> Optional[GuidePath]:
         if included_k_paths is None:
             included_k_paths = set()
         routes: list[tuple[Route, Optional[GrammarGraphNode]]] = []
@@ -261,21 +259,20 @@ class PacketNavigator(GrammarNavigator):
             if path is None:
                 continue
             routes.append((self._to_route(path), path[-1] if len(path) != 0 else None))
-        self.last_target_step = None
-        self.last_target_packets = []
         if len(routes) == 0:
             return None
         route, target = min(
             routes, key=lambda route_and_target: len(route_and_target[0])
         )
         if (
-            target is not None
-            and isinstance(target.node, NonTerminalNode)
-            and target.node.sender is None
+            target is None
+            or not isinstance(target.node, NonTerminalNode)
+            or target.node.sender is not None
         ):
-            self.last_target_step = self._step_of_graph_node(target)
-            self.last_target_packets = self._packets_within(target)
-        return route
+            return GuidePath(route)
+        return GuidePath(
+            route, self._step_of_graph_node(target), self._packets_within(target)
+        )
 
     def astar_tree(
         self,

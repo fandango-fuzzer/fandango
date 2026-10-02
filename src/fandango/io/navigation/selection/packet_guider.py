@@ -4,7 +4,7 @@ from typing import Optional
 from fandango.io.navigation.forecasting.forecast_view import ForecastView
 from fandango.io.navigation.forecasting.forecasting_result import ForecastingPacket
 from fandango.io.navigation.graph.packetnavigator import PacketNavigator
-from fandango.io.navigation.route import PlannedPacket
+from fandango.io.navigation.route import GuidePath
 from fandango.io.navigation.selection.guide_path_tracker import (
     Deviation,
     GuidePathTracker,
@@ -12,7 +12,6 @@ from fandango.io.navigation.selection.guide_path_tracker import (
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.step_refusals import StepRefusals
 from fandango.io.navigation.selection.target_selector import TargetSelector
-from fandango.io.navigation.step import Step
 from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree, index_by_reference
@@ -48,8 +47,6 @@ class PacketGuider:
         self._guide_to_end = False
         self._abandons_run = False
         self._guide_target: Optional[KPath] = None
-        self._target_step: Optional[Step] = None
-        self._target_packets: list[PlannedPacket] = []
         self._guide_path = GuidePathTracker(model.permutation_groups)
         self._prev_session_msgs: list[DerivationTree] = []
         self._session_covered_k_paths: set[KPath] = set()
@@ -179,12 +176,12 @@ class PacketGuider:
             self._guide_target = self._target_selector.select(
                 uncovered_paths, get_coverage_scores(), self._navigator.is_derivable
             )
-            found_guide_path = self._navigator.astar_tree_including_k_paths(
+            guide = self._navigator.astar_tree_including_k_paths(
                 tree=history_tree,
                 destination_k_path=self._guide_target,
                 included_k_paths=self._session_covered_k_paths,
             )
-            if found_guide_path is None:
+            if guide is None:
                 # The target is not reachable from this tree; finish the run,
                 # the next one starts from scratch.
                 log_guidance_hint(
@@ -192,9 +189,7 @@ class PacketGuider:
                 )
                 self._plan_path_to_end()
             else:
-                self._guide_path.set_route(found_guide_path)
-                self._target_step = self._navigator.last_target_step
-                self._target_packets = self._navigator.last_target_packets
+                self._guide_path.set_guide_path(guide)
         self._guide_to_end = self._guide_path.ends_run
 
         next_packet = self._guide_path.next_packet()
@@ -274,9 +269,9 @@ class PacketGuider:
         )
         # None marks the end of the run, as in the paths to a target.
         if path is None:
-            self._guide_path.set_route([None])
+            self._guide_path.set_guide_path(GuidePath([None]))
         else:
-            self._guide_path.set_route([*path, None])
+            self._guide_path.set_guide_path(GuidePath([*path, None]))
 
     def _is_tree_contains_paths(self, paths: set[KPath], tree: DerivationTree) -> bool:
         return self._navigator.contains_k_paths(paths, tree)
@@ -324,14 +319,12 @@ class PacketGuider:
 
     def _count_refused_target(self, message: DerivationTree) -> None:
         """Counts the refusal on the step to the first packet the sender had to send inside the target, or else on the step to the target."""
-        if self._target_step is None or not self._is_external_party(message.sender):
+        if not self._is_external_party(message.sender):
             return
         assert message.sender is not None
-        refused = next(
-            (p.step for p in self._target_packets if p.packet.sender == message.sender),
-            self._target_step,
-        )
-        self._step_refusals.count_refusal(refused, message.sender)
+        refused = self._guide_path.refused_step(message.sender)
+        if refused is not None:
+            self._step_refusals.count_refusal(refused, message.sender)
 
     def _remember_messages(self) -> None:
         if self._history_tree is None:
@@ -373,7 +366,7 @@ class PacketGuider:
 
     def __repr__(self) -> str:
         return (
-            f"PacketGuider(target={self._guide_target!r}, target_step={self._target_step!r}, "
+            f"PacketGuider(target={self._guide_target!r}, "
             f"guide_to_end={self._guide_to_end}, {self._guide_path!r}, "
             f"session_covered={len(self._session_covered_k_paths)}, {self._step_refusals!r})"
         )

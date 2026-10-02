@@ -1,4 +1,4 @@
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.step import Step
@@ -16,3 +16,12 @@ class PlannedPacket(NamedTuple):
 RouteSymbol = NonTerminal | PlannedPacket | None
 
 Route = list[RouteSymbol]
+
+
+class GuidePath(NamedTuple):
+    route: Route
+    target_step: Optional[Step] = None
+    target_packets: tuple[PlannedPacket, ...] = ()
+
+    def __repr__(self) -> str:
+        return f"GuidePatch({self.route!r}, target_packets={self.target_packets!r})"
