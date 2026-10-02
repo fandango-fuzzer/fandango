@@ -52,9 +52,9 @@ class StepRefusals:
 
     def count_refusal(self, step: Step, party: str) -> None:
         """
-        Counts that the party deviated from the step. Blocks the step after REFUSAL_LIMIT calls: wherever its
-        calling rule is used if the party never took it anywhere, else in its context. A step taken in this session
-        is blocked at its end, so the session stays derivable.
+        Counts that the party deviated from the step. Blocks the step after REFUSAL_LIMIT calls.
+        Defers blocking the rule if it was taken elsewhere in the current session.
+        It the step represents a recursive call, only the recursive version of that call is blocked.
         """
         in_calling_rule = step.as_in_calling_last_rule()
         self._refusals_in_a_row_in_calling_rule[in_calling_rule] += 1
