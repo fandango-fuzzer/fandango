@@ -19,6 +19,8 @@ class StepRefusals:
         self._blocked_until_session_by_step: dict[Step, int] = {}
         self._taken_in_session: set[Step] = set()
         self._party_by_deferred_step: dict[Step, str] = {}
+        self._refusals_in_a_row_in_calling_rule: Counter[Step] = Counter()
+        self._taken_in_some_context: set[Step] = set()
 
     @property
     def blocked_steps(self) -> frozenset[Step]:
@@ -35,6 +37,14 @@ class StepRefusals:
                 f"{party} took {step.parent} -> {step.packet}. Routing through it again."
             )
             self._unblock(step)
+        in_calling_rule = step.as_in_calling_last_rule()
+        self._taken_in_some_context.add(in_calling_rule)
+        del self._refusals_in_a_row_in_calling_rule[in_calling_rule]
+        if in_calling_rule in self._blocked_until_session_by_step:
+            log_guidance_hint(
+                f"{party} took {step.parent} -> {step.packet}. Routing through it again wherever {step.parent} is used."
+            )
+            self._unblock(in_calling_rule)
 
     def is_block_deferred(self, step: Step) -> bool:
         """True if the step is refused is not being blacklisted till the session ends."""
@@ -42,11 +52,26 @@ class StepRefusals:
 
     def count_refusal(self, step: Step, party: str) -> None:
         """
-        Counts that the party deviated from the step. Blocks the step after REFUSAL_LIMIT calls.
-        A step taken in this session is blocked at its end, so the session stays derivable.
+        Counts that the party deviated from the step. Blocks the step after REFUSAL_LIMIT calls: wherever its
+        calling rule is used if the party never took it anywhere, else in its context. A step taken in this session
+        is blocked at its end, so the session stays derivable.
         """
+        in_calling_rule = step.as_in_calling_last_rule()
+        self._refusals_in_a_row_in_calling_rule[in_calling_rule] += 1
         self._refusals_in_a_row_by_step[step] += 1
+        if in_calling_rule in self._blocked_until_session_by_step:
+            return
         if (
+            self._refusals_in_a_row_in_calling_rule[in_calling_rule]
+            >= self.REFUSAL_LIMIT
+            and in_calling_rule not in self._taken_in_some_context
+        ):
+            log_guidance_hint(
+                f"{party} never took {step.parent} -> {step.packet}. "
+                f"Routing around it wherever {step.parent} is used."
+            )
+            self._block(in_calling_rule, party)
+        elif (
             self._refusals_in_a_row_by_step[step] >= self.REFUSAL_LIMIT
             and step not in self._blocked_until_session_by_step
         ):
@@ -74,6 +99,10 @@ class StepRefusals:
                 log_guidance_hint(f"Trying {step.parent} -> {step.packet} again.")
                 self._unblock(step)
                 self._refusals_in_a_row_by_step[step] = self.REFUSAL_LIMIT - 1
+                if step == step.as_in_calling_last_rule():
+                    self._refusals_in_a_row_in_calling_rule[step] = (
+                        self.REFUSAL_LIMIT - 1
+                    )
         for step, party in self._party_by_deferred_step.items():
             self._block(step, party)
         self._party_by_deferred_step.clear()
@@ -86,6 +115,8 @@ class StepRefusals:
         self._blocked_until_session_by_step.clear()
         self._taken_in_session.clear()
         self._party_by_deferred_step.clear()
+        self._refusals_in_a_row_in_calling_rule.clear()
+        self._taken_in_some_context.clear()
 
     def _unblock(self, step: Step) -> None:
         del self._blocked_until_session_by_step[step]
