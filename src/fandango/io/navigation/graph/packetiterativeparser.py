@@ -46,6 +46,9 @@ class PacketIterativeParser(IterativeParser):
             session_messages.hang_messages_into(i_cpy)
         return i_cpy
 
+    def __repr__(self) -> str:
+        return f"PacketIterativeParser(consumed_history={self._consumed_history!r})"
+
 
 class NavigatorPacketIterativeParser(PacketIterativeParser):
     """

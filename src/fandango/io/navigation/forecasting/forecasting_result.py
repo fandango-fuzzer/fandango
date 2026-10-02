@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from fandango.errors import FandangoValueError
+from fandango.io.navigation.step import Step
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
@@ -28,7 +29,7 @@ class MountingPath:
         path: tuple[tuple[NonTerminal, bool], ...],
     ) -> tuple[tuple[NonTerminal, bool], ...]:
         return tuple(
-            (nt, new_node) for nt, new_node in path if not nt.name().startswith("<__")
+            (nt, new_node) for nt, new_node in path if not Step.is_control_flow(nt)
         )
 
     def __hash__(self) -> int:
@@ -48,6 +49,11 @@ class ForecastingPacket:
 
     def add_path(self, path: MountingPath) -> None:
         self.paths.add(path)
+
+    def __repr__(self) -> str:
+        return (
+            f"ForecastingPacket({self.node.format_as_spec()}, {len(self.paths)} paths)"
+        )
 
 
 class ForecastingNonTerminals:
@@ -70,11 +76,15 @@ class ForecastingNonTerminals:
         else:
             self.nt_to_packet[packet.node.symbol] = packet
 
+    def __repr__(self) -> str:
+        return f"ForecastingNonTerminals({list(self.nt_to_packet.values())!r})"
+
 
 class ForecastingResult:
     def __init__(self) -> None:
         self.parties_to_packets = dict[str, ForecastingNonTerminals]()
         self.complete_trees = set[DerivationTree]()
+        self.message_steps = list[set[Step]]()
 
     def get_msg_parties(self) -> set[str]:
         return set(self.parties_to_packets.keys())
@@ -105,3 +115,9 @@ class ForecastingResult:
                 self.add_packet(party, fp)
         self.complete_trees.update(other.complete_trees)
         return self
+
+    def __repr__(self) -> str:
+        return (
+            f"ForecastingResult({self.parties_to_packets!r}, complete_trees={len(self.complete_trees)}, "
+            f"message_steps for {len(self.message_steps)} messages)"
+        )

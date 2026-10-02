@@ -3,14 +3,17 @@ from typing import TypeGuard
 
 from fandango.api import Fandango
 from fandango.errors import FandangoError
+from fandango.io.navigation.forecasting.packetforecaster import PacketForecaster
 from fandango.io.navigation.graph.grammarnavigator import GrammarNavigator
 from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.graph.reachability_checker import ReachabilityChecker
 from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConverter
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.io.navigation.selection.packet_guide import PacketGuide
+from fandango.io.navigation.route import PlannedPacket
+from fandango.io.navigation.selection.packet_guider import PacketGuider
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.target_selector import TargetSelector
+from fandango.io.navigation.step import Step
 from fandango.language import DerivationTree, NonTerminal
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.grammar import Grammar, KPath
@@ -127,12 +130,15 @@ class TestGrammarGraph(unittest.TestCase):
             mode=ParsingMode.INCOMPLETE,
             include_controlflow=True,
         )
-        packet_tree, _ = next(navigator.get_controlflow_tree(tree=tree_to_continue))
-        path = navigator.astar_tree_symbols(
-            tree=packet_tree, destination_k_path=(NonTerminal("<end_data>"),)
+        guide_path = navigator.astar_tree_including_k_paths(
+            tree=tree_to_continue, destination_k_path=(NonTerminal("<end_data>"),)
         )
+        assert guide_path is not None
         self.assertEqual(
-            path,
+            [
+                symbol.packet if isinstance(symbol, PlannedPacket) else symbol
+                for symbol in guide_path.route
+            ],
             [
                 PacketNonTerminal("StdOut", None, NonTerminal("<hello>")),
                 NonTerminal("<mail_from>"),
@@ -155,12 +161,11 @@ class TestGrammarGraph(unittest.TestCase):
             mode=ParsingMode.INCOMPLETE,
             include_controlflow=True,
         )
-        packet_tree, _ = next(navigator.get_controlflow_tree(tree=tree_to_continue))
-        path = navigator.astar_tree_symbols(
-            tree=packet_tree, destination_k_path=(NonTerminal("<helo>"),)
+        guide_path = navigator.astar_tree_including_k_paths(
+            tree=tree_to_continue, destination_k_path=(NonTerminal("<helo>"),)
         )
-        assert path is not None
-        if None not in path:
+        assert guide_path is not None
+        if None not in guide_path.route:
             self.assertFalse("Expected symbol to be not reachable")
 
     def test_packet_navigator_symbol_not_extensible(self):
@@ -305,10 +310,44 @@ class Server(FandangoParty):
         self.assertTrue(result.completable_by_extension)
 
         navigator = PacketNavigator(grammar, NonTerminal("<start>"))
-        path = navigator.astar_tree_symbols(
-            tree=hist_tree, destination_k_path=dest_k_path
-        )
+        path = navigator.astar_tree(tree=hist_tree, destination_k_path=dest_k_path)
         self.assertIsNotNone(path)
+
+
+def load_blocked_steps_grammar() -> Grammar:
+    """The grammar of resources/blocked_steps.fan."""
+    with open(RESOURCES_ROOT / "blocked_steps.fan") as spec:
+        grammar, _ = parse(spec, use_stdlib=True, use_cache=False)
+    assert grammar is not None
+    return grammar
+
+
+def step_of_last_message(grammar: Grammar, messages: str) -> Step:
+    """The step that produced the last of the messages, as the forecaster observes it."""
+    history = grammar.parse(
+        messages, mode=ParsingMode.INCOMPLETE, include_controlflow=True
+    )
+    assert history is not None
+    (step,) = PacketForecaster(grammar).predict(history).message_steps[-1]
+    return step
+
+
+class TestIsDerivable(unittest.TestCase):
+    def setUp(self):
+        grammar = load_blocked_steps_grammar()
+        self.navigator = PacketNavigator(grammar)
+        self.ok_after_a = step_of_last_message(grammar, "hello\na\nok\n")
+
+    def test_everything_is_derivable_without_blocked_steps(self):
+        k_path = (NonTerminal("<rule>"), NonTerminal("<after_ok>"))
+        self.assertTrue(self.navigator.is_derivable(k_path))
+
+    def test_only_paths_through_the_blocked_occurrence_are_underivable(self):
+        navigator = self.navigator.gen_with_blocked_steps(frozenset([self.ok_after_a]))
+        rule = NonTerminal("<rule>")
+        self.assertFalse(navigator.is_derivable((rule, NonTerminal("<after_ok>"))))
+        self.assertTrue(navigator.is_derivable((rule, NonTerminal("<ok>"))))
+        self.assertTrue(navigator.is_derivable((rule, NonTerminal("<c>"))))
 
 
 class TestTargetSelector(unittest.TestCase):
@@ -332,6 +371,6 @@ class TestTargetSelector(unittest.TestCase):
             )
         )
         for _ in range(10):
-            target = ts.select(all_paths, [])
-            self.assertFalse(PacketGuide._tuple_contains(a_follows_b, target))
-            self.assertFalse(PacketGuide._tuple_contains(b_follows_a, target))
+            target = ts.select(all_paths, [], lambda path: True)
+            self.assertFalse(PacketGuider._tuple_contains(a_follows_b, target))
+            self.assertFalse(PacketGuider._tuple_contains(b_follows_a, target))

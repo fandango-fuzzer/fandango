@@ -10,8 +10,9 @@ from fandango.io.navigation.forecasting.forecasting_result import (
 )
 from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.selection.coverage_tracker import CoverageTracker
-from fandango.io.navigation.selection.packet_guide import PacketGuide
+from fandango.io.navigation.selection.packet_guider import PacketGuider
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
+from fandango.io.navigation.selection.step_refusals import StepRefusals
 from fandango.io.navigation.selection.target_selector import TargetSelector
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.symbols import NonTerminal
@@ -34,10 +35,12 @@ class PacketSelector:
         self._model = ProtocolModel(grammar, self.start_symbol)
         self._forecast = ForecastView(grammar, io_instance, lambda: self.history_tree)
         self._target_selector = TargetSelector(self._model)
-        self._guide = PacketGuide(
+        self._step_refusals = StepRefusals()
+        self._guider = PacketGuider(
             self._model,
             self._forecast,
             PacketNavigator(grammar, self.start_symbol),
+            self._step_refusals,
             self._target_selector,
             max_messages_per_tree=max_messages_per_tree,
         )
@@ -70,21 +73,28 @@ class PacketSelector:
 
     def add_completed_tree(self, tree: DerivationTree) -> None:
         """Fold a finished protocol run into the coverage basis."""
+        self._guider.observe_run_end(self.history_tree)
         self.record_coverage(tree)
         self._last_completed_tree = tree
         self._completed_count += 1
+        self._step_refusals.signal_session_end()
 
     def abort_run(self, tree: DerivationTree) -> None:
         """Add `tree` to the current tracked grammar coverage and abort the current guide."""
         self.record_coverage(tree)
-        self._guide.abort_run()
+        self._guider.abort_run()
+        self._step_refusals.signal_session_end()
 
     def record_coverage(self, tree: DerivationTree) -> None:
         self._coverage_tracker.add_completed_tree(tree)
 
-    def reset_coverage(self) -> None:
+    def reset(self) -> None:
         self._coverage_tracker.reset()
-        self._guide.reset()
+        self._target_selector.reset()
+        self._step_refusals.reset()
+        self._guider.reset()
+        self.history_tree = DerivationTree(NonTerminal("<start>"))
+        self._next_packets = None
         self._last_completed_tree = None
         self._completed_count = 0
 
@@ -99,9 +109,9 @@ class PacketSelector:
     def _ensure_next_packets(self) -> list[ForecastingPacket]:
         if self._next_packets is None:
             if self._coverage_tracker.coverage_goal == CoverageGoal.RANDOM:
-                self._next_packets = self._guide.find_packets()
+                self._next_packets = self._guider.find_packets()
                 return self._next_packets
-            self._next_packets = self._guide.select_next_packet(
+            self._next_packets = self._guider.select_next_packet(
                 self.history_tree,
                 self._last_completed_tree,
                 self._completed_count,
@@ -116,10 +126,14 @@ class PacketSelector:
 
     def is_guide_to_end(self) -> bool:
         self._ensure_next_packets()
-        return self._guide.is_guide_to_end
+        return self._guider.is_guide_to_end
 
     def is_complete(self) -> bool:
         return self._forecast.is_complete()
+
+    def is_run_abandoned(self) -> bool:
+        self._ensure_next_packets()
+        return self._guider.abandons_run
 
     def next_fuzzer_parties(
         self,
@@ -142,13 +156,18 @@ class PacketSelector:
     def coverage_percent(self) -> float:
         return self._coverage_tracker.coverage_percent()
 
+    def is_derivable_coverage_complete(self) -> bool:
+        return self._guider.is_derivable_coverage_complete(
+            self._coverage_tracker.uncovered_paths()
+        )
+
     @property
     def max_messages_per_tree(self) -> int:
-        return self._guide.max_messages_per_tree
+        return self._guider.max_messages_per_tree
 
     @max_messages_per_tree.setter
     def max_messages_per_tree(self, count: int) -> None:
-        self._guide.max_messages_per_tree = count
+        self._guider.max_messages_per_tree = count
 
     def set_coverage_goal(self, goal: CoverageGoal) -> None:
         self._coverage_tracker.set_coverage_goal(goal)
@@ -173,3 +192,6 @@ class PacketSelector:
         return (
             len(self.next_fuzzer_parties()) != 0 and not self.io_instance.received_msg()
         )
+
+    def __repr__(self) -> str:
+        return f"PacketSelector(start={self.start_symbol!r}, completed={self._completed_count}, {self._guider!r})"

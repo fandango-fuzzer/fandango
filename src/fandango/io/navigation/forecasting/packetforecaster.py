@@ -9,10 +9,12 @@ from fandango.io.navigation.forecasting.forecasting_result import (
     MountingPath,
 )
 from fandango.io.navigation.graph.packetiterativeparser import PacketIterativeParser
+from fandango.io.navigation.graph.rule_recursion_tester import RuleRecursionTester
 from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConverter
 from fandango.io.navigation.graph.visitor.continuing_nodevisitor import (
     ContinuingNodeVisitor,
 )
+from fandango.io.navigation.step import Step
 from fandango.io.packet_evolution.packet_mounter import MessageHolder
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
@@ -85,6 +87,7 @@ class PacketForecaster:
         )
         self.grammar = grammar
         self._parser = PacketIterativeParser(reduced_rules)
+        self._references = RuleRecursionTester(reduced_rules)
 
     def predict(self, tree: DerivationTree) -> ForecastingResult:
         """
@@ -103,15 +106,30 @@ class PacketForecaster:
             history_nts += message.msg.symbol.name()
         self._parser.reference_tree = tree
         self._parser.parse_history(history_nts)
+        message_steps: list[set[Step]] = [set() for _ in messages]
         with MessageHolder(tree).hold_messages_context() as session_messages:
             for suggested_tree, is_complete in self._parser.tree_at(
                 self._parser.consumed_length(), incomplete=True
             ):
                 if not StateGrammarConverter.matches_history(suggested_tree, messages):
                     continue
+                for steps, placeholder in zip(
+                    message_steps, suggested_tree.protocol_msgs(), strict=False
+                ):
+                    steps.add(
+                        Step.of_message(
+                            placeholder.msg, self._references.is_recursive_call
+                        )
+                    )
                 options = options.union(
                     finder.forecast(suggested_tree, session_messages)
                 )
                 if is_complete and finder.collapsed_tree is not None:
                     options.complete_trees.add(finder.collapsed_tree)
+        options.message_steps = message_steps
         return options
+
+    def __repr__(self) -> str:
+        return (
+            f"PacketForecaster({len(self.grammar.rules)} rules, {self._references!r})"
+        )

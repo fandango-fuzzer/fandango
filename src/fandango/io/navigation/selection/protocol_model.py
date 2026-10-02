@@ -3,7 +3,7 @@ from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
-from fandango.language.symbols import NonTerminal
+from fandango.language.symbols import NonTerminal, Symbol
 
 
 class ProtocolModel:
@@ -33,6 +33,15 @@ class ProtocolModel:
         )
         symbols = set(filter(lambda x: x in self._grammar.rules, symbols))
         return symbols
+
+    def messages_producing(self, symbol: Symbol) -> list[NonTerminal]:
+        """The messages whose derivations can contain the symbol."""
+        return [
+            message.symbol
+            for message in self.protocol_msg_symbols
+            if (symbol,)
+            in self._grammar.generate_all_k_paths(k=1, non_terminal=message.symbol)
+        ]
 
     def _build_permutation_groups(
         self,
