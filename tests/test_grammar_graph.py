@@ -130,14 +130,14 @@ class TestGrammarGraph(unittest.TestCase):
             mode=ParsingMode.INCOMPLETE,
             include_controlflow=True,
         )
-        route = navigator.astar_tree_including_k_paths(
+        guide_path = navigator.astar_tree_including_k_paths(
             tree=tree_to_continue, destination_k_path=(NonTerminal("<end_data>"),)
         )
-        assert route is not None
+        assert guide_path is not None
         self.assertEqual(
             [
                 symbol.packet if isinstance(symbol, PlannedPacket) else symbol
-                for symbol in route
+                for symbol in guide_path.route
             ],
             [
                 PacketNonTerminal("StdOut", None, NonTerminal("<hello>")),
@@ -161,11 +161,11 @@ class TestGrammarGraph(unittest.TestCase):
             mode=ParsingMode.INCOMPLETE,
             include_controlflow=True,
         )
-        route = navigator.astar_tree_including_k_paths(
+        guide_path = navigator.astar_tree_including_k_paths(
             tree=tree_to_continue, destination_k_path=(NonTerminal("<helo>"),)
         )
-        assert route is not None
-        if None not in route:
+        assert guide_path is not None
+        if None not in guide_path.route:
             self.assertFalse("Expected symbol to be not reachable")
 
     def test_packet_navigator_symbol_not_extensible(self):
