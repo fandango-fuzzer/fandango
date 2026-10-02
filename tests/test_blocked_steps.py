@@ -47,6 +47,11 @@ class TestBlockedSteps(unittest.TestCase):
         self.note = step_of_last_message(grammar, "hello\nc\nok\nbye\nnote\n")
         # The server answering <bye> with <done> refuses <note>, or <notes> if the route ended there.
         self.notes = Step(self.note.path[:-2])
+        # Steps the server never takes are blocked wherever their calling rule is used.
+        self.refusable = {
+            step.as_in_calling_last_rule()
+            for step in (self.ok_after_a, self.note, self.notes)
+        }
 
     def _run_sessions(self) -> list[tuple[str, frozenset[Step]]]:
         """Each session's messages and the steps blocked after it."""
@@ -57,13 +62,12 @@ class TestBlockedSteps(unittest.TestCase):
 
     def test_refused_occurrence_is_blocked(self):
         blocked_per_session = [blocked for _, blocked in self._run_sessions()]
-        self.assertTrue(
-            any(self.ok_after_a in blocked for blocked in blocked_per_session)
-        )
+        ok_after_a = self.ok_after_a.as_in_calling_last_rule()
+        self.assertTrue(any(ok_after_a in blocked for blocked in blocked_per_session))
 
     def test_only_the_refused_steps_are_blocked(self):
         for _, blocked in self._run_sessions():
-            self.assertLessEqual(blocked, {self.ok_after_a, self.note, self.notes})
+            self.assertLessEqual(blocked, self.refusable)
             self.assertNotIn(self.ok_after_c, blocked)
 
     def test_stops_once_only_blocked_targets_are_left(self):
@@ -71,9 +75,14 @@ class TestBlockedSteps(unittest.TestCase):
         self.assertLess(len(sessions), SESSIONS)
         self.assertTrue(any("c\nok\n" in text for text, _ in sessions))
         _, blocked_at_stop = sessions[-1]
-        self.assertIn(
-            blocked_at_stop,
-            ({self.ok_after_a, self.note}, {self.ok_after_a, self.notes}),
+        self.assertLessEqual(blocked_at_stop, self.refusable)
+        ok_after_a, note, notes = (
+            step.as_in_calling_last_rule()
+            for step in (self.ok_after_a, self.note, self.notes)
+        )
+        self.assertTrue(
+            {ok_after_a, note} <= blocked_at_stop
+            or {ok_after_a, notes} <= blocked_at_stop
         )
 
 
@@ -187,6 +196,33 @@ class TestStepRefusals(unittest.TestCase):
         self._end_sessions(1)
         self.assertIn(STEP, self.refusals.blocked_steps)
         self.assertFalse(self.refusals.is_block_deferred(STEP))
+
+    def test_step_never_taken_is_blocked_in_every_context(self):
+        here = Step(
+            (NonTerminal("<a>"), NonTerminal("<rule>"), NonTerminal("<_packet_ok>"))
+        )
+        there = Step(
+            (NonTerminal("<b>"), NonTerminal("<rule>"), NonTerminal("<_packet_ok>"))
+        )
+        self.refusals.count_refusal(here, "Extern")
+        self.refusals.count_refusal(there, "Extern")
+        self.assertEqual(self.refusals.blocked_steps, frozenset())
+        self.refusals.count_refusal(here, "Extern")
+        self.assertEqual(self.refusals.blocked_steps, frozenset([STEP]))
+        self.refusals.observe_taken(there, "Extern")
+        self.assertEqual(self.refusals.blocked_steps, frozenset())
+
+    def test_step_taken_somewhere_is_blocked_only_where_refused(self):
+        here = Step(
+            (NonTerminal("<a>"), NonTerminal("<rule>"), NonTerminal("<_packet_ok>"))
+        )
+        there = Step(
+            (NonTerminal("<b>"), NonTerminal("<rule>"), NonTerminal("<_packet_ok>"))
+        )
+        self.refusals.observe_taken(there, "Extern")
+        for _ in range(StepRefusals.REFUSAL_LIMIT):
+            self.refusals.count_refusal(here, "Extern")
+        self.assertEqual(self.refusals.blocked_steps, frozenset([here]))
 
     def test_block_expires_after_its_sessions(self):
         self._refuse(StepRefusals.REFUSAL_LIMIT)

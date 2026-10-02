@@ -4,6 +4,7 @@ from typing import Optional
 from fandango.io.navigation.forecasting.forecast_view import ForecastView
 from fandango.io.navigation.forecasting.forecasting_result import ForecastingPacket
 from fandango.io.navigation.graph.packetnavigator import PacketNavigator
+from fandango.io.navigation.route import PlannedPacket
 from fandango.io.navigation.selection.guide_path_tracker import (
     Deviation,
     GuidePathTracker,
@@ -48,6 +49,7 @@ class PacketGuider:
         self._abandons_run = False
         self._guide_target: Optional[KPath] = None
         self._target_step: Optional[Step] = None
+        self._target_packets: list[PlannedPacket] = []
         self._guide_path = GuidePathTracker(model.permutation_groups)
         self._prev_session_msgs: list[DerivationTree] = []
         self._session_covered_k_paths: set[KPath] = set()
@@ -90,6 +92,7 @@ class PacketGuider:
     def observe_run_end(self, history_tree: DerivationTree) -> None:
         self._history_tree = history_tree
         self._observe_messages(self._new_msgs(False))
+        self._build_navigator_around_blocked_steps()
 
     def is_derivable_coverage_complete(self, uncovered_paths: list[KPath]) -> bool:
         return self._target_selector.is_every_path_underivable(
@@ -112,7 +115,6 @@ class PacketGuider:
     ) -> list[ForecastingPacket]:
         self._history_tree = history_tree
         self._last_completed_tree = last_completed_tree
-        self._build_navigator_around_blocked_steps()
 
         if len(self._forecast.next_fuzzer_parties()) == 0:
             current_external_parties = set(
@@ -128,18 +130,25 @@ class PacketGuider:
 
         route_followed = not is_new_tree and self._guide_path.next_packet() is None
         followed_target = self._guide_target if route_followed else None
-        followed_target_step = self._target_step
         new_msgs = self._new_msgs(is_new_tree)
         self._observe_messages(new_msgs)
         deviation = self._guide_path.follow(new_msgs)
         if deviation is not None:
             self._count_refused_step(deviation)
+            if (
+                deviation.planned is None
+                and followed_target is not None
+                and followed_target not in self._session_covered_k_paths
+            ):
+                # The route was followed to its end and the last answer left the target.
+                self._count_refused_target(new_msgs[-1])
             if self._is_end_route_refused(deviation):
                 LOGGER.warning(
-                    "FANDANGOPANIC: Observed derivation of planned protocol path twice for the same transition. "
+                    "NAVIGATORPANIC: Observed derivation of planned protocol path twice for the same transition. "
                     f"Hard-terminating protocol session. Observed derivation {deviation}"
                 )
                 self._abandons_run = True
+        self._build_navigator_around_blocked_steps()
 
         uncovered_paths = get_uncovered_paths()
         if (
@@ -185,6 +194,7 @@ class PacketGuider:
             else:
                 self._guide_path.set_route(found_guide_path)
                 self._target_step = self._navigator.last_target_step
+                self._target_packets = self._navigator.last_target_packets
         self._guide_to_end = self._guide_path.ends_run
 
         next_packet = self._guide_path.next_packet()
@@ -197,15 +207,13 @@ class PacketGuider:
             and followed_target != self._guide_target
             and followed_target not in self._session_covered_k_paths
         ):
-            # Keep the followed target if a packet can; if none can, the last answer left it.
+            # Keep the followed target if a packet can.
             selected_packets = self.find_packets(
                 sender=sender,
                 hookin_states=hookin_states,
                 packet_symbol=packet_symbol,
                 required_k_paths=self._session_covered_k_paths.union([followed_target]),
             )
-            if len(selected_packets) == 0 and len(new_msgs) != 0:
-                self._count_refused_target(followed_target_step, new_msgs[-1])
         if len(selected_packets) == 0:
             selected_packets = self.find_packets(
                 sender=sender, hookin_states=hookin_states, packet_symbol=packet_symbol
@@ -290,7 +298,6 @@ class PacketGuider:
             assert message.sender is not None
             for step in message_steps[index]:
                 self._step_refusals.observe_taken(step, message.sender)
-        self._build_navigator_around_blocked_steps()
 
     def _count_refused_step(self, deviation: Deviation) -> None:
         planned, msg = deviation
@@ -303,7 +310,6 @@ class PacketGuider:
             return
         assert msg.sender is not None
         self._step_refusals.count_refusal(planned.step, msg.sender)
-        self._build_navigator_around_blocked_steps()
 
     def _is_end_route_refused(self, deviation: Deviation) -> bool:
         """
@@ -316,14 +322,16 @@ class PacketGuider:
             and self._step_refusals.is_block_deferred(planned.step)
         )
 
-    def _count_refused_target(
-        self, step: Optional[Step], message: DerivationTree
-    ) -> None:
-        if step is None or not self._is_external_party(message.sender):
+    def _count_refused_target(self, message: DerivationTree) -> None:
+        """Counts the refusal on the step to the first packet the sender had to send inside the target, or else on the step to the target."""
+        if self._target_step is None or not self._is_external_party(message.sender):
             return
         assert message.sender is not None
-        self._step_refusals.count_refusal(step, message.sender)
-        self._build_navigator_around_blocked_steps()
+        refused = next(
+            (p.step for p in self._target_packets if p.packet.sender == message.sender),
+            self._target_step,
+        )
+        self._step_refusals.count_refusal(refused, message.sender)
 
     def _remember_messages(self) -> None:
         if self._history_tree is None:

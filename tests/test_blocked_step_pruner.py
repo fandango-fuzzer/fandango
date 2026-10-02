@@ -115,6 +115,19 @@ class TestBlockedStepPruner(unittest.TestCase):
         )
         self.assertFalse(blocked.is_derivable((AFTER_OK,)))
 
+    def test_route_to_a_target_gives_the_packets_inside_it(self):
+        navigator = PacketNavigator(self.grammar)
+        history = self.grammar.parse(
+            "hello\n", mode=ParsingMode.INCOMPLETE, include_controlflow=True
+        )
+        assert history is not None
+        navigator.astar_tree_including_k_paths(
+            tree=history, destination_k_path=(CLOSING,)
+        )
+        (bye,) = navigator.last_target_packets
+        self.assertEqual(bye.packet.symbol, NonTerminal("<bye>"))
+        self.assertEqual(bye.step.packet, NonTerminal("<_packet_bye>"))
+
 
 class TestBlockedStepInContext(unittest.TestCase):
     def setUp(self):
