@@ -32,7 +32,7 @@ class Step(NamedTuple):
         )
 
     def as_in_calling_last_rule(self) -> "Step":
-        """The step bug truncated to the last rule that calls it."""
+        """The step truncated to the last rule that calls it."""
         parent = max(
             index
             for index, symbol in enumerate(self.path[:-1])
