@@ -31,6 +31,15 @@ class Step(NamedTuple):
             if not Step.is_control_flow(symbol)
         )
 
+    def as_in_calling_last_rule(self) -> "Step":
+        """The step bug truncated to the last rule that calls it."""
+        parent = max(
+            index
+            for index, symbol in enumerate(self.path[:-1])
+            if not Step.is_control_flow(symbol)
+        )
+        return Step(self.path[parent:])
+
     @staticmethod
     def is_control_flow(symbol: Symbol) -> bool:
         return isinstance(symbol, NonTerminal) and symbol.name().startswith("<__")
