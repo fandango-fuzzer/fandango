@@ -1,4 +1,4 @@
-from collections import Counter
+from collections import Counter, defaultdict
 from collections.abc import Callable
 
 from fandango.io.navigation.coverage.powerschedule import (
@@ -39,27 +39,35 @@ class TargetSelector:
     ) -> KPath:
         unreached_paths = set(uncovered_paths)
         self._update_open_below(unreached_paths)
-        uncovered_paths = list(filter(is_derivable, self._open_below))
-        if len(uncovered_paths) == 0:
+        candidates = self._shallowest_derivable_unreached_targets(
+            unreached_paths, is_derivable
+        ) or list(filter(is_derivable, self._open_below))
+        if len(candidates) == 0:
             derivable_scores = [
                 (message, score)
                 for message, score in coverage_scores
                 if is_derivable((message,))
             ]
             return (self._least_covered_message(derivable_scores or coverage_scores),)
-        unreached_targets = [
-            path for path in uncovered_paths if path in unreached_paths
-        ]
-        if len(unreached_targets) != 0:
-            shallowest = min(map(len, unreached_targets))
-            uncovered_paths = [
-                path for path in unreached_targets if len(path) == shallowest
-            ]
         s_ps = self._state_path_power_schedule
-        s_ps.assign_energy_k_path(uncovered_paths)
+        s_ps.assign_energy_k_path(candidates)
         selected_path = s_ps.choose()
         s_ps.add_past_target(selected_path)
         return selected_path
+
+    def _shallowest_derivable_unreached_targets(
+        self, unreached: set[KPath], is_derivable: Callable[[KPath], bool]
+    ) -> list[KPath]:
+        """The derivable unreached targets of the shortest length."""
+        unreached_by_length: dict[int, list[KPath]] = defaultdict(list)
+        for target in self._open_below:
+            if target in unreached:
+                unreached_by_length[len(target)].append(target)
+        for length in sorted(unreached_by_length):
+            derivable = list(filter(is_derivable, unreached_by_length[length]))
+            if len(derivable) != 0:
+                return derivable
+        return []
 
     def _update_open_below(self, uncovered: set[KPath]) -> None:
         """Updated the cached counts of k-paths that are currently uncovered."""
