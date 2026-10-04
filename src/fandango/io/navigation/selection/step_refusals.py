@@ -1,4 +1,4 @@
-from collections import Counter
+from collections import Counter, defaultdict
 
 from fandango.io.navigation.step import Step
 from fandango.logger import log_guidance_hint
@@ -11,6 +11,8 @@ class StepRefusals:
 
     REFUSAL_LIMIT = 3
     FIRST_REFUSAL_SESSIONS = 8
+    REPEAT_COST = 3
+    REPEAT_STEP = 10
 
     def __init__(self) -> None:
         self._session = 0
@@ -20,7 +22,10 @@ class StepRefusals:
         self._taken_in_session: set[Step] = set()
         self._party_by_deferred_step: dict[Step, str] = {}
         self._refusals_in_a_row_in_calling_rule: Counter[Step] = Counter()
-        self._taken_in_some_context: set[Step] = set()
+        self._takes_in_calling_rule: Counter[Step] = Counter()
+        self._contexts_taken_last_in_calling_rule: defaultdict[Step, set[Step]] = (
+            defaultdict(set)
+        )
 
     @property
     def blocked_steps(self) -> frozenset[Step]:
@@ -38,7 +43,10 @@ class StepRefusals:
             )
             self._unblock(step)
         in_calling_rule = step.as_in_calling_last_rule()
-        self._taken_in_some_context.add(in_calling_rule)
+        self._taken_in_session.add(in_calling_rule)
+        self._party_by_deferred_step.pop(in_calling_rule, None)
+        self._takes_in_calling_rule[in_calling_rule] += 1
+        self._contexts_taken_last_in_calling_rule[in_calling_rule].add(step)
         del self._refusals_in_a_row_in_calling_rule[in_calling_rule]
         if in_calling_rule in self._blocked_until_session_by_step:
             log_guidance_hint(
@@ -46,9 +54,19 @@ class StepRefusals:
             )
             self._unblock(in_calling_rule)
 
+    def repeat_costs(self) -> dict[Step, int]:
+        return {
+            step: min(self.REPEAT_COST, takes // self.REPEAT_STEP)
+            for step, takes in self._takes_in_calling_rule.items()
+            if takes >= self.REPEAT_STEP
+        }
+
     def is_block_deferred(self, step: Step) -> bool:
         """True if the step is refused is not being blacklisted till the session ends."""
-        return step in self._party_by_deferred_step
+        return (
+            step in self._party_by_deferred_step
+            or step.as_in_calling_last_rule() in self._party_by_deferred_step
+        )
 
     def count_refusal(self, step: Step, party: str) -> None:
         """
@@ -59,26 +77,28 @@ class StepRefusals:
         in_calling_rule = step.as_in_calling_last_rule()
         self._refusals_in_a_row_in_calling_rule[in_calling_rule] += 1
         self._refusals_in_a_row_by_step[step] += 1
+        taken_last_in = self._contexts_taken_last_in_calling_rule[in_calling_rule]
+        taken_last_in.discard(step)
         if in_calling_rule in self._blocked_until_session_by_step:
             return
-        if (
-            self._refusals_in_a_row_in_calling_rule[in_calling_rule]
-            >= self.REFUSAL_LIMIT
-            and in_calling_rule not in self._taken_in_some_context
-        ):
+        refused_in_rule = self._refusals_in_a_row_in_calling_rule[in_calling_rule]
+        if refused_in_rule >= self.REFUSAL_LIMIT and not taken_last_in:
             log_guidance_hint(
-                f"{party} never took {step.parent} -> {step.packet}. "
+                f"{party} does not take {step.parent} -> {step.packet}. "
                 f"Routing around it wherever {step.parent} is used."
             )
-            self._block(in_calling_rule, party)
+            self._block_now_or_at_session_end(in_calling_rule, party)
         elif (
             self._refusals_in_a_row_by_step[step] >= self.REFUSAL_LIMIT
             and step not in self._blocked_until_session_by_step
         ):
-            if step in self._taken_in_session:
-                self._party_by_deferred_step[step] = party
-            else:
-                self._block(step, party)
+            self._block_now_or_at_session_end(step, party)
+
+    def _block_now_or_at_session_end(self, step: Step, party: str) -> None:
+        if step in self._taken_in_session:
+            self._party_by_deferred_step[step] = party
+        else:
+            self._block(step, party)
 
     def _block(self, step: Step, party: str) -> None:
         self._blocked_count_by_step[step] += 1
@@ -116,7 +136,8 @@ class StepRefusals:
         self._taken_in_session.clear()
         self._party_by_deferred_step.clear()
         self._refusals_in_a_row_in_calling_rule.clear()
-        self._taken_in_some_context.clear()
+        self._takes_in_calling_rule.clear()
+        self._contexts_taken_last_in_calling_rule.clear()
 
     def _unblock(self, step: Step) -> None:
         del self._blocked_until_session_by_step[step]
