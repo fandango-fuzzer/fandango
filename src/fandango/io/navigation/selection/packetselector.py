@@ -39,7 +39,9 @@ class PacketSelector:
         self._guider = PacketGuider(
             self._model,
             self._forecast,
-            PacketNavigator(grammar, self.start_symbol),
+            PacketNavigator(
+                grammar, self.start_symbol, step_costs=self._step_refusals.repeat_costs
+            ),
             self._step_refusals,
             self._target_selector,
             max_messages_per_tree=max_messages_per_tree,
@@ -82,6 +84,9 @@ class PacketSelector:
     def abort_run(self, tree: DerivationTree) -> None:
         """Add `tree` to the current tracked grammar coverage and abort the current guide."""
         self.record_coverage(tree)
+        if not self._guider.abandons_run:
+            # The run ends because the remote party did not answer as the grammar allows.
+            self._guider.count_unanswered_step(tree)
         self._guider.abort_run()
         self._step_refusals.signal_session_end()
 

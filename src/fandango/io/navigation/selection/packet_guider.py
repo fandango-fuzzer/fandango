@@ -306,6 +306,26 @@ class PacketGuider:
         assert msg.sender is not None
         self._step_refusals.count_refusal(planned.step, msg.sender)
 
+    def count_unanswered_step(self, history_tree: DerivationTree) -> None:
+        """Counts a refusal of the step an external party had to take next when the run ended without it."""
+        self._history_tree = history_tree
+        if self._guide_path.follow(self._new_msgs(False)) is not None:
+            return
+        planned = self._guide_path.next_packet()
+        if planned is not None:
+            if self._is_external_party(planned.packet.sender):
+                assert planned.packet.sender is not None
+                self._step_refusals.count_refusal(planned.step, planned.packet.sender)
+            return
+        if self._guide_target is None or self._guide_to_end:
+            return
+        # The route was followed to its end, so the answer inside the target is missing.
+        for party in self._forecast.next_external_parties():
+            refused = self._guide_path.refused_step(party)
+            if refused is not None:
+                self._step_refusals.count_refusal(refused, party)
+                return
+
     def _is_end_route_refused(self, deviation: Deviation) -> bool:
         """
         True if the party refused a step of the route to the end of the run and that step's block is deferred.
