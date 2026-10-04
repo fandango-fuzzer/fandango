@@ -4,7 +4,10 @@ from typing import TypeGuard
 from fandango.api import Fandango
 from fandango.errors import FandangoError
 from fandango.io.navigation.forecasting.packetforecaster import PacketForecaster
-from fandango.io.navigation.graph.grammarnavigator import GrammarNavigator
+from fandango.io.navigation.graph.grammar_navigator import GrammarNavigator
+from fandango.io.navigation.graph.grammar_navigator.grammar_graph_converter import (
+    GrammarGraphNode,
+)
 from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.graph.reachability_checker import ReachabilityChecker
 from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConverter
@@ -17,9 +20,6 @@ from fandango.io.navigation.step import Step
 from fandango.language import DerivationTree, NonTerminal
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.grammar import Grammar, KPath
-from fandango.language.grammar.node_visitors.grammar_graph_converter import (
-    GrammarGraphNode,
-)
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.parse.parse import parse
 from tests.utils import DOCS_ROOT, EVALUATION_ROOT, RESOURCES_ROOT

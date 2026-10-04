@@ -86,6 +86,30 @@ class TestBlockedSteps(unittest.TestCase):
         )
 
 
+class TestUnansweredStep(unittest.TestCase):
+    def test_step_is_blocked_when_the_run_keeps_ending_without_its_answer(self):
+        random.seed(0)
+        with open(RESOURCES_ROOT / "refused_reply.fan") as spec:
+            grammar, constraints = parse(spec, use_stdlib=True, use_cache=False)
+        assert grammar is not None
+        algorithm = ProtocolAlgorithm(
+            packet_algorithm=SimpleGeneticAlgorithm(
+                grammar=grammar, constraints=constraints
+            ),
+            coverage_goal=CoverageGoal.STATE_INPUTS_OUTPUTS,
+            remote_response_timeout=1.0,
+        )
+        refusals = algorithm._packet_selector._step_refusals
+        ok_after_a = step_of_last_message(
+            grammar, "hello\na\nok_a\n"
+        ).as_in_calling_last_rule()
+        blocked_per_session = [
+            refusals.blocked_steps
+            for _ in itertools.islice(algorithm.generate(mode=FuzzingMode.IO), SESSIONS)
+        ]
+        self.assertTrue(any(ok_after_a in blocked for blocked in blocked_per_session))
+
+
 class TestStep(unittest.TestCase):
     PATH = (
         NonTerminal("<start>"),
@@ -212,6 +236,18 @@ class TestStepRefusals(unittest.TestCase):
         self.refusals.observe_taken(there, "Extern")
         self.assertEqual(self.refusals.blocked_steps, frozenset())
 
+    def test_repeat_cost_rises_with_takes_up_to_its_cap(self):
+        step = Step(
+            (NonTerminal("<a>"), NonTerminal("<rule>"), NonTerminal("<_packet_ok>"))
+        )
+        for takes in range(1, 4 * StepRefusals.REPEAT_STEP + 1):
+            self.refusals.observe_taken(step, "Extern")
+            cost = min(StepRefusals.REPEAT_COST, takes // StepRefusals.REPEAT_STEP)
+            self.assertEqual(
+                self.refusals.repeat_costs(),
+                {step.as_in_calling_last_rule(): cost} if cost else {},
+            )
+
     def test_step_taken_somewhere_is_blocked_only_where_refused(self):
         here = Step(
             (NonTerminal("<a>"), NonTerminal("<rule>"), NonTerminal("<_packet_ok>"))
@@ -223,6 +259,25 @@ class TestStepRefusals(unittest.TestCase):
         for _ in range(StepRefusals.REFUSAL_LIMIT):
             self.refusals.count_refusal(here, "Extern")
         self.assertEqual(self.refusals.blocked_steps, frozenset([here]))
+
+    def test_step_refused_where_it_was_taken_is_blocked_wherever_its_rule_is_used(
+        self,
+    ):
+        here = Step(
+            (NonTerminal("<a>"), NonTerminal("<rule>"), NonTerminal("<_packet_ok>"))
+        )
+        there = Step(
+            (NonTerminal("<b>"), NonTerminal("<rule>"), NonTerminal("<_packet_ok>"))
+        )
+        self.refusals.observe_taken(there, "Extern")
+        self._end_sessions(1)
+        self.refusals.count_refusal(there, "Extern")
+        for _ in range(StepRefusals.REFUSAL_LIMIT - 1):
+            self.assertEqual(self.refusals.blocked_steps, frozenset())
+            self.refusals.count_refusal(here, "Extern")
+        self.assertEqual(
+            self.refusals.blocked_steps, frozenset([here.as_in_calling_last_rule()])
+        )
 
     def test_block_expires_after_its_sessions(self):
         self._refuse(StepRefusals.REFUSAL_LIMIT)
