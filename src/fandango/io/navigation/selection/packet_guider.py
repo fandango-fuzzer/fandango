@@ -10,8 +10,9 @@ from fandango.io.navigation.selection.guide_path_tracker import (
     GuidePathTracker,
 )
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
-from fandango.io.navigation.selection.step_refusals import StepRefusals
+from fandango.io.navigation.selection.step_refusals import StepRefusalCounter
 from fandango.io.navigation.selection.target_selector import TargetSelector
+from fandango.io.navigation.step import Step
 from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree, index_by_reference
@@ -31,7 +32,7 @@ class PacketGuider:
         model: ProtocolModel,
         forecast: ForecastView,
         navigator: PacketNavigator,
-        step_refusals: StepRefusals,
+        step_refusals: StepRefusalCounter,
         target_selector: TargetSelector,
         max_messages_per_tree: int,
     ):
@@ -96,11 +97,26 @@ class PacketGuider:
             uncovered_paths, self._navigator.is_derivable
         )
 
-    def _build_navigator_around_blocked_steps(self) -> None:
-        """Builds a new navigator if the blocked steps changed."""
+    def _build_navigator_around_blocked_steps(self, in_session: bool = False) -> None:
+        """
+        Builds a new navigator if the blocked steps changed.
+        In a running session, blocked steps that its history took stay open until the session ends.
+        """
         blocked_steps = self._step_refusals.blocked_steps
+        if in_session:
+            blocked_steps = frozenset(
+                step for step in blocked_steps if not self._is_taken_in_history(step)
+            )
         if blocked_steps != self._navigator.blocked_steps:
             self._navigator = self._navigator.gen_with_blocked_steps(blocked_steps)
+
+    def _is_taken_in_history(self, step: Step) -> bool:
+        """True if a message of the history was produced in the concatenation that blocking the step removes."""
+        return any(
+            PacketGuider._tuple_contains(step.path[:-1], message_step.path)
+            for message_steps in self._forecast.result.message_steps
+            for message_step in message_steps
+        )
 
     def select_next_packet(
         self,
@@ -136,6 +152,7 @@ class PacketGuider:
                 deviation.planned is None
                 and followed_target is not None
                 and followed_target not in self._session_covered_k_paths
+                and not self._is_tree_contains_paths({followed_target}, history_tree)
             ):
                 # The route was followed to its end and the last answer left the target.
                 self._count_refused_target(new_msgs[-1])
@@ -145,7 +162,7 @@ class PacketGuider:
                     f"Hard-terminating protocol session. Observed derivation {deviation}"
                 )
                 self._abandons_run = True
-        self._build_navigator_around_blocked_steps()
+        self._build_navigator_around_blocked_steps(in_session=True)
 
         uncovered_paths = get_uncovered_paths()
         if (

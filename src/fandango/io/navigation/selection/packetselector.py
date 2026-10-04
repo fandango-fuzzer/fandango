@@ -12,7 +12,7 @@ from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.selection.coverage_tracker import CoverageTracker
 from fandango.io.navigation.selection.packet_guider import PacketGuider
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
-from fandango.io.navigation.selection.step_refusals import StepRefusals
+from fandango.io.navigation.selection.step_refusals import StepRefusalCounter
 from fandango.io.navigation.selection.target_selector import TargetSelector
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.symbols import NonTerminal
@@ -35,7 +35,7 @@ class PacketSelector:
         self._model = ProtocolModel(grammar, self.start_symbol)
         self._forecast = ForecastView(grammar, io_instance, lambda: self.history_tree)
         self._target_selector = TargetSelector(self._model)
-        self._step_refusals = StepRefusals()
+        self._step_refusals = StepRefusalCounter()
         self._guider = PacketGuider(
             self._model,
             self._forecast,

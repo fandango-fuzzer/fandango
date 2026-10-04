@@ -9,7 +9,7 @@ from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.route import GuidePath, PlannedPacket
 from fandango.io.navigation.selection.packet_guider import PacketGuider
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
-from fandango.io.navigation.selection.step_refusals import StepRefusals
+from fandango.io.navigation.selection.step_refusals import StepRefusalCounter
 from fandango.io.navigation.selection.target_selector import TargetSelector
 from fandango.io.navigation.step import Step
 from fandango.language import DerivationTree, NonTerminal
@@ -149,7 +149,7 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
             model,
             forecast,
             navigator,
-            StepRefusals(),
+            StepRefusalCounter(),
             target_selector,
             max_messages_per_tree=200,
         )

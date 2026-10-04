@@ -6,7 +6,7 @@ from fandango.evolution.algorithm.protocol import ProtocolAlgorithm
 from fandango.evolution.algorithm.simple import SimpleGeneticAlgorithm
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.io.navigation.forecasting.packetforecaster import PacketForecaster
-from fandango.io.navigation.selection.step_refusals import StepRefusals
+from fandango.io.navigation.selection.step_refusals import StepRefusalCounter
 from fandango.io.navigation.step import Step
 from fandango.language.grammar import FuzzingMode, ParsingMode
 from fandango.language.grammar.grammar import Grammar
@@ -185,7 +185,7 @@ STEP = Step((NonTerminal("<rule>"), NonTerminal("<_packet_ok>")))
 
 class TestStepRefusals(unittest.TestCase):
     def setUp(self):
-        self.refusals = StepRefusals()
+        self.refusals = StepRefusalCounter()
 
     def _refuse(self, times: int) -> None:
         for _ in range(times):
@@ -196,25 +196,25 @@ class TestStepRefusals(unittest.TestCase):
             self.refusals.signal_session_end()
 
     def test_blocks_at_the_refusal_limit(self):
-        self._refuse(StepRefusals.REFUSAL_LIMIT - 1)
+        self._refuse(StepRefusalCounter.REFUSAL_LIMIT - 1)
         self.assertNotIn(STEP, self.refusals.blocked_steps)
         self._refuse(1)
         self.assertIn(STEP, self.refusals.blocked_steps)
 
     def test_observation_resets_the_refusals(self):
-        self._refuse(StepRefusals.REFUSAL_LIMIT - 1)
+        self._refuse(StepRefusalCounter.REFUSAL_LIMIT - 1)
         self.refusals.observe_taken(STEP, "Extern")
-        self._refuse(StepRefusals.REFUSAL_LIMIT - 1)
+        self._refuse(StepRefusalCounter.REFUSAL_LIMIT - 1)
         self.assertNotIn(STEP, self.refusals.blocked_steps)
 
     def test_observation_unblocks(self):
-        self._refuse(StepRefusals.REFUSAL_LIMIT)
+        self._refuse(StepRefusalCounter.REFUSAL_LIMIT)
         self.refusals.observe_taken(STEP, "Extern")
         self.assertNotIn(STEP, self.refusals.blocked_steps)
 
     def test_step_taken_in_the_session_is_blocked_at_its_end(self):
         self.refusals.observe_taken(STEP, "Extern")
-        self._refuse(StepRefusals.REFUSAL_LIMIT)
+        self._refuse(StepRefusalCounter.REFUSAL_LIMIT)
         self.assertNotIn(STEP, self.refusals.blocked_steps)
         self.assertTrue(self.refusals.is_block_deferred(STEP))
         self._end_sessions(1)
@@ -240,9 +240,9 @@ class TestStepRefusals(unittest.TestCase):
         step = Step(
             (NonTerminal("<a>"), NonTerminal("<rule>"), NonTerminal("<_packet_ok>"))
         )
-        for takes in range(1, 4 * StepRefusals.REPEAT_STEP + 1):
+        for takes in range(1, 4 * StepRefusalCounter.REPEAT_STEP + 1):
             self.refusals.observe_taken(step, "Extern")
-            cost = min(StepRefusals.REPEAT_COST, takes // StepRefusals.REPEAT_STEP)
+            cost = min(StepRefusalCounter.REPEAT_COST, takes // StepRefusalCounter.REPEAT_STEP)
             self.assertEqual(
                 self.refusals.repeat_costs(),
                 {step.as_in_calling_last_rule(): cost} if cost else {},
@@ -256,7 +256,7 @@ class TestStepRefusals(unittest.TestCase):
             (NonTerminal("<b>"), NonTerminal("<rule>"), NonTerminal("<_packet_ok>"))
         )
         self.refusals.observe_taken(there, "Extern")
-        for _ in range(StepRefusals.REFUSAL_LIMIT):
+        for _ in range(StepRefusalCounter.REFUSAL_LIMIT):
             self.refusals.count_refusal(here, "Extern")
         self.assertEqual(self.refusals.blocked_steps, frozenset([here]))
 
@@ -272,7 +272,7 @@ class TestStepRefusals(unittest.TestCase):
         self.refusals.observe_taken(there, "Extern")
         self._end_sessions(1)
         self.refusals.count_refusal(there, "Extern")
-        for _ in range(StepRefusals.REFUSAL_LIMIT - 1):
+        for _ in range(StepRefusalCounter.REFUSAL_LIMIT - 1):
             self.assertEqual(self.refusals.blocked_steps, frozenset())
             self.refusals.count_refusal(here, "Extern")
         self.assertEqual(
@@ -280,17 +280,17 @@ class TestStepRefusals(unittest.TestCase):
         )
 
     def test_block_expires_after_its_sessions(self):
-        self._refuse(StepRefusals.REFUSAL_LIMIT)
-        self._end_sessions(StepRefusals.FIRST_REFUSAL_SESSIONS - 1)
+        self._refuse(StepRefusalCounter.REFUSAL_LIMIT)
+        self._end_sessions(StepRefusalCounter.FIRST_REFUSAL_SESSIONS - 1)
         self.assertIn(STEP, self.refusals.blocked_steps)
         self._end_sessions(1)
         self.assertNotIn(STEP, self.refusals.blocked_steps)
 
     def test_one_refusal_after_expiry_blocks_twice_as_long(self):
-        self._refuse(StepRefusals.REFUSAL_LIMIT)
-        self._end_sessions(StepRefusals.FIRST_REFUSAL_SESSIONS)
+        self._refuse(StepRefusalCounter.REFUSAL_LIMIT)
+        self._end_sessions(StepRefusalCounter.FIRST_REFUSAL_SESSIONS)
         self._refuse(1)
-        self._end_sessions(2 * StepRefusals.FIRST_REFUSAL_SESSIONS - 1)
+        self._end_sessions(2 * StepRefusalCounter.FIRST_REFUSAL_SESSIONS - 1)
         self.assertIn(STEP, self.refusals.blocked_steps)
         self._end_sessions(1)
         self.assertNotIn(STEP, self.refusals.blocked_steps)

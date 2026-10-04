@@ -4,7 +4,7 @@ from fandango.io.navigation.step import Step
 from fandango.logger import log_guidance_hint
 
 
-class StepRefusals:
+class StepRefusalCounter:
     """
     Tracks which steps an external party refuses to take and blocks and unblocks them.
     """
