@@ -41,7 +41,7 @@ class TestBlockedSteps(unittest.TestCase):
             coverage_goal=CoverageGoal.STATE_INPUTS_OUTPUTS,
             remote_response_timeout=1.0,
         )
-        self.refusals = self.algorithm._packet_selector._step_refusals
+        self.refusals = self.algorithm._packet_selector._guider._step_refusals
         self.ok_after_a = step_of_last_message(grammar, "hello\na\nok\n")
         self.ok_after_c = step_of_last_message(grammar, "hello\nc\nok\n")
         self.note = step_of_last_message(grammar, "hello\nc\nok\nbye\nnote\n")
@@ -99,7 +99,7 @@ class TestUnansweredStep(unittest.TestCase):
             coverage_goal=CoverageGoal.STATE_INPUTS_OUTPUTS,
             remote_response_timeout=1.0,
         )
-        refusals = algorithm._packet_selector._step_refusals
+        refusals = algorithm._packet_selector._guider._step_refusals
         ok_after_a = step_of_last_message(
             grammar, "hello\na\nok_a\n"
         ).as_in_calling_last_rule()

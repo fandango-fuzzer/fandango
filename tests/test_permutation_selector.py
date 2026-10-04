@@ -4,12 +4,10 @@ from typing import Optional
 from fandango.api import Fandango
 from fandango.io import ConnectionMode, FandangoIO, FandangoParty
 from fandango.io.navigation.forecasting.forecast_view import ForecastView
-from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.route import GuidePath, PlannedPacket
 from fandango.io.navigation.selection.packet_guider import PacketGuider
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
-from fandango.io.navigation.selection.step_refusals import StepRefusalCounter
 from fandango.io.navigation.step import Step
 from fandango.language import DerivationTree, NonTerminal
 from fandango.language.grammar import ParsingMode
@@ -142,14 +140,7 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
         self.history = DerivationTree(start)
         model = ProtocolModel(self.grammar, start)
         forecast = _StubForecast(self.grammar, _make_test_io(), lambda: self.history)
-        navigator = PacketNavigator(self.grammar, start)
-        return PacketGuider(
-            model,
-            forecast,
-            navigator,
-            StepRefusalCounter(),
-            max_messages_per_tree=200,
-        )
+        return PacketGuider(model, forecast, max_messages_per_tree=200)
 
     def _select(self, guide: PacketGuider) -> None:
         # a non-empty uncovered list keeps the guide off the "guide to end" path
