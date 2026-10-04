@@ -10,7 +10,6 @@ from fandango.io.navigation.route import GuidePath, PlannedPacket
 from fandango.io.navigation.selection.packet_guider import PacketGuider
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.step_refusals import StepRefusalCounter
-from fandango.io.navigation.selection.target_selector import TargetSelector
 from fandango.io.navigation.step import Step
 from fandango.language import DerivationTree, NonTerminal
 from fandango.language.grammar import ParsingMode
@@ -78,7 +77,7 @@ class TestPermutationGroupBuilding(unittest.TestCase):
     def _bare_model(self):
         """Return a ProtocolModel instance with only ._grammar set (no full __init__)."""
         model = object.__new__(ProtocolModel)
-        model._grammar = self.grammar
+        model.grammar = self.grammar
         return model
 
     def test_permutation_peers_share_group(self):
@@ -144,13 +143,11 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
         model = ProtocolModel(self.grammar, start)
         forecast = _StubForecast(self.grammar, _make_test_io(), lambda: self.history)
         navigator = PacketNavigator(self.grammar, start)
-        target_selector = TargetSelector(model)
         return PacketGuider(
             model,
             forecast,
             navigator,
             StepRefusalCounter(),
-            target_selector,
             max_messages_per_tree=200,
         )
 

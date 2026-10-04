@@ -12,7 +12,6 @@ from fandango.io.navigation.selection.guide_path_tracker import (
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.step_refusals import StepRefusalCounter
 from fandango.io.navigation.selection.target_selector import TargetSelector
-from fandango.io.navigation.step import Step
 from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree, index_by_reference
@@ -31,15 +30,15 @@ class PacketGuider:
         self,
         model: ProtocolModel,
         forecast: ForecastView,
-        navigator: PacketNavigator,
-        step_refusals: StepRefusalCounter,
-        target_selector: TargetSelector,
         max_messages_per_tree: int,
     ):
         self._model = model
         self._forecast = forecast
-        self._navigator = navigator
-        self._target_selector = target_selector
+        self._step_refusals = StepRefusalCounter()
+        self._navigator = PacketNavigator(
+            self._model.grammar, self._model.start_symbol, step_costs=self._step_refusals.repeat_costs
+        )
+        self._target_selector = TargetSelector(model)
         self._max_messages_per_tree = max_messages_per_tree
 
         self._history_tree: DerivationTree = DerivationTree(NonTerminal("<start>"))
@@ -51,7 +50,6 @@ class PacketGuider:
         self._guide_path = GuidePathTracker(model.permutation_groups)
         self._prev_session_msgs: list[DerivationTree] = []
         self._session_covered_k_paths: set[KPath] = set()
-        self._step_refusals = step_refusals
 
     @property
     def is_guide_to_end(self) -> bool:
@@ -72,6 +70,8 @@ class PacketGuider:
 
     def reset(self) -> None:
         """Forget everything about previous runs, as after construction."""
+        self._target_selector.reset()
+        self._step_refusals.reset()
         self.abort_run()
         self._last_completed_tree = None
         self._prev_completed_count = 0
@@ -86,37 +86,24 @@ class PacketGuider:
         self._guide_path.clear()
         self._prev_session_msgs = []
         self._session_covered_k_paths.clear()
+        self._step_refusals.signal_session_end()
 
     def observe_run_end(self, history_tree: DerivationTree) -> None:
         self._history_tree = history_tree
         self._observe_messages(self._new_msgs(False))
         self._build_navigator_around_blocked_steps()
+        self._step_refusals.signal_session_end()
 
     def is_derivable_coverage_complete(self, uncovered_paths: list[KPath]) -> bool:
         return self._target_selector.is_every_path_underivable(
             uncovered_paths, self._navigator.is_derivable
         )
 
-    def _build_navigator_around_blocked_steps(self, in_session: bool = False) -> None:
-        """
-        Builds a new navigator if the blocked steps changed.
-        In a running session, blocked steps that its history took stay open until the session ends.
-        """
+    def _build_navigator_around_blocked_steps(self) -> None:
+        """Builds a new navigator if the blocked steps changed."""
         blocked_steps = self._step_refusals.blocked_steps
-        if in_session:
-            blocked_steps = frozenset(
-                step for step in blocked_steps if not self._is_taken_in_history(step)
-            )
         if blocked_steps != self._navigator.blocked_steps:
             self._navigator = self._navigator.gen_with_blocked_steps(blocked_steps)
-
-    def _is_taken_in_history(self, step: Step) -> bool:
-        """True if a message of the history was produced in the concatenation that blocking the step removes."""
-        return any(
-            PacketGuider._tuple_contains(step.path[:-1], message_step.path)
-            for message_steps in self._forecast.result.message_steps
-            for message_step in message_steps
-        )
 
     def select_next_packet(
         self,
@@ -162,7 +149,7 @@ class PacketGuider:
                     f"Hard-terminating protocol session. Observed derivation {deviation}"
                 )
                 self._abandons_run = True
-        self._build_navigator_around_blocked_steps(in_session=True)
+        self._build_navigator_around_blocked_steps()
 
         uncovered_paths = get_uncovered_paths()
         if (
