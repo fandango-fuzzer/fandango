@@ -38,7 +38,7 @@ class PacketSelector:
             self._forecast,
             max_messages_per_tree=max_messages_per_tree,
         )
-        self.history_tree: DerivationTree = DerivationTree(NonTerminal("<start>"))
+        self.history_tree = history_tree
         self._last_completed_tree: Optional[DerivationTree] = None
         self._completed_count = 0
         self._coverage_tracker = CoverageTracker(
@@ -51,7 +51,6 @@ class PacketSelector:
             CoverageGoal.STATE_INPUTS,
         )
         self._next_packets: Optional[list[ForecastingPacket]] = None
-        self.compute(history_tree)
 
     def _input_parties(self) -> set[str]:
         parties: set[str] = set()
@@ -60,28 +59,32 @@ class PacketSelector:
                 parties.add(party.party_name)
         return parties
 
-    def compute(self, history_tree: DerivationTree) -> None:
+    def observe_message(self, history_tree: DerivationTree) -> None:
+        """Notifies that a message was sent or received. It is the last message of history_tree, the new history."""
+        self._set_history(history_tree)
+        self._guider.observe_message(next(history_tree.protocol_msgs(reverse=True)))
+
+    def signal_session_end(self) -> None:
+        """Notifies that the session ended. Its history counts as covered; the history starts empty again."""
+        self._coverage_tracker.add_completed_tree(self.history_tree)
+        self._guider.observe_run_end(self.history_tree)
+        self._last_completed_tree = self.history_tree
+        self._completed_count += 1
+        self._set_history(DerivationTree(NonTerminal("<start>")))
+
+    def _set_history(self, history_tree: DerivationTree) -> None:
         self.history_tree = history_tree
         self._coverage_tracker.invalidate()
         self._next_packets = None
 
-    def add_completed_tree(self, tree: DerivationTree) -> None:
-        """Fold a finished protocol run into the coverage basis."""
-        self._guider.observe_run_end(self.history_tree)
-        self.record_coverage(tree)
-        self._last_completed_tree = tree
-        self._completed_count += 1
-
-    def abort_run(self, tree: DerivationTree) -> None:
-        """Add `tree` to the current tracked grammar coverage and abort the current guide."""
-        self.record_coverage(tree)
+    def abort_run(self) -> None:
+        """Notifies that the session was aborted. Its history counts as covered; the history starts empty again."""
+        self._coverage_tracker.add_completed_tree(self.history_tree)
         if not self._guider.abandons_run:
             # The run ends because the remote party did not answer as the grammar allows.
-            self._guider.count_unanswered_step(tree)
+            self._guider.count_unanswered_step(self.history_tree)
         self._guider.abort_run()
-
-    def record_coverage(self, tree: DerivationTree) -> None:
-        self._coverage_tracker.add_completed_tree(tree)
+        self._set_history(DerivationTree(NonTerminal("<start>")))
 
     def reset(self) -> None:
         self._coverage_tracker.reset()

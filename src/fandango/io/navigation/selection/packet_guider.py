@@ -14,7 +14,7 @@ from fandango.io.navigation.selection.step_refusals import StepRefusalCounter
 from fandango.io.navigation.selection.target_selector import TargetSelector
 from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols import NonTerminal, Symbol
-from fandango.language.tree import DerivationTree, index_by_reference
+from fandango.language.tree import DerivationTree, ProtocolMessage, index_by_reference
 from fandango.logger import LOGGER, log_guidance_hint
 
 
@@ -87,6 +87,9 @@ class PacketGuider:
         self._prev_session_msgs = []
         self._session_covered_k_paths.clear()
         self._step_refusals.signal_session_end()
+
+    def observe_message(self, message: ProtocolMessage) -> None:
+        """Notifies that the message was sent or received. It is the last message of the history."""
 
     def observe_run_end(self, history_tree: DerivationTree) -> None:
         self._history_tree = history_tree

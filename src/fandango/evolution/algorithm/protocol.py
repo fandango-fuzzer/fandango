@@ -310,7 +310,6 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 and iteration % self.CLEAR_CONSTRAINT_CACHE_INTERVAL == 0
             ):
                 self._clear_constraint_caches()
-            self._packet_selector.compute(self._protocol_tree)
             if self.coverage_goal != CoverageGoal.RANDOM:
                 LOGGER.info(
                     f"Current coverage: {self._packet_selector.coverage_percent() * 100:.2f}%"
@@ -324,7 +323,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     list(self._packet_selector.forecasting_result.complete_trees)
                 )
                 MessageHolder(final_tree).hold_messages()
-                self._packet_selector.add_completed_tree(final_tree)
+                self._packet_selector.signal_session_end()
                 self._packet_coverage_filter.add_completed_tree(final_tree)
                 yield final_tree
                 if self._is_derivable_coverage_complete():
@@ -336,7 +335,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 continue
 
             if self._packet_selector.is_run_abandoned():
-                self._packet_selector.abort_run(self._protocol_tree)
+                self._packet_selector.abort_run()
                 self._packet_coverage_filter.add_completed_tree(self._protocol_tree)
                 self._start_new_run()
                 continue
@@ -367,6 +366,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                         True,
                     )
                 self._protocol_tree = next_history_tree
+                self._packet_selector.observe_message(self._protocol_tree)
             else:
                 try:
                     with packet_mounter.history_context(self._protocol_tree):
@@ -377,7 +377,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     FandangoParseError,
                     FandangoValueError,
                 ) as exc:
-                    self._packet_selector.abort_run(self._protocol_tree)
+                    self._packet_selector.abort_run()
                     self._packet_coverage_filter.add_completed_tree(self._protocol_tree)
                     self.violations.append((self._protocol_tree, exc))
                     if self.throw_on_violation:
@@ -393,6 +393,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                         return None
                     self._start_new_run()
                     continue
+                self._packet_selector.observe_message(self._protocol_tree)
             self._protocol_tree.set_all_read_only(True)
 
     def _configure_fuzzable_packets(self) -> None:
