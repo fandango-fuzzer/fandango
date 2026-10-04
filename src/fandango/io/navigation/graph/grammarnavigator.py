@@ -1,6 +1,6 @@
 import heapq
 import itertools
-from collections.abc import Generator, Hashable, Iterable
+from collections.abc import Generator, Hashable, Iterable, Sequence
 from typing import NamedTuple, Optional, Union
 
 from fandango.errors import FandangoError
@@ -16,6 +16,8 @@ from fandango.language.grammar.node_visitors.grammar_graph_converter import (
     GrammarGraphNode,
     LazyGrammarGraphNode,
 )
+from fandango.language.grammar.nodes.alternative import Alternative
+from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Repetition
@@ -27,19 +29,11 @@ class NavigatorTimedOutError(FandangoError):
     pass
 
 
-def nearer(first: Optional[int], second: Optional[int]) -> Optional[int]:
-    if first is None:
-        return second
-    if second is None:
-        return first
-    return min(first, second)
-
-
 class ChainSummary(NamedTuple):
     length: int
     shared_with_forbidden_path: int
     recent_matched_lengths: tuple[int, ...]
-    closest_target_distances: tuple[Optional[int], ...]
+    costs_after: tuple[int, ...]
 
 
 class GrammarNavigator:
@@ -63,8 +57,9 @@ class GrammarNavigator:
         # One distance map per symbol of the ACTIVE target k-path, so the
         # heuristic can guide toward whichever k-path symbol is needed next.
         self._target_dists: Optional[list[dict[str, int]]] = None
-        # Reference graph. Shows which symbols directly reference which others.
-        self._ref_fwd: Optional[dict[str, set[str]]] = None
+        # Reference graph. Shows which symbols are referenced by which others, at which cost.
+        self._ref_costs: Optional[dict[str, dict[str, int]]] = None
+        self._cheapest_costs: dict[NonTerminal, int] = {}
         self._chain_symbols: dict[GrammarGraphNode, Optional[Symbol]] = {}
         self._chain_summaries: dict[GrammarGraphNode, ChainSummary] = {}
         self._heuristic_costs: dict[GrammarGraphNode, int] = {}
@@ -85,58 +80,107 @@ class GrammarNavigator:
     _SUB_UNREACHABLE = 100_000
     ANCESTOR_LOOKBACK = 6
 
-    def _reference_graph(self) -> dict[str, set[str]]:
-        """symbol -> set of non-terminals it directly references in its rule body."""
-        if self._ref_fwd is not None:
-            return self._ref_fwd
+    def _message_cost_of(self, node: Node) -> int:
+        """Returns the cost of the message that node sends."""
+        if isinstance(node, NonTerminalNode) and node.sender is not None:
+            return self.message_cost
+        return 0
 
-        def references(body: Node) -> set[str]:
-            out: set[str] = set()
-            stack = [body]
-            seen: set[int] = set()
-            while stack:
-                n = stack.pop()
-                if id(n) in seen:
-                    continue
-                seen.add(id(n))
-                if isinstance(n, (NonTerminalNode, TerminalNode)):
-                    out.add(str(n.symbol))
-                    continue
-                for child in n.children():
-                    stack.append(child)
-            return out
+    def _reference_cost(self, node: Node) -> int:
+        """Returns the cost of entering the symbol of node: its message, or 1 while messages cost nothing."""
+        return self._message_cost_of(node) if self.message_cost else 1
 
-        fwd: dict[str, set[str]] = {}
-        for nt, body in self.grammar.rules.items():
-            fwd[str(nt)] = references(body)
-        self._ref_fwd = fwd
-        return fwd
+    def _cost_of(self, node: Node) -> int:
+        """Returns the cost of the cheapest messages that node derives."""
+        if isinstance(node, NonTerminalNode):
+            return self._message_cost_of(node) + self._cheapest_costs.get(
+                node.symbol, self._SUB_UNREACHABLE
+            )
+        if isinstance(node, Alternative):
+            return min(map(self._cost_of, node.children()))
+        if isinstance(node, Repetition):
+            return node.min * self._cost_of(node.node)
+        return sum(map(self._cost_of, node.children()))
+
+    def _cost_into(self, node: Node, distances: dict[str, int]) -> int:
+        """Returns the cheapest cost from before node to the target of distances below node."""
+        if isinstance(node, (NonTerminalNode, TerminalNode)):
+            return self._reference_cost(node) + distances.get(
+                str(node.symbol), self._SUB_UNREACHABLE
+            )
+        if isinstance(node, Concatenation):
+            return self._cost_ahead(node.children(), distances, self._SUB_UNREACHABLE)
+        return min(
+            (self._cost_into(child, distances) for child in node.children()),
+            default=self._SUB_UNREACHABLE,
+        )
+
+    def _cost_ahead(
+        self, nodes: Sequence[Node], distances: dict[str, int], beyond: int
+    ) -> int:
+        """
+        Returns the cheapest cost to the target of distances:
+        below one of the nodes in sequence, or after them at cost beyond.
+        """
+        cost = self._SUB_UNREACHABLE
+        before = 0
+        for node in nodes:
+            cost = min(cost, before + self._cost_into(node, distances))
+            before += self._cost_of(node)
+        return min(cost, before + beyond, self._SUB_UNREACHABLE)
+
+    def _reference_graph(self) -> dict[str, dict[str, int]]:
+        """symbol -> symbols whose rule references it -> cheapest cost from the start of that rule to the reference."""
+        if self._ref_costs is not None:
+            return self._ref_costs
+        rules = self.grammar.rules
+        self._cheapest_costs = {}
+        changed = True
+        while changed:
+            changed = False
+            for symbol, body in rules.items():
+                cost = self._cost_of(body)
+                if cost < self._cheapest_costs.get(symbol, self._SUB_UNREACHABLE):
+                    self._cheapest_costs[symbol] = cost
+                    changed = True
+
+        costs: dict[str, dict[str, int]] = {}
+
+        def references(rule: str, node: Node, before: int) -> None:
+            if isinstance(node, (NonTerminalNode, TerminalNode)):
+                cost = before + self._reference_cost(node)
+                referencing = costs.setdefault(str(node.symbol), {})
+                if cost < referencing.get(rule, self._SUB_UNREACHABLE):
+                    referencing[rule] = cost
+                return
+            for child in node.children():
+                references(rule, child, before)
+                if isinstance(node, Concatenation):
+                    before += self._cost_of(child)
+
+        for symbol, body in rules.items():
+            references(str(symbol), body, 0)
+        self._ref_costs = costs
+        return costs
 
     def _symbol_distances_to(self, target: Symbol) -> dict[str, int]:
-        """Distance (in rule references) from every symbol to ``target``."""
+        """Returns the cheapest cost from the start of every symbol's rule to ``target``."""
         key = str(target)
         cached = self._dist_cache.get(key)
         if cached is not None:
             return cached
 
-        from collections import deque
-
-        fwd = self._reference_graph()
-        rev: dict[str, set[str]] = {}
-        for a, outs in fwd.items():
-            for b in outs:
-                rev.setdefault(b, set()).add(a)
-
-        # Perform breadth-first search from target to every reachable symbol,
-        # record the shortest nr of hops to reach each symbol.
+        referencing = self._reference_graph()
         dist: dict[str, int] = {key: 0}
-        dq = deque([key])
-        while dq:
-            s = dq.popleft()
-            for p in rev.get(s, ()):
-                if p not in dist:
-                    dist[p] = dist[s] + 1
-                    dq.append(p)
+        nearest = [(0, key)]
+        while nearest:
+            cost, symbol = heapq.heappop(nearest)
+            if cost > dist[symbol]:
+                continue
+            for rule, reference_cost in referencing.get(symbol, {}).items():
+                if cost + reference_cost < dist.get(rule, self._SUB_UNREACHABLE):
+                    dist[rule] = cost + reference_cost
+                    heapq.heappush(nearest, (dist[rule], rule))
         self._dist_cache[key] = dist
         return dist
 
@@ -241,7 +285,7 @@ class GrammarNavigator:
             return (
                 self._future_key(node),
                 summary.recent_matched_lengths,
-                summary.closest_target_distances,
+                summary.costs_after,
             )
         return (self._future_key(node), summary)
 
@@ -250,11 +294,14 @@ class GrammarNavigator:
 
     def set_message_cost(self, cost: int) -> None:
         self.message_cost = cost
+        self._clear_distances()
+
+    def _clear_distances(self) -> None:
+        self._ref_costs = None
+        self._dist_cache.clear()
 
     def distance_between(self, n1: GrammarGraphNode, n2: GrammarGraphNode) -> int:
-        if isinstance(n2.node, NonTerminalNode) and n2.node.sender is not None:
-            return self.message_cost
-        return 0
+        return self._message_cost_of(n2.node)
 
     def _chain_symbol(self, node: GrammarGraphNode) -> Optional[Symbol]:
         if node not in self._chain_symbols:
@@ -308,9 +355,56 @@ class GrammarNavigator:
             matched += 1
         return matched
 
+    def _costs_after(
+        self, graph_node: GrammarGraphNode, after_parent: tuple[int, ...]
+    ) -> tuple[int, ...]:
+        """Returns the cheapest cost from the end of graph_node to each search symbol, given those of its parent."""
+        parent = graph_node.parent
+        if parent is None or isinstance(parent.node, (NonTerminalNode, Alternative)):
+            return after_parent
+        node = graph_node.node
+        targets = list(zip(self._target_dists or [], after_parent, strict=True))
+        if isinstance(parent.node, Repetition):
+            if parent.node.max == 1:
+                return after_parent
+            # Another round or the end. Ignores how many rounds are left.
+            return tuple(
+                min(self._cost_into(node, distances), after)
+                for distances, after in targets
+            )
+        siblings = parent.node.children()
+        following = siblings[
+            next(i for i, sibling in enumerate(siblings) if sibling is node) + 1 :
+        ]
+        return tuple(
+            self._cost_ahead(following, distances, after)
+            for distances, after in targets
+        )
+
+    def _cost_to(
+        self, graph_node: GrammarGraphNode, distances: dict[str, int], after: int
+    ) -> int:
+        """Returns the cheapest cost from graph_node to the target of distances, below it or after its end."""
+        node = graph_node.node
+        if isinstance(node, (NonTerminalNode, TerminalNode)):
+            # The message of the node itself is sent already.
+            below = (
+                self._cheapest_costs.get(node.symbol, self._SUB_UNREACHABLE)
+                if isinstance(node, NonTerminalNode)
+                else 0
+            )
+            return min(
+                distances.get(str(node.symbol), self._SUB_UNREACHABLE), below + after
+            )
+        return self._cost_ahead([node], distances, after)
+
     def _extended_summary(
-        self, summary: ChainSummary, symbol: Optional[Symbol]
+        self, summary: ChainSummary, graph_node: GrammarGraphNode
     ) -> ChainSummary:
+        costs_after = self._costs_after(graph_node, summary.costs_after)
+        if costs_after is not summary.costs_after:
+            summary = summary._replace(costs_after=costs_after)
+        symbol = self._chain_symbol(graph_node)
         if symbol is None:
             return summary
         length = summary.length + 1
@@ -324,19 +418,11 @@ class GrammarNavigator:
             summary.recent_matched_lengths[-1] if summary.recent_matched_lengths else 0
         )
         matched = self._matched_length_after(previous_matched, symbol)
-        name = str(symbol)
-        return ChainSummary(
-            length,
-            summary.shared_with_forbidden_path,
-            (summary.recent_matched_lengths + (matched,))[-self.ANCESTOR_LOOKBACK :],
-            tuple(
-                nearer(closest, target.get(name))
-                for closest, target in zip(
-                    summary.closest_target_distances,
-                    self._target_dists or [],
-                    strict=True,
-                )
-            ),
+        return summary._replace(
+            length=length,
+            recent_matched_lengths=(summary.recent_matched_lengths + (matched,))[
+                -self.ANCESTOR_LOOKBACK :
+            ],
         )
 
     def _chain_summary(self, node: GrammarGraphNode) -> ChainSummary:
@@ -346,15 +432,19 @@ class GrammarNavigator:
             unsummarised.append(current)
             current = current.parent
         if current is None:
-            summary = ChainSummary(0, 0, (), (None,) * len(self._target_dists or []))
+            summary = ChainSummary(
+                0, 0, (), (self._SUB_UNREACHABLE,) * len(self._target_dists or [])
+            )
         else:
             summary = self._chain_summaries[current]
         for graph_node in reversed(unsummarised):
-            summary = self._extended_summary(summary, self._chain_symbol(graph_node))
+            summary = self._extended_summary(summary, graph_node)
             self._chain_summaries[graph_node] = summary
         return summary
 
-    def _heuristic_cost(self, summary: ChainSummary) -> int:
+    def _heuristic_cost(
+        self, summary: ChainSummary, graph_node: GrammarGraphNode
+    ) -> int:
         assert self.search_symbols is not None
         if summary.length == 0:
             return 1
@@ -370,15 +460,15 @@ class GrammarNavigator:
         strict = min(max(recent, default=0), search_len - 1)
 
         # Sub-gradient toward search_symbols[strict] (the next symbol that would
-        # extend the live suffix) via the static reference distance, taken as min
-        # over the chain. Reaching an on-path state usually requires detouring
-        # through OFF-path symbols first.
+        # extend the live suffix): the cheapest cost of the messages still to send
+        # until it begins, below the node or after its end.
         BIG = 1_000_000
         sub = self._SUB_UNREACHABLE
         if self._target_dists is not None and strict < len(self._target_dists):
-            closest = summary.closest_target_distances[strict]
-            if closest is not None:
-                sub = closest
+            cost = self._cost_to(
+                graph_node, self._target_dists[strict], summary.costs_after[strict]
+            )
+            sub = min(sub, cost)
         # Never return 0 here
         return max((search_len - strict) * BIG + sub, 1)
 
@@ -387,7 +477,7 @@ class GrammarNavigator:
             return 1
         cost = self._heuristic_costs.get(current)
         if cost is None:
-            cost = self._heuristic_cost(self._chain_summary(current))
+            cost = self._heuristic_cost(self._chain_summary(current), current)
             self._heuristic_costs[current] = cost
         return cost
 
