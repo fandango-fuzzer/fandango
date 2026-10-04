@@ -5,7 +5,10 @@ from fandango.io.navigation.graph.blocked_step_pruner import (
     BlockedStepPruner,
     KPathTranslation,
 )
-from fandango.io.navigation.graph.grammarnavigator import GrammarNavigator
+from fandango.io.navigation.graph.grammar_navigator import GrammarNavigator
+from fandango.io.navigation.graph.grammar_navigator.grammar_graph_converter import (
+    GrammarGraphNode,
+)
 from fandango.io.navigation.graph.packetiterativeparser import (
     NavigatorPacketIterativeParser,
 )
@@ -16,9 +19,6 @@ from fandango.io.navigation.route import GuidePath, PlannedPacket, Route
 from fandango.io.navigation.step import Step
 from fandango.language import DerivationTree, Grammar
 from fandango.language.grammar.grammar import KPath
-from fandango.language.grammar.node_visitors.grammar_graph_converter import (
-    GrammarGraphNode,
-)
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.symbols import NonTerminal, Symbol
@@ -123,7 +123,7 @@ class PacketNavigator(GrammarNavigator):
                 for node_id, step in self._rule_step_by_node_id.items()
                 if step in costs
             }
-            self._clear_distances()
+            self._costs.clear()
 
     def _message_cost_of(self, node: Node) -> int:
         return super()._message_cost_of(node) + self._step_cost_by_node_id.get(

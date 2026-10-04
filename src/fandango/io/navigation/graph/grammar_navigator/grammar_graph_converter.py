@@ -6,7 +6,7 @@ from typing import Optional
 
 from fandango.errors import FandangoError
 from fandango.io.navigation.nested_steps import run_nested_steps
-from fandango.language import DerivationTree, NonTerminal, Terminal
+from fandango.language import DerivationTree, NonTerminal, Symbol, Terminal
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
@@ -34,6 +34,21 @@ class GrammarGraphNode(abc.ABC):
 
     def is_lazy(self) -> bool:
         return False
+
+    def chain_symbol(self) -> Optional[Symbol]:
+        """Returns the symbol that this node adds to its chain. Control-flow nodes add none."""
+        return None if self.node.is_controlflow else self.node.to_symbol()
+
+    def chain(self) -> tuple[Symbol, ...]:
+        """Returns the chain of this node: the symbols from the start symbol down to it."""
+        symbols = []
+        current: Optional[GrammarGraphNode] = self
+        while current is not None:
+            symbol = current.chain_symbol()
+            if symbol is not None:
+                symbols.append(symbol)
+            current = current.parent
+        return tuple(reversed(symbols))
 
     @abc.abstractmethod
     def add_egress(self, node: "GrammarGraphNode") -> None:
