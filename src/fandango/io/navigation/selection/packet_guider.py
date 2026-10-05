@@ -139,8 +139,8 @@ class PacketGuider:
         """The navigator around the currently blocked steps; rebuilt when they changed."""
         blocked_steps = self._step_refusals.blocked_steps
         if blocked_steps != self._navigator_instance.blocked_steps:
-            self._navigator_instance = (
-                self._navigator_instance.gen_with_blocked_steps(blocked_steps)
+            self._navigator_instance = self._navigator_instance.gen_with_blocked_steps(
+                blocked_steps
             )
         return self._navigator_instance
 

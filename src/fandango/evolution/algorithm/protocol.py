@@ -349,7 +349,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     new_packet = self._generate_packet(max_generations=max_generations)
                     if self._io_instance.received_msg():
                         continue
-                assert new_packet is not None
+                assert new_packet is not None and new_packet.sender is not None
                 if (
                     new_packet.recipient is None
                     or not self._io_instance.parties[

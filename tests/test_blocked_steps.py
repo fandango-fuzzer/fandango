@@ -1,7 +1,6 @@
 import itertools
 import random
 import unittest
-from unittest import mock
 
 from fandango.evolution.algorithm.protocol import ProtocolAlgorithm
 from fandango.evolution.algorithm.simple import SimpleGeneticAlgorithm
@@ -240,7 +239,9 @@ class TestStepRefusals(unittest.TestCase):
         )
         for takes in range(1, 4 * StepRefusalCounter.REPEAT_STEP + 1):
             self.refusals.observe_taken(step, "Extern")
-            cost = min(StepRefusalCounter.REPEAT_COST, takes // StepRefusalCounter.REPEAT_STEP)
+            cost = min(
+                StepRefusalCounter.REPEAT_COST, takes // StepRefusalCounter.REPEAT_STEP
+            )
             self.assertEqual(
                 self.refusals.repeat_costs(),
                 {step.as_in_calling_last_rule(): cost} if cost else {},
