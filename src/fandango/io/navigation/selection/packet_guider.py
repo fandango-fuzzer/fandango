@@ -88,9 +88,8 @@ class PacketGuider:
 
     def observe_message(self, message: ProtocolMessage) -> None:
         """Notifies that the message was sent or received. It is the last message of the history."""
-        if self._is_external_party(message.sender):
-            for step in self._forecast.result.message_steps[-1]:
-                self._step_refusals.observe_taken(step, message.sender)
+        for step in self._forecast.result.message_steps[-1]:
+            self._step_refusals.observe_taken(step, message.sender)
         if self._deviation is None:
             # Only the first message that leaves the plan counts; the next selection plans anew.
             self._deviation = self._guide_path.follow(
@@ -295,9 +294,7 @@ class PacketGuider:
         if planned is None:
             return
         # If someone else sent the message we dont penalize the expected party.
-        if msg.sender != planned.packet.sender or not self._is_external_party(
-            msg.sender
-        ):
+        if msg.sender != planned.packet.sender:
             return
         assert msg.sender is not None
         self._step_refusals.count_refusal(planned.step, msg.sender)
@@ -335,8 +332,6 @@ class PacketGuider:
 
     def _count_refused_target(self, message: DerivationTree) -> None:
         """Counts the refusal on the step into the target."""
-        if not self._is_external_party(message.sender):
-            return
         assert message.sender is not None
         refused = self._guide_path.target_step
         if refused is not None:
