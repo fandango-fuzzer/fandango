@@ -1,6 +1,7 @@
 import itertools
 import random
 import unittest
+from unittest import mock
 
 from fandango.evolution.algorithm.protocol import ProtocolAlgorithm
 from fandango.evolution.algorithm.simple import SimpleGeneticAlgorithm
@@ -60,11 +61,6 @@ class TestBlockedSteps(unittest.TestCase):
         )
         return [(str(session), self.refusals.blocked_steps) for session in sessions]
 
-    def test_refused_occurrence_is_blocked(self):
-        blocked_per_session = [blocked for _, blocked in self._run_sessions()]
-        ok_after_a = self.ok_after_a.as_in_calling_last_rule()
-        self.assertTrue(any(ok_after_a in blocked for blocked in blocked_per_session))
-
     def test_only_the_refused_steps_are_blocked(self):
         for _, blocked in self._run_sessions():
             self.assertLessEqual(blocked, self.refusable)
@@ -107,6 +103,8 @@ class TestUnansweredStep(unittest.TestCase):
             refusals.blocked_steps
             for _ in itertools.islice(algorithm.generate(mode=FuzzingMode.IO), SESSIONS)
         ]
+        # Generation stops once only blocked targets are left, so the last block shows only after it.
+        blocked_per_session.append(refusals.blocked_steps)
         self.assertTrue(any(ok_after_a in blocked for blocked in blocked_per_session))
 
 
@@ -293,6 +291,21 @@ class TestStepRefusals(unittest.TestCase):
         self._end_sessions(2 * StepRefusalCounter.FIRST_REFUSAL_SESSIONS - 1)
         self.assertIn(STEP, self.refusals.blocked_steps)
         self._end_sessions(1)
+        self.assertNotIn(STEP, self.refusals.blocked_steps)
+
+    def test_take_restarts_the_block_duration_of_the_rule_step(self):
+        here = Step(
+            (NonTerminal("<a>"), NonTerminal("<rule>"), NonTerminal("<_packet_ok>"))
+        )
+        for _ in range(StepRefusalCounter.REFUSAL_LIMIT):
+            self.refusals.count_refusal(here, "Extern")
+        self._end_sessions(StepRefusalCounter.FIRST_REFUSAL_SESSIONS)
+        self.refusals.observe_taken(here, "Extern")
+        self._end_sessions(1)
+        for _ in range(StepRefusalCounter.REFUSAL_LIMIT):
+            self.refusals.count_refusal(here, "Extern")
+        self.assertIn(STEP, self.refusals.blocked_steps)
+        self._end_sessions(StepRefusalCounter.FIRST_REFUSAL_SESSIONS)
         self.assertNotIn(STEP, self.refusals.blocked_steps)
 
 

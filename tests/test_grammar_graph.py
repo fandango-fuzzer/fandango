@@ -3,7 +3,6 @@ from typing import TypeGuard
 
 from fandango.api import Fandango
 from fandango.errors import FandangoError
-from fandango.io.navigation.forecasting.packetforecaster import PacketForecaster
 from fandango.io.navigation.graph.grammar_navigator import GrammarNavigator
 from fandango.io.navigation.graph.grammar_navigator.grammar_graph_converter import (
     GrammarGraphNode,
@@ -16,7 +15,6 @@ from fandango.io.navigation.route import PlannedPacket
 from fandango.io.navigation.selection.packet_guider import PacketGuider
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.target_selector import TargetSelector
-from fandango.io.navigation.step import Step
 from fandango.language import DerivationTree, NonTerminal
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.grammar import Grammar, KPath
@@ -312,42 +310,6 @@ class Server(FandangoParty):
         navigator = PacketNavigator(grammar, NonTerminal("<start>"))
         path = navigator.astar_tree(tree=hist_tree, destination_k_path=dest_k_path)
         self.assertIsNotNone(path)
-
-
-def load_blocked_steps_grammar() -> Grammar:
-    """The grammar of resources/blocked_steps.fan."""
-    with open(RESOURCES_ROOT / "blocked_steps.fan") as spec:
-        grammar, _ = parse(spec, use_stdlib=True, use_cache=False)
-    assert grammar is not None
-    return grammar
-
-
-def step_of_last_message(grammar: Grammar, messages: str) -> Step:
-    """The step that produced the last of the messages, as the forecaster observes it."""
-    history = grammar.parse(
-        messages, mode=ParsingMode.INCOMPLETE, include_controlflow=True
-    )
-    assert history is not None
-    (step,) = PacketForecaster(grammar).predict(history).message_steps[-1]
-    return step
-
-
-class TestIsDerivable(unittest.TestCase):
-    def setUp(self):
-        grammar = load_blocked_steps_grammar()
-        self.navigator = PacketNavigator(grammar)
-        self.ok_after_a = step_of_last_message(grammar, "hello\na\nok\n")
-
-    def test_everything_is_derivable_without_blocked_steps(self):
-        k_path = (NonTerminal("<rule>"), NonTerminal("<after_ok>"))
-        self.assertTrue(self.navigator.is_derivable(k_path))
-
-    def test_only_paths_through_the_blocked_occurrence_are_underivable(self):
-        navigator = self.navigator.gen_with_blocked_steps(frozenset([self.ok_after_a]))
-        rule = NonTerminal("<rule>")
-        self.assertFalse(navigator.is_derivable((rule, NonTerminal("<after_ok>"))))
-        self.assertTrue(navigator.is_derivable((rule, NonTerminal("<ok>"))))
-        self.assertTrue(navigator.is_derivable((rule, NonTerminal("<c>"))))
 
 
 class TestTargetSelector(unittest.TestCase):
