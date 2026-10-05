@@ -48,6 +48,7 @@ class StepRefusalCounter:
         self._takes_by_rule_step[rule_step] += 1
         self._contexts_taken_last_by_rule_step[rule_step].add(step)
         del self._refusals_in_a_row_by_rule_step[rule_step]
+        del self._times_blocked_by_step[rule_step]
         if rule_step in self._blocked_until_session_by_step:
             log_guidance_hint(
                 f"{party} took {step.parent} -> {step.packet}. Routing through it again wherever {step.parent} is used."
