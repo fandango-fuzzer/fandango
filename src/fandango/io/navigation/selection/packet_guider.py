@@ -101,7 +101,8 @@ class PacketGuider:
         self._deviation = self._guide_path.follow(message.msg, steps)
         if self._deviation is None:
             return
-        self._count_refusal(self._deviation, history_tree)
+        if self._deviation.refused is not None:
+            self._step_refusals.count_refusal(self._deviation.refused, message.sender)
         if self._is_end_route_refused(self._deviation):
             LOGGER.warning(
                 "NAVIGATORPANIC: Observed derivation of planned protocol path twice for the same transition. "
@@ -285,20 +286,6 @@ class PacketGuider:
 
     def _is_external_party(self, party: Optional[str]) -> bool:
         return party is not None and not self._forecast.is_fuzzer_controlled(party)
-
-    def _count_refusal(
-        self, deviation: Deviation, history_tree: DerivationTree
-    ) -> None:
-        if deviation.refused is None:
-            return
-        if (
-            deviation.refused == self._guide_path.target_step
-            and self._guide_target is not None
-            and self._is_tree_contains_paths({self._guide_target}, history_tree)
-        ):
-            return
-        assert deviation.message.sender is not None
-        self._step_refusals.count_refusal(deviation.refused, deviation.message.sender)
 
     def count_unanswered_step(self, history_tree: DerivationTree) -> None:
         """Counts a refusal of the step an external party had to take next when the run ended without it."""
