@@ -1,4 +1,5 @@
 import argparse
+import contextlib
 import glob
 import os
 import shutil
@@ -522,11 +523,12 @@ COMMANDS: dict[str, Callable[[argparse.Namespace], None]] = {
 
 
 def run(command: Callable[[argparse.Namespace], None], args: argparse.Namespace) -> int:
-    try:
-        resolve_fanbase_files(args)
-        command(args)
-    except Exception as e:
-        print_exception(e)
-        return 1
+    with contextlib.ExitStack() as files:
+        try:
+            resolve_fanbase_files(args, files)
+            command(args)
+        except Exception as e:
+            print_exception(e)
+            return 1
 
     return 0

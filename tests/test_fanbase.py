@@ -57,10 +57,15 @@ class TestFanbaseOption(unittest.TestCase):
         self.addCleanup(os.chdir, self.cwd)
         self.addCleanup(self._tmp.cleanup)
 
+    def run_main_failing(self, *args: str) -> tuple[int, str, str]:
+        """Run main, as a user does: errors are reported and give a status, not raised."""
+        with patch("fandango.logger._RAISE_ON_LOGGED_EXCEPTIONS", False):
+            return self.run_main(*args)
+
     def run_main(self, *args: str) -> tuple[int, str, str]:
         out, err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-            status = main(*args, stdout=out, stderr=err)
+            status = main(*args, stdout=None, stderr=None)
         return status, out.getvalue(), err.getvalue()
 
     def test_default_spec_is_installed_and_used(self) -> None:
@@ -111,12 +116,12 @@ class TestFanbaseOption(unittest.TestCase):
         self.assertEqual("mine", (self.work / "out" / "fandango-0000.dmo").read_text())
 
     def test_unknown_spec_fails(self) -> None:
-        status, _, err = self.run_main("fuzz", "-F", "nonesuch", "-n", "1")
+        status, _, err = self.run_main_failing("fuzz", "-F", "nonesuch", "-n", "1")
         self.assertEqual(1, status)
         self.assertIn("nonesuch", err)
 
     def test_missing_python_package_is_reported(self) -> None:
-        status, _, err = self.run_main("fuzz", "-F", "demo-needs", "-n", "1")
+        status, _, err = self.run_main_failing("fuzz", "-F", "demo-needs", "-n", "1")
         self.assertEqual(1, status)
         self.assertIn("pip install no_such_package_for_fandango_tests", err)
 

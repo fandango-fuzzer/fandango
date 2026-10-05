@@ -7,8 +7,8 @@ the one Fanbase's `find_registry` picks: `$FANBASE_REGISTRY`, else the public on
 """
 
 import argparse
+import contextlib
 import importlib.util
-import io
 import sys
 from pathlib import Path
 from typing import Any
@@ -17,16 +17,12 @@ from fandango.errors import FandangoError
 from fandango.logger import LOGGER
 
 
-class _SpecFile(io.StringIO):
-    """A spec read into memory, so that no file stays open. Its name is the spec's path."""
+def resolve_fanbase_files(
+    args: argparse.Namespace, files: contextlib.ExitStack
+) -> None:
+    """Turn `-F NAME` options into open spec files in `args.fan_files`.
 
-    def __init__(self, path: Path) -> None:
-        super().__init__(path.read_text(encoding="utf-8"))
-        self.name = str(path)
-
-
-def resolve_fanbase_files(args: argparse.Namespace) -> None:
-    """Turn `-F NAME` options into spec files in `args.fan_files`.
+    The files are opened in `files`, which closes them when the command is done.
 
     Since the format is known, this also sets the file name extension, and for `fuzz`,
     where to write the files if neither `-o` nor `-d` was given.
@@ -54,9 +50,9 @@ def resolve_fanbase_files(args: argparse.Namespace) -> None:
         specs.append(spec)
 
     # Fanbase specs come first, so that a spec given with -f can override their rules
-    args.fan_files = [_SpecFile(spec.path) for spec in specs] + list(
-        args.fan_files or []
-    )
+    args.fan_files = [
+        files.enter_context(open(spec.path, "r", encoding="utf-8")) for spec in specs
+    ] + list(args.fan_files or [])
     args.fanbase_files = None  # done; do not fetch again if args are used twice
 
     extensions = specs[0].extensions
