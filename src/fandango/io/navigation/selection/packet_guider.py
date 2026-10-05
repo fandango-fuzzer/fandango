@@ -118,6 +118,9 @@ class PacketGuider:
             return
         deviation = self._guide_path.follow(message.msg, steps)
         if deviation is None:
+            if self._guide_path.is_empty and self._guide_target is not None:
+                # The message completed the route, Limit upcoming parses to versions that contain the path.
+                self._confirm_covered_path(self._guide_target)
             return
         self._deviated_from_guide = True
         if deviation.refused is not None:
