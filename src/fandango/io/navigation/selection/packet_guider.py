@@ -92,6 +92,8 @@ class PacketGuider:
             or not self._guide_path.ends_run
         ):
             self._clear_plan()
+        else:
+            self._guide_path.move_to_next_session_start()
         self._start_session()
 
     def _clear_plan(self) -> None:
@@ -154,8 +156,8 @@ class PacketGuider:
             if "TimerEvent" not in current_external_parties:
                 return []
 
-        route_followed = self._guide_path.next_packet() is None
-        followed_target = self._guide_target if route_followed else None
+        route_completed = self._guide_path.next_packet() is None
+        completed_target = self._guide_target if route_completed else None
         deviation = self._deviation
         self._deviation = None
         self._build_navigator_around_blocked_steps()
@@ -211,16 +213,18 @@ class PacketGuider:
         packet_symbol = None if next_packet is None else next_packet.packet.symbol
         selected_packets = []
         if (
-            followed_target is not None
-            and followed_target != self._guide_target
-            and followed_target not in self._session_covered_k_paths
+            completed_target is not None
+            and completed_target != self._guide_target
+            and completed_target not in self._session_covered_k_paths
         ):
             # Keep the followed target if a packet can.
             selected_packets = self.find_packets(
                 sender=sender,
                 hookin_states=hookin_states,
                 packet_symbol=packet_symbol,
-                required_k_paths=self._session_covered_k_paths.union([followed_target]),
+                required_k_paths=self._session_covered_k_paths.union(
+                    [completed_target]
+                ),
             )
         if len(selected_packets) == 0:
             selected_packets = self.find_packets(

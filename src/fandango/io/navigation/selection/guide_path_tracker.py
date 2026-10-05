@@ -63,13 +63,23 @@ class GuidePathTracker:
         next_planned = self._next_planned()
         return None if next_planned is None else next_planned[1]
 
+    def move_to_next_session_start(self) -> None:
+        """Moves the route to the next session start."""
+        if None in self._route:
+            self._route = self._route[self._route.index(None) + 1 :]
+
     def next_new_parent_states(self) -> list[Symbol]:
         """
         Parent states of the next packet that are not yet in the session tree.
-        All states along the route if no packet is left.
+        All states up to the end of the run if no packet is left in the session.
         """
         next_planned = self._next_planned()
-        route = self._route if next_planned is None else self._route[: next_planned[0]]
+        if next_planned is not None:
+            route = self._route[: next_planned[0]]
+        elif None in self._route:
+            route = self._route[: self._route.index(None)]
+        else:
+            route = self._route
         return [symbol for symbol in route if isinstance(symbol, NonTerminal)]
 
     def follow(self, message: DerivationTree, steps: set[Step]) -> Optional[Deviation]:
@@ -129,10 +139,12 @@ class GuidePathTracker:
         return tuple(reversed(entered))
 
     def _next_planned(self) -> Optional[tuple[int, PlannedPacket]]:
-        """The next planned packet and its index in the route."""
-        for index, planned_packet in enumerate(self._route):
-            if isinstance(planned_packet, PlannedPacket):
-                return index, planned_packet
+        """The next planned packet before the end of the run and its index in the route."""
+        for index, symbol in enumerate(self._route):
+            if symbol is None:
+                return None
+            if isinstance(symbol, PlannedPacket):
+                return index, symbol
         return None
 
     def _consume_permutation_peer(
