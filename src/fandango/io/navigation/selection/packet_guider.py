@@ -14,7 +14,7 @@ from fandango.io.navigation.selection.step_refusals import StepRefusalCounter
 from fandango.io.navigation.selection.target_selector import TargetSelector
 from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols import NonTerminal, Symbol
-from fandango.language.tree import DerivationTree, ProtocolMessage, index_by_reference
+from fandango.language.tree import DerivationTree, ProtocolMessage
 from fandango.logger import LOGGER, log_guidance_hint
 
 
@@ -42,13 +42,12 @@ class PacketGuider:
         self._max_messages_per_tree = max_messages_per_tree
 
         self._history_tree: DerivationTree = DerivationTree(NonTerminal("<start>"))
-        self._last_completed_tree: Optional[DerivationTree] = None
         self._prev_completed_count = 0
         self._guide_to_end = False
         self._abandons_run = False
         self._guide_target: Optional[KPath] = None
         self._guide_path = GuidePathTracker(model.permutation_groups)
-        self._prev_session_msgs: list[DerivationTree] = []
+        self._deviation: Optional[Deviation] = None
         self._session_covered_k_paths: set[KPath] = set()
 
     @property
@@ -73,7 +72,6 @@ class PacketGuider:
         self._target_selector.reset()
         self._step_refusals.reset()
         self.abort_run()
-        self._last_completed_tree = None
         self._prev_completed_count = 0
         self._build_navigator_around_blocked_steps()
 
@@ -84,16 +82,23 @@ class PacketGuider:
         self._abandons_run = False
         self._guide_target = None
         self._guide_path.clear()
-        self._prev_session_msgs = []
+        self._deviation = None
         self._session_covered_k_paths.clear()
         self._step_refusals.signal_session_end()
 
     def observe_message(self, message: ProtocolMessage) -> None:
         """Notifies that the message was sent or received. It is the last message of the history."""
+        if self._is_external_party(message.sender):
+            for step in self._forecast.result.message_steps[-1]:
+                self._step_refusals.observe_taken(step, message.sender)
+        if self._deviation is None:
+            # Only the first message that leaves the plan counts; the next selection plans anew.
+            self._deviation = self._guide_path.follow(
+                message.msg, self._forecast.result.message_steps[-1]
+            )
 
     def observe_run_end(self, history_tree: DerivationTree) -> None:
         self._history_tree = history_tree
-        self._observe_messages(self._new_msgs(False))
         self._build_navigator_around_blocked_steps()
         self._step_refusals.signal_session_end()
 
@@ -111,13 +116,11 @@ class PacketGuider:
     def select_next_packet(
         self,
         history_tree: DerivationTree,
-        last_completed_tree: Optional[DerivationTree],
         completed_count: int,
         get_uncovered_paths: Callable[[], list[KPath]],
         get_coverage_scores: Callable[[], list[tuple[NonTerminal, float]]],
     ) -> list[ForecastingPacket]:
         self._history_tree = history_tree
-        self._last_completed_tree = last_completed_tree
 
         if len(self._forecast.next_fuzzer_parties()) == 0:
             current_external_parties = set(
@@ -133,9 +136,8 @@ class PacketGuider:
 
         route_followed = not is_new_tree and self._guide_path.next_packet() is None
         followed_target = self._guide_target if route_followed else None
-        new_msgs = self._new_msgs(is_new_tree)
-        self._observe_messages(new_msgs)
-        deviation = self._guide_path.follow(new_msgs)
+        deviation = self._deviation
+        self._deviation = None
         if deviation is not None:
             self._count_refused_step(deviation)
             if (
@@ -144,8 +146,8 @@ class PacketGuider:
                 and followed_target not in self._session_covered_k_paths
                 and not self._is_tree_contains_paths({followed_target}, history_tree)
             ):
-                # The route was followed to its end and the last answer left the target.
-                self._count_refused_target(new_msgs[-1])
+                # The route was followed to its end and the message left the target.
+                self._count_refused_target(deviation.message)
             if self._is_end_route_refused(deviation):
                 LOGGER.warning(
                     "NAVIGATORPANIC: Observed derivation of planned protocol path twice for the same transition. "
@@ -222,7 +224,6 @@ class PacketGuider:
             )
         if len(selected_packets) == 0:
             selected_packets = self._forecast.get_fuzzer_packets()
-        self._remember_messages()
         return selected_packets
 
     def find_packets(
@@ -289,18 +290,6 @@ class PacketGuider:
     def _is_external_party(self, party: Optional[str]) -> bool:
         return party is not None and not self._forecast.is_fuzzer_controlled(party)
 
-    def _observe_messages(self, messages: list[DerivationTree]) -> None:
-        """Counts the steps that may have produced the external messages of the history as taken."""
-        history_messages = [record.msg for record in self._history_tree.protocol_msgs()]
-        message_steps = self._forecast.result.message_steps
-        for message in messages:
-            index = index_by_reference(history_messages, message)
-            if index is None or not self._is_external_party(message.sender):
-                continue
-            assert message.sender is not None
-            for step in message_steps[index]:
-                self._step_refusals.observe_taken(step, message.sender)
-
     def _count_refused_step(self, deviation: Deviation) -> None:
         planned, msg = deviation
         if planned is None:
@@ -316,7 +305,7 @@ class PacketGuider:
     def count_unanswered_step(self, history_tree: DerivationTree) -> None:
         """Counts a refusal of the step an external party had to take next when the run ended without it."""
         self._history_tree = history_tree
-        if self._guide_path.follow(self._new_msgs(False)) is not None:
+        if self._deviation is not None:
             return
         planned = self._guide_path.next_packet()
         if planned is not None:
@@ -328,7 +317,7 @@ class PacketGuider:
             return
         # The route was followed to its end, so the answer inside the target is missing.
         for party in self._forecast.next_external_parties():
-            refused = self._guide_path.refused_step(party)
+            refused = self._guide_path.target_step
             if refused is not None:
                 self._step_refusals.count_refusal(refused, party)
                 return
@@ -345,41 +334,13 @@ class PacketGuider:
         )
 
     def _count_refused_target(self, message: DerivationTree) -> None:
-        """Counts the refusal on the step to the first packet the sender had to send inside the target, or else on the step to the target."""
+        """Counts the refusal on the step into the target."""
         if not self._is_external_party(message.sender):
             return
         assert message.sender is not None
-        refused = self._guide_path.refused_step(message.sender)
+        refused = self._guide_path.target_step
         if refused is not None:
             self._step_refusals.count_refusal(refused, message.sender)
-
-    def _remember_messages(self) -> None:
-        if self._history_tree is None:
-            self._prev_session_msgs = []
-            return
-        self._prev_session_msgs = list(
-            map(lambda x: x.msg, self._history_tree.protocol_msgs())
-        )
-
-    def _new_msgs(self, is_new_tree: bool) -> list[DerivationTree]:
-        prev_msgs = []
-        if is_new_tree:
-            assert self._last_completed_tree is not None
-            prev_msgs = list(
-                map(lambda x: x.msg, self._last_completed_tree.protocol_msgs())
-            )
-        current_session_msgs = list(
-            map(lambda x: x.msg, self._history_tree.protocol_msgs())
-        )
-        all_current_msgs = prev_msgs + current_session_msgs
-        new_msgs = []
-        for prev, new in zip(self._prev_session_msgs, all_current_msgs, strict=False):
-            if prev != new:
-                new_msgs.extend(current_session_msgs)
-                return new_msgs
-        if len(all_current_msgs) > len(self._prev_session_msgs):
-            return all_current_msgs[len(self._prev_session_msgs) :]
-        return new_msgs
 
     @staticmethod
     def _tuple_contains(sub: tuple[Symbol, ...], full: tuple[Symbol, ...]) -> bool:

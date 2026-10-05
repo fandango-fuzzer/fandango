@@ -39,7 +39,6 @@ class PacketSelector:
             max_messages_per_tree=max_messages_per_tree,
         )
         self.history_tree = history_tree
-        self._last_completed_tree: Optional[DerivationTree] = None
         self._completed_count = 0
         self._coverage_tracker = CoverageTracker(
             grammar,
@@ -68,7 +67,6 @@ class PacketSelector:
         """Notifies that the session ended. Its history counts as covered; the history starts empty again."""
         self._coverage_tracker.add_completed_tree(self.history_tree)
         self._guider.observe_run_end(self.history_tree)
-        self._last_completed_tree = self.history_tree
         self._completed_count += 1
         self._set_history(DerivationTree(NonTerminal("<start>")))
 
@@ -91,7 +89,6 @@ class PacketSelector:
         self._guider.reset()
         self.history_tree = DerivationTree(NonTerminal("<start>"))
         self._next_packets = None
-        self._last_completed_tree = None
         self._completed_count = 0
 
     @property
@@ -109,7 +106,6 @@ class PacketSelector:
                 return self._next_packets
             self._next_packets = self._guider.select_next_packet(
                 self.history_tree,
-                self._last_completed_tree,
                 self._completed_count,
                 self._coverage_tracker.uncovered_paths,
                 self._coverage_tracker.coverage_scores,
