@@ -13,6 +13,9 @@ from fandango.language.symbols import NonTerminal, Symbol
 class TargetSelector:
     """Picks the next k-path to guide toward."""
 
+    # How often a target may be picked before the targets one longer are picked as well.
+    MAX_PICKS = 3
+
     def __init__(self, model: ProtocolModel):
         self._model = model
         self._msg_power_schedule = PowerScheduleCoverage()
@@ -23,6 +26,7 @@ class TargetSelector:
         self._state_target_by_path: dict[KPath, KPath] = {}
         self._uncovered: set[KPath] = set()
         self._open_below: Counter[KPath] = Counter()
+        self._picks: Counter[KPath] = Counter()
 
     def reset(self) -> None:
         """Forget the targets chosen so far, as after construction."""
@@ -30,6 +34,7 @@ class TargetSelector:
         self._state_path_power_schedule = PowerScheduleKPath()
         self._uncovered = set()
         self._open_below = Counter()
+        self._picks = Counter()
 
     def select(
         self,
@@ -39,7 +44,7 @@ class TargetSelector:
     ) -> KPath:
         unreached_paths = set(uncovered_paths)
         self._update_open_below(unreached_paths)
-        candidates = self._shallowest_derivable_unreached_targets(
+        candidates = self._targets_up_to_current_length(
             unreached_paths, is_derivable
         ) or list(filter(is_derivable, self._open_below))
         if len(candidates) == 0:
@@ -53,20 +58,26 @@ class TargetSelector:
         s_ps.assign_energy_k_path(candidates)
         selected_path = s_ps.choose()
         s_ps.add_past_target(selected_path)
+        self._picks[selected_path] += 1
         return selected_path
 
-    def _shallowest_derivable_unreached_targets(
+    def _targets_up_to_current_length(
         self, unreached: set[KPath], is_derivable: Callable[[KPath], bool]
     ) -> list[KPath]:
-        """The derivable unreached targets of the shortest length."""
+        """
+        The derivable unreached targets up to the current length.
+        The current length is the shortest one with a target picked fewer than MAX_PICKS times.
+        """
         unreached_by_length: dict[int, list[KPath]] = defaultdict(list)
         for target in self._open_below:
             if target in unreached:
                 unreached_by_length[len(target)].append(target)
+        candidates: list[KPath] = []
         for length in sorted(unreached_by_length):
             derivable = list(filter(is_derivable, unreached_by_length[length]))
-            if len(derivable) != 0:
-                return derivable
+            candidates.extend(derivable)
+            if any(self._picks[target] < self.MAX_PICKS for target in derivable):
+                return candidates
         return []
 
     def _update_open_below(self, uncovered: set[KPath]) -> None:
