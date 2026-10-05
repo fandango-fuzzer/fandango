@@ -773,14 +773,14 @@ wheels = [
 
 [[package]]
 name = "fanbase"
-version = "0.4.0"
+version = "0.4.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/11/42/a469cc89756b27038409c89a8cfbd234f131bfb6b89d2a3326a097c88929/fanbase-0.4.0.tar.gz", hash = "sha256:e9c4797873bb3b8b38e4576529cc2d7f4cecb711bcb2b2e4802b503aa30a70e0", size = 14068, upload-time = "2026-10-05T14:24:06.792Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/32/55/7e3b81b6852774a296866724716bc983a6acfff18d83abbf4c1f0532fe58/fanbase-0.4.2.tar.gz", hash = "sha256:de8421120c42a9330fe93f280f41aad171cffd9ecf74371b60c62009c747724f", size = 21516, upload-time = "2026-10-05T16:40:20.2Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8e/35/f271f2a8aa6eadd0b5ac589b4f204b3c71548027d440edaf9626583263f2/fanbase-0.4.0-py3-none-any.whl", hash = "sha256:09a79939ba45ba5318d8fc04c195706199a91ee285e261a7b96b0c7904a17efd", size = 14958, upload-time = "2026-10-05T14:24:05.811Z" },
+    { url = "https://files.pythonhosted.org/packages/c4/0e/ae46e94db0cda4173e3e018cf34621607a52832fcf5eef713158f974e4cf/fanbase-0.4.2-py3-none-any.whl", hash = "sha256:889ad2e5c4126c9c253d318e1d7c5d0c13d53fbc12295c1c3e05f503b6fe4ae2", size = 21007, upload-time = "2026-10-05T16:40:19.355Z" },
 ]
 
 [[package]]
@@ -927,7 +927,7 @@ requires-dist = [
     { name = "docutils", marker = "extra == 'test'", specifier = ">=0.20.1" },
     { name = "exrex", specifier = ">=0.12.0" },
     { name = "faker", marker = "extra == 'test'", specifier = ">=30.4.0" },
-    { name = "fanbase", specifier = ">=0.4.0" },
+    { name = "fanbase", specifier = ">=0.4.2" },
     { name = "fandango-fuzzer", extras = ["book", "development", "test"], marker = "extra == 'full'" },
     { name = "fandango-fuzzer", extras = ["development"], marker = "extra == 'book'" },
     { name = "fandango-fuzzer", extras = ["test"], marker = "extra == 'development'" },

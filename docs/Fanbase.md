@@ -109,7 +109,7 @@ An installed spec is `<format>/<name>.fan` in that directory, together with a co
 
 Each time you use `-F`, Fandango asks the registry whether the installed copy is still current, and fetches the spec again if it has changed. Only the spec you ask for is downloaded. If the registry cannot be reached, Fandango uses the installed copy and warns you, so test runs do not depend on the network.
 
-A few specs import third-party Python packages, which must be installed beforehand. These are listed by `fanbase list` and `fanbase show`. If a package is missing, Fandango stops and tells you what to `pip install`. Most specs only need the Python standard library.
+A few specs import third-party Python packages, which `fanbase list` and `fanbase show` list for each spec. When you use such a spec with `-F`, or install it with `fanbase install`, the packages that are missing are installed for you, with `pip` (or `uv pip`, in an environment that has no `pip`), into the environment Fandango runs in. Packages that are already installed are left alone, so if you prefer to manage packages yourself, install them beforehand. If the installation fails, Fandango stops and says which package it could not install. Most specs only need the Python standard library.
 
 ## Using Another Registry
 
@@ -138,10 +138,13 @@ The `fanbase` command is installed together with Fandango.
 : Show a spec's metadata.
 
 `fanbase install NAME...`
-: Install specs without using them. `--into DIR` installs into another directory. Installing a spec that is up to date does nothing.
+: Install specs without using them, together with the Python packages they need. `--into DIR` installs into another directory. `--no-requirements` leaves the Python packages to you and only prints what the specs need. Installing a spec that is up to date does nothing.
+
+`fanbase install --all`
+: Install every spec in the registry, which is handy for a machine that should work without network access later.
 
 `fanbase update [NAME...]`
-: Update the given specs, or all installed specs, to the registry's latest versions.
+: Update the given specs, or all installed specs, to the registry's latest versions, and install any Python packages the new versions need. Takes `--no-requirements` as well.
 
 `fanbase reindex [--check]`
 : For registry maintainers: refresh the `metadata.yml` files and `index.yml` of a local registry. With `--check`, only report what is out of date.

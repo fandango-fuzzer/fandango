@@ -17,7 +17,7 @@ This document lists major changes across releases.
 
 ```{versionadded} 1.3 (October 2026)
 * **Specs from [Fanbase](sec:fanbase).** `fandango fuzz -F png` fetches the default PNG spec from Fanbase, a registry of ready-made specs for file formats, and produces PNG files. Variants have names such as `png-apng`. Since the format is known, the file name extension is set for you, and files are written to a fresh directory unless you give `-o` or `-d`. Fanbase specs can be overridden with specs of your own given with `-f`.
-* The new `fanbase` command lists, shows, installs, and updates specs. It comes with Fandango, which now depends on the `fanbase` package.
+* The new `fanbase` command lists, shows, installs, and updates specs, together with the Python packages they need. It comes with Fandango, which now depends on the `fanbase` package.
 * **A faster parser.** Parsing is now much faster on long inputs, thanks to shortcuts for right-recursive rules, parse states that record only the latest step instead of copying everything parsed so far, and a garbage collector that is paused while parsing. For `<start> ::= <char>+`, parsing 1,000 characters takes 0.03 seconds instead of 3, and a million characters take about 40 seconds.
 * Grammars with loops that can never end now cause an error, instead of leaving Fandango stuck in an infinite recursion.
 * Fixed an error in protocol specs ("Symbol ... is not reachable in grammar") when a packet symbol expands to another packet symbol.
