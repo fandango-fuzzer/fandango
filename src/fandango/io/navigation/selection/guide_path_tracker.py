@@ -86,6 +86,7 @@ class GuidePathTracker:
         """
         Consumes the message if it arrives as planned; returns the deviation otherwise.
         After the last planned packet, the message follows the plan if one of its steps, the steps that may have produced it, lies inside the target.
+        Where the run was planned to end, the message deviates without a refused step.
         """
         assert isinstance(message.symbol, NonTerminal)
         arrived = PacketNonTerminal(message.sender, message.recipient, message.symbol)
@@ -96,6 +97,9 @@ class GuidePathTracker:
         planned_packet = None if next_planned is None else next_planned[1]
         if self._consume_permutation_peer(planned_packet, arrived):
             return None
+        if next_planned is None and self.ends_run:
+            # The run was planned to end here and the target lies in the next session, so nobody refused a step.
+            return Deviation(None, message)
         if next_planned is None:
             path_into_target = self._route_state_tail()
             if any(self._is_step_in_target(step, path_into_target) for step in steps):
