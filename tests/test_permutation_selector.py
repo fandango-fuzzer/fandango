@@ -145,8 +145,15 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
     def _select(self, guide: PacketGuider) -> None:
         # a non-empty uncovered list keeps the guide off the "guide to end" path
         guide.select_next_packet(
-            self.history, None, 0, lambda: [(NonTerminal("<msg_c>"),)], lambda: []
+            self.history, lambda: [(NonTerminal("<msg_c>"),)], lambda: []
         )
+
+    def _receive(self, guide: PacketGuider, text: str) -> None:
+        """Makes the parse of text the history and notifies the guide of its last message."""
+        history = self._parse(text)
+        assert history is not None
+        self.history = history
+        guide.observe_message(history)
 
     def _parse(self, text: str) -> Optional[DerivationTree]:
         return self.grammar.parse(
@@ -167,10 +174,7 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
 
         guide._guide_path.set_guide_path(GuidePath([pnt_a, pnt_b, pnt_c]))
         guide._guide_target = (NonTerminal("<msg_c>"),)
-        guide._prev_session_msgs = []
-        history = self._parse("b")
-        assert history is not None
-        self.history = history
+        self._receive(guide, "b")
         self._select(guide)
 
         self.assertEqual(guide._guide_path.route, [pnt_a, pnt_c])
@@ -186,7 +190,6 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
 
         guide._guide_path.set_guide_path(GuidePath([pnt_a, pnt_b]))
         guide._guide_target = (NonTerminal("<msg_b>"),)
-        guide._prev_session_msgs = []
         self._select(guide)
 
         self.assertEqual(guide._guide_path.route, [pnt_a, pnt_b])
@@ -202,10 +205,7 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
 
         guide._guide_path.set_guide_path(GuidePath([pnt_a, pnt_b]))
         guide._guide_target = (NonTerminal("<msg_b>"),)
-        guide._prev_session_msgs = []
-        history = self._parse("a")
-        assert history is not None
-        self.history = history
+        self._receive(guide, "a")
         self._select(guide)
 
         self.assertEqual(guide._guide_path.route, [pnt_b])
@@ -224,16 +224,11 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
 
         guide._guide_path.set_guide_path(GuidePath([pnt_a, pnt_b, pnt_c]))
         guide._guide_target = (NonTerminal("<msg_c>"),)
-        guide._prev_session_msgs = []
-        history = self._parse("b")
-        assert history is not None
-        self.history = history
+        self._receive(guide, "b")
         self._select(guide)
         self.assertEqual(guide._guide_path.route, [pnt_a, pnt_c])
 
-        history = self._parse("ba")
-        assert history is not None
-        self.history = history
+        self._receive(guide, "ba")
         self._select(guide)
         self.assertEqual(guide._guide_path.route, [pnt_c])
 
