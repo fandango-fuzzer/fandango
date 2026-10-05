@@ -48,7 +48,7 @@ class PacketGuider:
         self._abandons_run = False
         self._guide_target: Optional[KPath] = None
         self._guide_path = GuidePathTracker(model.permutation_groups)
-        self._deviation: Optional[Deviation] = None
+        self._deviated_from_guide = False
         self._session_covered_k_paths: set[KPath] = set()
 
     @property
@@ -105,7 +105,7 @@ class PacketGuider:
         self._history_tree = DerivationTree(NonTerminal("<start>"))
         self._guide_to_end = False
         self._abandons_run = False
-        self._deviation = None
+        self._deviated_from_guide = False
         self._session_covered_k_paths.clear()
 
     def observe_message(self, history_tree: DerivationTree) -> None:
@@ -115,18 +115,19 @@ class PacketGuider:
         steps = self._forecast.result.message_steps[-1]
         for step in steps:
             self._step_refusals.observe_taken(step, message.sender)
-        if self._deviation is not None:
+        if self._deviated_from_guide:
             # Only the first message that leaves the plan counts; the next selection plans anew.
             return
-        self._deviation = self._guide_path.follow(message.msg, steps)
-        if self._deviation is None:
+        deviation = self._guide_path.follow(message.msg, steps)
+        if deviation is None:
             return
-        if self._deviation.refused is not None:
-            self._step_refusals.count_refusal(self._deviation.refused, message.sender)
-        if self._is_end_route_refused(self._deviation):
+        self._deviated_from_guide = True
+        if deviation.refused is not None:
+            self._step_refusals.count_refusal(deviation.refused, message.sender)
+        if self._is_end_route_refused(deviation):
             LOGGER.warning(
                 "NAVIGATORPANIC: Observed derivation of planned protocol path twice for the same transition. "
-                f"Hard-terminating protocol session. Observed derivation {self._deviation}"
+                f"Hard-terminating protocol session. Observed derivation {deviation}"
             )
             self._abandons_run = True
 
@@ -158,8 +159,8 @@ class PacketGuider:
 
         route_completed = self._guide_path.next_packet() is None
         completed_target = self._guide_target if route_completed else None
-        deviation = self._deviation
-        self._deviation = None
+        plan_left = self._deviated_from_guide
+        self._deviated_from_guide = False
         self._build_navigator_around_blocked_steps()
 
         uncovered_paths = get_uncovered_paths()
@@ -176,11 +177,7 @@ class PacketGuider:
                     f"Current tree contains more then {self._max_messages_per_tree} messages. Guiding to end of tree."
                 )
             self._plan_path_to_end()
-        elif (
-            self._guide_target is None
-            or self._guide_path.is_empty
-            or deviation is not None
-        ):
+        elif self._guide_target is None or self._guide_path.is_empty or plan_left:
             if self._guide_target is not None:
                 should_covered_paths = self._session_covered_k_paths.union(
                     [self._guide_target]
@@ -303,7 +300,7 @@ class PacketGuider:
         Checks whether an external party still had to take a step of the plan when the session ended,
         and counts that step as refused.
         """
-        if self._deviation is not None:
+        if self._deviated_from_guide:
             # The plan was left, so nothing of it is pending.
             return
         planned = self._guide_path.next_packet()
