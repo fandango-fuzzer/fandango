@@ -342,14 +342,14 @@ class ProtocolAlgorithm(GeneticAlgorithm):
 
             if self._packet_selector.should_generate_next_packet():
                 self._packet_algorithm.reset()
+                new_packet: Optional[DerivationTree] = None
                 with packet_mounter.history_context(self._protocol_tree):
                     self._configure_fuzzable_packets()
                     self._packet_coverage_filter.set_current_tree(self._protocol_tree)
-                    packet = self._generate_packet(max_generations=max_generations)
+                    new_packet = self._generate_packet(max_generations=max_generations)
                     if self._io_instance.received_msg():
                         continue
-                next_history_tree = packet_mounter.commit(packet)
-                new_packet = next(next_history_tree.protocol_msgs(reverse=True))
+                assert new_packet is not None
                 if (
                     new_packet.recipient is None
                     or not self._io_instance.parties[
@@ -357,21 +357,22 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     ].is_fuzzer_controlled()
                 ):
                     self._io_instance.transmit(
-                        new_packet.sender, new_packet.recipient, new_packet.msg
+                        new_packet.sender, new_packet.recipient, new_packet
                     )
                     log_message_transfer(
                         new_packet.sender,
                         new_packet.recipient,
-                        new_packet.msg,
+                        new_packet,
                         True,
                     )
-                self._protocol_tree = next_history_tree
+                self._protocol_tree = packet_mounter.commit(new_packet)
                 self._packet_selector.observe_message(self._protocol_tree)
             else:
                 try:
                     with packet_mounter.history_context(self._protocol_tree):
                         remote_packet = self._handle_remote_response()
                     self._protocol_tree = packet_mounter.commit(remote_packet)
+                    self._packet_selector.observe_message(self._protocol_tree)
                 except (
                     FandangoFailedError,
                     FandangoParseError,
@@ -393,7 +394,6 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                         return None
                     self._start_new_run()
                     continue
-                self._packet_selector.observe_message(self._protocol_tree)
             self._protocol_tree.set_all_read_only(True)
 
     def _configure_fuzzable_packets(self) -> None:
