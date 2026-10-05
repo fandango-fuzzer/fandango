@@ -34,7 +34,6 @@ parts:
     - file: Binary
     - file: Bits
     - file: Conversion
-    - file: Fanbase
     - file: Png
     - file: Gif
     - file: Mp3
@@ -54,6 +53,7 @@ parts:
     chapters:
     - file: Hatching
     - file: Style
+    - file: Fanbase
     # - file: Organizing Specs
   - caption: Fandango Reference
     chapters:
