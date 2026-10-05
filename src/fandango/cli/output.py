@@ -13,6 +13,11 @@ from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER, clear_visualization
 
 
+def filename_extension(args: argparse.Namespace) -> str:
+    """The extension for generated file names: `-x`, else what `-F` found, else `.txt`."""
+    return getattr(args, "filename_extension", None) or ".txt"
+
+
 def output(
     tree: DerivationTree, args: argparse.Namespace, file_mode: str
 ) -> str | bytes:
@@ -105,7 +110,7 @@ def output_solution_to_directory(
     LOGGER.debug(f"Storing solution in directory {args.directory!r}")
     os.makedirs(args.directory, exist_ok=True)
 
-    basename = f"fandango-{solution_index:04d}{args.filename_extension}"
+    basename = f"fandango-{solution_index:04d}{filename_extension(args)}"
     filename = os.path.join(args.directory, basename)
     with open_file(filename, file_mode, mode="w") as fd:
         fd.write(output(solution, args, file_mode))
@@ -141,7 +146,7 @@ def output_solution_with_test_command(
 
     if args.input_method == "filename":
         prefix = "fandango-"
-        suffix = args.filename_extension
+        suffix = filename_extension(args)
         mode = "wb" if file_mode == "binary" else "w"
 
         # The return type is private, so we need to use Any
