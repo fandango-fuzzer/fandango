@@ -162,8 +162,6 @@ class PacketGuider:
             if "TimerEvent" not in current_external_parties:
                 return []
 
-        route_completed = self._guide_path.next_packet() is None
-        completed_target = self._guide_target if route_completed else None
         plan_left = self._deviated_from_guide
         self._deviated_from_guide = False
 
@@ -182,13 +180,6 @@ class PacketGuider:
                 )
             self._plan_path_to_end()
         elif self._guide_target is None or self._guide_path.is_empty or plan_left:
-            if self._guide_target is not None:
-                should_covered_paths = self._session_covered_k_paths.union(
-                    [self._guide_target]
-                )
-                if self._is_tree_contains_paths(should_covered_paths, history_tree):
-                    self._confirm_covered_path(self._guide_target)
-
             self._guide_target = self._target_selector.select(
                 uncovered_paths, get_coverage_scores(), self._navigator.is_derivable
             )
@@ -212,25 +203,9 @@ class PacketGuider:
         sender = None if next_packet is None else next_packet.packet.sender
         hookin_states = self._guide_path.next_new_parent_states()
         packet_symbol = None if next_packet is None else next_packet.packet.symbol
-        selected_packets = []
-        if (
-            completed_target is not None
-            and completed_target != self._guide_target
-            and completed_target not in self._session_covered_k_paths
-        ):
-            # Keep the followed target if a packet can.
-            selected_packets = self.find_packets(
-                sender=sender,
-                hookin_states=hookin_states,
-                packet_symbol=packet_symbol,
-                required_k_paths=self._session_covered_k_paths.union(
-                    [completed_target]
-                ),
-            )
-        if len(selected_packets) == 0:
-            selected_packets = self.find_packets(
-                sender=sender, hookin_states=hookin_states, packet_symbol=packet_symbol
-            )
+        selected_packets = self.find_packets(
+            sender=sender, hookin_states=hookin_states, packet_symbol=packet_symbol
+        )
         if len(selected_packets) == 0:
             selected_packets = self._forecast.get_fuzzer_packets()
         return selected_packets
@@ -241,10 +216,7 @@ class PacketGuider:
         sender: Optional[str] = None,
         hookin_states: Optional[list[Symbol]] = None,
         packet_symbol: Optional[NonTerminal] = None,
-        required_k_paths: Optional[set[KPath]] = None,
     ) -> list[ForecastingPacket]:
-        if required_k_paths is None:
-            required_k_paths = self._session_covered_k_paths
         packets = []
         hookin_states_tp: tuple[Symbol, ...] = tuple()
         if hookin_states is not None:
@@ -263,7 +235,7 @@ class PacketGuider:
                 append_packet = ForecastingPacket(packet.node)
                 for hookin_path in packet.paths:
                     if not self._is_tree_contains_paths(
-                        required_k_paths, hookin_path.tree
+                        self._session_covered_k_paths, hookin_path.tree
                     ):
                         continue
                     packet_hookin_states = tuple(
