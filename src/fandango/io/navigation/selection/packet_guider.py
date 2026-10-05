@@ -44,7 +44,6 @@ class PacketGuider:
         self._max_messages_per_tree = max_messages_per_tree
 
         self._history_tree: DerivationTree = DerivationTree(NonTerminal("<start>"))
-        self._prev_completed_count = 0
         self._guide_to_end = False
         self._abandons_run = False
         self._guide_target: Optional[KPath] = None
@@ -73,20 +72,39 @@ class PacketGuider:
         """Forget everything about previous runs, as after construction."""
         self._target_selector.reset()
         self._step_refusals.reset()
-        self.abort_run()
-        self._prev_completed_count = 0
+        self._clear_plan()
+        self._start_session()
         self._build_navigator_around_blocked_steps()
 
-    def abort_run(self) -> None:
-        """Forget the current guide target and start with a new DerivationTree."""
+    def observe_session_end(self, history_tree: DerivationTree) -> None:
+        """
+        Notifies that the session of history_tree ended via completion or abandance.
+        Counts the step an external party still had to take as refused, unless the guider gave the session up.
+        Keeps the current route only if the session was not given up and its route leads to a target in the next session.
+        """
+        if not self._abandons_run:
+            self._count_unanswered_step(history_tree)
+        self._step_refusals.signal_session_end()
+        self._build_navigator_around_blocked_steps()
+        if (
+            self._abandons_run
+            or self._guide_target is None
+            or not self._guide_path.ends_run
+        ):
+            self._clear_plan()
+        self._start_session()
+
+    def _clear_plan(self) -> None:
+        self._guide_target = None
+        self._guide_path.clear()
+
+    def _start_session(self) -> None:
+        """Forgets what belongs to the ended session."""
         self._history_tree = DerivationTree(NonTerminal("<start>"))
         self._guide_to_end = False
         self._abandons_run = False
-        self._guide_target = None
-        self._guide_path.clear()
         self._deviation = None
         self._session_covered_k_paths.clear()
-        self._step_refusals.signal_session_end()
 
     def observe_message(self, history_tree: DerivationTree) -> None:
         """Notifies that a message was sent or received. It is the last message of history_tree, the new history."""
@@ -110,11 +128,6 @@ class PacketGuider:
             )
             self._abandons_run = True
 
-    def observe_run_end(self, history_tree: DerivationTree) -> None:
-        self._history_tree = history_tree
-        self._build_navigator_around_blocked_steps()
-        self._step_refusals.signal_session_end()
-
     def is_derivable_coverage_complete(self, uncovered_paths: list[KPath]) -> bool:
         return self._target_selector.is_every_path_underivable(
             uncovered_paths, self._navigator.is_derivable
@@ -129,7 +142,6 @@ class PacketGuider:
     def select_next_packet(
         self,
         history_tree: DerivationTree,
-        completed_count: int,
         get_uncovered_paths: Callable[[], list[KPath]],
         get_coverage_scores: Callable[[], list[tuple[NonTerminal, float]]],
     ) -> list[ForecastingPacket]:
@@ -142,12 +154,7 @@ class PacketGuider:
             if "TimerEvent" not in current_external_parties:
                 return []
 
-        is_new_tree = completed_count > self._prev_completed_count
-        if is_new_tree:
-            self._session_covered_k_paths.clear()
-        self._prev_completed_count = completed_count
-
-        route_followed = not is_new_tree and self._guide_path.next_packet() is None
+        route_followed = self._guide_path.next_packet() is None
         followed_target = self._guide_target if route_followed else None
         deviation = self._deviation
         self._deviation = None
@@ -287,7 +294,7 @@ class PacketGuider:
     def _is_external_party(self, party: Optional[str]) -> bool:
         return party is not None and not self._forecast.is_fuzzer_controlled(party)
 
-    def count_unanswered_step(self, history_tree: DerivationTree) -> None:
+    def _count_unanswered_step(self, history_tree: DerivationTree) -> None:
         """Counts a refusal of the step an external party had to take next when the run ended without it."""
         self._history_tree = history_tree
         if self._deviation is not None:

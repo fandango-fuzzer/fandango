@@ -39,7 +39,6 @@ class PacketSelector:
             max_messages_per_tree=max_messages_per_tree,
         )
         self.history_tree = history_tree
-        self._completed_count = 0
         self._coverage_tracker = CoverageTracker(
             grammar,
             diversity_k,
@@ -64,10 +63,9 @@ class PacketSelector:
         self._guider.observe_message(history_tree)
 
     def signal_session_end(self) -> None:
-        """Notifies that the session ended. Its history counts as covered; the history starts empty again."""
+        """Notifies that the session ended, completed or aborted. Its history counts as covered; the history starts empty again."""
         self._coverage_tracker.add_completed_tree(self.history_tree)
-        self._guider.observe_run_end(self.history_tree)
-        self._completed_count += 1
+        self._guider.observe_session_end(self.history_tree)
         self._set_history(DerivationTree(NonTerminal("<start>")))
 
     def _set_history(self, history_tree: DerivationTree) -> None:
@@ -75,21 +73,11 @@ class PacketSelector:
         self._coverage_tracker.invalidate()
         self._next_packets = None
 
-    def abort_run(self) -> None:
-        """Notifies that the session was aborted. Its history counts as covered; the history starts empty again."""
-        self._coverage_tracker.add_completed_tree(self.history_tree)
-        if not self._guider.abandons_run:
-            # The run ends because the remote party did not answer as the grammar allows.
-            self._guider.count_unanswered_step(self.history_tree)
-        self._guider.abort_run()
-        self._set_history(DerivationTree(NonTerminal("<start>")))
-
     def reset(self) -> None:
         self._coverage_tracker.reset()
         self._guider.reset()
         self.history_tree = DerivationTree(NonTerminal("<start>"))
         self._next_packets = None
-        self._completed_count = 0
 
     @property
     def coverage_tracker(self) -> CoverageTracker:
@@ -106,7 +94,6 @@ class PacketSelector:
                 return self._next_packets
             self._next_packets = self._guider.select_next_packet(
                 self.history_tree,
-                self._completed_count,
                 self._coverage_tracker.uncovered_paths,
                 self._coverage_tracker.coverage_scores,
             )
@@ -186,4 +173,4 @@ class PacketSelector:
         )
 
     def __repr__(self) -> str:
-        return f"PacketSelector(start={self.start_symbol!r}, completed={self._completed_count}, {self._guider!r})"
+        return f"PacketSelector(start={self.start_symbol!r}, {self._guider!r})"

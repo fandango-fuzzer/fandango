@@ -335,7 +335,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 continue
 
             if self._packet_selector.is_run_abandoned():
-                self._packet_selector.abort_run()
+                self._packet_selector.signal_session_end()
                 self._packet_coverage_filter.add_completed_tree(self._protocol_tree)
                 self._start_new_run()
                 continue
@@ -378,7 +378,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     FandangoParseError,
                     FandangoValueError,
                 ) as exc:
-                    self._packet_selector.abort_run()
+                    self._packet_selector.signal_session_end()
                     self._packet_coverage_filter.add_completed_tree(self._protocol_tree)
                     self.violations.append((self._protocol_tree, exc))
                     if self.throw_on_violation:
