@@ -333,6 +333,19 @@ def _get_file_parser() -> argparse.ArgumentParser:
         help="Fandango file (.fan, .py) to be processed. Can be given multiple times. Use '-' for stdin.",
     )
     file_group.add_argument(
+        "-F",
+        "--fanbase-file",
+        type=str,
+        dest="fanbase_files",
+        metavar="NAME",
+        default=None,
+        action="append",
+        help="Fanbase spec NAME, such as 'png' (the default PNG spec) or 'png-apng'. "
+        "Like -f, but the spec is fetched from the Fanbase registry into Fandango's "
+        "standard library location, if it is not up to date there. "
+        "The file name extension of the format is used by default. Can be given multiple times.",
+    )
+    file_group.add_argument(
         "-c",
         "--constraint",
         type=str,
@@ -421,8 +434,8 @@ def _get_file_parser() -> argparse.ArgumentParser:
         "-x",
         "--filename-extension",
         type=str,
-        default=".txt",
-        help="Extension of generated file names (default: '.txt').",
+        default=None,
+        help="Extension of generated file names (default: '.txt', or the format's extension with -F).",
     )
     output_group.add_argument(
         "--format",

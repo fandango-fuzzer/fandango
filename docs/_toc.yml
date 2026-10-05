@@ -34,6 +34,7 @@ parts:
     - file: Binary
     - file: Bits
     - file: Conversion
+    - file: Fanbase
     - file: Png
     - file: Gif
     - file: Mp3

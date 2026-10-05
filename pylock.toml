@@ -670,6 +670,13 @@ sdist = { url = "https://files.pythonhosted.org/packages/98/d2/026af1e002bbc6df5
 wheels = [{ url = "https://files.pythonhosted.org/packages/50/9a/b947ed175ce9a0dcb070ccf3607f0ce8720cfb5ed1a36166a150b2acd5af/faker-40.36.0-py3-none-any.whl", upload-time = 2026-07-24T21:11:31Z, size = 2062829, hashes = { sha256 = "82b9497d9cfe017048075bcf969298a74b1b6e39f5e4dad1211085d1133f7b62" } }]
 
 [[packages]]
+name = "fanbase"
+version = "0.4.0"
+index = "https://pypi.org/simple"
+sdist = { url = "https://files.pythonhosted.org/packages/11/42/a469cc89756b27038409c89a8cfbd234f131bfb6b89d2a3326a097c88929/fanbase-0.4.0.tar.gz", upload-time = 2026-10-05T14:24:06Z, size = 14068, hashes = { sha256 = "e9c4797873bb3b8b38e4576529cc2d7f4cecb711bcb2b2e4802b503aa30a70e0" } }
+wheels = [{ url = "https://files.pythonhosted.org/packages/8e/35/f271f2a8aa6eadd0b5ac589b4f204b3c71548027d440edaf9626583263f2/fanbase-0.4.0-py3-none-any.whl", upload-time = 2026-10-05T14:24:05Z, size = 14958, hashes = { sha256 = "09a79939ba45ba5318d8fc04c195706199a91ee285e261a7b96b0c7904a17efd" } }]
+
+[[packages]]
 name = "fandango-fuzzer"
 directory = { path = ".", editable = true }
 
