@@ -15,6 +15,12 @@ kernelspec:
 
 This document lists major changes across releases.
 
+```{versionadded} 1.3 (October 2026)
+* **Specs from [Fanbase](sec:fanbase).** `fandango fuzz -F png` fetches the default PNG spec from Fanbase, a registry of ready-made specs for file formats, and produces PNG files. Variants have names such as `png-apng`. Since the format is known, the file name extension is set for you, and files are written to a fresh directory unless you give `-o` or `-d`. Fanbase specs can be overridden with specs of your own given with `-f`.
+* The new `fanbase` command lists, shows, installs, and updates specs. It comes with Fandango, which now depends on the `fanbase` package.
+* Files given with `-f` are now closed when the command is done.
+```
+
 ```{versionadded} 1.2 (August 2026)
 * Grammars gained a **permutation operator**: `[[ <a> <b> <c> ]]` produces and parses the enclosed symbols in any order. It works for protocol messages too, so a spec can state that two packets may arrive in either order.
 * **Timers for protocol testing.** A spec can now start and cancel timers and react to them expiring, so interactions that hinge on timeouts can be tested.
