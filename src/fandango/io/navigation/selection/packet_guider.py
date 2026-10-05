@@ -116,6 +116,21 @@ class PacketGuider:
         if self._deviated_from_guide:
             # Only the first message that leaves the plan counts; the next selection plans anew.
             return
+        if (
+            self._guide_path.is_empty
+            and self._guide_target in self._session_covered_k_paths
+        ):
+            if not self._is_tree_contains_paths(
+                self._session_covered_k_paths, history_tree
+            ):
+                # The message left the confirmed target; no parse of the history keeps it.
+                self._deviated_from_guide = True
+                self._session_covered_k_paths.discard(self._guide_target)
+                if self._guide_path.target_step is not None:
+                    self._step_refusals.count_refusal(
+                        self._guide_path.target_step, message.sender
+                    )
+            return
         deviation = self._guide_path.follow(message.msg, steps)
         if deviation is None:
             if self._guide_path.is_empty and self._guide_target is not None:
@@ -286,7 +301,11 @@ class PacketGuider:
                 self._step_refusals.count_refusal(planned.step, planned.packet.sender)
             return
         target_step = self._guide_path.target_step
-        if target_step is None or self._guide_path.ends_run:
+        if (
+            target_step is None
+            or self._guide_path.is_empty
+            or self._guide_path.ends_run
+        ):
             # The target is reached, or it lies in the next session.
             return
         parties = self._forecast.next_external_parties()

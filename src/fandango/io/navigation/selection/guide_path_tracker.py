@@ -105,10 +105,10 @@ class GuidePathTracker:
             if any(self._is_step_in_target(step, path_into_target) for step in steps):
                 # The message reached the target, so the plan is done.
                 self._route = []
-                self._target_step = None
                 return None
         if planned_packet is None:
-            return Deviation(self._target_step, message)
+            # Once the route is done, nothing is left to refuse.
+            return Deviation(self._target_step if self._route else None, message)
         if planned_packet.packet.sender != message.sender:
             return Deviation(None, message)
         return Deviation(planned_packet.step, message)
