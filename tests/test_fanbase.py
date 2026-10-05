@@ -13,7 +13,9 @@ from unittest.mock import patch
 import yaml
 
 from fandango.cli import main
+from fandango.cli.commands import COMMANDS, run
 from fandango.cli.fanbase_files import fanbase_files
+from fandango.cli.parser import get_parser
 
 
 def make_registry(root: Path) -> None:
@@ -131,6 +133,16 @@ class TestFanbaseOption(unittest.TestCase):
             self.assertEqual(2, len(opened))
             self.assertFalse(any(fd.closed for fd in opened))
         self.assertTrue(all(fd.closed for fd in opened))
+
+    def test_f_files_are_closed_afterwards(self) -> None:
+        # Windows cannot remove a file that is still open
+        (self.work / "mine.fan").write_text('<start> ::= "mine"\n')
+        args = get_parser().parse_args(
+            ["fuzz", "-f", "mine.fan", "-n", "1", "-d", "out"]
+        )
+        self.assertFalse(args.fan_files[0].closed)
+        self.assertEqual(0, run(COMMANDS["fuzz"], args))
+        self.assertTrue(args.fan_files[0].closed)
 
     def test_unknown_spec_fails(self) -> None:
         status, _, err = self.run_main_failing("fuzz", "-F", "nonesuch", "-n", "1")

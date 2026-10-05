@@ -528,5 +528,10 @@ def run(command: Callable[[argparse.Namespace], None], args: argparse.Namespace)
     except Exception as e:
         print_exception(e)
         return 1
+    finally:
+        # Files given with -f were opened while parsing the arguments
+        for fan_file in getattr(args, "fan_files", None) or []:
+            if not isinstance(fan_file, str):
+                fan_file.close()
 
     return 0
