@@ -76,14 +76,14 @@ class PacketGuider:
         self._start_session()
         self._build_navigator_around_blocked_steps()
 
-    def observe_session_end(self, history_tree: DerivationTree) -> None:
+    def observe_session_end(self) -> None:
         """
-        Notifies that the session of history_tree ended via completion or abandance.
+        Notifies that the session ended, completed or aborted.
         Counts the step an external party still had to take as refused, unless the guider gave the session up.
         Keeps the current route only if the session was not given up and its route leads to a target in the next session.
         """
         if not self._abandons_run:
-            self._count_unanswered_step(history_tree)
+            self._count_pending_step_as_refused()
         self._step_refusals.signal_session_end()
         self._build_navigator_around_blocked_steps()
         if (
@@ -298,10 +298,13 @@ class PacketGuider:
     def _is_external_party(self, party: Optional[str]) -> bool:
         return party is not None and not self._forecast.is_fuzzer_controlled(party)
 
-    def _count_unanswered_step(self, history_tree: DerivationTree) -> None:
-        """Counts a refusal of the step an external party had to take next when the run ended without it."""
-        self._history_tree = history_tree
+    def _count_pending_step_as_refused(self) -> None:
+        """
+        Checks whether an external party still had to take a step of the plan when the session ended,
+        and counts that step as refused.
+        """
         if self._deviation is not None:
+            # The plan was left, so nothing of it is pending.
             return
         planned = self._guide_path.next_packet()
         if planned is not None:
@@ -309,14 +312,13 @@ class PacketGuider:
                 assert planned.packet.sender is not None
                 self._step_refusals.count_refusal(planned.step, planned.packet.sender)
             return
-        if self._guide_target is None or self._guide_to_end:
+        target_step = self._guide_path.target_step
+        if target_step is None or self._guide_path.ends_run:
+            # The target is reached, or it lies in the next session.
             return
-        # The route was followed to its end, so the answer inside the target is missing.
-        for party in self._forecast.next_external_parties():
-            refused = self._guide_path.target_step
-            if refused is not None:
-                self._step_refusals.count_refusal(refused, party)
-                return
+        parties = self._forecast.next_external_parties()
+        if parties:
+            self._step_refusals.count_refusal(target_step, parties[0])
 
     def _is_end_route_refused(self, deviation: Deviation) -> bool:
         """

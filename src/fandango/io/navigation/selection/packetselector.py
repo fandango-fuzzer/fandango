@@ -65,7 +65,7 @@ class PacketSelector:
     def signal_session_end(self) -> None:
         """Notifies that the session ended, completed or aborted. Its history counts as covered; the history starts empty again."""
         self._coverage_tracker.add_completed_tree(self.history_tree)
-        self._guider.observe_session_end(self.history_tree)
+        self._guider.observe_session_end()
         self._set_history(DerivationTree(NonTerminal("<start>")))
 
     def _set_history(self, history_tree: DerivationTree) -> None:
