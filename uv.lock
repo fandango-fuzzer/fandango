@@ -772,6 +772,18 @@ wheels = [
 ]
 
 [[package]]
+name = "fanbase"
+version = "0.4.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyyaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/11/42/a469cc89756b27038409c89a8cfbd234f131bfb6b89d2a3326a097c88929/fanbase-0.4.0.tar.gz", hash = "sha256:e9c4797873bb3b8b38e4576529cc2d7f4cecb711bcb2b2e4802b503aa30a70e0", size = 14068, upload-time = "2026-10-05T14:24:06.792Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8e/35/f271f2a8aa6eadd0b5ac589b4f204b3c71548027d440edaf9626583263f2/fanbase-0.4.0-py3-none-any.whl", hash = "sha256:09a79939ba45ba5318d8fc04c195706199a91ee285e261a7b96b0c7904a17efd", size = 14958, upload-time = "2026-10-05T14:24:05.811Z" },
+]
+
+[[package]]
 name = "fandango-fuzzer"
 version = "1.2.0"
 source = { editable = "." }
@@ -783,6 +795,7 @@ dependencies = [
     { name = "cachetools" },
     { name = "dill" },
     { name = "exrex" },
+    { name = "fanbase" },
     { name = "gnureadline", marker = "implementation_name != 'pypy' and sys_platform != 'win32'" },
     { name = "lxml" },
     { name = "packaging" },
@@ -914,6 +927,7 @@ requires-dist = [
     { name = "docutils", marker = "extra == 'test'", specifier = ">=0.20.1" },
     { name = "exrex", specifier = ">=0.12.0" },
     { name = "faker", marker = "extra == 'test'", specifier = ">=30.4.0" },
+    { name = "fanbase", specifier = ">=0.4.0" },
     { name = "fandango-fuzzer", extras = ["book", "development", "test"], marker = "extra == 'full'" },
     { name = "fandango-fuzzer", extras = ["development"], marker = "extra == 'book'" },
     { name = "fandango-fuzzer", extras = ["test"], marker = "extra == 'development'" },
