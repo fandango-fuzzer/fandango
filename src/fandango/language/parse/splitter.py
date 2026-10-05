@@ -36,9 +36,21 @@ def read_file(file_to_be_included: Path, includes: set[Path]) -> str:
             LOGGER.debug(f"{file_to_be_included}: including {full_file_name}")
             return full_file.read()
 
-    raise FileNotFoundError(
+    message = (
         f"{file_to_be_included!r} not found in {':'.join(str(dir) for dir in dirs)}"
     )
+    if (
+        not file_to_be_included.is_absolute()
+        and len(file_to_be_included.parts) == 2
+        and file_to_be_included.suffix == ".fan"
+    ):
+        # Looks like <format>/<name>.fan, the way Fanbase specs are installed
+        name = file_to_be_included.stem
+        message += (
+            f"\nIf this is a Fanbase spec, install it with 'fanbase install {name}',"
+            f" or use 'fandango fuzz -F {name}'"
+        )
+    raise FileNotFoundError(message)
 
 
 class FandangoSplitter(FandangoParserVisitor):

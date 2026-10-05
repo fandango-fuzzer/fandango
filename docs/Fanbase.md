@@ -81,7 +81,21 @@ $ fanbase show png-apng
 
 ## Customizing a Fanbase Spec
 
-To change a Fanbase spec, write a spec of your own that _includes_ the Fanbase spec and _redefines_ the rules you want to change. Installed specs are found by `include()` under `<format>/<name>.fan`. For instance, the default PNG spec chooses between five colour types in a rule `<image>`. To produce only RGB images, create `rgb.fan`:
+To change a Fanbase spec, write a spec of your own that _redefines_ the rules you want to change. For instance, the default PNG spec chooses between five colour types in a rule `<image>`. To produce only RGB images, create `rgb.fan`:
+
+```
+<image> ::= <png_truecolor>
+```
+
+and use it together with the Fanbase spec:
+
+```shell
+$ fandango fuzz -F png -f rgb.fan -n 10
+```
+
+`-F png` loads the Fanbase spec, fetching it if necessary, and `-f rgb.fan` loads your changes on top of it. Fanbase specs come first, so rules in files given with `-f` override them.
+
+Once your spec is your own, you may prefer to use `-f` alone. Start your file with `include("png/png.fan")`, which finds the installed Fanbase spec under `<format>/<name>.fan`:
 
 ```
 include("png/png.fan")
@@ -89,13 +103,20 @@ include("png/png.fan")
 <image> ::= <png_truecolor>
 ```
 
-and combine it with the Fanbase spec:
-
 ```shell
-$ fandango fuzz -F png -f rgb.fan -n 10
+$ fandango fuzz -f rgb.fan -x .png -n 10 -d rgbs
 ```
 
-Fanbase specs come first, so rules in files given with `-f` override them. If the spec is already installed, `fandango fuzz -f rgb.fan -x .png -n 10` works as well.
+An `include` only reads the installed copy; it does not fetch it. The spec has to have been fetched once, which `-F png` or `fanbase install png` does. If it has not, Fandango tells you so:
+
+```
+FileNotFoundError: PosixPath('png/png.fan') not found in ...
+If this is a Fanbase spec, install it with 'fanbase install png', or use 'fandango fuzz -F png'
+```
+
+With `-f` alone, you also keep working with the copy you have. `-F` checks the registry every time and updates the installed spec, which may rename rules that your changes rely on. To get the latest version, use `fanbase update png`.
+
+To change a spec extensively, copy it next to your own files with `fanbase install png --into .`, edit `png/png.fan` directly, and use it with `-f png/png.fan`.
 
 ## Where Specs Are Installed
 

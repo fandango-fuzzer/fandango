@@ -144,6 +144,21 @@ class TestFanbaseOption(unittest.TestCase):
         self.assertEqual(0, run(COMMANDS["fuzz"], args))
         self.assertTrue(args.fan_files[0].closed)
 
+    def test_missing_include_of_a_fanbase_spec_says_how_to_get_it(self) -> None:
+        (self.work / "mine.fan").write_text('include("demo/demo.fan")\n')
+        status, _, err = self.run_main_failing("fuzz", "-f", "mine.fan", "-n", "1")
+        self.assertEqual(1, status)
+        self.assertIn("demo/demo.fan') not found", err)
+        self.assertIn("fanbase install demo", err)
+        self.assertIn("-F demo", err)
+
+    def test_missing_include_of_another_file_has_no_fanbase_hint(self) -> None:
+        (self.work / "mine.fan").write_text('include("other.fan")\n')
+        status, _, err = self.run_main_failing("fuzz", "-f", "mine.fan", "-n", "1")
+        self.assertEqual(1, status)
+        self.assertIn("other.fan') not found", err)
+        self.assertNotIn("fanbase", err)
+
     def test_unknown_spec_fails(self) -> None:
         status, _, err = self.run_main_failing("fuzz", "-F", "nonesuch", "-n", "1")
         self.assertEqual(1, status)
