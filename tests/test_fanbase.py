@@ -3,8 +3,11 @@
 
 import argparse
 import contextlib
+import importlib
 import io
 import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -29,6 +32,10 @@ def make_registry(root: Path) -> None:
         "demo-needs": (
             '<start> ::= "needs"\n',
             {"extensions": ["dmo"], "requires": ["no_such_package_for_fandango_tests"]},
+        ),
+        "demo-installs": (
+            '<start> ::= "installed"\n',
+            {"extensions": ["dmo"], "requires": ["fandango_test_installable"]},
         ),
     }
     for kind, (text, meta) in specs.items():
@@ -149,10 +156,58 @@ class TestFanbaseOption(unittest.TestCase):
         self.assertEqual(1, status)
         self.assertIn("nonesuch", err)
 
-    def test_missing_python_package_is_reported(self) -> None:
-        status, _, err = self.run_main_failing("fuzz", "-F", "demo-needs", "-n", "1")
+    def test_failing_install_of_a_missing_package_is_reported(self) -> None:
+        # No test runs a real pip: the installer is replaced by one that fails
+        failing = subprocess.CompletedProcess(
+            [], 1, "", "ERROR: no matching distribution"
+        )
+        with patch("fanbase.manager.subprocess.run", return_value=failing):
+            status, _, err = self.run_main_failing(
+                "fuzz", "-F", "demo-needs", "-n", "1"
+            )
+        self.assertEqual(1, status)
+        self.assertIn("could not install no_such_package_for_fandango_tests", err)
+
+    def test_package_that_is_still_missing_after_the_install_is_reported(self) -> None:
+        # The installer claims success, but the package is not there
+        done = subprocess.CompletedProcess([], 0, "", "")
+        with patch("fanbase.manager.subprocess.run", return_value=done):
+            status, _, err = self.run_main_failing(
+                "fuzz", "-F", "demo-needs", "-n", "1"
+            )
         self.assertEqual(1, status)
         self.assertIn("pip install no_such_package_for_fandango_tests", err)
+
+    def test_missing_package_is_installed_and_the_spec_is_used(self) -> None:
+        site = self.tmp / "site"
+        site.mkdir()
+        commands: list[list[str]] = []
+
+        def install(
+            command: list[str], **kwargs: object
+        ) -> subprocess.CompletedProcess:
+            commands.append(command)
+            (site / "fandango_test_installable.py").write_text("")
+            importlib.invalidate_caches()
+            return subprocess.CompletedProcess(command, 0, "", "")
+
+        with (
+            patch("fanbase.manager.subprocess.run", side_effect=install),
+            patch.object(sys, "path", [*sys.path, str(site)]),
+        ):
+            status, _, err = self.run_main(
+                "fuzz", "-F", "demo-installs", "-n", "1", "-d", "out"
+            )
+            self.assertEqual(0, status, err)
+            self.assertEqual(1, len(commands))
+            self.assertEqual("fandango_test_installable", commands[0][-1])
+            self.assertEqual(
+                "installed", (self.work / "out" / "fandango-0000.dmo").read_text()
+            )
+
+            # the package is there now, so a second run installs nothing
+            self.run_main("fuzz", "-F", "demo-installs", "-n", "1", "-d", "again")
+            self.assertEqual(1, len(commands))
 
     def test_installed_copy_is_used_when_the_registry_is_gone(self) -> None:
         self.run_main("fuzz", "-F", "demo", "-n", "1", "-d", "a")
