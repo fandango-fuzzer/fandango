@@ -27,28 +27,23 @@ class GuidePathTracker:
         self._permutation_groups = permutation_groups
         self._route: Route = []
         self._target_step: Optional[Step] = None
-        self._target_packets: tuple[PlannedPacket, ...] = ()
 
     def set_guide_path(
         self,
         guide_path: GuidePath,
     ) -> None:
-        """Sets the route to follow, with the step into its target and the packets inside the target, if any."""
+        """Sets the route to follow, with the step into its target, if any."""
         self._route = list(guide_path.route)
         self._target_step = guide_path.target_step
-        self._target_packets = guide_path.target_packets
 
-    def refused_step(self, sender: str) -> Optional[Step]:
-        """The step the sender refused by answering otherwise after the route: to its first packet inside the target, else into the target."""
-        return next(
-            (p.step for p in self._target_packets if p.packet.sender == sender),
-            self._target_step,
-        )
+    @property
+    def target_step(self) -> Optional[Step]:
+        """The step into the target; a party refuses it by answering otherwise after the route."""
+        return self._target_step
 
     def clear(self) -> None:
         self._route = []
         self._target_step = None
-        self._target_packets = ()
 
     @property
     def route(self) -> Route:
@@ -76,22 +71,54 @@ class GuidePathTracker:
         route = self._route if next_planned is None else self._route[: next_planned[0]]
         return [symbol for symbol in route if isinstance(symbol, NonTerminal)]
 
-    def follow(self, new_messages: list[DerivationTree]) -> Optional[Deviation]:
-        """Consumes the messages that arrive as planned; returns the first one that deviates, if any."""
-        for message in new_messages:
-            assert isinstance(message.symbol, NonTerminal)
-            arrived = PacketNonTerminal(
-                message.sender, message.recipient, message.symbol
-            )
-            next_planned = self._next_planned()
-            if next_planned is not None and next_planned[1].packet == arrived:
-                self._route = self._route[next_planned[0] + 1 :]
-                continue
-            planned_packet = None if next_planned is None else next_planned[1]
-            if self._consume_permutation_peer(planned_packet, arrived):
-                continue
-            return Deviation(planned_packet, message)
-        return None
+    def follow(self, message: DerivationTree, steps: set[Step]) -> Optional[Deviation]:
+        """
+        Consumes the message if it arrives as planned; returns the deviation otherwise.
+        After the last planned packet, the message follows the plan if one of its steps, the steps that may have produced it, lies inside the target.
+        """
+        assert isinstance(message.symbol, NonTerminal)
+        arrived = PacketNonTerminal(message.sender, message.recipient, message.symbol)
+        next_planned = self._next_planned()
+        if next_planned is not None and next_planned[1].packet == arrived:
+            self._route = self._route[next_planned[0] + 1 :]
+            return None
+        planned_packet = None if next_planned is None else next_planned[1]
+        if self._consume_permutation_peer(planned_packet, arrived):
+            return None
+        if next_planned is None:
+            path_into_target = self._route_state_tail()
+            if any(self._is_step_in_target(step, path_into_target) for step in steps):
+                return None
+        return Deviation(planned_packet, message)
+
+    @staticmethod
+    def _is_step_in_target(
+        step: Step, path_into_target: tuple[NonTerminal, ...]
+    ) -> bool:
+        if not path_into_target:
+            return False
+        *above_target, target = path_into_target
+        rules = [
+            symbol for symbol in step.path[:-1] if not Step.is_control_flow(symbol)
+        ]
+        if target not in rules:
+            return False
+        at_target = len(rules) - 1 - rules[::-1].index(target)
+        # The step only reaches up to the caller of its nearest recursive call.
+        overlap = min(at_target, len(above_target))
+        return (
+            rules[at_target - overlap : at_target]
+            == above_target[len(above_target) - overlap :]
+        )
+
+    def _route_state_tail(self) -> tuple[NonTerminal, ...]:
+        """The NonTerminals tailing self._route after the last PlannedPacket."""
+        entered: list[NonTerminal] = []
+        for symbol in reversed(self._route):
+            if not isinstance(symbol, NonTerminal):
+                break
+            entered.append(symbol)
+        return tuple(reversed(entered))
 
     def _next_planned(self) -> Optional[tuple[int, PlannedPacket]]:
         """The next planned packet and its index in the route."""
