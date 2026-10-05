@@ -49,10 +49,12 @@ class PathSearch:
     def cheapest_path(
         self, start: GrammarGraphNode
     ) -> Optional[list[GrammarGraphNode]]:
-        """Returns the cheapest path from start to a node that reaches the target, or None if there is none."""
+        """
+        Returns the cheapest path from start to a node that reaches the target, or None if there is none.
+        """
         self.comparisons = 0
         if self._is_reached(start):
-            return [start]
+            return []
         target = self._target
         insertion_order = itertools.count()
         best_costs = {target.state(start): 0}
@@ -102,10 +104,10 @@ class PathSearch:
         node: GrammarGraphNode,
         came_from: dict[GrammarGraphNode, Optional[GrammarGraphNode]],
     ) -> list[GrammarGraphNode]:
-        """Returns the path from the start of the search to node."""
+        """Returns the path from the start of the search to node, without the start."""
         path = []
-        current: Optional[GrammarGraphNode] = node
-        while current is not None:
+        current = node
+        while (previous := came_from[current]) is not None:
             path.append(current)
-            current = came_from[current]
+            current = previous
         return list(reversed(path))

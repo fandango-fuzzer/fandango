@@ -88,6 +88,8 @@ class GuidePathTracker:
         if next_planned is None:
             path_into_target = self._route_state_tail()
             if any(self._is_step_in_target(step, path_into_target) for step in steps):
+                # The message reached the target, so the plan is done.
+                self._route = []
                 return None
         return Deviation(planned_packet, message)
 
