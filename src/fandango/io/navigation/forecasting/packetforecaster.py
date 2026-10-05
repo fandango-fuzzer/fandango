@@ -30,14 +30,22 @@ class _PathFinder(ContinuingNodeVisitor):
     can be added to the DerivationTree.
     """
 
-    def __init__(self, grammar: Grammar):
+    def __init__(self, grammar: Grammar, references: RuleRecursionTester):
         super().__init__(grammar)
         self.collapsed_tree: Optional[DerivationTree] = None
         self.result = ForecastingResult()
+        self._references = references
 
     def add_option(self, node: NonTerminalNode) -> None:
         assert self.collapsed_tree is not None
-        mounting_path = MountingPath(self.collapsed_tree, tuple(self.current_path))
+        path = [symbol for symbol, _ in self.current_path]
+        packet = StateGrammarConverter.to_packet_non_terminal(path[-1])
+        assert isinstance(packet, NonTerminal)
+        path[-1] = packet
+        step = Step.of_path(path, self._references.is_recursive_call)
+        mounting_path = MountingPath(
+            self.collapsed_tree, tuple(self.current_path), step
+        )
         f_packet = ForecastingPacket(node)
         f_packet.add_path(mounting_path)
         self.result.add_packet(node.sender, f_packet)
@@ -96,7 +104,7 @@ class PacketForecaster:
         :param tree: The DerivationTree to base the prediction on.
         """
         messages = list(tree.protocol_msgs())
-        finder = _PathFinder(self.grammar)
+        finder = _PathFinder(self.grammar, self._references)
         options = ForecastingResult()
         if not messages:
             return options.union(finder.forecast())

@@ -14,12 +14,15 @@ class MountingPath:
         self,
         tree: DerivationTree,
         controlflow_path: tuple[tuple[NonTerminal, bool], ...],
+        step: Optional[Step] = None,
     ):
         """
         Represents a path in the given DerivationTree where a protocol message can be mounted.
+        The step is the step the message takes when mounted there.
         """
         self.tree = tree
         self.controlflow_path = controlflow_path
+        self.step = step
         self.path: tuple[tuple[NonTerminal, bool], ...] = MountingPath._collapsed_path(
             controlflow_path
         )

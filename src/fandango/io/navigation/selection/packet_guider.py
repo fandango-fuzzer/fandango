@@ -12,6 +12,7 @@ from fandango.io.navigation.selection.guide_path_tracker import (
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.step_refusals import StepRefusalCounter
 from fandango.io.navigation.selection.target_selector import TargetSelector
+from fandango.io.navigation.step import Step
 from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree
@@ -50,6 +51,8 @@ class PacketGuider:
         self._guide_path = GuidePathTracker(model.permutation_groups)
         self._deviated_from_guide = False
         self._session_covered_k_paths: set[KPath] = set()
+        self._steps_keeping_covered_paths: dict[str, set[Step]] = {}
+        self._end_route_refusals_in_session = 0
 
     @property
     def is_guide_to_end(self) -> bool:
@@ -105,6 +108,8 @@ class PacketGuider:
         self._abandons_run = False
         self._deviated_from_guide = False
         self._session_covered_k_paths.clear()
+        self._steps_keeping_covered_paths = {}
+        self._end_route_refusals_in_session = 0
 
     def observe_message(self, history_tree: DerivationTree) -> None:
         """Notifies that a message was sent or received. It is the last message of history_tree, the new history."""
@@ -113,25 +118,50 @@ class PacketGuider:
         steps = self._forecast.result.message_steps[-1]
         for step in steps:
             self._step_refusals.observe_taken(step, message.sender)
+        self._check_covered_paths_kept(message.sender, history_tree)
+        self._follow_guide_path(message.msg, message.sender, steps)
+        self._steps_keeping_covered_paths = self._external_steps_keeping_covered_paths()
+
+    def _check_covered_paths_kept(
+        self, sender: str, history_tree: DerivationTree
+    ) -> None:
+        """
+        Checks whether a parse of the history still contains the confirmed k-paths.
+        If not, counts the steps the sender could have taken to keep them as refused and drops the confirmed k-paths.
+        """
+        if not self._session_covered_k_paths or self._is_tree_contains_paths(
+            self._session_covered_k_paths, history_tree
+        ):
+            return
+        for step in self._steps_keeping_covered_paths.get(sender, set()):
+            self._step_refusals.count_refusal(step, sender)
+        self._session_covered_k_paths.clear()
+        self._deviated_from_guide = True
+
+    def _external_steps_keeping_covered_paths(self) -> dict[str, set[Step]]:
+        """The steps by which each external party can send its next packet and keep the confirmed k-paths."""
+        if not self._session_covered_k_paths:
+            return {}
+        steps_by_party: dict[str, set[Step]] = {}
+        for party in self._forecast.next_external_parties():
+            if party not in self._forecast.result:
+                continue
+            for packet in self._forecast.result[party].nt_to_packet.values():
+                for mounting_path in packet.paths:
+                    if mounting_path.step is not None and self._is_tree_contains_paths(
+                        self._session_covered_k_paths, mounting_path.tree
+                    ):
+                        steps_by_party.setdefault(party, set()).add(mounting_path.step)
+        return steps_by_party
+
+    def _follow_guide_path(
+        self, message: DerivationTree, sender: str, steps: set[Step]
+    ) -> None:
+        """Follows the guide path with the message; counts the step the sender refused if it left the path."""
         if self._deviated_from_guide:
             # Only the first message that leaves the plan counts; the next selection plans anew.
             return
-        if (
-            self._guide_path.is_empty
-            and self._guide_target in self._session_covered_k_paths
-        ):
-            if not self._is_tree_contains_paths(
-                self._session_covered_k_paths, history_tree
-            ):
-                # The message left the confirmed target; no parse of the history keeps it.
-                self._deviated_from_guide = True
-                self._session_covered_k_paths.discard(self._guide_target)
-                if self._guide_path.target_step is not None:
-                    self._step_refusals.count_refusal(
-                        self._guide_path.target_step, message.sender
-                    )
-            return
-        deviation = self._guide_path.follow(message.msg, steps)
+        deviation = self._guide_path.follow(message, steps)
         if deviation is None:
             if self._guide_path.is_empty and self._guide_target is not None:
                 # The message completed the route, Limit upcoming parses to versions that contain the path.
@@ -139,7 +169,9 @@ class PacketGuider:
             return
         self._deviated_from_guide = True
         if deviation.refused is not None:
-            self._step_refusals.count_refusal(deviation.refused, message.sender)
+            self._step_refusals.count_refusal(deviation.refused, sender)
+            if self._guide_to_end:
+                self._end_route_refusals_in_session += 1
         if self._is_end_route_refused(deviation):
             LOGGER.warning(
                 "NAVIGATORPANIC: Observed derivation of planned protocol path twice for the same transition. "
@@ -314,12 +346,17 @@ class PacketGuider:
 
     def _is_end_route_refused(self, deviation: Deviation) -> bool:
         """
-        True if the party refused a step of the route to the end of the run and that step's block is deferred.
+        True if the party refused a step of the route to the end of the run and that step's block is deferred,
+        or if steps of routes to the end were refused REFUSAL_LIMIT times in this session.
         """
         return (
             self._guide_to_end
             and deviation.refused is not None
-            and self._step_refusals.is_block_deferred(deviation.refused)
+            and (
+                self._step_refusals.is_block_deferred(deviation.refused)
+                or self._end_route_refusals_in_session
+                >= StepRefusalCounter.REFUSAL_LIMIT
+            )
         )
 
     @staticmethod

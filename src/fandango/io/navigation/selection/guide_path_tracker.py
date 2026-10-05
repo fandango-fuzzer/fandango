@@ -105,6 +105,7 @@ class GuidePathTracker:
             if any(self._is_step_in_target(step, path_into_target) for step in steps):
                 # The message reached the target, so the plan is done.
                 self._route = []
+                self._target_step = None
                 return None
         if planned_packet is None:
             # Once the route is done, nothing is left to refuse.
