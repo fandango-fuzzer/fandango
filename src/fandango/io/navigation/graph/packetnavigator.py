@@ -215,32 +215,6 @@ class PacketNavigator(GrammarNavigator):
         )
         return PlannedPacket(packet, self._step_of_graph_node(graph_node))
 
-    def _packets_within(self, target: GrammarGraphNode) -> tuple[PlannedPacket, ...]:
-        """The packets inside target along its continuation, as far as the continuation does not branch."""
-        packets: list[PlannedPacket] = []
-        visited = {id(target.node)}
-        current = target
-        while len(current.reaches) == 1:
-            current = current.reaches[0]
-            if id(current.node) in visited or not self._is_within(current, target):
-                break
-            visited.add(id(current.node))
-            if (
-                isinstance(current.node, NonTerminalNode)
-                and current.node.sender is not None
-            ):
-                packets.append(self._planned_packet(current))
-        return tuple(packets)
-
-    @staticmethod
-    def _is_within(graph_node: GrammarGraphNode, ancestor: GrammarGraphNode) -> bool:
-        current: Optional[GrammarGraphNode] = graph_node
-        while current is not None:
-            if current is ancestor:
-                return True
-            current = current.parent
-        return False
-
     def _includes_k_paths(
         self, k_paths: set[KPath], controlflow_tree: DerivationTree
     ) -> bool:
@@ -314,9 +288,7 @@ class PacketNavigator(GrammarNavigator):
             or target.node.sender is not None
         ):
             return GuidePath(route)
-        return GuidePath(
-            route, self._step_of_graph_node(target), self._packets_within(target)
-        )
+        return GuidePath(route, self._step_of_graph_node(target))
 
     def astar_tree(
         self,

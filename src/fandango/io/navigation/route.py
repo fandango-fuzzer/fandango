@@ -21,7 +21,6 @@ Route = list[RouteSymbol]
 class GuidePath(NamedTuple):
     route: Route
     target_step: Optional[Step] = None
-    target_packets: tuple[PlannedPacket, ...] = ()
 
     def __repr__(self) -> str:
-        return f"GuidePatch({self.route!r}, target_packets={self.target_packets!r})"
+        return f"GuidePath({self.route!r}, target_step={self.target_step!r})"
