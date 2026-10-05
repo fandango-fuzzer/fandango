@@ -17,11 +17,11 @@ class StepRefusalCounter:
     def __init__(self) -> None:
         self._session = 0
         self._refusals_in_a_row_by_step: Counter[Step] = Counter()
+        self._refusals_in_a_row_by_rule_step: Counter[Step] = Counter()
         self._times_blocked_by_step: Counter[Step] = Counter()
         self._blocked_until_session_by_step: dict[Step, int] = {}
         self._steps_taken_in_session: set[Step] = set()
         self._party_by_deferred_step: dict[Step, str] = {}
-        self._refusals_in_a_row_by_rule_step: Counter[Step] = Counter()
         self._takes_by_rule_step: Counter[Step] = Counter()
         self._contexts_taken_last_by_rule_step: defaultdict[Step, set[Step]] = (
             defaultdict(set)
