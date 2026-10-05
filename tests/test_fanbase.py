@@ -37,6 +37,9 @@ def make_registry(root: Path) -> None:
 class TestFanbaseOption(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = tempfile.TemporaryDirectory()
+        # Cleanups run last-in first-out: this one must run last, because Windows
+        # cannot remove the directory we are still working in
+        self.addCleanup(self._tmp.cleanup)
         self.tmp = Path(self._tmp.name)
         make_registry(self.tmp / "registry")
         self.lib = self.tmp / "lib"
@@ -55,7 +58,6 @@ class TestFanbaseOption(unittest.TestCase):
         self.cwd = os.getcwd()
         os.chdir(self.work)
         self.addCleanup(os.chdir, self.cwd)
-        self.addCleanup(self._tmp.cleanup)
 
     def run_main_failing(self, *args: str) -> tuple[int, str, str]:
         """Run main, as a user does: errors are reported and give a status, not raised."""
