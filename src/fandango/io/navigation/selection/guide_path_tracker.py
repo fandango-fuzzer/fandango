@@ -10,11 +10,12 @@ from fandango.language.tree import DerivationTree
 class Deviation(NamedTuple):
     """A message that did not follow the guide path."""
 
-    planned: Optional[PlannedPacket]
+    # The step the sender of the message should have taken, None if it was not its turn.
+    refused: Optional[Step]
     message: DerivationTree
 
     def __repr__(self) -> str:
-        return f"Deviation(planned={self.planned!r}, message={self.message.symbol!r})"
+        return f"Deviation(refused={self.refused!r}, message={self.message.symbol!r})"
 
 
 class GuidePathTracker:
@@ -90,8 +91,13 @@ class GuidePathTracker:
             if any(self._is_step_in_target(step, path_into_target) for step in steps):
                 # The message reached the target, so the plan is done.
                 self._route = []
+                self._target_step = None
                 return None
-        return Deviation(planned_packet, message)
+        if planned_packet is None:
+            return Deviation(self._target_step, message)
+        if planned_packet.packet.sender != message.sender:
+            return Deviation(None, message)
+        return Deviation(planned_packet.step, message)
 
     @staticmethod
     def _is_step_in_target(

@@ -36,7 +36,9 @@ class PacketGuider:
         self._forecast = forecast
         self._step_refusals = StepRefusalCounter()
         self._navigator = PacketNavigator(
-            self._model.grammar, self._model.start_symbol, step_costs=self._step_refusals.repeat_costs
+            self._model.grammar,
+            self._model.start_symbol,
+            step_costs=self._step_refusals.repeat_costs,
         )
         self._target_selector = TargetSelector(model)
         self._max_messages_per_tree = max_messages_per_tree
@@ -138,15 +140,7 @@ class PacketGuider:
         deviation = self._deviation
         self._deviation = None
         if deviation is not None:
-            self._count_refused_step(deviation)
-            if (
-                deviation.planned is None
-                and followed_target is not None
-                and followed_target not in self._session_covered_k_paths
-                and not self._is_tree_contains_paths({followed_target}, history_tree)
-            ):
-                # The route was followed to its end and the message left the target.
-                self._count_refused_target(deviation.message)
+            self._count_refusal(deviation, history_tree)
             if self._is_end_route_refused(deviation):
                 LOGGER.warning(
                     "NAVIGATORPANIC: Observed derivation of planned protocol path twice for the same transition. "
@@ -289,15 +283,19 @@ class PacketGuider:
     def _is_external_party(self, party: Optional[str]) -> bool:
         return party is not None and not self._forecast.is_fuzzer_controlled(party)
 
-    def _count_refused_step(self, deviation: Deviation) -> None:
-        planned, msg = deviation
-        if planned is None:
+    def _count_refusal(
+        self, deviation: Deviation, history_tree: DerivationTree
+    ) -> None:
+        if deviation.refused is None:
             return
-        # If someone else sent the message we dont penalize the expected party.
-        if msg.sender != planned.packet.sender:
+        if (
+            deviation.refused == self._guide_path.target_step
+            and self._guide_target is not None
+            and self._is_tree_contains_paths({self._guide_target}, history_tree)
+        ):
             return
-        assert msg.sender is not None
-        self._step_refusals.count_refusal(planned.step, msg.sender)
+        assert deviation.message.sender is not None
+        self._step_refusals.count_refusal(deviation.refused, deviation.message.sender)
 
     def count_unanswered_step(self, history_tree: DerivationTree) -> None:
         """Counts a refusal of the step an external party had to take next when the run ended without it."""
@@ -323,19 +321,11 @@ class PacketGuider:
         """
         True if the party refused a step of the route to the end of the run and that step's block is deferred.
         """
-        planned, _message = deviation
         return (
             self._guide_to_end
-            and planned is not None
-            and self._step_refusals.is_block_deferred(planned.step)
+            and deviation.refused is not None
+            and self._step_refusals.is_block_deferred(deviation.refused)
         )
-
-    def _count_refused_target(self, message: DerivationTree) -> None:
-        """Counts the refusal on the step into the target."""
-        assert message.sender is not None
-        refused = self._guide_path.target_step
-        if refused is not None:
-            self._step_refusals.count_refusal(refused, message.sender)
 
     @staticmethod
     def _tuple_contains(sub: tuple[Symbol, ...], full: tuple[Symbol, ...]) -> bool:
