@@ -1,6 +1,7 @@
 #!/usr/bin/env pytest
 """The `-F` option: specs from a Fanbase registry."""
 
+import argparse
 import contextlib
 import io
 import os
@@ -12,6 +13,7 @@ from unittest.mock import patch
 import yaml
 
 from fandango.cli import main
+from fandango.cli.fanbase_files import fanbase_files
 
 
 def make_registry(root: Path) -> None:
@@ -116,6 +118,19 @@ class TestFanbaseOption(unittest.TestCase):
         )
         self.assertEqual(0, status, err)
         self.assertEqual("mine", (self.work / "out" / "fandango-0000.dmo").read_text())
+
+    def test_spec_files_are_closed_afterwards(self) -> None:
+        args = argparse.Namespace(
+            fanbase_files=["demo", "demo-long"],
+            fan_files=None,
+            filename_extension=None,
+            command="parse",
+        )
+        with fanbase_files(args):
+            opened = list(args.fan_files)
+            self.assertEqual(2, len(opened))
+            self.assertFalse(any(fd.closed for fd in opened))
+        self.assertTrue(all(fd.closed for fd in opened))
 
     def test_unknown_spec_fails(self) -> None:
         status, _, err = self.run_main_failing("fuzz", "-F", "nonesuch", "-n", "1")

@@ -1,5 +1,4 @@
 import argparse
-import contextlib
 import glob
 import os
 import shutil
@@ -13,7 +12,7 @@ from ansi_styles import ansiStyles as styles
 
 import fandango
 from fandango import DerivationTree, Fandango
-from fandango.cli.fanbase_files import resolve_fanbase_files
+from fandango.cli.fanbase_files import fanbase_files
 from fandango.cli.output import open_file, output_population, output_solution
 from fandango.cli.parser import get_parser
 from fandango.cli.upgrade import check_for_fandango_update
@@ -523,12 +522,11 @@ COMMANDS: dict[str, Callable[[argparse.Namespace], None]] = {
 
 
 def run(command: Callable[[argparse.Namespace], None], args: argparse.Namespace) -> int:
-    with contextlib.ExitStack() as files:
-        try:
-            resolve_fanbase_files(args, files)
+    try:
+        with fanbase_files(args):
             command(args)
-        except Exception as e:
-            print_exception(e)
-            return 1
+    except Exception as e:
+        print_exception(e)
+        return 1
 
     return 0

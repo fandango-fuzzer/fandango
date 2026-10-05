@@ -10,25 +10,26 @@ import argparse
 import contextlib
 import importlib.util
 import sys
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Any
+from typing import IO, Any
 
 from fandango.errors import FandangoError
 from fandango.logger import LOGGER
 
 
-def resolve_fanbase_files(
-    args: argparse.Namespace, files: contextlib.ExitStack
-) -> None:
-    """Turn `-F NAME` options into open spec files in `args.fan_files`.
+@contextlib.contextmanager
+def fanbase_files(args: argparse.Namespace) -> Iterator[None]:
+    """Turn `-F NAME` options into open spec files in `args.fan_files`, while it runs.
 
-    The files are opened in `files`, which closes them when the command is done.
+    Use as `with fanbase_files(args): command(args)`. The spec files are closed on exit.
 
     Since the format is known, this also sets the file name extension, and for `fuzz`,
     where to write the files if neither `-o` nor `-d` was given.
     """
     names = getattr(args, "fanbase_files", None)
     if not names:
+        yield
         return
 
     try:
@@ -49,20 +50,33 @@ def resolve_fanbase_files(
         _report(spec)
         specs.append(spec)
 
-    # Fanbase specs come first, so that a spec given with -f can override their rules
-    args.fan_files = [
-        files.enter_context(open(spec.path, "r", encoding="utf-8")) for spec in specs
-    ] + list(args.fan_files or [])
-    args.fanbase_files = None  # done; do not fetch again if args are used twice
+    with _opened([spec.path for spec in specs]) as opened:
+        # Fanbase specs come first, so that a spec given with -f can override their rules
+        args.fan_files = opened + list(args.fan_files or [])
+        args.fanbase_files = None  # done; do not fetch again if args are used twice
 
-    extensions = specs[0].extensions
-    if getattr(args, "filename_extension", None) is None and extensions:
-        args.filename_extension = "." + extensions[0].lstrip(".")
+        extensions = specs[0].extensions
+        if getattr(args, "filename_extension", None) is None and extensions:
+            args.filename_extension = "." + extensions[0].lstrip(".")
 
-    if _writes_files_by_default(args):
-        args.directory = _free_directory(f"{names[0]}-inputs")
-        if LOGGER.getEffectiveLevel() <= 30:  # not with -qq
-            print(f"Writing inputs to {args.directory}/", file=sys.stderr)
+        if _writes_files_by_default(args):
+            args.directory = _free_directory(f"{names[0]}-inputs")
+            if LOGGER.getEffectiveLevel() <= 30:  # not with -qq
+                print(f"Writing inputs to {args.directory}/", file=sys.stderr)
+        yield
+
+
+@contextlib.contextmanager
+def _opened(paths: list[Path]) -> Iterator[list[IO[str]]]:
+    """Open all `paths` for reading, and close them all on exit."""
+    if not paths:
+        yield []
+        return
+    with (
+        open(paths[0], "r", encoding="utf-8") as first,
+        _opened(paths[1:]) as rest,
+    ):
+        yield [first, *rest]
 
 
 def _check_requires(spec: Any) -> None:
