@@ -35,7 +35,7 @@ class PacketGuider:
         self._model = model
         self._forecast = forecast
         self._step_refusals = StepRefusalCounter()
-        self._navigator = PacketNavigator(
+        self._navigator_instance = PacketNavigator(
             self._model.grammar,
             self._model.start_symbol,
             step_costs=self._step_refusals.repeat_costs,
@@ -74,7 +74,6 @@ class PacketGuider:
         self._step_refusals.reset()
         self._clear_plan()
         self._start_session()
-        self._build_navigator_around_blocked_steps()
 
     def observe_session_end(self) -> None:
         """
@@ -85,7 +84,6 @@ class PacketGuider:
         if not self._abandons_run:
             self._count_pending_step_as_refused()
         self._step_refusals.signal_session_end()
-        self._build_navigator_around_blocked_steps()
         if (
             self._abandons_run
             or self._guide_target is None
@@ -136,11 +134,15 @@ class PacketGuider:
             uncovered_paths, self._navigator.is_derivable
         )
 
-    def _build_navigator_around_blocked_steps(self) -> None:
-        """Builds a new navigator if the blocked steps changed."""
+    @property
+    def _navigator(self) -> PacketNavigator:
+        """The navigator around the currently blocked steps; rebuilt when they changed."""
         blocked_steps = self._step_refusals.blocked_steps
-        if blocked_steps != self._navigator.blocked_steps:
-            self._navigator = self._navigator.gen_with_blocked_steps(blocked_steps)
+        if blocked_steps != self._navigator_instance.blocked_steps:
+            self._navigator_instance = (
+                self._navigator_instance.gen_with_blocked_steps(blocked_steps)
+            )
+        return self._navigator_instance
 
     def select_next_packet(
         self,
@@ -161,7 +163,6 @@ class PacketGuider:
         completed_target = self._guide_target if route_completed else None
         plan_left = self._deviated_from_guide
         self._deviated_from_guide = False
-        self._build_navigator_around_blocked_steps()
 
         uncovered_paths = get_uncovered_paths()
         if (
