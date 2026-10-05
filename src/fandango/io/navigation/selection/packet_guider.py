@@ -14,7 +14,7 @@ from fandango.io.navigation.selection.step_refusals import StepRefusalCounter
 from fandango.io.navigation.selection.target_selector import TargetSelector
 from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols import NonTerminal, Symbol
-from fandango.language.tree import DerivationTree, ProtocolMessage
+from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER, log_guidance_hint
 
 
@@ -88,15 +88,26 @@ class PacketGuider:
         self._session_covered_k_paths.clear()
         self._step_refusals.signal_session_end()
 
-    def observe_message(self, message: ProtocolMessage) -> None:
-        """Notifies that the message was sent or received. It is the last message of the history."""
-        for step in self._forecast.result.message_steps[-1]:
+    def observe_message(self, history_tree: DerivationTree) -> None:
+        """Notifies that a message was sent or received. It is the last message of history_tree, the new history."""
+        self._history_tree = history_tree
+        message = next(history_tree.protocol_msgs(reverse=True))
+        steps = self._forecast.result.message_steps[-1]
+        for step in steps:
             self._step_refusals.observe_taken(step, message.sender)
-        if self._deviation is None:
+        if self._deviation is not None:
             # Only the first message that leaves the plan counts; the next selection plans anew.
-            self._deviation = self._guide_path.follow(
-                message.msg, self._forecast.result.message_steps[-1]
+            return
+        self._deviation = self._guide_path.follow(message.msg, steps)
+        if self._deviation is None:
+            return
+        self._count_refusal(self._deviation, history_tree)
+        if self._is_end_route_refused(self._deviation):
+            LOGGER.warning(
+                "NAVIGATORPANIC: Observed derivation of planned protocol path twice for the same transition. "
+                f"Hard-terminating protocol session. Observed derivation {self._deviation}"
             )
+            self._abandons_run = True
 
     def observe_run_end(self, history_tree: DerivationTree) -> None:
         self._history_tree = history_tree
@@ -139,14 +150,6 @@ class PacketGuider:
         followed_target = self._guide_target if route_followed else None
         deviation = self._deviation
         self._deviation = None
-        if deviation is not None:
-            self._count_refusal(deviation, history_tree)
-            if self._is_end_route_refused(deviation):
-                LOGGER.warning(
-                    "NAVIGATORPANIC: Observed derivation of planned protocol path twice for the same transition. "
-                    f"Hard-terminating protocol session. Observed derivation {deviation}"
-                )
-                self._abandons_run = True
         self._build_navigator_around_blocked_steps()
 
         uncovered_paths = get_uncovered_paths()

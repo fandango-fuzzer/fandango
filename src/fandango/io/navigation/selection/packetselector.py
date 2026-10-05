@@ -61,7 +61,7 @@ class PacketSelector:
     def observe_message(self, history_tree: DerivationTree) -> None:
         """Notifies that a message was sent or received. It is the last message of history_tree, the new history."""
         self._set_history(history_tree)
-        self._guider.observe_message(next(history_tree.protocol_msgs(reverse=True)))
+        self._guider.observe_message(history_tree)
 
     def signal_session_end(self) -> None:
         """Notifies that the session ended. Its history counts as covered; the history starts empty again."""
