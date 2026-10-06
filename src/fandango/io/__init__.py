@@ -923,7 +923,8 @@ class FandangoIO(object):
         self.parties.clear()
         with self.receive_lock:
             self.receive.clear()
-            for party in party_instances:
+            # External parties first.
+            for party in sorted(party_instances, key=FandangoParty.is_fuzzer_controlled):
                 cls = party.__class__
                 # Guaranteed to not have an argument
                 cls()  # type: ignore[call-arg]
