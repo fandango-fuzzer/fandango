@@ -379,14 +379,10 @@ class DerivationTree:
         ]
 
     def find_by_origin(self, node_id: str) -> list["DerivationTree"]:
-        trees = sum(
-            [
-                child.find_by_origin(node_id)
-                for child in [*self._children, *self._sources]
-                if child.symbol.is_non_terminal
-            ],
-            [],
-        )
+        trees = []
+        for child in [*self._children, *self._sources]:
+            if child.symbol.is_non_terminal:
+                trees.extend(child.find_by_origin(node_id))
         for o_node_id, _o_iter_id, _rep in self.origin_repetitions:
             if o_node_id == node_id:
                 trees.append(self)
