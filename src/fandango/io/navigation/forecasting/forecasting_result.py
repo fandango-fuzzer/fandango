@@ -87,7 +87,8 @@ class ForecastingResult:
     def __init__(self) -> None:
         self.parties_to_packets = dict[str, ForecastingNonTerminals]()
         self.complete_trees = set[DerivationTree]()
-        self.message_steps = list[set[Step]]()
+        # The steps that may have produced the last message of the history, one per parse.
+        self.last_message_steps = set[Step]()
 
     def get_msg_parties(self) -> set[str]:
         return set(self.parties_to_packets.keys())
@@ -122,5 +123,5 @@ class ForecastingResult:
     def __repr__(self) -> str:
         return (
             f"ForecastingResult({self.parties_to_packets!r}, complete_trees={len(self.complete_trees)}, "
-            f"message_steps for {len(self.message_steps)} messages)"
+            f"last_message_steps={self.last_message_steps!r})"
         )

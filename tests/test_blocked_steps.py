@@ -24,7 +24,7 @@ def step_of_last_message(grammar: Grammar, messages: str) -> Step:
         messages, mode=ParsingMode.INCOMPLETE, include_controlflow=True
     )
     assert history is not None
-    (step,) = PacketForecaster(grammar).predict(history).message_steps[-1]
+    (step,) = PacketForecaster(grammar).predict(history).last_message_steps
     return step
 
 

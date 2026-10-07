@@ -115,7 +115,7 @@ class PacketGuider:
         """Notifies that a message was sent or received. It is the last message of history_tree, the new history."""
         self._history_tree = history_tree
         message = next(history_tree.protocol_msgs(reverse=True))
-        steps = self._forecast.result.message_steps[-1]
+        steps = self._forecast.result.last_message_steps
         for step in steps:
             self._step_refusals.observe_taken(step, message.sender)
         self._check_covered_paths_kept(message.sender, history_tree)
