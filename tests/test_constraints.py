@@ -460,16 +460,16 @@ def parse_digits_constraint(constraint):
     "constraint, comparisons",
     [
         (
-            "0 < int(<start>) <= 100;",
+            "0 < int(<start>) <= 100",
             ["0 < int(<start>)", "int(<start>) <= 100"],
         ),
         (
-            "1 < 2 == len(<start>) != 4 >= 3;",
+            "1 < 2 == len(<start>) != 4 >= 3",
             ["1 < 2", "2 == len(<start>)", "len(<start>) != 4", "4 >= 3"],
         ),
         # Operands bind tighter than comparison operators
         (
-            "0 < int(<start>) + 1 > 2 | 4;",
+            "0 < int(<start>) + 1 > 2 | 4",
             ["0 < int(<start>) + 1", "int(<start>) + 1 > 2 | 4"],
         ),
     ],
@@ -485,19 +485,19 @@ def test_chained_comparison_structure(constraint, comparisons):
 @pytest.mark.parametrize(
     "constraint, constraint_type",
     [
-        ("int(<start>) < 5;", ComparisonConstraint),
+        ("int(<start>) < 5", ComparisonConstraint),
         # `not` and `if` bind looser than comparison operators
-        ("not 0 < int(<start>) < 5;", ExpressionConstraint),
-        ("0 < int(<start>) < 5 if True else False;", ExpressionConstraint),
+        ("not 0 < int(<start>) < 5", ExpressionConstraint),
+        ("0 < int(<start>) < 5 if True else False", ExpressionConstraint),
     ],
 )
 def test_unchained_comparison_structure(constraint, constraint_type):
     _, parsed = parse_digits_constraint(constraint)
     assert type(parsed) is constraint_type
-    assert parsed.format_as_spec() == constraint.removesuffix(";")
+    assert parsed.format_as_spec() == constraint
 
 
 def test_chained_comparison_check():
-    grammar, parsed = parse_digits_constraint("0 < int(<start>) <= 100;")
+    grammar, parsed = parse_digits_constraint("0 < int(<start>) <= 100")
     for value, expected in {"0": False, "1": True, "100": True, "101": False}.items():
         assert parsed.check(grammar.parse(value)) == expected, value
