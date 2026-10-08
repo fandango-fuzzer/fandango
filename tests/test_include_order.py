@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pytest
 
+from fandango.language.parse import splitter
 from fandango.language.parse.splitter import read_file, search_dirs
 
 SPEC = Path("lib/spec.fan")
@@ -31,7 +32,8 @@ def machine(tmp_path, monkeypatch):
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.setenv("USERPROFILE", str(home))  # where Windows looks for it
     monkeypatch.setenv("XDG_DATA_HOME", str(home / "xdg"))
-    monkeypatch.setenv("XDG_DATA_DIRS", str(tmp_path / "system"))
+    # not XDG_DATA_DIRS: xdg_base_dirs splits it at colons, which cuts a Windows path in two
+    monkeypatch.setattr(splitter, "xdg_data_dirs", lambda: [tmp_path / "system"])
     monkeypatch.delenv("FANDANGO_PATH", raising=False)
     work = tmp_path / "work"
     work.mkdir()
