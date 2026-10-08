@@ -255,15 +255,18 @@ class ProtocolAlgorithm(GeneticAlgorithm):
 
         self._packet_algorithm.reset()
         try:
+            # Refill the population
             solutions = [
                 next(
                     filter(
                         self._filter_by_coverage,
-                        self._population_manager.refill_population(
-                            current_population=self._packet_algorithm.population,
-                            eval_individual=self._packet_algorithm.evaluator.evaluate_individual,
-                            max_nodes=self._packet_algorithm.adaptive_tuner.current_max_nodes,
-                            target_population_size=self._packet_algorithm.population_size,
+                        self._packet_coverage_filter.until_held_back_enough(
+                            self._population_manager.refill_population(
+                                current_population=self._packet_algorithm.population,
+                                eval_individual=self._packet_algorithm.evaluator.evaluate_individual,
+                                max_nodes=self._packet_algorithm.adaptive_tuner.current_max_nodes,
+                                target_population_size=self._packet_algorithm.population_size,
+                            )
                         ),
                     )
                 )
@@ -273,22 +276,30 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         if solutions:
             return solutions[0]
 
-        try:
-            return next(
-                filter(
-                    self._filter_by_coverage,
-                    self._packet_algorithm.generate(
-                        max_generations=selected_packet_max_generations
-                    ),
+        if not self._packet_coverage_filter.held_back_enough():
+            # Use the evolutionary algorithm
+            try:
+                return next(
+                    filter(
+                        self._filter_by_coverage,
+                        self._packet_coverage_filter.until_held_back_enough(
+                            self._packet_algorithm.generate(
+                                max_generations=selected_packet_max_generations
+                            )
+                        ),
+                    )
                 )
-            )
-        except StopIteration:
-            pass
+            except StopIteration:
+                pass
 
-        self._packet_coverage_filter.mark_uncovered_k_paths_unreachable()
         hold_back_solutions = (
             self._packet_coverage_filter.hold_back_solutions_by_msg_hash
         )
+        if not self._packet_coverage_filter.held_back_enough():
+            # We didn't even found enough candidates to trigger the hold back filter.
+            # At this point we ran ~10 generations to produce this packet and spent some time.
+            # We mark its remaining paths as unreachable.
+            self._packet_coverage_filter.mark_uncovered_k_paths_unreachable()
         if len(hold_back_solutions) != 0:
             return random.choice(list(hold_back_solutions.values()))
 
