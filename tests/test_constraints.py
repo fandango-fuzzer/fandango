@@ -2,7 +2,12 @@
 
 import unittest
 
+import pytest
+
+from fandango.constraints.comparison import ComparisonConstraint
+from fandango.constraints.conjunction import ConjunctionConstraint
 from fandango.constraints.constraint import Constraint
+from fandango.constraints.expression import ExpressionConstraint
 from fandango.language.parse.parse import parse
 from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
@@ -437,3 +442,62 @@ class ConverterTest(unittest.TestCase):
         tree = DerivationTree(Terminal(1))
         self.assertEqual(int(tree), 1, int(tree))
         self.assertEqual(tree.to_bits(), "1", tree.to_bits())
+
+
+def parse_digits_constraint(constraint):
+    grammar, constraints = parse(
+        '<start> ::= <digit>+\n<digit> ::= "0" | "1" | "2" | "3" | "4" | "5"\n',
+        constraints=[constraint],
+        use_stdlib=False,
+        use_cache=False,
+    )
+    assert grammar is not None
+    assert len(constraints) == 1
+    return grammar, constraints[0]
+
+
+@pytest.mark.parametrize(
+    "constraint, comparisons",
+    [
+        (
+            "0 < int(<start>) <= 100",
+            ["0 < int(<start>)", "int(<start>) <= 100"],
+        ),
+        (
+            "1 < 2 == len(<start>) != 4 >= 3",
+            ["1 < 2", "2 == len(<start>)", "len(<start>) != 4", "4 >= 3"],
+        ),
+        # Operands bind tighter than comparison operators
+        (
+            "0 < int(<start>) + 1 > 2 | 4",
+            ["0 < int(<start>) + 1", "int(<start>) + 1 > 2 | 4"],
+        ),
+    ],
+)
+def test_chained_comparison_structure(constraint, comparisons):
+    """Like in Python, `a < b <= c` means `a < b and b <= c`."""
+    _, parsed = parse_digits_constraint(constraint)
+    assert type(parsed) is ConjunctionConstraint
+    assert all(type(c) is ComparisonConstraint for c in parsed.constraints)
+    assert [c.format_as_spec() for c in parsed.constraints] == comparisons
+
+
+@pytest.mark.parametrize(
+    "constraint, constraint_type",
+    [
+        ("int(<start>) < 5", ComparisonConstraint),
+        # `not` and `if` bind looser than comparison operators
+        ("not 0 < int(<start>) < 5", ExpressionConstraint),
+        ("0 < int(<start>) < 5 if True else False", ExpressionConstraint),
+    ],
+)
+def test_unchained_comparison_structure(constraint, constraint_type):
+    _, parsed = parse_digits_constraint(constraint)
+    assert type(parsed) is constraint_type
+    assert parsed.format_as_spec() == constraint
+
+
+def test_chained_comparison_check():
+    grammar, parsed = parse_digits_constraint("0 < int(<start>) <= 100")
+    for value, expected in {"0": False, "1": True, "100": True, "101": False}.items():
+        assert parsed.check(grammar.parse(value)) == expected, value

@@ -134,8 +134,14 @@ formula_atom
     | expr
     ;
 
-formula_comparison:
-    expr (LESS_THAN | GREATER_THAN | EQUALS | GT_EQ | LT_EQ | NOT_EQ_1 | NOT_EQ_2) expr
+// Operands bind tighter than comparisons, so `0 < <a> <= 100` is one chain
+// and `not <a> < 5` is left to `expr`, as in Python
+formula_comparison
+    : bitwise_or (formula_comparison_operator bitwise_or)+
+    ;
+
+formula_comparison_operator
+    : LESS_THAN | GREATER_THAN | EQUALS | GT_EQ | LT_EQ | NOT_EQ_1 | NOT_EQ_2
     ;
 
 expr

@@ -561,31 +561,50 @@ class ConstraintProcessor(FandangoParserVisitor):
         )
 
     def visitFormula_comparison(self, ctx: FandangoParser.Formula_comparisonContext):
-        if ctx.LESS_THAN():
-            op = Comparison.LESS
-        elif ctx.GREATER_THAN():
-            op = Comparison.GREATER
-        elif ctx.EQUALS():
-            op = Comparison.EQUAL
-        elif ctx.GT_EQ():
-            op = Comparison.GREATER_EQUAL
-        elif ctx.LT_EQ():
-            op = Comparison.LESS_EQUAL
-        elif ctx.NOT_EQ_1() or ctx.NOT_EQ_2():
-            op = Comparison.NOT_EQUAL
-        else:
-            raise UnsupportedOperation(f"Unknown operator in {ctx.getText()}")
-        left, _, left_map = self.searches.visit(ctx.expr(0))
-        right, _, right_map = self.searches.visit(ctx.expr(1))
-        return ComparisonConstraint(
-            op,
-            ast.unparse(left),
-            ast.unparse(right),
-            left_searches=left_map,
-            right_searches=right_map,
+        # Like Python, `a < b <= c` means `a < b and b <= c`
+        operands = [self.searches.visitBitwise_or(o) for o in ctx.bitwise_or()]
+        constraints: list[Constraint] = [
+            ComparisonConstraint(
+                self.visitFormula_comparison_operator(op),
+                ast.unparse(left),
+                ast.unparse(right),
+                left_searches=left_map,
+                right_searches=right_map,
+                local_variables=self.local_variables,
+                global_variables=self.global_variables,
+            )
+            for op, (left, _, left_map), (right, _, right_map) in zip(
+                ctx.formula_comparison_operator(),
+                operands,
+                operands[1:],
+                strict=False,
+            )
+        ]
+        if len(constraints) == 1:
+            return constraints[0]
+        return ConjunctionConstraint(
+            constraints,
             local_variables=self.local_variables,
             global_variables=self.global_variables,
+            lazy=self.lazy,
         )
+
+    def visitFormula_comparison_operator(
+        self, ctx: FandangoParser.Formula_comparison_operatorContext
+    ) -> Comparison:
+        if ctx.LESS_THAN():
+            return Comparison.LESS
+        elif ctx.GREATER_THAN():
+            return Comparison.GREATER
+        elif ctx.EQUALS():
+            return Comparison.EQUAL
+        elif ctx.GT_EQ():
+            return Comparison.GREATER_EQUAL
+        elif ctx.LT_EQ():
+            return Comparison.LESS_EQUAL
+        elif ctx.NOT_EQ_1() or ctx.NOT_EQ_2():
+            return Comparison.NOT_EQUAL
+        raise UnsupportedOperation(f"Unknown operator in {ctx.getText()}")
 
 
 class SearchProcessor(FandangoParserVisitor):
