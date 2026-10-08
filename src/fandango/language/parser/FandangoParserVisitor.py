@@ -134,6 +134,11 @@ class FandangoParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by FandangoParser#formula_comparison_operator.
+    def visitFormula_comparison_operator(self, ctx:FandangoParser.Formula_comparison_operatorContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by FandangoParser#expr.
     def visitExpr(self, ctx:FandangoParser.ExprContext):
         return self.visitChildren(ctx)
