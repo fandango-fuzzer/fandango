@@ -13,7 +13,7 @@ from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Repetition
-from fandango.language.search import NonTerminalSearch
+from fandango.language.search import AnnotatedSearch, NonTerminalSearch, RuleSearch
 from fandango.language.symbols import NonTerminal
 
 
@@ -160,6 +160,7 @@ class ConstraintScopeAnalyzer:
             for child in children:
                 self._parents.setdefault(child, set()).add(symbol)
         self._access_points: dict[Constraint, Optional[AccessPoints]] = {}
+        self._per_instance_search_scopes: dict[Constraint, Optional[NonTerminal]] = {}
         self._inside_and_above: dict[
             NonTerminal, tuple[set[NonTerminal], set[NonTerminal]]
         ] = {}
@@ -190,6 +191,36 @@ class ConstraintScopeAnalyzer:
         if access_points.intersection(symbols_going_down):
             return ConstraintScope.CROSSING
         return ConstraintScope.UNRELATED
+
+    def per_instance_search_scope(
+        self, constraint: Constraint
+    ) -> Optional[NonTerminal]:
+        """For `forall <x> in <S>: ...` whose statement reads the tree only through <x>, returns <S>; otherwise
+        None. That means if this function returns <S>, the constraint can be evaluated without requiring the context around <S>.
+        If None is returned the context is needed."""
+        if constraint not in self._per_instance_search_scopes:
+            self._per_instance_search_scopes[constraint] = (
+                self._find_per_instance_search_scope(constraint)
+            )
+        return self._per_instance_search_scopes[constraint]
+
+    def _find_per_instance_search_scope(
+        self, constraint: Constraint
+    ) -> Optional[NonTerminal]:
+        if not isinstance(constraint, ForallConstraint) or not isinstance(
+            constraint.bound, NonTerminal
+        ):
+            return None
+        search = constraint.search
+        while isinstance(search, AnnotatedSearch):
+            search = search.inner
+        if not isinstance(search, RuleSearch):
+            return None
+        statement = _AccessPointCollector(self._repetition_owners, constraint.bound)
+        statement.visit(constraint.statement)
+        if statement.targets is None or statement.targets or statement.bases:
+            return None
+        return search.symbol
 
     def _access_points_of(self, constraint: Constraint) -> Optional[AccessPoints]:
         if constraint not in self._access_points:
