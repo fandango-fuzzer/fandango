@@ -23,17 +23,30 @@ class ConstraintScope(enum.Enum):
     UNRELATED = enum.auto()
 
 
+class ScopedTargets(NamedTuple):
+    search_scope: frozenset[NonTerminal]
+    targets: frozenset[NonTerminal]
+
+
 class AccessPoints(NamedTuple):
     targets: frozenset[NonTerminal]
     bases: frozenset[NonTerminal]
+    scoped_targets: frozenset[ScopedTargets]
 
 
 class _AccessPointCollector(ConstraintVisitor):
-    def __init__(self, repetition_owners: dict[str, NonTerminal]):
+    def __init__(
+        self,
+        repetition_owners: dict[str, NonTerminal],
+        bound: Optional[NonTerminal] = None,
+    ):
         super().__init__()
         self._repetition_owners = repetition_owners
-        self.symbols: Optional[set[NonTerminal]] = set()
+        self._bound = bound
+        self.targets: Optional[set[NonTerminal]] = set()
         self.bases: set[NonTerminal] = set()
+        self.targets_through_bound: set[NonTerminal] = set()
+        self.scoped_targets: set[ScopedTargets] = set()
 
     def do_continue(self, constraint: Constraint) -> bool:
         return not isinstance(constraint, (ForallConstraint, ExistsConstraint))
@@ -68,9 +81,9 @@ class _AccessPointCollector(ConstraintVisitor):
     ) -> None:
         owner = self._repetition_owners.get(constraint.repetition_id)
         if owner is None:
-            self.symbols = None
+            self.targets = None
             return
-        self._add_access_point([owner])
+        self._add_targets([owner])
         for search in (constraint.search_min, constraint.search_max):
             if search is not None:
                 self._add_access_points_of(search)
@@ -82,27 +95,46 @@ class _AccessPointCollector(ConstraintVisitor):
         statement: Constraint,
     ) -> None:
         self._add_access_points_of(search)
-        inner = _AccessPointCollector(self._repetition_owners)
+        inner = _AccessPointCollector(
+            self._repetition_owners,
+            bound if isinstance(bound, NonTerminal) else None,
+        )
         inner.visit(statement)
-        if inner.symbols is None:
-            self.symbols = None
+        if inner.targets is None:
+            self.targets = None
             return
         if isinstance(bound, NonTerminal):
-            inner.symbols.discard(bound)
+            inner.targets.discard(bound)
             inner.bases.discard(bound)
-        self._add_access_point(inner.symbols)
+        self._add_targets(inner.targets)
         self.bases.update(inner.bases)
+        self.scoped_targets.update(inner.scoped_targets)
+        if inner.targets_through_bound:
+            self.scoped_targets.add(
+                ScopedTargets(
+                    frozenset(search.get_access_points(include_base=False)),
+                    frozenset(inner.targets_through_bound),
+                )
+            )
 
     def _add_access_points_of(self, source: GeneticBase | NonTerminalSearch) -> None:
-        targets = source.get_access_points(include_base=False)
-        self._add_access_point(targets)
-        self.bases.update(
-            set(source.get_access_points(include_base=True)) - set(targets)
+        searches = (
+            list(source.searches.values())
+            if isinstance(source, GeneticBase)
+            else [source]
         )
+        for search in searches:
+            targets = search.get_access_points(include_base=False)
+            with_bases = search.get_access_points(include_base=True)
+            if self._bound is not None and search.get_root_symbol() == self._bound:
+                self.targets_through_bound.update(set(with_bases) - {self._bound})
+                continue
+            self._add_targets(targets)
+            self.bases.update(set(with_bases) - set(targets))
 
-    def _add_access_point(self, symbols: list[NonTerminal] | set[NonTerminal]) -> None:
-        if self.symbols is not None:
-            self.symbols.update(symbols)
+    def _add_targets(self, targets: list[NonTerminal] | set[NonTerminal]) -> None:
+        if self.targets is not None:
+            self.targets.update(targets)
 
 
 class ConstraintScopeAnalyzer:
@@ -144,6 +176,12 @@ class ConstraintScopeAnalyzer:
         # An anchor is a base that sits above the nonterminal in the grammar
         anchors = (collected.bases & symbols_going_up) - symbols_going_down
         access_points = collected.targets | (collected.bases - anchors)
+        for scoped in collected.scoped_targets:
+            # Instances of an unrelated symbol neither contain the nonterminal nor lie inside it
+            if not scoped.search_scope or scoped.search_scope & (
+                symbols_going_down | symbols_going_up
+            ):
+                access_points |= scoped.targets
 
         if not access_points or access_points.intersection(symbols_going_up):
             return ConstraintScope.CROSSING
@@ -159,10 +197,11 @@ class ConstraintScopeAnalyzer:
             collector.visit(constraint)
             self._access_points[constraint] = (
                 None
-                if collector.symbols is None
+                if collector.targets is None
                 else AccessPoints(
-                    frozenset(collector.symbols),
-                    frozenset(collector.bases - collector.symbols),
+                    frozenset(collector.targets),
+                    frozenset(collector.bases - collector.targets),
+                    frozenset(collector.scoped_targets),
                 )
             )
         return self._access_points[constraint]
