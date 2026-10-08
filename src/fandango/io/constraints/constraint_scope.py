@@ -141,6 +141,7 @@ class ConstraintScopeAnalyzer:
         if collected is None:
             return ConstraintScope.CROSSING
         symbols_going_down, symbols_going_up = self._inside_and_above_of(non_terminal)
+        # An anchor is a base that sits above the nonterminal in the grammar
         anchors = (collected.bases & symbols_going_up) - symbols_going_down
         access_points = collected.targets | (collected.bases - anchors)
 
