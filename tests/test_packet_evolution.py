@@ -295,10 +295,15 @@ def test_constraint_scopes():
         (
             "str(<exchange>.<cmd>) != ''",
             ConstraintScope.CROSSING,
-            ConstraintScope.CROSSING,
+            ConstraintScope.UNRELATED,
         ),
         (
             "forall <d> in <start>..<digit>: str(<d>) == '0'",
+            ConstraintScope.CROSSING,
+            ConstraintScope.UNRELATED,
+        ),
+        (
+            "forall <e> in <state>.<exchange>: str(<e>.<cmd>) != ''",
             ConstraintScope.CROSSING,
             ConstraintScope.CROSSING,
         ),

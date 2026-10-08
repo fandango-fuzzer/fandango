@@ -1,5 +1,5 @@
 import enum
-from typing import Optional
+from typing import NamedTuple, Optional
 
 from fandango.constraints.base import GeneticBase
 from fandango.constraints.comparison import ComparisonConstraint
@@ -23,20 +23,26 @@ class ConstraintScope(enum.Enum):
     UNRELATED = enum.auto()
 
 
+class AccessPoints(NamedTuple):
+    targets: frozenset[NonTerminal]
+    bases: frozenset[NonTerminal]
+
+
 class _AccessPointCollector(ConstraintVisitor):
     def __init__(self, repetition_owners: dict[str, NonTerminal]):
         super().__init__()
         self._repetition_owners = repetition_owners
         self.symbols: Optional[set[NonTerminal]] = set()
+        self.bases: set[NonTerminal] = set()
 
     def do_continue(self, constraint: Constraint) -> bool:
         return not isinstance(constraint, (ForallConstraint, ExistsConstraint))
 
     def visit_expression_constraint(self, constraint: ExpressionConstraint) -> None:
-        self._add_access_point(constraint.get_access_points(include_base=True))
+        self._add_access_points_of(constraint)
 
     def visit_comparison_constraint(self, constraint: ComparisonConstraint) -> None:
-        self._add_access_point(constraint.get_access_points(include_base=True))
+        self._add_access_points_of(constraint)
 
     def visit_forall_constraint(self, constraint: ForallConstraint) -> None:
         self._visit_quantifier(
@@ -67,7 +73,7 @@ class _AccessPointCollector(ConstraintVisitor):
         self._add_access_point([owner])
         for search in (constraint.search_min, constraint.search_max):
             if search is not None:
-                self._add_access_point(search.get_access_points(include_base=True))
+                self._add_access_points_of(search)
 
     def _visit_quantifier(
         self,
@@ -75,7 +81,7 @@ class _AccessPointCollector(ConstraintVisitor):
         search: NonTerminalSearch,
         statement: Constraint,
     ) -> None:
-        self._add_access_point(search.get_access_points(include_base=True))
+        self._add_access_points_of(search)
         inner = _AccessPointCollector(self._repetition_owners)
         inner.visit(statement)
         if inner.symbols is None:
@@ -83,7 +89,16 @@ class _AccessPointCollector(ConstraintVisitor):
             return
         if isinstance(bound, NonTerminal):
             inner.symbols.discard(bound)
+            inner.bases.discard(bound)
         self._add_access_point(inner.symbols)
+        self.bases.update(inner.bases)
+
+    def _add_access_points_of(self, source: GeneticBase | NonTerminalSearch) -> None:
+        targets = source.get_access_points(include_base=False)
+        self._add_access_point(targets)
+        self.bases.update(
+            set(source.get_access_points(include_base=True)) - set(targets)
+        )
 
     def _add_access_point(self, symbols: list[NonTerminal] | set[NonTerminal]) -> None:
         if self.symbols is not None:
@@ -112,7 +127,7 @@ class ConstraintScopeAnalyzer:
         for symbol, children in self._children.items():
             for child in children:
                 self._parents.setdefault(child, set()).add(symbol)
-        self._access_points: dict[Constraint, Optional[frozenset[NonTerminal]]] = {}
+        self._access_points: dict[Constraint, Optional[AccessPoints]] = {}
         self._inside_and_above: dict[
             NonTerminal, tuple[set[NonTerminal], set[NonTerminal]]
         ] = {}
@@ -122,25 +137,32 @@ class ConstraintScopeAnalyzer:
     ) -> ConstraintScope:
         """Checks if the constraint depends only on children of the current tree (INSIDE), is completely
         unrelated (UNRELATED) to the tree, or depends on this and other trees (CROSSING)."""
-        access_points = self._access_points_of(constraint)
+        collected = self._access_points_of(constraint)
+        if collected is None:
+            return ConstraintScope.CROSSING
         symbols_going_down, symbols_going_up = self._inside_and_above_of(non_terminal)
+        anchors = (collected.bases & symbols_going_up) - symbols_going_down
+        access_points = collected.targets | (collected.bases - anchors)
 
         if not access_points or access_points.intersection(symbols_going_up):
             return ConstraintScope.CROSSING
         if access_points <= symbols_going_down:
-            return ConstraintScope.INSIDE
+            return ConstraintScope.CROSSING if anchors else ConstraintScope.INSIDE
         if access_points.intersection(symbols_going_down):
             return ConstraintScope.CROSSING
         return ConstraintScope.UNRELATED
 
-    def _access_points_of(
-        self, constraint: Constraint
-    ) -> Optional[frozenset[NonTerminal]]:
+    def _access_points_of(self, constraint: Constraint) -> Optional[AccessPoints]:
         if constraint not in self._access_points:
             collector = _AccessPointCollector(self._repetition_owners)
             collector.visit(constraint)
             self._access_points[constraint] = (
-                None if collector.symbols is None else frozenset(collector.symbols)
+                None
+                if collector.symbols is None
+                else AccessPoints(
+                    frozenset(collector.symbols),
+                    frozenset(collector.bases - collector.symbols),
+                )
             )
         return self._access_points[constraint]
 
