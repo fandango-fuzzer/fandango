@@ -247,6 +247,13 @@ class NonTerminalSearch(abc.ABC):
         """
 
     @abc.abstractmethod
+    def get_root_symbol(self) -> NonTerminal:
+        """
+        Get the non-terminal the search starts from, e.g. <a> for <a>.<b>..<c>.
+        :return NonTerminal: The non-terminal the search starts from.
+        """
+
+    @abc.abstractmethod
     def get_access_points(self, include_base: bool = False) -> list[NonTerminal]:
         """
         Get the access points of the non-terminal search, i.e., the non-terminal that are considered in this search.
@@ -309,6 +316,9 @@ class LengthSearch(NonTerminalSearch):
     def format_as_spec(self) -> str:
         return f"|{self.value.format_as_spec()}|"
 
+    def get_root_symbol(self) -> NonTerminal:
+        return self.value.get_root_symbol()
+
     def get_access_points(self, include_base: bool = False) -> list[NonTerminal]:
         return self.value.get_access_points(include_base)
 
@@ -346,6 +356,9 @@ class RuleSearch(NonTerminalSearch):
             return [Tree(scope[self.symbol])]
         else:
             return list(map(Tree, tree.find_direct_trees(self.symbol)))
+
+    def get_root_symbol(self) -> NonTerminal:
+        return self.symbol
 
     def get_access_points(self, include_base: bool = False) -> list[NonTerminal]:
         return [self.symbol]
@@ -402,6 +415,9 @@ class AttributeSearch(NonTerminalSearch):
     def format_as_spec(self) -> str:
         return f"{self.base.format_as_spec()}.{self.attribute.format_as_spec()}"
 
+    def get_root_symbol(self) -> NonTerminal:
+        return self.base.get_root_symbol()
+
     def get_access_points(self, include_base: bool = False) -> list[NonTerminal]:
         base = self.base.get_access_points(include_base) if include_base else []
         return base + self.attribute.get_access_points(include_base)
@@ -454,6 +470,9 @@ class DescendantAttributeSearch(NonTerminalSearch):
 
     def format_as_spec(self) -> str:
         return f"{self.base.format_as_spec()}..{self.attribute.format_as_spec()}"
+
+    def get_root_symbol(self) -> NonTerminal:
+        return self.base.get_root_symbol()
 
     def get_access_points(self, include_base: bool = False) -> list[NonTerminal]:
         base = self.base.get_access_points(include_base) if include_base else []
@@ -524,6 +543,9 @@ class ItemSearch(NonTerminalSearch):
             else:
                 slice_reprs.append(repr(slice_))
         return f"{self.base.format_as_spec()}[{', '.join(slice_reprs)}]"
+
+    def get_root_symbol(self) -> NonTerminal:
+        return self.base.get_root_symbol()
 
     def get_access_points(self, include_base: bool = False) -> list[NonTerminal]:
         return self.base.get_access_points(include_base)
@@ -612,6 +634,9 @@ class SelectiveSearch(NonTerminalSearch):
             slice_reprs.append(slice_repr)
         return f"{self.base.format_as_spec()}{{{', '.join(slice_reprs)}}}"
 
+    def get_root_symbol(self) -> NonTerminal:
+        return self.base.get_root_symbol()
+
     def get_access_points(self, include_base: bool = False) -> list[NonTerminal]:
         base = self.base.get_access_points(include_base) if include_base else []
         return base + [symbol for symbol, _ in self.symbols]
@@ -687,6 +712,9 @@ class StarSearch(NonTerminalSearch):
 
     def format_as_spec(self) -> str:
         return f"*{self.base.format_as_spec()}"
+
+    def get_root_symbol(self) -> NonTerminal:
+        return self.base.get_root_symbol()
 
     def get_access_points(self, include_base: bool = False) -> list[NonTerminal]:
         return self.base.get_access_points(include_base)
@@ -767,6 +795,9 @@ class AnnotatedSearch(NonTerminalSearch, Generic[Annotation]):
         Format as a string that can be used in a spec file.
         """
         return self._inner.format_as_spec()
+
+    def get_root_symbol(self) -> NonTerminal:
+        return self._inner.get_root_symbol()
 
     def get_access_points(self, include_base: bool = False) -> list[NonTerminal]:
         """

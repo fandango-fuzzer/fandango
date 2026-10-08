@@ -339,3 +339,134 @@ def test_constraint_scopes():
     scopes = ConstraintScopeAnalyzer(grammar)
     assert scopes.analyse_scope(cmd, bounds) == ConstraintScope.UNRELATED
     assert scopes.analyse_scope(reply, bounds) == ConstraintScope.INSIDE
+
+
+def test_paths_through_a_bound_variable_stay_inside_what_the_quantifier_finds():
+    k_path_io = (RESOURCES_ROOT / "k_path_io.fan").read_text()
+    reply_rule = "<reply> ::= <code>\n"
+    assert reply_rule in k_path_io
+    k_path_io = k_path_io.replace(reply_rule, "<reply> ::= <code> <digit>\n")
+    cmd = NonTerminal("<cmd>")
+    reply = NonTerminal("<reply>")
+    cases = [
+        (
+            "forall <r> in <reply>: str(<r>.<digit>) == '0'",
+            ConstraintScope.UNRELATED,
+            ConstraintScope.INSIDE,
+        ),
+        (
+            "forall <r> in <reply>: str(<r>.<digit>) == str(<digit>)",
+            ConstraintScope.CROSSING,
+            ConstraintScope.INSIDE,
+        ),
+        (
+            "forall <e> in <exchange>: str(<e>.<reply>.<digit>) == '0'",
+            ConstraintScope.CROSSING,
+            ConstraintScope.CROSSING,
+        ),
+    ]
+    for constraint_text, cmd_scope, reply_scope in cases:
+        grammar, constraints = parse(
+            k_path_io + f"\nwhere {constraint_text}\n",
+            use_stdlib=False,
+            use_cache=False,
+        )
+        assert grammar is not None
+        (constraint,) = constraints
+        assert isinstance(constraint, Constraint)
+        scopes = ConstraintScopeAnalyzer(grammar)
+        assert scopes.analyse_scope(cmd, constraint) == cmd_scope, constraint_text
+        assert scopes.analyse_scope(reply, constraint) == reply_scope, constraint_text
+
+
+def evaluator_with(constraint_text: str) -> IoEvaluator:
+    grammar_text = (RESOURCES_ROOT / "echo_io_constrained.fan").read_text()
+    note_constraint = 'where str(<note>) == "A\\n"\n'
+    assert note_constraint in grammar_text
+    fandango = Fandango(
+        grammar_text.replace(note_constraint, f"where {constraint_text}\n"),
+        use_stdlib=False,
+        use_cache=False,
+    )
+    return IoEvaluator(
+        packet_mounter=PacketMounter(fandango.grammar, START),
+        grammar=fandango.grammar,
+        constraints=fandango.constraints,
+        expected_fitness=1.0,
+        diversity_k=5,
+        diversity_weight=1.0,
+    )
+
+
+def evaluate_mounted(
+    evaluator: IoEvaluator,
+    history: DerivationTree,
+    path: tuple[tuple[NonTerminal, bool], ...],
+    packet: DerivationTree,
+) -> tuple[float, list[NonTerminal]]:
+    """Fitness of packet mounted along path, and the symbols of the trees that fail."""
+    mounter = evaluator._packet_mounter
+    with mounter.history_context(history):
+        mounter.attach(packet, MountingPath(history, path))
+        _, (fitness, failing_trees, _) = GeneratorWithReturn(
+            evaluator.evaluate_individual(packet)
+        ).collect()
+    return fitness, [failing.tree.symbol for failing in failing_trees]
+
+
+# Fails "an exchange does not start with B" and "both notes of an exchange are equal", but is history
+FAILING_EXCHANGE = DerivationTree(
+    EXCHANGE,
+    [note_tree("Fuzzer", "Extern", "B\n"), note_tree("Extern", "Fuzzer", "A\n")],
+)
+NEW_EXCHANGE = ((START, False), (EXCHANGE, True), (NOTE, False))
+LAST_EXCHANGE = ((START, False), (EXCHANGE, False), (NOTE, False))
+
+
+def test_forall_through_its_variable_skips_instances_the_packet_is_not_in():
+    evaluator = evaluator_with("forall <e> in <exchange>: not str(<e>).startswith('B')")
+    history = DerivationTree(START, [FAILING_EXCHANGE.deepcopy()])
+
+    assert evaluate_mounted(
+        evaluator, history, NEW_EXCHANGE, note_tree("Fuzzer", "Extern", "A\n")
+    ) == (1.0, [])
+    fitness, failing = evaluate_mounted(
+        evaluator, history, NEW_EXCHANGE, note_tree("Fuzzer", "Extern", "B\n")
+    )
+    assert fitness < 1.0
+    assert failing == [EXCHANGE]
+
+
+def test_forall_through_its_variable_reads_the_whole_instance_the_packet_is_in():
+    # The reply is checked against the earlier request of its own exchange, not against other exchanges
+    evaluator = evaluator_with("forall <e> in <exchange>: str(<e>[1]) == str(<e>[0])")
+    history = DerivationTree(
+        START,
+        [
+            FAILING_EXCHANGE.deepcopy(),
+            DerivationTree(EXCHANGE, [note_tree("Fuzzer", "Extern", "C\n")]),
+        ],
+    )
+
+    assert evaluate_mounted(
+        evaluator, history, LAST_EXCHANGE, note_tree("Extern", "Fuzzer", "C\n")
+    ) == (1.0, [])
+    fitness, failing = evaluate_mounted(
+        evaluator, history, LAST_EXCHANGE, note_tree("Extern", "Fuzzer", "A\n")
+    )
+    assert fitness < 1.0
+    assert set(failing) == {NOTE}
+
+
+def test_forall_that_also_reads_outside_its_variable_checks_every_instance():
+    # <start> is reached without <e>, so the failing history exchange counts again
+    evaluator = evaluator_with(
+        "forall <e> in <exchange>: not str(<e>).startswith('B') or len(str(<start>)) < 0"
+    )
+    history = DerivationTree(START, [FAILING_EXCHANGE.deepcopy()])
+
+    fitness, failing = evaluate_mounted(
+        evaluator, history, NEW_EXCHANGE, note_tree("Fuzzer", "Extern", "A\n")
+    )
+    assert fitness < 1.0
+    assert EXCHANGE in failing

@@ -3,6 +3,7 @@
 import unittest
 
 from fandango.language.search import (
+    AnnotatedSearch,
     AttributeSearch,
     DescendantAttributeSearch,
     ItemSearch,
@@ -231,3 +232,20 @@ class TestSearches(unittest.TestCase):
         for index, (search, without_base, with_base) in enumerate(cases):
             self.assertEqual(without_base, search.get_access_points(), index)
             self.assertEqual(with_base, search.get_access_points(True), index)
+
+    def test_root_symbol(self):
+        a, b, c = NonTerminal("<a>"), NonTerminal("<b>"), NonTerminal("<c>")
+        searches = [
+            RuleSearch(a),
+            LengthSearch(RuleSearch(a)),
+            AttributeSearch(
+                AttributeSearch(RuleSearch(a), RuleSearch(b)), RuleSearch(c)
+            ),
+            DescendantAttributeSearch(RuleSearch(a), RuleSearch(c)),
+            ItemSearch(DescendantAttributeSearch(RuleSearch(a), RuleSearch(b)), [0]),
+            SelectiveSearch(RuleSearch(a), [(b, True)], [None]),
+            StarSearch(AttributeSearch(RuleSearch(a), RuleSearch(b))),
+            AnnotatedSearch("l", AttributeSearch(RuleSearch(a), RuleSearch(c))),
+        ]
+        for index, search in enumerate(searches):
+            self.assertEqual(a, search.get_root_symbol(), index)
