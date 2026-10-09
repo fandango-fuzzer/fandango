@@ -1,5 +1,4 @@
 import abc
-import copy
 from typing import Optional
 
 from fandango.constraints.failing_tree import FailingTree, Suggestion
@@ -125,7 +124,7 @@ class ConstraintFitness(Fitness):
             total=self.total,
             success=self.success,
             failing_trees=self.failing_trees[:],
-            suggestion=copy.deepcopy(self.suggestion),
+            suggestion=self.suggestion,
         )
 
     def __repr__(self) -> str:

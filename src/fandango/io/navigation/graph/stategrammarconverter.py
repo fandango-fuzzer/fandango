@@ -13,6 +13,7 @@ from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.symbols.symbol import Symbol
 from fandango.language.symbols.terminal import Terminal
+from fandango.language.tree import DerivationTree, ProtocolMessage
 from fandango.language.tree_value import TreeValueType
 
 
@@ -36,6 +37,20 @@ class StateGrammarConverter(NodeVisitor[list[Node], Node]):
         if not isinstance(symbol, NonTerminal) or symbol.name().startswith("<_packet_"):
             return symbol
         return NonTerminal(f"<_packet_{symbol.name()[1:]}")
+
+    @staticmethod
+    def matches_history(
+        suggested_tree: DerivationTree, messages: list[ProtocolMessage]
+    ) -> bool:
+        return all(
+            placeholder.msg.symbol
+            == StateGrammarConverter.to_packet_non_terminal(message.msg.symbol)
+            and placeholder.sender == message.sender
+            and placeholder.recipient == message.recipient
+            for placeholder, message in zip(
+                suggested_tree.protocol_msgs(), messages, strict=False
+            )
+        )
 
     @staticmethod
     def to_non_terminal(symbol: NonTerminal) -> NonTerminal:

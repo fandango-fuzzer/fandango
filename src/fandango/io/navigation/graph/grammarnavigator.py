@@ -46,9 +46,9 @@ class GrammarNavigator:
     def __init__(self, grammar: Grammar, start_symbol: Optional[NonTerminal] = None):
         if start_symbol is None:
             start_symbol = NonTerminal("<start>")
-        graph_converter = GrammarGraphConverter(grammar.rules, start_symbol)
         self.grammar = grammar
-        self.graph = graph_converter.process()
+        self._start_symbol = start_symbol
+        self.graph = GrammarGraphConverter(grammar.rules, start_symbol).process()
         self.message_cost = 0
         self.max_comparisons = 10_000_000
         self.comparisons = 0
@@ -73,6 +73,14 @@ class GrammarNavigator:
         self._continuation_keys: dict[
             GrammarGraphNode, Optional[frozenset[Hashable]]
         ] = {}
+
+    def _clear_graph(self) -> None:
+        self.graph = GrammarGraphConverter(
+            self.grammar.rules, self._start_symbol
+        ).process()
+        self._chain_symbols.clear()
+        self._future_keys.clear()
+        self._continuation_keys.clear()
 
     _SUB_UNREACHABLE = 100_000
     ANCESTOR_LOOKBACK = 6
@@ -447,6 +455,7 @@ class GrammarNavigator:
             [self._symbol_distances_to(s) for s in destination_k_path],
         )
         a_star_path = self.astar(start_nav_node)
+        self._clear_graph()
         if a_star_path is None:
             return None
         return list(a_star_path)
@@ -465,10 +474,12 @@ class GrammarNavigator:
             return []
         start_node = self.graph.walk(tree)
         if start_node.is_accepting:
+            self._clear_graph()
             return []
         self._start_search(None, tuple(), None)
         self.is_search_end_node = True
         a_star_path = self.astar(start_node)
+        self._clear_graph()
         if a_star_path is None:
             return []
         return a_star_path

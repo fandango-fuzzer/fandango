@@ -4,7 +4,7 @@ import time
 
 from fandango.api import Fandango
 from fandango.io import FandangoIO
-from fandango.io.navigation.graph.packetforecaster import PacketForecaster
+from fandango.io.navigation.forecasting.packetforecaster import PacketForecaster
 from fandango.io.packetparser import parse_next_remote_packet
 from fandango.language.grammar import ParsingMode
 from tests.utils import RESOURCES_ROOT

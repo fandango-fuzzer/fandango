@@ -77,7 +77,6 @@ class Repetition(Node):
         override_starting_repetition: int = 0,
         override_iterations_to_perform: Optional[int] = None,
     ) -> None:
-        prev_parent_size = parent.size()
         prev_children_len = len(parent.children)
         if override_current_iteration is None:
             self.iteration += 1
@@ -102,12 +101,12 @@ class Repetition(Node):
                 self.node.fuzz(
                     parent, grammar, int(max_nodes - reserved_max_nodes), in_message
                 )
-            for child in parent.children[prev_children_len:]:
+            new_children = parent.children[prev_children_len:]
+            for child in new_children:
                 child.origin_repetitions.insert(
                     0, (self.id, current_iteration, current_rep)
                 )
-            max_nodes -= parent.size() - prev_parent_size
-            prev_parent_size = parent.size()
+            max_nodes -= sum(child.size() for child in new_children)
             prev_children_len = len(parent.children)
 
     def format_as_spec(self) -> str:
