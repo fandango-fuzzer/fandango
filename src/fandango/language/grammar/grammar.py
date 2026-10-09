@@ -206,10 +206,6 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             generator.call, self._global_variables, local_variables
         )
 
-    @staticmethod
-    def warn_about_generator_error(error: FandangoGeneratorError) -> None:
-        LOGGER.warning(f"Discarding a derivation: {error}")
-
     def generator_dependencies(
         self, symbol: str | NonTerminal = "<start>"
     ) -> set[NonTerminal]:
@@ -264,13 +260,9 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         else:
             root = prefix_node
         fuzzed_idx = len(root.children)
-        try:
-            NonTerminalNode(start, self._grammar_settings).fuzz(
-                root, self, max_nodes=max_nodes
-            )
-        except FandangoGeneratorError as error:
-            self.warn_about_generator_error(error)
-            raise error
+        NonTerminalNode(start, self._grammar_settings).fuzz(
+            root, self, max_nodes=max_nodes
+        )
         root = root.children[fuzzed_idx]
         root._parent = None
         return root

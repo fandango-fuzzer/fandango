@@ -90,7 +90,8 @@ class PopulationManager:
         ):
             try:
                 individual = self._generate_population_entry(max_nodes)
-            except FandangoGeneratorError:
+            except FandangoGeneratorError as error:
+                LOGGER.warning(f"Discarding a derivation: {error}")
                 attempts += 1
                 continue
             found_solution, (_fitness, failing_trees, suggestion) = GeneratorWithReturn(

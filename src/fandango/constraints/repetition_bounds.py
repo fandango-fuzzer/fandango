@@ -190,7 +190,7 @@ class RepetitionBoundsSuggestion(Suggestion):
                     )
                 )
             except FandangoGeneratorError as error:
-                grammar.warn_about_generator_error(error)
+                LOGGER.warning(f"Discarding a derivation: {error}")
         else:
             if self._goal_len == 0 and not self.allow_repetition_full_delete:
                 self._goal_len = 1

@@ -7,6 +7,7 @@ from fandango.constraints.failing_tree import FailingTree, Suggestion
 from fandango.errors import FandangoGeneratorError
 from fandango.language import DerivationTree, Grammar
 from fandango.language.symbols import NonTerminal
+from fandango.logger import LOGGER
 
 
 class MutationOperator(ABC):
@@ -91,7 +92,8 @@ class SimpleMutation(MutationOperator):
                     prefix_node=prefix_node,
                     max_nodes=max_subtree_nodes,
                 )
-            except FandangoGeneratorError:
+            except FandangoGeneratorError as error:
+                LOGGER.warning(f"Discarding a derivation: {error}")
                 return individual
         new_subtree.sender = node_to_mutate.sender
         new_subtree.recipient = node_to_mutate.recipient
