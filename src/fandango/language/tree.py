@@ -877,7 +877,7 @@ class DerivationTree:
             new_subtree._parent = self.parent
             new_subtree.origin_repetitions = list(self.origin_repetitions)
             # Replacements below this one were meant for the subtree it replaces, not for the new one
-            # We ignore replacements targeting other replacements
+            # We ignore replacements targeting other replacements — they're changed in the next iteration of fixing
             grammar.populate_sources(new_subtree)
             return new_subtree
 
