@@ -225,9 +225,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
             )
             timer.increment(len(new_population))
 
-        unique_hashes = {
-            self.population_manager.individual_hash(ind) for ind in new_population
-        }
+        unique_hashes = self.population_manager.unique_hashes(new_population)
         return new_population, unique_hashes
 
     def _perform_crossover(

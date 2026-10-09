@@ -27,6 +27,9 @@ class PopulationManager:
     def individual_hash(self, individual: DerivationTree) -> int:
         return hash(individual)
 
+    def unique_hashes(self, population: list[DerivationTree]) -> set[int]:
+        return {self.individual_hash(ind) for ind in population}
+
     def unique(self, population: list[DerivationTree]) -> list[DerivationTree]:
         unique_individuals: dict[int, DerivationTree] = {}
         for ind in population:
