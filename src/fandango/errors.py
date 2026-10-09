@@ -30,6 +30,7 @@ class FandangoGeneratorError(FandangoParseError):
     Trows an error if a generator fails to parse a symbol during generation.
     Contains the symbol failed to parse to and the message that could not be parsed
     """
+
     def __init__(self, message: str, symbol: str):
         super().__init__(message)
         self.symbol = symbol
