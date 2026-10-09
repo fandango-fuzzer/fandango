@@ -52,7 +52,6 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         self._local_variables = local_variables or {}
         self._global_variables = global_variables or {}
         self._parser = Parser(self.rules)
-        self._generator_symbols_warned_about: set[str] = set()
         self._k_path_cache: LRUCache[
             tuple[NonTerminal, bool, CoverageGoal], list[set[tuple[Symbol, ...]]]
         ] = LRUCache(maxsize=cache_size())
@@ -207,10 +206,8 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             generator.call, self._global_variables, local_variables
         )
 
-    def warn_about_generator_error(self, error: FandangoGeneratorError) -> None:
-        if error.symbol in self._generator_symbols_warned_about:
-            return
-        self._generator_symbols_warned_about.add(error.symbol)
+    @staticmethod
+    def warn_about_generator_error(error: FandangoGeneratorError) -> None:
         LOGGER.warning(f"Discarding a derivation: {error}")
 
     def generator_dependencies(
