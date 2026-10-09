@@ -253,6 +253,10 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         max_nodes: int = 50,
         prefix_node: Optional[DerivationTree] = None,
     ) -> DerivationTree:
+        """
+        Generate a random derivation tree from the grammar.
+        :raise FandangoGeneratorError: If a called generator could not be parsed into the symbol, it applies to.
+        """
         if isinstance(start, str):
             start = NonTerminal(start)
         if prefix_node is None:

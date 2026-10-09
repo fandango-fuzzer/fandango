@@ -20,6 +20,11 @@ class PopulationManager:
         self._start_symbol = start_symbol
 
     def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
+        """
+        Generate a random derivation tree from the managed grammar from the starting symbol on.
+        :param max_nodes: The maximum allowed number of Terminals and NonTerminals allowed in the produced tree.
+        :raise FandangoGeneratorError: If a called generator could not be parsed into the symbol, it applies to.
+        """
         return self._grammar.fuzz(self._start_symbol, max_nodes)
 
     # Needed so the IoPopulationManager can overload it. Used in SimpleGenericAlgorithm._perform_selection.
