@@ -58,17 +58,42 @@ class ForallConstraint(Constraint):
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
+        scope = scope or dict()
+        fitness = self.fitness_over(
+            tree,
+            [container.evaluate() for container in self.search.quantify(tree, scope)],
+            scope,
+            local_variables,
+        )
+        # Cache the fitness
+        self.cache[tree_hash] = fitness
+        return fitness
+
+    def fitness_over(
+        self,
+        tree: DerivationTree,
+        instances: list[Any],
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
+        local_variables: Optional[dict[str, Any]] = None,
+    ) -> ConstraintFitness:
+        """
+        Calculate the fitness of the tree with the bound variable taking only the given instances.
+        :param DerivationTree tree: The tree to evaluate.
+        :param list instances: The values the bound variable takes.
+        :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
+        :param Optional[dict[str, Any]] local_variables: Local variables to use in the evaluation.
+        :return ConstraintFitness: The fitness of the tree.
+        """
         fitness_values = list()
         scope = scope or dict()
         local_variables = local_variables or dict()
-        # Iterate over all containers found by the search
-        for container in self.search.quantify(tree, scope=scope):
+        for instance in instances:
             # Update the scope with the bound variable
             if isinstance(self.bound, str):
-                local_variables[self.bound] = container.evaluate()
+                local_variables[self.bound] = instance
             else:
                 # If the bound is a NonTerminal, update the scope
-                scope[self.bound] = container.evaluate()
+                scope[self.bound] = instance
             # Evaluate the statement
             fitness = self.statement.fitness(tree, scope, local_variables)
             # Add the fitness to the list
@@ -92,16 +117,13 @@ class ForallConstraint(Constraint):
             solved = total + 1
         total += 1
         # Create the fitness object
-        fitness = ConstraintFitness(
+        return ConstraintFitness(
             solved=solved,
             total=total,
             success=overall,
             suggestion=suggestion,
             failing_trees=failing_trees,
         )
-        # Cache the fitness
-        self.cache[tree_hash] = fitness
-        return fitness
 
     def format_as_spec(self) -> str:
         bound = (
