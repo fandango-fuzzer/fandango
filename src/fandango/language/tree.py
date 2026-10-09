@@ -765,7 +765,10 @@ class DerivationTree:
     @contextmanager
     def split_end_context(self) -> Iterator["DerivationTree"]:
         """
-        Like split_end(copy_tree=False), but restores the tree after the block.
+        Temporarily cuts the tree off after this node and yields it.
+        This means that this tree is the last child of its parent recursively along
+        the entire right-most path to the root.
+        Restores the original tree when the block exits.
         """
         undo: list[Callable[[], None]] = []
         try:
