@@ -780,6 +780,7 @@ class DerivationTree:
     def _split_end(
         self, undo: Optional[list[Callable[[], None]]] = None
     ) -> "DerivationTree":
+        """Internal recursive function. Use split_end_context instead."""
         if self.parent is None or self in self.parent.sources:
             if self.parent is not None:
                 if undo is not None:
