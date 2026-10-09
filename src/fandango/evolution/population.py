@@ -20,10 +20,20 @@ class PopulationManager:
         self._start_symbol = start_symbol
 
     def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
+        """
+        Generate a random derivation tree from the managed grammar from the starting symbol on.
+        :param max_nodes: The maximum allowed number of Terminals and NonTerminals allowed in the produced tree.
+        :raise FandangoGeneratorError: If a called generator could not be parsed into the symbol, it applies to.
+        """
         return self._grammar.fuzz(self._start_symbol, max_nodes)
 
+    # Needed so the IoPopulationManager can overload it. Used in SimpleGenericAlgorithm._perform_selection.
+    # This unique-method use case should probably be merged into the PopulationManager asap anyway.
     def individual_hash(self, individual: DerivationTree) -> int:
         return hash(individual)
+
+    def unique_hashes(self, population: list[DerivationTree]) -> set[int]:
+        return {self.individual_hash(ind) for ind in population}
 
     def unique(self, population: list[DerivationTree]) -> list[DerivationTree]:
         unique_individuals: dict[int, DerivationTree] = {}
@@ -86,7 +96,7 @@ class PopulationManager:
             try:
                 individual = self._generate_population_entry(max_nodes)
             except FandangoGeneratorError as error:
-                self._grammar.warn_about_generator_error(error)
+                LOGGER.warning(f"Discarding a derivation: {error}")
                 attempts += 1
                 continue
             found_solution, (_fitness, failing_trees, suggestion) = GeneratorWithReturn(

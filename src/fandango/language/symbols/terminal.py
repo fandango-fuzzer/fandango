@@ -170,8 +170,5 @@ class Terminal(Symbol):
         # Not a regex
         return repr(self._value)
 
-    def __hash__(self) -> int:
-        return hash((self._value, self._type))
-
     def __len__(self) -> int:
         return self.count_bytes()

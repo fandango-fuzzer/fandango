@@ -52,7 +52,6 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         self._local_variables = local_variables or {}
         self._global_variables = global_variables or {}
         self._parser = Parser(self.rules)
-        self._generator_symbols_warned_about: set[str] = set()
         self._k_path_cache: LRUCache[
             tuple[NonTerminal, bool, CoverageGoal], list[set[tuple[Symbol, ...]]]
         ] = LRUCache(maxsize=cache_size())
@@ -207,12 +206,6 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             generator.call, self._global_variables, local_variables
         )
 
-    def warn_about_generator_error(self, error: FandangoGeneratorError) -> None:
-        if error.symbol in self._generator_symbols_warned_about:
-            return
-        self._generator_symbols_warned_about.add(error.symbol)
-        LOGGER.warning(f"Discarding a derivation: {error}")
-
     def generator_dependencies(
         self, symbol: str | NonTerminal = "<start>"
     ) -> set[NonTerminal]:
@@ -260,6 +253,10 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         max_nodes: int = 50,
         prefix_node: Optional[DerivationTree] = None,
     ) -> DerivationTree:
+        """
+        Generate a random derivation tree from the grammar.
+        :raise FandangoGeneratorError: If a called generator could not be parsed into the symbol, it applies to.
+        """
         if isinstance(start, str):
             start = NonTerminal(start)
         if prefix_node is None:

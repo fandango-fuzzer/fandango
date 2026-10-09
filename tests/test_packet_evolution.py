@@ -411,7 +411,7 @@ def evaluate_mounted(
         _, (fitness, failing_trees, _) = GeneratorWithReturn(
             evaluator.evaluate_individual(packet)
         ).collect()
-    return fitness, [failing.tree.symbol for failing in failing_trees]
+    return fitness, [failing.tree.nonterminal for failing in failing_trees]
 
 
 # Fails "an exchange does not start with B" and "both notes of an exchange are equal", but is history

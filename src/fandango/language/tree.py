@@ -765,7 +765,10 @@ class DerivationTree:
     @contextmanager
     def split_end_context(self) -> Iterator["DerivationTree"]:
         """
-        Like split_end(copy_tree=False), but restores the tree after the block.
+        Temporarily cuts the tree off after this node and yields it.
+        This means that this tree is the last child of its parent recursively along
+        the entire right-most path to the root.
+        Restores the original tree when the block exits.
         """
         undo: list[Callable[[], None]] = []
         try:
@@ -777,6 +780,7 @@ class DerivationTree:
     def _split_end(
         self, undo: Optional[list[Callable[[], None]]] = None
     ) -> "DerivationTree":
+        """Internal recursive function. Use split_end_context instead."""
         if self.parent is None or self in self.parent.sources:
             if self.parent is not None:
                 if undo is not None:
@@ -873,7 +877,7 @@ class DerivationTree:
             new_subtree._parent = self.parent
             new_subtree.origin_repetitions = list(self.origin_repetitions)
             # Replacements below this one were meant for the subtree it replaces, not for the new one
-            # We ignore replacements targeting other replacements
+            # We ignore replacements targeting other replacements — they're changed in the next iteration of fixing
             grammar.populate_sources(new_subtree)
             return new_subtree
 
