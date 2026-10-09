@@ -22,6 +22,8 @@ class PopulationManager:
     def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
         return self._grammar.fuzz(self._start_symbol, max_nodes)
 
+    # Needed so the IoPopulationManager can overload it. Used in SimpleGenericAlgorithm._perform_selection.
+    # This unique-method use case should probably be merged into the PopulationManager asap anyway.
     def individual_hash(self, individual: DerivationTree) -> int:
         return hash(individual)
 
