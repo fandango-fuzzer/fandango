@@ -90,8 +90,7 @@ class PopulationManager:
         ):
             try:
                 individual = self._generate_population_entry(max_nodes)
-            except FandangoGeneratorError as error:
-                self._grammar.warn_about_generator_error(error)
+            except FandangoGeneratorError:
                 attempts += 1
                 continue
             found_solution, (_fitness, failing_trees, suggestion) = GeneratorWithReturn(

@@ -264,9 +264,13 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         else:
             root = prefix_node
         fuzzed_idx = len(root.children)
-        NonTerminalNode(start, self._grammar_settings).fuzz(
-            root, self, max_nodes=max_nodes
-        )
+        try:
+            NonTerminalNode(start, self._grammar_settings).fuzz(
+                root, self, max_nodes=max_nodes
+            )
+        except FandangoGeneratorError as error:
+            self.warn_about_generator_error(error)
+            raise error
         root = root.children[fuzzed_idx]
         root._parent = None
         return root

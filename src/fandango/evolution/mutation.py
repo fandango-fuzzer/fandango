@@ -91,8 +91,7 @@ class SimpleMutation(MutationOperator):
                     prefix_node=prefix_node,
                     max_nodes=max_subtree_nodes,
                 )
-            except FandangoGeneratorError as error:
-                grammar.warn_about_generator_error(error)
+            except FandangoGeneratorError:
                 return individual
         new_subtree.sender = node_to_mutate.sender
         new_subtree.recipient = node_to_mutate.recipient
