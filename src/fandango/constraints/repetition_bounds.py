@@ -1,6 +1,6 @@
 import random
 from copy import copy
-from typing import Any, Optional, Unpack
+from typing import Any, Callable, Optional, Unpack
 
 from fandango.constraints.base import GeneticBaseInitArgs
 from fandango.constraints.constraint import Constraint
@@ -45,7 +45,9 @@ class RepetitionBoundsSuggestion(Suggestion):
         bound_len: int,
         goal_len: int,
         iter_id: int,
-        bounds_constraint: "RepetitionBoundsConstraint",
+        repetition_id: str,
+        repetition_node: Repetition,
+        on_node_limit: Callable[[int], None],
     ):
         """
         Suggestion to fix a failing tree for a repetition bounds constraint.
@@ -56,7 +58,9 @@ class RepetitionBoundsSuggestion(Suggestion):
         :param int bound_len: The length of the repetition bounds.
         :param int goal_len: The goal length of the repetition.
         :param int iter_id: The iteration ID of the repetition.
-        :param RepetitionBoundsConstraint bounds_constraint: The constraint this suggestion fixes.
+        :param str repetition_id: The ID of the repetition to fix.
+        :param Repetition repetition_node: The grammar node of the repetition to fix.
+        :param Callable[[int], None] on_node_limit: Called with the number of repetitions to insert if inserting them would exceed the node limit.
         """
         self._ending_rep_tree = ending_rep_tree
         self._starting_rep_value = starting_rep_value
@@ -64,9 +68,9 @@ class RepetitionBoundsSuggestion(Suggestion):
         self._bound_len = bound_len
         self._goal_len = goal_len
         self._iter_id = iter_id
-        self._repetition_id = bounds_constraint.repetition_id
-        self._repetition_node = bounds_constraint.repetition_node
-        self._bounds_constraint = bounds_constraint
+        self._repetition_id = repetition_id
+        self._repetition_node = repetition_node
+        self._on_node_limit = on_node_limit
         self.allow_repetition_full_delete = False
 
     def rec_set_allow_repetition_full_delete(
@@ -175,7 +179,7 @@ class RepetitionBoundsSuggestion(Suggestion):
         if self._goal_len > self._bound_len:
             nr_to_insert = self._goal_len - self._bound_len
             if self._insertion_exceeds_node_limit(individual, nr_to_insert):
-                self._bounds_constraint.warn_about_node_limit(nr_to_insert)
+                self._on_node_limit(nr_to_insert)
                 return replacements
             try:
                 replacements.append(
@@ -186,7 +190,7 @@ class RepetitionBoundsSuggestion(Suggestion):
                     )
                 )
             except FandangoGeneratorError as error:
-                grammar.warn_about_generator_error(error)
+                LOGGER.warning(f"Discarding a derivation: {error}")
         else:
             if self._goal_len == 0 and not self.allow_repetition_full_delete:
                 self._goal_len = 1
@@ -463,7 +467,9 @@ class RepetitionBoundsConstraint(Constraint):
                             bound_len=bound_len,
                             goal_len=goal_len,
                             iter_id=iter_id,
-                            bounds_constraint=self,
+                            repetition_id=self.repetition_id,
+                            repetition_node=self.repetition_node,
+                            on_node_limit=self.warn_about_node_limit,
                         )
                     )
                 failing_trees.append(FailingTree(first_iteration.parent, self))

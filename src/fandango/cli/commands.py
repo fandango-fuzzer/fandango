@@ -12,6 +12,7 @@ from ansi_styles import ansiStyles as styles
 
 import fandango
 from fandango import DerivationTree, Fandango
+from fandango.cli.fanbase_files import fanbase_files
 from fandango.cli.output import open_file, output_population, output_solution
 from fandango.cli.parser import get_parser
 from fandango.cli.upgrade import check_for_fandango_update
@@ -149,7 +150,9 @@ def fuzz_command(args: argparse.Namespace) -> None:
         constraints = DEFAULT_FAN_CONTENT[1]
 
     if grammar is None:
-        raise FandangoError("Use '-f FILE.fan' to open a Fandango spec")
+        raise FandangoError(
+            "Use '-f FILE.fan' to open a Fandango spec, or '-F NAME' for a Fanbase spec"
+        )
     grammar.fuzzing_mode = FuzzingMode.COMPLETE
 
     # Avoid messing with default constraints
@@ -253,7 +256,9 @@ def parse_command(args: argparse.Namespace) -> None:
         constraints = DEFAULT_FAN_CONTENT[1]
 
     if grammar is None:
-        raise FandangoError("Use '-f FILE.fan' to open a Fandango spec")
+        raise FandangoError(
+            "Use '-f FILE.fan' to open a Fandango spec, or '-F NAME' for a Fanbase spec"
+        )
     grammar.fuzzing_mode = FuzzingMode.COMPLETE
 
     # Avoid messing with default constraints
@@ -309,7 +314,9 @@ def talk_command(args: argparse.Namespace) -> None:
         constraints = DEFAULT_FAN_CONTENT[1]
 
     if grammar is None:
-        raise FandangoError("Use '-f FILE.fan' to open a Fandango spec")
+        raise FandangoError(
+            "Use '-f FILE.fan' to open a Fandango spec, or '-F NAME' for a Fanbase spec"
+        )
 
     if grammar.fuzzing_mode != FuzzingMode.IO:
         LOGGER.warning("Fandango spec does not specify interaction parties")
@@ -516,9 +523,15 @@ COMMANDS: dict[str, Callable[[argparse.Namespace], None]] = {
 
 def run(command: Callable[[argparse.Namespace], None], args: argparse.Namespace) -> int:
     try:
-        command(args)
+        with fanbase_files(args):
+            command(args)
     except Exception as e:
         print_exception(e)
         return 1
+    finally:
+        # Files given with -f were opened while parsing the arguments
+        for fan_file in getattr(args, "fan_files", None) or []:
+            if not isinstance(fan_file, str):
+                fan_file.close()
 
     return 0
