@@ -21,7 +21,7 @@ The actual rules for where Fandango searches are complex, versatile, and adhere 
 Specifically, when including a `.fan` file using `include()`, Fandango searches for `.fan` files in the following locations, in this order:
 
 1. In any directory `DIR` explicitly specified by `-I DIR` or `--include-dir DIR`.
-2. In any directory specified by the `$FANDANGO_PATH` environment variable, if set. This variable is a colon-separated list of directories, e.g. `$HOME/my_cool_fan_specs:/Volumes/Fandango:/opt/local/fandango-1.27` which are searched from left to right.
+2. In any directory specified by the `$FANDANGO_PATH` environment variable, if set. This variable is a list of directories separated by colons (semicolons on Windows), e.g. `$HOME/my_cool_fan_specs:/Volumes/Fandango:/opt/local/fandango-1.27` which are searched from left to right.
 3. In the directory of the _including file_. This is the most common usage. If the including file has no file name (say, because it is a stream), the current directory is used.
 4. In the directory `$HOME/.local/share/fandango`. You can control this location by setting the 
 `$XDG_DATA_HOME` environment variable; see the [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/latest/). On a Mac, the location `$HOME/Library/Fandango` is searched first.
