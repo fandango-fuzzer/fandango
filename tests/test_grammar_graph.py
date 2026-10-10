@@ -3,20 +3,21 @@ from typing import TypeGuard
 
 from fandango.api import Fandango
 from fandango.errors import FandangoError
-from fandango.io.navigation.graph.grammarnavigator import GrammarNavigator
+from fandango.io.navigation.graph.grammar_navigator import GrammarNavigator
+from fandango.io.navigation.graph.grammar_navigator.grammar_graph_converter import (
+    GrammarGraphNode,
+)
 from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.graph.reachability_checker import ReachabilityChecker
 from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConverter
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.io.navigation.selection.packet_guide import PacketGuide
+from fandango.io.navigation.route import PlannedPacket
+from fandango.io.navigation.selection.packet_guider import PacketGuider
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.target_selector import TargetSelector
 from fandango.language import DerivationTree, NonTerminal
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.grammar import Grammar, KPath
-from fandango.language.grammar.node_visitors.grammar_graph_converter import (
-    GrammarGraphNode,
-)
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.parse.parse import parse
 from tests.utils import DOCS_ROOT, EVALUATION_ROOT, RESOURCES_ROOT
@@ -127,12 +128,15 @@ class TestGrammarGraph(unittest.TestCase):
             mode=ParsingMode.INCOMPLETE,
             include_controlflow=True,
         )
-        packet_tree, _ = next(navigator.get_controlflow_tree(tree=tree_to_continue))
-        path = navigator.astar_tree_symbols(
-            tree=packet_tree, destination_k_path=(NonTerminal("<end_data>"),)
+        guide_path = navigator.astar_tree_including_k_paths(
+            tree=tree_to_continue, destination_k_path=(NonTerminal("<end_data>"),)
         )
+        assert guide_path is not None
         self.assertEqual(
-            path,
+            [
+                symbol.packet if isinstance(symbol, PlannedPacket) else symbol
+                for symbol in guide_path.route
+            ],
             [
                 PacketNonTerminal("StdOut", None, NonTerminal("<hello>")),
                 NonTerminal("<mail_from>"),
@@ -155,12 +159,11 @@ class TestGrammarGraph(unittest.TestCase):
             mode=ParsingMode.INCOMPLETE,
             include_controlflow=True,
         )
-        packet_tree, _ = next(navigator.get_controlflow_tree(tree=tree_to_continue))
-        path = navigator.astar_tree_symbols(
-            tree=packet_tree, destination_k_path=(NonTerminal("<helo>"),)
+        guide_path = navigator.astar_tree_including_k_paths(
+            tree=tree_to_continue, destination_k_path=(NonTerminal("<helo>"),)
         )
-        assert path is not None
-        if None not in path:
+        assert guide_path is not None
+        if None not in guide_path.route:
             self.assertFalse("Expected symbol to be not reachable")
 
     def test_packet_navigator_symbol_not_extensible(self):
@@ -305,9 +308,7 @@ class Server(FandangoParty):
         self.assertTrue(result.completable_by_extension)
 
         navigator = PacketNavigator(grammar, NonTerminal("<start>"))
-        path = navigator.astar_tree_symbols(
-            tree=hist_tree, destination_k_path=dest_k_path
-        )
+        path = navigator.astar_tree(tree=hist_tree, destination_k_path=dest_k_path)
         self.assertIsNotNone(path)
 
 
@@ -332,6 +333,6 @@ class TestTargetSelector(unittest.TestCase):
             )
         )
         for _ in range(10):
-            target = ts.select(all_paths, [])
-            self.assertFalse(PacketGuide._tuple_contains(a_follows_b, target))
-            self.assertFalse(PacketGuide._tuple_contains(b_follows_a, target))
+            target = ts.select(all_paths, [], lambda path: True)
+            self.assertFalse(PacketGuider._tuple_contains(a_follows_b, target))
+            self.assertFalse(PacketGuider._tuple_contains(b_follows_a, target))

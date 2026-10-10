@@ -2,7 +2,12 @@ import random
 from collections.abc import Generator
 from typing import Optional
 
-from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
+from fandango.errors import (
+    FandangoConnectionError,
+    FandangoFailedError,
+    FandangoParseError,
+    FandangoValueError,
+)
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.algorithm.base import GeneticAlgorithm
 from fandango.evolution.algorithm.simple import SimpleGeneticAlgorithm
@@ -40,6 +45,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._start_symbol = NonTerminal("<start>")
         self._packet_algorithm = packet_algorithm
         self.grammar = packet_algorithm.grammar
+        self._initial_max_repetition = self.grammar.get_max_repetition()
         self._packet_mounter = PacketMounter(
             self.grammar, self._packet_algorithm.start_symbol
         )
@@ -145,6 +151,27 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             expected_nonterminals=expected_nonterminals,
         )
 
+    def _gen_connection_violation(
+        self, packet: DerivationTree, error: FandangoConnectionError
+    ) -> FandangoRemoteViolation:
+        if packet.recipient is not None:
+            remote_parties = [packet.recipient]
+        else:
+            remote_parties = [
+                name
+                for name, party in self._io_instance.parties.items()
+                if not party.is_fuzzer_controlled()
+            ]
+        return FandangoRemoteViolation(
+            str(error),
+            error_type=RemoteViolationType.CONNECTION,
+            session_tree=self._protocol_tree,
+            sender=", ".join(remote_parties),
+            recipient=packet.sender,
+            payload_raw="",
+            expected_nonterminals=[],
+        )
+
     def _handle_remote_response(self) -> DerivationTree:
         timeout = self._remote_response_timeout
         for packet in self._packet_selector.next_packets:
@@ -228,16 +255,20 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             overall_max_generations = max_generations - selected_packet_max_generations
 
         self._packet_algorithm.reset()
+        self.grammar.set_max_repetition(self._initial_max_repetition)
         try:
+            # Refill the population
             solutions = [
                 next(
                     filter(
                         self._filter_by_coverage,
-                        self._population_manager.refill_population(
-                            current_population=self._packet_algorithm.population,
-                            eval_individual=self._packet_algorithm.evaluator.evaluate_individual,
-                            max_nodes=self._packet_algorithm.adaptive_tuner.current_max_nodes,
-                            target_population_size=self._packet_algorithm.population_size,
+                        self._packet_coverage_filter.until_held_back_enough(
+                            self._population_manager.refill_population(
+                                current_population=self._packet_algorithm.population,
+                                eval_individual=self._packet_algorithm.evaluator.evaluate_individual,
+                                max_nodes=self._packet_algorithm.adaptive_tuner.current_max_nodes,
+                                target_population_size=self._packet_algorithm.population_size,
+                            )
                         ),
                     )
                 )
@@ -247,22 +278,30 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         if solutions:
             return solutions[0]
 
-        try:
-            return next(
-                filter(
-                    self._filter_by_coverage,
-                    self._packet_algorithm.generate(
-                        max_generations=selected_packet_max_generations
-                    ),
+        if not self._packet_coverage_filter.held_back_enough():
+            # Use the evolutionary algorithm
+            try:
+                return next(
+                    filter(
+                        self._filter_by_coverage,
+                        self._packet_coverage_filter.until_held_back_enough(
+                            self._packet_algorithm.generate(
+                                max_generations=selected_packet_max_generations
+                            )
+                        ),
+                    )
                 )
-            )
-        except StopIteration:
-            pass
+            except StopIteration:
+                pass
 
-        self._packet_coverage_filter.mark_uncovered_k_paths_unreachable()
         hold_back_solutions = (
             self._packet_coverage_filter.hold_back_solutions_by_msg_hash
         )
+        if not self._packet_coverage_filter.held_back_enough():
+            # We didn't even found enough candidates to trigger the hold back filter.
+            # At this point we ran ~10 generations to produce this packet and spent some time.
+            # We mark its remaining paths as unreachable.
+            self._packet_coverage_filter.mark_uncovered_k_paths_unreachable()
         if len(hold_back_solutions) != 0:
             return random.choice(list(hold_back_solutions.values()))
 
@@ -283,8 +322,27 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 f"Couldn't find solution for any packet: {nonterminals_str}"
             ) from None
 
-    def _is_coverage_complete(self) -> bool:
-        return self.coverage_percent() == 1.0
+    def _is_derivable_coverage_complete(self) -> bool:
+        if self.coverage_goal == CoverageGoal.RANDOM:
+            return False
+        return self._packet_selector.is_derivable_coverage_complete()
+
+    def _end_run_with_violation(self, violation: Exception, reason: str) -> bool:
+        """
+        Records the violation and starts a new protocol run.
+        Returns True instead if the attainable coverage is reached.
+        """
+        self._packet_selector.signal_session_end()
+        self._packet_coverage_filter.add_completed_tree(self._protocol_tree)
+        self.violations.append((self._protocol_tree, violation))
+        if self.throw_on_violation:
+            raise violation
+        LOGGER.warning(f"{reason} Recording violation: {violation}")
+        if self._is_derivable_coverage_complete():
+            log_guidance_hint("Attainable coverage reached, stopping evolution.")
+            return True
+        self._start_new_run()
+        return False
 
     def _start_new_run(self) -> None:
         log_guidance_hint("Starting new protocol run.")
@@ -308,7 +366,6 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 and iteration % self.CLEAR_CONSTRAINT_CACHE_INTERVAL == 0
             ):
                 self._clear_constraint_caches()
-            self._packet_selector.compute(self._protocol_tree)
             if self.coverage_goal != CoverageGoal.RANDOM:
                 LOGGER.info(
                     f"Current coverage: {self._packet_selector.coverage_percent() * 100:.2f}%"
@@ -322,64 +379,73 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     list(self._packet_selector.forecasting_result.complete_trees)
                 )
                 MessageHolder(final_tree).hold_messages()
-                self._packet_selector.add_completed_tree(final_tree)
+                self._packet_selector.signal_session_end()
                 self._packet_coverage_filter.add_completed_tree(final_tree)
                 yield final_tree
-                if self._is_coverage_complete():
-                    log_guidance_hint("Full coverage reached, stopping evolution.")
+                if self._is_derivable_coverage_complete():
+                    log_guidance_hint(
+                        "Attainable coverage reached, stopping evolution."
+                    )
                     return None
+                self._start_new_run()
+                continue
+
+            if self._packet_selector.is_run_abandoned():
+                self._packet_selector.signal_session_end()
+                self._packet_coverage_filter.add_completed_tree(self._protocol_tree)
                 self._start_new_run()
                 continue
 
             if self._packet_selector.should_generate_next_packet():
                 self._packet_algorithm.reset()
+                new_packet: Optional[DerivationTree] = None
                 with packet_mounter.history_context(self._protocol_tree):
                     self._configure_fuzzable_packets()
                     self._packet_coverage_filter.set_current_tree(self._protocol_tree)
-                    packet = self._generate_packet(max_generations=max_generations)
+                    new_packet = self._generate_packet(max_generations=max_generations)
                     if self._io_instance.received_msg():
                         continue
-                next_history_tree = packet_mounter.commit(packet)
-                new_packet = next(next_history_tree.protocol_msgs(reverse=True))
+                assert new_packet is not None and new_packet.sender is not None
                 if (
                     new_packet.recipient is None
                     or not self._io_instance.parties[
                         new_packet.recipient
                     ].is_fuzzer_controlled()
                 ):
-                    self._io_instance.transmit(
-                        new_packet.sender, new_packet.recipient, new_packet.msg
-                    )
+                    try:
+                        self._io_instance.transmit(
+                            new_packet.sender, new_packet.recipient, new_packet
+                        )
+                    except FandangoConnectionError as error:
+                        violation = self._gen_connection_violation(new_packet, error)
+                        if self._end_run_with_violation(
+                            violation, "Could not send the message."
+                        ):
+                            return None
+                        continue
                     log_message_transfer(
                         new_packet.sender,
                         new_packet.recipient,
-                        new_packet.msg,
+                        new_packet,
                         True,
                     )
-                self._protocol_tree = next_history_tree
+                self._protocol_tree = packet_mounter.commit(new_packet)
+                self._packet_selector.observe_message(self._protocol_tree)
             else:
                 try:
                     with packet_mounter.history_context(self._protocol_tree):
                         remote_packet = self._handle_remote_response()
                     self._protocol_tree = packet_mounter.commit(remote_packet)
+                    self._packet_selector.observe_message(self._protocol_tree)
                 except (
                     FandangoFailedError,
                     FandangoParseError,
                     FandangoValueError,
                 ) as exc:
-                    self._packet_selector.abort_run(self._protocol_tree)
-                    self._packet_coverage_filter.add_completed_tree(self._protocol_tree)
-                    self.violations.append((self._protocol_tree, exc))
-                    if self.throw_on_violation:
-                        raise exc
-                    LOGGER.warning(
-                        f"Discarding remote response that could not be handled. "
-                        f"Recording violation: {exc}"
-                    )
-                    if self._is_coverage_complete():
-                        log_guidance_hint("Full coverage reached, stopping evolution.")
+                    if self._end_run_with_violation(
+                        exc, "Discarding remote response that could not be handled."
+                    ):
                         return None
-                    self._start_new_run()
                     continue
             self._protocol_tree.set_all_read_only(True)
 
@@ -404,6 +470,6 @@ class ProtocolAlgorithm(GeneticAlgorithm):
 
     def reset(self) -> None:
         self._packet_algorithm.reset()
-        self._packet_selector.reset_coverage()
+        self._packet_selector.reset()
         self._packet_coverage_filter.reset()
         self._protocol_tree = DerivationTree(self._start_symbol)

@@ -3,6 +3,7 @@ from typing import NamedTuple, Optional
 from fandango.io.navigation.graph.visitor.continuing_nodevisitor import (
     ContinuingNodeVisitor,
 )
+from fandango.io.navigation.step import Step
 from fandango.language.grammar.grammar import Grammar, KPath
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
@@ -14,10 +15,6 @@ from fandango.language.tree import DerivationTree
 class ReachabilityResult(NamedTuple):
     path_reachable: bool
     completable_by_extension: bool
-
-
-def _is_controlflow_symbol(symbol: Symbol) -> bool:
-    return isinstance(symbol, NonTerminal) and symbol.name().startswith("<__")
 
 
 class ExtensionAnalyzer(ContinuingNodeVisitor):
@@ -37,7 +34,7 @@ class ExtensionAnalyzer(ContinuingNodeVisitor):
         return tuple(
             symbol
             for symbol, is_exploring in self.current_path
-            if not is_exploring and not _is_controlflow_symbol(symbol)
+            if not is_exploring and not Step.is_control_flow(symbol)
         )
 
     def _capture_open_path(self, open_path: tuple[Symbol, ...]) -> None:
@@ -60,6 +57,9 @@ class ExtensionAnalyzer(ContinuingNodeVisitor):
         if is_exploring:
             self._capture_open_path(self._current_open_path())
         return True
+
+    def __repr__(self) -> str:
+        return f"ExtensionAnalyzer(open_path={self.open_path!r}, extension_points={self.extension_points!r})"
 
 
 class ReachabilityChecker(ContinuingNodeVisitor):
@@ -178,3 +178,9 @@ class ReachabilityChecker(ContinuingNodeVisitor):
             if path[-i:] == suffix_path[:i]:
                 max_overlap = i
         return suffix_path[:max_overlap]
+
+    def __repr__(self) -> str:
+        return (
+            f"ReachabilityChecker(k_path_to_reach={self.k_path_to_reach!r}, path_reached={self.path_reached!r}, "
+            f"seen_symbols={self.seen_symbols!r})"
+        )

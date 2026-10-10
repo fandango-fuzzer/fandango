@@ -43,7 +43,7 @@ def limit_errors(tree):
     ]
     count = 0
     login_command_counted = False
-    for msg in tree.protocol_msgs()[::-1]:
+    for msg in tree.protocol_msgs(reverse=True):
         symbol = msg.msg.symbol
         if symbol in auth_error_symbols:
             count += 1

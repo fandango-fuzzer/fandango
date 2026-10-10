@@ -38,13 +38,17 @@ class GeneticBase(abc.ABC):
         self.local_variables = local_variables or dict()
         self.global_variables = global_variables or dict()
 
-    def get_access_points(self) -> list[NonTerminal]:
+    def get_access_points(self, include_base: bool = False) -> list[NonTerminal]:
         """
         Get the access points of the genetic base, i.e., the non-terminal that are considered in this genetic base.
         :return list[NonTerminal]: The list of access points.
         """
         return sum(
-            [search.get_access_points() for search in self.searches.values()], []
+            [
+                search.get_access_points(include_base)
+                for search in self.searches.values()
+            ],
+            [],
         )
 
     @abc.abstractmethod

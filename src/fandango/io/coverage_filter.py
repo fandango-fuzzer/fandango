@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Iterator
 
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.selection.coverage_tracker import (
@@ -11,8 +11,15 @@ from fandango.language.tree import DerivationTree
 
 
 class PacketCoverageFilter:
+    # Valid candidates held back for one message before searching on is not worth the time
+    HELD_BACK_PER_MESSAGE = 10
+    # Valid candidates of one packet type held back in a row before its uncovered k-paths count as unreachable
+    HELD_BACK_UNTIL_UNREACHABLE = 100
+
     def __init__(self, coverage_tracker: CoverageTracker):
         self._coverage_tracker = coverage_tracker
+        self._held_back_count = 0
+        self._held_back_in_a_row: dict[PacketNonTerminal, int] = {}
         self._submitted_solutions: set[int] = set()
         self.hold_back_solutions_by_msg_hash: dict[int, DerivationTree] = {}
         self._solution_set: set[int] = set()
@@ -31,6 +38,7 @@ class PacketCoverageFilter:
         self.hold_back_solutions_by_msg_hash.clear()
         self._solution_set.clear()
         self._held_back_packet_types.clear()
+        self._held_back_count = 0
         for record in current_tree.protocol_msgs():
             self._submitted_solutions.add(
                 hash((record.sender, record.recipient, record.msg))
@@ -42,18 +50,30 @@ class PacketCoverageFilter:
         self._solution_set.clear()
         self._held_back_packet_types.clear()
         self._unreachable_k_paths.clear()
+        self._held_back_count = 0
+        self._held_back_in_a_row.clear()
+
+    def held_back_enough(self) -> bool:
+        """Whether the current message has held back so many valid candidates that a held-back one should be sent."""
+        return (
+            self._held_back_count >= self.HELD_BACK_PER_MESSAGE
+            and len(self.hold_back_solutions_by_msg_hash) > 0
+        )
 
     def mark_uncovered_k_paths_unreachable(self) -> None:
         for packet_type in self._held_back_packet_types:
-            for overlap_to_root in (False, True):
-                self._unreachable_k_paths.setdefault(
-                    (packet_type, overlap_to_root), set()
-                ).update(
-                    self._reachable_k_paths(packet_type, overlap_to_root)
-                    - self._coverage_tracker.covered_packet_k_paths(
-                        packet_type, overlap_to_root
-                    )
+            self._mark_unreachable(packet_type)
+
+    def _mark_unreachable(self, packet_type: PacketNonTerminal) -> None:
+        for overlap_to_root in (False, True):
+            self._unreachable_k_paths.setdefault(
+                (packet_type, overlap_to_root), set()
+            ).update(
+                self._reachable_k_paths(packet_type, overlap_to_root)
+                - self._coverage_tracker.covered_packet_k_paths(
+                    packet_type, overlap_to_root
                 )
+            )
 
     def _reachable_k_paths(
         self, packet_type: PacketNonTerminal, overlap_to_root: bool
@@ -111,8 +131,17 @@ class PacketCoverageFilter:
         ):
             if new_coverage < 1.0:
                 self._solution_set.add(msg_hash)
+            if old_coverage < new_coverage:
+                self._held_back_in_a_row.pop(packet_type, None)
             return individual
         self._held_back_packet_types.add(packet_type)
+        self._held_back_count += 1
+        self._held_back_in_a_row[packet_type] = (
+            self._held_back_in_a_row.get(packet_type, 0) + 1
+        )
+        if self._held_back_in_a_row[packet_type] >= self.HELD_BACK_UNTIL_UNREACHABLE:
+            self._mark_unreachable(packet_type)
+            del self._held_back_in_a_row[packet_type]
         if (
             msg_hash not in self._submitted_solutions
             and msg_hash not in self._solution_set
@@ -120,3 +149,11 @@ class PacketCoverageFilter:
         ):
             self.hold_back_solutions_by_msg_hash[msg_hash] = individual
         return None
+
+    def until_held_back_enough(
+        self, candidates: Iterator[DerivationTree]
+    ) -> Iterator[DerivationTree]:
+        for candidate in candidates:
+            yield candidate
+            if self.held_back_enough():
+                return

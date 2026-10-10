@@ -18,7 +18,11 @@ from collections.abc import Callable
 from typing import IO, Hashable, Optional
 from uuid import UUID
 
-from fandango.errors import FandangoError, FandangoValueError
+from fandango.errors import (
+    FandangoConnectionError,
+    FandangoError,
+    FandangoValueError,
+)
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
@@ -500,6 +504,7 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
         :param message: The message to send.
         :param recipient: The recipient of the message. Only present if the grammar specifies a recipient.
         :raises FandangoError: If the party is not running.
+        :raises FandangoConnectionError: If the party could not connect to its remote endpoint.
         """
         assert self.connection_mode != ConnectionMode.EXTERNAL
         if not self._running:
@@ -508,7 +513,7 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
             )
         self._wait_accept()
         if self._connection is None:
-            raise FandangoError(
+            raise FandangoConnectionError(
                 f"Party {self.party_name!r} could not connect to {self.ip}:{self.port}."
             )
         if isinstance(message, DerivationTree):
@@ -918,7 +923,10 @@ class FandangoIO(object):
         self.parties.clear()
         with self.receive_lock:
             self.receive.clear()
-            for party in party_instances:
+            # External parties first.
+            for party in sorted(
+                party_instances, key=FandangoParty.is_fuzzer_controlled
+            ):
                 cls = party.__class__
                 # Guaranteed to not have an argument
                 cls()  # type: ignore[call-arg]

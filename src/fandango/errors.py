@@ -64,3 +64,10 @@ class FandangoFailedError(FandangoError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+
+class FandangoConnectionError(FandangoError):
+    """A party could not connect to its remote endpoint"""
+
+    def __init__(self, message: str):
+        super().__init__(message)

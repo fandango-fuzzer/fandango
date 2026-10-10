@@ -3,9 +3,11 @@
 import unittest
 
 from fandango.language.search import (
+    AnnotatedSearch,
     AttributeSearch,
     DescendantAttributeSearch,
     ItemSearch,
+    LengthSearch,
     RuleSearch,
     SelectiveSearch,
     StarSearch,
@@ -206,3 +208,44 @@ class TestSearches(unittest.TestCase):
         self.assertEqual(2, len(trees[0]), len(trees[0]))
         self.assertIn(self._C1, trees[0])
         self.assertIn(self._C2, trees[0])
+
+    def test_access_points(self):
+        a, b, c = NonTerminal("<a>"), NonTerminal("<b>"), NonTerminal("<c>")
+        # search, access points without bases, access points with bases
+        cases = [
+            (RuleSearch(a), [a], [a]),
+            (AttributeSearch(RuleSearch(a), RuleSearch(b)), [b], [a, b]),
+            (DescendantAttributeSearch(RuleSearch(a), RuleSearch(b)), [b], [a, b]),
+            (
+                SelectiveSearch(RuleSearch(a), [(b, True), (c, False)]),
+                [b, c],
+                [a, b, c],
+            ),
+            (ItemSearch(RuleSearch(a), [0]), [a], [a]),
+            (StarSearch(AttributeSearch(RuleSearch(a), RuleSearch(b))), [b], [a, b]),
+            (
+                LengthSearch(DescendantAttributeSearch(RuleSearch(a), RuleSearch(c))),
+                [c],
+                [a, c],
+            ),
+        ]
+        for index, (search, without_base, with_base) in enumerate(cases):
+            self.assertEqual(without_base, search.get_access_points(), index)
+            self.assertEqual(with_base, search.get_access_points(True), index)
+
+    def test_root_symbol(self):
+        a, b, c = NonTerminal("<a>"), NonTerminal("<b>"), NonTerminal("<c>")
+        searches = [
+            RuleSearch(a),
+            LengthSearch(RuleSearch(a)),
+            AttributeSearch(
+                AttributeSearch(RuleSearch(a), RuleSearch(b)), RuleSearch(c)
+            ),
+            DescendantAttributeSearch(RuleSearch(a), RuleSearch(c)),
+            ItemSearch(DescendantAttributeSearch(RuleSearch(a), RuleSearch(b)), [0]),
+            SelectiveSearch(RuleSearch(a), [(b, True)], [None]),
+            StarSearch(AttributeSearch(RuleSearch(a), RuleSearch(b))),
+            AnnotatedSearch("l", AttributeSearch(RuleSearch(a), RuleSearch(c))),
+        ]
+        for index, search in enumerate(searches):
+            self.assertEqual(a, search.get_root_symbol(), index)
