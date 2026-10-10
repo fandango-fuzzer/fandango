@@ -45,6 +45,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._start_symbol = NonTerminal("<start>")
         self._packet_algorithm = packet_algorithm
         self.grammar = packet_algorithm.grammar
+        self._initial_max_repetition = self.grammar.get_max_repetition()
         self._packet_mounter = PacketMounter(
             self.grammar, self._packet_algorithm.start_symbol
         )
@@ -254,6 +255,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             overall_max_generations = max_generations - selected_packet_max_generations
 
         self._packet_algorithm.reset()
+        self.grammar.set_max_repetition(self._initial_max_repetition)
         try:
             # Refill the population
             solutions = [
