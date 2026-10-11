@@ -14,8 +14,12 @@ from fandango.evolution.algorithm.simple import SimpleGeneticAlgorithm
 from fandango.io import FandangoIO
 from fandango.io.coverage_filter import PacketCoverageFilter
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
+from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.selection.coverage_tracker import KPathCounts
 from fandango.io.navigation.selection.packetselector import PacketSelector
+from fandango.io.navigation.selection.violation_profile import (
+    ViolationProfile,
+)
 from fandango.io.packet_evolution.decorators.mounting_crossover import (
     MountingCrossover,
 )
@@ -78,16 +82,28 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._protocol_tree: DerivationTree = DerivationTree(self._start_symbol)
         self._remote_response_timeout = remote_response_timeout
         self._io_instance: FandangoIO = FandangoIO.instance()
+        self._violation_profile = ViolationProfile(
+            k_paths_of=lambda message: (
+                self._packet_selector.coverage_tracker.k_paths_of(
+                    message, overlap_to_root=True
+                )
+            ),
+            is_fuzzer_party=lambda name: (
+                name in self._io_instance.parties
+                and self._io_instance.parties[name].is_fuzzer_controlled()
+            ),
+        )
         self._packet_selector: PacketSelector = PacketSelector(
             self.grammar,
             self._io_instance,
             self._protocol_tree,
             self._packet_algorithm.diversity_k,
             max_messages_per_tree=max_messages_per_tree,
+            ruled_out_predecessors=self._violation_profile.ruled_out_predecessors,
         )
         self._packet_selector.set_coverage_goal(coverage_goal)
         self._packet_coverage_filter = PacketCoverageFilter(
-            self._packet_selector.coverage_tracker
+            self._packet_selector.coverage_tracker, self._violation_profile
         )
         self.violations: list[tuple[DerivationTree, Exception]] = []
         self.throw_on_violation = False
@@ -332,6 +348,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         Records the violation and starts a new protocol run.
         Returns True instead if the attainable coverage is reached.
         """
+        self._violation_profile.observe_violation(self._protocol_tree, violation)
         self._packet_selector.signal_session_end()
         self._packet_coverage_filter.add_completed_tree(self._protocol_tree)
         self.violations.append((self._protocol_tree, violation))
@@ -345,6 +362,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         return False
 
     def _start_new_run(self) -> None:
+        self._violation_profile.signal_session_end()
         log_guidance_hint("Starting new protocol run.")
         self._io_instance.reset_parties()
         self._protocol_tree = DerivationTree(self._start_symbol, [])
@@ -406,6 +424,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     if self._io_instance.received_msg():
                         continue
                 assert new_packet is not None and new_packet.sender is not None
+                self._note_suspect_sent(new_packet)
                 if (
                     new_packet.recipient is None
                     or not self._io_instance.parties[
@@ -437,6 +456,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                         remote_packet = self._handle_remote_response()
                     self._protocol_tree = packet_mounter.commit(remote_packet)
                     self._packet_selector.observe_message(self._protocol_tree)
+                    self._violation_profile.observe_answer(self._protocol_tree)
                 except (
                     FandangoFailedError,
                     FandangoParseError,
@@ -448,6 +468,28 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                         return None
                     continue
             self._protocol_tree.set_all_read_only(True)
+
+    def _note_suspect_sent(self, packet: DerivationTree) -> None:
+        """
+        Uses up the due retry of a suspect about to be sent; logs a suspect sent without one, e.g. as the last resort
+        of generation.
+        """
+        assert packet.sender is not None
+        packet_type = PacketNonTerminal(
+            packet.sender, packet.recipient, packet.nonterminal
+        )
+        with self._packet_mounter.mounted_context(packet) as mounted_packet:
+            suspected = self._violation_profile.suspected_violation(
+                mounted_packet, packet_type
+            )
+        if suspected is None:
+            return
+        if self._violation_profile.retry_due(packet_type, suspected):
+            self._violation_profile.consume_retry(packet_type, suspected)
+            return
+        log_guidance_hint(
+            f"Sending {packet_type}, suspected to cause {ViolationProfile.describe_violation(suspected)}."
+        )
 
     def _configure_fuzzable_packets(self) -> None:
         self._clear_constraint_caches()
@@ -472,4 +514,5 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._packet_algorithm.reset()
         self._packet_selector.reset()
         self._packet_coverage_filter.reset()
+        self._violation_profile.reset()
         self._protocol_tree = DerivationTree(self._start_symbol)

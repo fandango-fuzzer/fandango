@@ -5,6 +5,7 @@ from fandango.io.navigation.selection.coverage_tracker import (
     CoverageTracker,
     KPathCounts,
 )
+from fandango.io.navigation.selection.violation_profile import ViolationProfile
 from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
@@ -16,8 +17,13 @@ class PacketCoverageFilter:
     # Valid candidates of one packet type held back in a row before its uncovered k-paths count as unreachable
     HELD_BACK_UNTIL_UNREACHABLE = 100
 
-    def __init__(self, coverage_tracker: CoverageTracker):
+    def __init__(
+        self,
+        coverage_tracker: CoverageTracker,
+        violation_profile: Optional[ViolationProfile] = None,
+    ):
         self._coverage_tracker = coverage_tracker
+        self._violation_profile = violation_profile
         self._held_back_count = 0
         self._held_back_in_a_row: dict[PacketNonTerminal, int] = {}
         self._submitted_solutions: set[int] = set()
@@ -100,6 +106,11 @@ class PacketCoverageFilter:
         symbol = msg.symbol
         assert isinstance(symbol, NonTerminal)
         packet_type = PacketNonTerminal(msg.sender, msg.recipient, symbol)
+        profile = self._violation_profile
+        if profile is not None:
+            suspected = profile.suspected_violation(msg, packet_type)
+            if suspected is not None and not profile.retry_due(packet_type, suspected):
+                return None
         msg_hash = hash(msg)
 
         state_path_tree = msg.get_path()
