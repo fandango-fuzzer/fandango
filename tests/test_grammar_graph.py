@@ -135,6 +135,28 @@ class TestGrammarGraph(unittest.TestCase):
         ]
         self.assertEqual(sent, [NonTerminal("<p>")])
 
+    def test_rule_whose_exits_are_all_blocked_is_still_aimed_at(self):
+        # With <quit> blocked, <greeted> recurses forever, but a path can still enter it
+        grammar = self.get_grammar(RESOURCES_ROOT / "violation_profile.fan")
+        navigator = PacketNavigator(grammar)
+        (quit_step,) = (
+            step
+            for step in navigator._rule_steps().values()
+            if step.parent == NonTerminal("<greeted>")
+            and step.packet == NonTerminal("<_packet_quit>")
+        )
+        navigator = navigator.gen_with_blocked_steps(frozenset({quit_step}))
+        navigator.set_message_cost(1)
+        tree = grammar.parse(
+            "hello\n", mode=ParsingMode.INCOMPLETE, include_controlflow=True
+        )
+        assert tree is not None
+        guide = navigator.astar_tree_including_k_paths(
+            tree=tree, destination_k_path=(NonTerminal("<greeted>"),)
+        )
+        assert guide is not None
+        self.assertNotIn(None, guide.route)
+
     def test_nodes_whose_matches_differ_only_far_up_the_chain_are_kept_apart(self):
         grammar = self.get_grammar(RESOURCES_ROOT / "tail_recursive_k_path.fan")
         navigator = PacketNavigator(grammar)

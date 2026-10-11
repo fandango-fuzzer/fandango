@@ -445,7 +445,10 @@ class PacketNavigator(GrammarNavigator):
                 return self._message_cost_of(node)
 
             costs = RuleCosts(
-                self.grammar.rules, message_cost_of, self.message_cost == 0
+                self.grammar.rules,
+                message_cost_of,
+                self.message_cost == 0,
+                unrestricted=self._costs,
             )
             self._costs_by_unsendable[unsendable] = costs
         return costs

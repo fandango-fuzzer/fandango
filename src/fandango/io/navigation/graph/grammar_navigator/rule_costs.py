@@ -24,12 +24,15 @@ class RuleCosts:
         rules: dict[NonTerminal, Node],
         message_cost_of: Callable[[Node], int],
         count_references: bool = False,
+        unrestricted: Optional["RuleCosts"] = None,
     ):
         """
         message_cost_of gives the cost of the message that a node sends.
         count_references makes entering a symbol cost 1 instead, for rules whose messages cost nothing.
+        unrestricted are the costs without the restrictions, if message_cost_of makes some messages unreachable.
         """
         self._rules = rules
+        self._unrestricted = unrestricted
         self._message_cost_of = message_cost_of
         self._count_references = count_references
         self._cheapest_costs: Optional[dict[NonTerminal, int]] = None
@@ -121,9 +124,20 @@ class RuleCosts:
         )
 
     def is_derivable(self, symbol: Symbol) -> bool:
-        """False if every derivation of the symbol's rule costs UNREACHABLE."""
-        if not isinstance(symbol, NonTerminal) or symbol not in self._rules:
+        """
+        False if the symbol's rule has a derivation without the restrictions but none with them. True for every symbol
+        if there are no restrictions.
+        """
+        if (
+            self._unrestricted is None
+            or not isinstance(symbol, NonTerminal)
+            or symbol not in self._rules
+        ):
             return True
+        return self._can_finish(symbol) or not self._unrestricted._can_finish(symbol)
+
+    def _can_finish(self, symbol: NonTerminal) -> bool:
+        """True if some derivation of the symbol's rule costs less than UNREACHABLE."""
         return self._cheapest_cost_below(NonTerminalNode(symbol, [])) < self.UNREACHABLE
 
     def distances_to(self, target: Symbol) -> dict[str, int]:
