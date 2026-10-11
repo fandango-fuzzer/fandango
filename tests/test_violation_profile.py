@@ -29,6 +29,8 @@ from tests.utils import RESOURCES_ROOT
 HELP = PacketNonTerminal("Fuzzer", "Extern", NonTerminal("<help>"))
 GET = PacketNonTerminal("Fuzzer", "Extern", NonTerminal("<get>"))
 CMD = PacketNonTerminal("Fuzzer", "Extern", NonTerminal("<cmd>"))
+SET = PacketNonTerminal("Fuzzer", "Extern", NonTerminal("<set>"))
+EHLO_TYPE = PacketNonTerminal("Fuzzer", "Extern", NonTerminal("<ehlo>"))
 GARBAGE_INSTEAD_OF_HELPTEXT = ("SYNTAX", ("<helptext>",), ())
 SESSIONS = 60
 # <help> violates after <ehlo>, <cmd> with '!', and <get> after a <set> with <bad>
@@ -114,7 +116,7 @@ class TestViolationProfile(unittest.TestCase):
             self.profile.signal_session_end()
 
     def suspected(self, messages: str, packet_type: PacketNonTerminal):
-        return self.profile.suspected_violation(
+        return self.profile.suspicion(
             last_message(session(self.grammar, messages)), packet_type
         )
 
@@ -126,7 +128,8 @@ class TestViolationProfile(unittest.TestCase):
     def test_the_history_that_triggers_the_violation_is_suspected(self):
         self._learn()
         self.assertEqual(
-            self.suspected(self.AFTER_EHLO, HELP), GARBAGE_INSTEAD_OF_HELPTEXT
+            self.suspected(self.AFTER_EHLO, HELP),
+            (HELP, GARBAGE_INSTEAD_OF_HELPTEXT),
         )
         self.assertIsNone(self.suspected(HELO + "help\n", HELP))
         # Features every <help> has are never suspect
@@ -163,6 +166,12 @@ class TestViolationProfile(unittest.TestCase):
 
     def test_a_suspect_earlier_packet_rules_the_packet_out(self):
         self._learn()
+        # The earlier <ehlo> is suspect by itself, so its content is not
+        (suspects,) = self.profile._suspects(HELP).values()
+        self.assertEqual(
+            {feature.kind for feature in suspects if feature.predecessor}, {"packet"}
+        )
+        self.assertIsNone(self.suspected("hello\nehlo\n", EHLO_TYPE))
         self.assertEqual(
             self.profile.ruled_out_predecessors(),
             {HELP: frozenset({("Fuzzer", "<ehlo>")})},
@@ -211,6 +220,10 @@ class TestViolationProfile(unittest.TestCase):
         )
         self.assertIsNotNone(self.suspected(self.AFTER_BAD_SET, GET))
         self.assertIsNone(self.suspected(EHLO + "set b\nok\nget\n", GET))
+        # The <set> with <bad> is suspected as predecessor, so the filter avoids it
+        (violation,) = self.profile._suspects(GET)
+        self.assertEqual(self.suspected(EHLO + "set !\n", SET), (GET, violation))
+        self.assertIsNone(self.suspected(EHLO + "set b\n", SET))
         self.assertEqual(
             ViolationProfile._describe_feature(
                 _Feature("path", ("Fuzzer", "<set>"), (NonTerminal("<bad>"),))

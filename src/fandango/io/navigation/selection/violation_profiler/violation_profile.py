@@ -39,13 +39,18 @@ _MessageIdentity = tuple[int, str, str, int]
 
 
 class _FeatureCounts:
-    def __init__(self) -> None:
+    def __init__(self, keep_messages: bool = False) -> None:
+        """keep_messages keeps the features of every message, not only their counts."""
         self.messages = 0
         self.by_feature: Counter[_Feature] = Counter()
+        self.features_by_message: list[frozenset[_Feature]] = []
+        self._keep_messages = keep_messages
 
     def add(self, features: frozenset[_Feature]) -> None:
         self.messages += 1
         self.by_feature.update(features)
+        if self._keep_messages:
+            self.features_by_message.append(features)
 
 
 class _Retry:
@@ -66,7 +71,6 @@ class ViolationProfile:
     MIN_COUNTEREXAMPLES = 3
     MAX_COUNTEREXAMPLE_SHARE = 0.1
     MIN_SUSPICION_SCORE = 0.9
-    EARLIER_MESSAGES_WITH_CONTENT = 10
     FIRST_RETRY_WAIT = 8
     MAX_RETRY_WAIT = 256
     LOGGED_FEATURES = 3
@@ -92,7 +96,8 @@ class ViolationProfile:
         ] = {}
         self._last_announcement: dict[tuple[PacketNonTerminal, ViolationKind], str] = {}
         self._last_counted_answer: Optional[_MessageIdentity] = None
-        self._content_cache: dict[_MessageIdentity, frozenset[_Feature]] = {}
+        # The features of the messages before a message, per prefix of the session
+        self._earlier_cache: dict[tuple[int, ...], frozenset[_Feature]] = {}
 
     def reset(self) -> None:
         self._sessions_ended = 0
@@ -103,12 +108,12 @@ class ViolationProfile:
         self._suspect_cache.clear()
         self._last_announcement.clear()
         self._last_counted_answer = None
-        self._content_cache.clear()
+        self._earlier_cache.clear()
 
     def signal_session_end(self) -> None:
         self._sessions_ended += 1
         self._last_counted_answer = None
-        self._content_cache.clear()
+        self._earlier_cache.clear()
 
     def observe_violation(
         self, session_tree: DerivationTree, violation: Exception
@@ -121,9 +126,9 @@ class ViolationProfile:
             return
         packet_type, message = trigger
         kind = self._violation_kind(violation)
-        self._trigger_counts.setdefault((packet_type, kind), _FeatureCounts()).add(
-            self._features_of(message)
-        )
+        self._trigger_counts.setdefault(
+            (packet_type, kind), _FeatureCounts(keep_messages=True)
+        ).add(self._features_of(message))
         self._violations_by_packet_type.setdefault(packet_type, set()).add(kind)
         self._suspect_cache.pop(packet_type, None)
 
@@ -237,19 +242,25 @@ class ViolationProfile:
     def _earlier_features(
         self, earlier: list[tuple[str, DerivationTree]]
     ) -> frozenset[_Feature]:
-        """The features of the messages before a message."""
-        features: set[_Feature] = set()
-        for index, (sender, earlier_message) in enumerate(earlier):
-            predecessor = (sender, earlier_message.nonterminal.name())
-            features.add(_Feature("packet", predecessor, None))
-            if index >= len(earlier) - self.EARLIER_MESSAGES_WITH_CONTENT:
-                features.update(
-                    feature._replace(predecessor=predecessor)
-                    for feature in self._cached_content(
-                        earlier_message, earlier[:index]
-                    )
+        """The features of the messages before a message: their packet types and their content."""
+        hashes = tuple(hash(message) for _, message in earlier)
+        features: frozenset[_Feature] = frozenset()
+        for index, (sender, message) in enumerate(earlier):
+            prefix = hashes[: index + 1]
+            cached = self._earlier_cache.get(prefix)
+            if cached is None:
+                predecessor = (sender, message.nonterminal.name())
+                cached = (
+                    features
+                    | {_Feature("packet", predecessor, None)}
+                    | {
+                        feature._replace(predecessor=predecessor)
+                        for feature in self._content_of(message)
+                    }
                 )
-        return frozenset(features)
+                self._earlier_cache[prefix] = cached
+            features = cached
+        return features
 
     @staticmethod
     def _violation_kind(violation: FandangoRemoteViolation) -> ViolationKind:
@@ -287,18 +298,6 @@ class ViolationProfile:
     @staticmethod
     def _describe_path(path: KPath) -> str:
         return "/".join(symbol.format_as_spec() for symbol in path)
-
-    def _cached_content(
-        self,
-        message: DerivationTree,
-        earlier: list[tuple[str, DerivationTree]],
-    ) -> frozenset[_Feature]:
-        identity = self._message_identity(message, earlier)
-        content = self._content_cache.get(identity)
-        if content is None:
-            content = self._content_of(message)
-            self._content_cache[identity] = content
-        return content
 
     @staticmethod
     def _message_identity(
@@ -374,7 +373,11 @@ class ViolationProfile:
     def _ranked_suspect_features(
         self, packet_type: PacketNonTerminal, triggers: _FeatureCounts
     ) -> list[tuple[_Feature, float]]:
-        """The suspect features, strongest first, without the content of earlier packets suspect by themselves."""
+        """
+        The suspect features, strongest first. Features of the same source, an earlier packet type, the message's
+        content or an earlier message's content, are kept only if they explain a trigger that stronger sources do
+        not. Without the content of earlier packets suspect by themselves.
+        """
         counterexamples = self._counterexample_counts.get(packet_type)
         if (
             counterexamples is None
@@ -397,13 +400,41 @@ class ViolationProfile:
             )
             if score >= self.MIN_SUSPICION_SCORE:
                 ranked.append((feature, score))
-        ranked.sort(key=lambda ranked_feature: -ranked_feature[1])
         suspect_predecessors = {
             feature.predecessor for feature, _ in ranked if feature.kind == "packet"
         }
-        return [
-            (feature, score)
-            for feature, score in ranked
-            if feature.kind == "packet"
-            or feature.predecessor not in suspect_predecessors
-        ]
+        by_source: dict[
+            tuple[bool, Optional[Predecessor]], list[tuple[_Feature, float]]
+        ] = {}
+        for feature, score in ranked:
+            if feature.kind != "packet" and feature.predecessor in suspect_predecessors:
+                continue
+            source = (feature.kind == "packet", feature.predecessor)
+            by_source.setdefault(source, []).append((feature, score))
+        sources = sorted(
+            by_source.values(),
+            key=lambda features: (
+                -max(score for _, score in features),
+                self._simplicity(features[0][0]),
+            ),
+        )
+        explaining = []
+        explained: set[int] = set()
+        for features in sources:
+            covered = {
+                index
+                for index, trigger in enumerate(triggers.features_by_message)
+                if any(feature in trigger for feature, _ in features)
+            }
+            if not covered <= explained:
+                explaining.extend(features)
+                explained |= covered
+        explaining.sort(key=lambda ranked_feature: -ranked_feature[1])
+        return explaining
+
+    @staticmethod
+    def _simplicity(feature: _Feature) -> int:
+        """0 for a packet type, 1 for the message's own content, 2 for the content of an earlier message."""
+        if feature.kind == "packet":
+            return 0
+        return 1 if feature.predecessor is None else 2
