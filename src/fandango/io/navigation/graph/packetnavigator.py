@@ -1,4 +1,4 @@
-from collections.abc import Callable, Generator
+from collections.abc import Callable, Generator, Hashable
 from typing import Optional
 
 from fandango.io.navigation.graph.blocked_step_pruner import (
@@ -9,6 +9,8 @@ from fandango.io.navigation.graph.grammar_navigator import GrammarNavigator
 from fandango.io.navigation.graph.grammar_navigator.grammar_graph_converter import (
     GrammarGraphNode,
 )
+from fandango.io.navigation.graph.grammar_navigator.path_search import SearchTarget
+from fandango.io.navigation.graph.grammar_navigator.rule_costs import RuleCosts
 from fandango.io.navigation.graph.packetiterativeparser import (
     NavigatorPacketIterativeParser,
 )
@@ -23,6 +25,110 @@ from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.symbols import NonTerminal, Symbol
 
+# Sender and packet symbol of an earlier message
+Predecessor = tuple[str, str]
+RuledOutPredecessors = dict[PacketNonTerminal, frozenset[Predecessor]]
+
+
+def packet_type_of(node: Node) -> Optional[PacketNonTerminal]:
+    if not isinstance(node, NonTerminalNode) or node.sender is None:
+        return None
+    return PacketNonTerminal(
+        node.sender, node.recipient, StateGrammarConverter.to_non_terminal(node.symbol)
+    )
+
+
+class PredecessorAvoidingTarget(SearchTarget):
+    """
+    A target reached only by routes that send no packet after a predecessor that rules it out in the run.
+    The context of a route is the set of predecessors it sent, the history's included. The estimate in a context
+    counts the packets it rules out as unreachable, so the search heads for routes around them.
+    """
+
+    def __init__(
+        self,
+        target_with: Callable[[RuleCosts], SearchTarget],
+        costs_without: Callable[[frozenset[PacketNonTerminal]], RuleCosts],
+        ruled_out: RuledOutPredecessors,
+        history_predecessors: frozenset[Predecessor],
+    ):
+        """
+        target_with builds the target on given costs; costs_without gives the costs with some packets unreachable.
+        """
+        self._target_with = target_with
+        self._costs_without = costs_without
+        self._ruled_out = ruled_out
+        self._marks = frozenset().union(*ruled_out.values())
+        self._start = history_predecessors & self._marks
+        self._targets_by_unsendable: dict[
+            frozenset[PacketNonTerminal], SearchTarget
+        ] = {}
+        self._target = self._target_without(frozenset())
+
+    def is_reached(self, node: GrammarGraphNode) -> bool:
+        return self._target.is_reached(node)
+
+    def estimate(self, node: GrammarGraphNode) -> int:
+        return self._target.estimate(node)
+
+    def estimate_in(self, context: Hashable, node: GrammarGraphNode) -> int:
+        assert isinstance(context, frozenset)
+        return self._target_in(context).estimate(node)
+
+    def can_complete_in(self, context: Hashable, node: GrammarGraphNode) -> bool:
+        assert isinstance(context, frozenset)
+        return self._target_in(context).can_complete(node)
+
+    def _target_in(self, context: frozenset[Predecessor]) -> SearchTarget:
+        """The target on costs that count the packets the context rules out as unreachable."""
+        return self._target_without(
+            frozenset(
+                packet
+                for packet, predecessors in self._ruled_out.items()
+                if predecessors & context
+            )
+        )
+
+    def _target_without(self, unsendable: frozenset[PacketNonTerminal]) -> SearchTarget:
+        """The target on costs that count the unsendable packets as unreachable."""
+        target = self._targets_by_unsendable.get(unsendable)
+        if target is None:
+            target = self._target_with(self._costs_without(unsendable))
+            self._targets_by_unsendable[unsendable] = target
+        return target
+
+    def state(self, node: GrammarGraphNode) -> Hashable:
+        return self._target.state(node)
+
+    def start_context(self) -> Hashable:
+        return self._start
+
+    def enter(self, context: Hashable, node: GrammarGraphNode) -> Optional[Hashable]:
+        assert isinstance(context, frozenset)
+        entered = self._context_after(context, node)
+        # Predecessors only add up along a route, so a target out of reach now stays out of reach
+        if entered is None or not self.can_complete_in(entered, node):
+            return None
+        return entered
+
+    def _context_after(
+        self, context: frozenset[Predecessor], node: GrammarGraphNode
+    ) -> Optional[frozenset[Predecessor]]:
+        """The context after the route enters node, or None if the node sends a packet the context rules out."""
+        packet = packet_type_of(node.node)
+        if packet is None:
+            return context
+        if self._is_ruled_out(packet, context):
+            return None
+        assert packet.sender is not None
+        predecessor = (packet.sender, packet.symbol.name())
+        if predecessor not in self._marks:
+            return context
+        return context | {predecessor}
+
+    def _is_ruled_out(self, packet: PacketNonTerminal, context: frozenset) -> bool:
+        return bool(self._ruled_out.get(packet, frozenset()) & context)
+
 
 class PacketNavigator(GrammarNavigator):
     def __init__(
@@ -33,11 +139,14 @@ class PacketNavigator(GrammarNavigator):
         state_rules: Optional[dict[NonTerminal, Node]] = None,
         packet_symbols: Optional[set[NonTerminal]] = None,
         step_costs: Callable[[], dict[Step, int]] = dict,
+        ruled_out_predecessors: Callable[[], RuledOutPredecessors] = dict,
     ):
         """
         Navigates the state grammar of the grammar, around the blocked steps.
         state_rules is that state grammar and packet_symbols are the grammar's message symbols.
         step_costs gives the costs that packet steps, as in their calling rule, add to their message.
+        ruled_out_predecessors gives per packet type the earlier packets, as sender and symbol, after which no route
+        sends it in the same run.
         """
         if start_symbol is None:
             start_symbol = NonTerminal("<start>")
@@ -74,6 +183,8 @@ class PacketNavigator(GrammarNavigator):
         )
         self._packet_symbols = packet_symbols
         self._step_costs = step_costs
+        self._ruled_out_predecessors = ruled_out_predecessors
+        self._costs_by_unsendable: dict[frozenset[PacketNonTerminal], RuleCosts] = {}
         self._seen_step_costs: dict[Step, int] = {}
         self._rule_step_by_node_id = self._rule_steps()
         self._step_cost_by_node_id: dict[int, int] = {}
@@ -91,6 +202,7 @@ class PacketNavigator(GrammarNavigator):
             self._state_rules,
             self._packet_symbols,
             self._step_costs,
+            self._ruled_out_predecessors,
         )
 
     def _rule_steps(self) -> dict[int, Step]:
@@ -124,6 +236,7 @@ class PacketNavigator(GrammarNavigator):
                 if step in costs
             }
             self._costs.clear()
+            self._costs_by_unsendable.clear()
 
     def _message_cost_of(self, node: Node) -> int:
         return super()._message_cost_of(node) + self._step_cost_by_node_id.get(
@@ -297,12 +410,55 @@ class PacketNavigator(GrammarNavigator):
         destination_k_path: KPath,
     ) -> Optional[list[GrammarGraphNode | None]]:
         self._update_step_costs()
-        paths = []
-        for pruned_k_path in self._pruned_k_paths(destination_k_path):
-            path = super().astar_tree(tree=tree, destination_k_path=pruned_k_path)
-            if path is not None:
-                paths.append(path)
-        return min(paths, key=len, default=None)
+        pruned_k_paths = self._pruned_k_paths(destination_k_path)
+        if not pruned_k_paths:
+            return None
+        return self.astar_tree_to_any(tree=tree, destination_k_paths=pruned_k_paths)
+
+    def _search_target(
+        self,
+        target_with: Callable[[RuleCosts], SearchTarget],
+        tree: Optional[DerivationTree],
+    ) -> SearchTarget:
+        ruled_out = self._ruled_out_predecessors()
+        if not ruled_out:
+            return target_with(self._costs)
+        return PredecessorAvoidingTarget(
+            target_with,
+            self._costs_without,
+            ruled_out,
+            self._predecessors_in(tree),
+        )
+
+    def _costs_without(self, unsendable: frozenset[PacketNonTerminal]) -> RuleCosts:
+        """The costs of the messages, with the unsendable packets unreachable."""
+        if not unsendable:
+            return self._costs
+        costs = self._costs_by_unsendable.get(unsendable)
+        if costs is None:
+
+            def message_cost_of(node: Node) -> int:
+                if packet_type_of(node) in unsendable:
+                    return RuleCosts.UNREACHABLE
+                return self._message_cost_of(node)
+
+            costs = RuleCosts(
+                self.grammar.rules, message_cost_of, self.message_cost == 0
+            )
+            self._costs_by_unsendable[unsendable] = costs
+        return costs
+
+    @staticmethod
+    def _predecessors_in(tree: Optional[DerivationTree]) -> frozenset[Predecessor]:
+        """The packets of the control-flow tree, as sender and symbol."""
+        if tree is None:
+            return frozenset()
+        predecessors = set()
+        for record in tree.protocol_msgs():
+            assert record.sender is not None
+            symbol = StateGrammarConverter.to_non_terminal(record.msg.nonterminal)
+            predecessors.add((record.sender, symbol.name()))
+        return frozenset(predecessors)
 
     def _search_k_path(self, k_path: KPath) -> KPath:
         search_symbols = []

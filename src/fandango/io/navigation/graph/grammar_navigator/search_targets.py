@@ -98,6 +98,7 @@ class ChainSummary(NamedTuple):
     # Cheapest cost from the end of the node to each symbol of the k-path.
     costs_after: tuple[int, ...]
     # One bit per matched length of the k-path at the start or at any symbol of the chain.
+    # Part of the state: nodes with the same future and recent matches may differ in matches further up.
     matched_on_chain: int
 
 
@@ -146,12 +147,14 @@ class KPathTarget(SearchTarget):
                 self._futures.key(node),
                 summary.recent_matched_lengths,
                 summary.costs_after,
+                summary.matched_on_chain,
             )
         return (
             self._futures.key(node),
             summary.length,
             summary.recent_matched_lengths,
             summary.costs_after,
+            summary.matched_on_chain,
         )
 
     def _estimate(self, summary: ChainSummary, graph_node: GrammarGraphNode) -> int:
@@ -163,28 +166,37 @@ class KPathTarget(SearchTarget):
 
         # Inside an exchange the chain ends with symbols below the state, so the
         # suffix no longer matches the k-path and every transition looks like a
-        # step back. Rate the node by the best match on its chain, however deep:
-        # a path goes on from there once it leaves the symbols below.
-        # The goal test above stays exact.
+        # step back. Rate the node by the best match among its nearest ancestors.
+        estimate = self._estimate_from(
+            min(max(recent, default=0), len(self._k_path) - 1), summary, graph_node
+        )
+        if estimate is not None:
+            return estimate
+        # The nearest ancestors lead nowhere. A match further up the chain may, once the path leaves the symbols below.
         for matched in reversed(range(len(self._k_path))):
-            if not summary.matched_on_chain >> matched & 1:
-                continue
-            if not self._is_rest_derivable(matched):
-                # A shorter match needs these symbols too
-                break
-            # Sub-gradient toward the next symbol that would extend the match:
-            # the cheapest cost of the messages still to send until it begins,
-            # below the node or after its end.
-            cost_to_next_symbol = self._costs.cost_from(
-                graph_node.node, self._distances[matched], summary.costs_after[matched]
-            )
-            if cost_to_next_symbol < RuleCosts.UNREACHABLE:
-                unmatched = len(self._k_path) - matched
-                # Never return 0 here
-                return max(
-                    unmatched * self.UNMATCHED_SYMBOL_COST + cost_to_next_symbol, 1
-                )
+            if summary.matched_on_chain >> matched & 1:
+                estimate = self._estimate_from(matched, summary, graph_node)
+                if estimate is not None:
+                    return estimate
         return self._dead_end_estimate()
+
+    def _estimate_from(
+        self, matched: int, summary: ChainSummary, graph_node: GrammarGraphNode
+    ) -> Optional[int]:
+        """The estimate for completing the k-path from a match of the given length, or None if that cannot."""
+        if not self._is_rest_derivable(matched):
+            return None
+        # Sub-gradient toward the next symbol that would extend the match:
+        # the cheapest cost of the messages still to send until it begins,
+        # below the node or after its end.
+        cost_to_next_symbol = self._costs.cost_from(
+            graph_node.node, self._distances[matched], summary.costs_after[matched]
+        )
+        if cost_to_next_symbol >= RuleCosts.UNREACHABLE:
+            return None
+        unmatched = len(self._k_path) - matched
+        # Never return 0 here
+        return max(unmatched * self.UNMATCHED_SYMBOL_COST + cost_to_next_symbol, 1)
 
     def can_complete(self, node: GrammarGraphNode) -> bool:
         """

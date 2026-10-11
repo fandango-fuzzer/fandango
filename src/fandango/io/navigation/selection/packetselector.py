@@ -1,4 +1,5 @@
 import random
+from collections.abc import Callable
 from typing import Optional
 
 from fandango.io import FandangoIO
@@ -8,6 +9,7 @@ from fandango.io.navigation.forecasting.forecasting_result import (
     ForecastingPacket,
     ForecastingResult,
 )
+from fandango.io.navigation.graph.packetnavigator import RuledOutPredecessors
 from fandango.io.navigation.selection.coverage_tracker import CoverageTracker
 from fandango.io.navigation.selection.packet_guider import PacketGuider
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
@@ -24,7 +26,9 @@ class PacketSelector:
         history_tree: DerivationTree,
         diversity_k: int,
         max_messages_per_tree: int = 200,
+        ruled_out_predecessors: Callable[[], RuledOutPredecessors] = dict,
     ):
+        """ruled_out_predecessors gives per packet type the earlier packets after which no route sends it in a run."""
         self.RANDOM_END_PROBABILITY = 0.5
         self.start_symbol = NonTerminal("<start>")
         self.grammar = grammar
@@ -35,6 +39,7 @@ class PacketSelector:
             self._model,
             self._forecast,
             max_messages_per_tree=max_messages_per_tree,
+            ruled_out_predecessors=ruled_out_predecessors,
         )
         self.history_tree = history_tree
         self._coverage_tracker = CoverageTracker(
