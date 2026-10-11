@@ -1,5 +1,6 @@
 from collections import Counter, defaultdict
 from collections.abc import Callable
+from typing import Optional
 
 from fandango.io.navigation.coverage.powerschedule import (
     PowerScheduleCoverage,
@@ -41,7 +42,8 @@ class TargetSelector:
         uncovered_paths: list[KPath],
         coverage_scores: list[tuple[NonTerminal, float]],
         is_derivable: Callable[[KPath], bool],
-    ) -> KPath:
+    ) -> Optional[KPath]:
+        """Picks a derivable uncovered k-path, or else a derivable message. None if there is neither."""
         unreached_paths = set(uncovered_paths)
         self._update_open_below(unreached_paths)
         candidates = self._targets_up_to_current_length(
@@ -53,7 +55,9 @@ class TargetSelector:
                 for message, score in coverage_scores
                 if is_derivable((message,))
             ]
-            return (self._least_covered_message(derivable_scores or coverage_scores),)
+            if len(derivable_scores) == 0:
+                return None
+            return (self._least_covered_message(derivable_scores),)
         s_ps = self._state_path_power_schedule
         s_ps.assign_energy_k_path(candidates)
         selected_path = s_ps.choose()

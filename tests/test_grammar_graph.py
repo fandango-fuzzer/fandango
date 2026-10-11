@@ -408,5 +408,6 @@ class TestTargetSelector(unittest.TestCase):
         )
         for _ in range(10):
             target = ts.select(all_paths, [], lambda path: True)
+            assert target is not None
             self.assertFalse(PacketGuider._tuple_contains(a_follows_b, target))
             self.assertFalse(PacketGuider._tuple_contains(b_follows_a, target))

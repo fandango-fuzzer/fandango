@@ -3,6 +3,9 @@ from typing import Optional
 
 from fandango.io.navigation.forecasting.forecast_view import ForecastView
 from fandango.io.navigation.forecasting.forecasting_result import ForecastingPacket
+from fandango.io.navigation.graph.grammar_navigator.navigator import (
+    UnreachableTargetError,
+)
 from fandango.io.navigation.graph.packetnavigator import (
     PacketNavigator,
     RuledOutPredecessors,
@@ -40,6 +43,7 @@ class PacketGuider:
         self._model = model
         self._forecast = forecast
         self._step_refusals = StepRefusalCounter()
+        self._ruled_out_predecessors = ruled_out_predecessors
         self._navigator_instance = PacketNavigator(
             self._model.grammar,
             self._model.start_symbol,
@@ -58,6 +62,11 @@ class PacketGuider:
         self._session_covered_k_paths: set[KPath] = set()
         self._steps_keeping_covered_paths: dict[str, set[Step]] = {}
         self._end_route_refusals_in_session = 0
+        # Targets out of reach of every run under the restrictions last seen
+        self._unreachable_targets: set[KPath] = set()
+        self._last_restrictions: Optional[
+            tuple[frozenset[Step], RuledOutPredecessors]
+        ] = None
 
     @property
     def is_guide_to_end(self) -> bool:
@@ -80,6 +89,8 @@ class PacketGuider:
         """Forget everything about previous runs, as after construction."""
         self._target_selector.reset()
         self._step_refusals.reset()
+        self._unreachable_targets.clear()
+        self._last_restrictions = None
         self._clear_plan()
         self._start_session()
 
@@ -199,6 +210,37 @@ class PacketGuider:
             )
         return self._navigator_instance
 
+    def _update_unreachable_targets(self) -> None:
+        """Forgets the targets out of reach of every run once a blocked step or ruled-out predecessor was lifted."""
+        restrictions = (
+            self._step_refusals.blocked_steps,
+            self._ruled_out_predecessors(),
+        )
+        if self._last_restrictions is not None and self._is_lifted(
+            self._last_restrictions, restrictions
+        ):
+            self._unreachable_targets.clear()
+        self._last_restrictions = restrictions
+
+    @staticmethod
+    def _is_lifted(
+        last: tuple[frozenset[Step], RuledOutPredecessors],
+        current: tuple[frozenset[Step], RuledOutPredecessors],
+    ) -> bool:
+        """True if a blocked step or ruled-out predecessor of last is missing in current."""
+        last_steps, last_ruled_out = last
+        steps, ruled_out = current
+        return not last_steps <= steps or any(
+            not predecessors <= ruled_out.get(packet_type, frozenset())
+            for packet_type, predecessors in last_ruled_out.items()
+        )
+
+    def _is_reachable_target(self, target: KPath) -> bool:
+        """True if the target is derivable and not known to be out of reach of every run."""
+        return target not in self._unreachable_targets and self._navigator.is_derivable(
+            target
+        )
+
     def select_next_packet(
         self,
         history_tree: DerivationTree,
@@ -232,23 +274,7 @@ class PacketGuider:
                 )
             self._plan_path_to_end()
         elif self._guide_target is None or self._guide_path.is_empty or plan_left:
-            self._guide_target = self._target_selector.select(
-                uncovered_paths, get_coverage_scores(), self._navigator.is_derivable
-            )
-            guide = self._navigator.astar_tree_including_k_paths(
-                tree=history_tree,
-                destination_k_path=self._guide_target,
-                included_k_paths=self._session_covered_k_paths,
-            )
-            if guide is None:
-                # The target is not reachable from this tree; finish the run,
-                # the next one starts from scratch.
-                log_guidance_hint(
-                    "No path from the current tree to the selected k-path. Guiding to end of tree."
-                )
-                self._plan_path_to_end()
-            else:
-                self._guide_path.set_guide_path(guide)
+            self._plan_path_to_reachable_target(uncovered_paths, get_coverage_scores)
         self._guide_to_end = self._guide_path.ends_run
 
         next_packet = self._guide_path.next_packet()
@@ -261,6 +287,41 @@ class PacketGuider:
         if len(selected_packets) == 0:
             selected_packets = self._forecast.get_fuzzer_packets()
         return selected_packets
+
+    def _plan_path_to_reachable_target(
+        self,
+        uncovered_paths: list[KPath],
+        get_coverage_scores: Callable[[], list[tuple[NonTerminal, float]]],
+    ) -> None:
+        """
+        Selects targets until one has a path, in this run or a new one, and follows that path. Leaves out each target
+        without a path until a restriction is lifted. Follows a path to the end of the run if no target has a path.
+        """
+        self._update_unreachable_targets()
+        while True:
+            target = self._target_selector.select(
+                uncovered_paths, get_coverage_scores(), self._is_reachable_target
+            )
+            if target is None:
+                log_guidance_hint("No target within reach. Guiding to end of tree.")
+                self._plan_path_to_end()
+                return
+            try:
+                guide = self._navigator.astar_tree_including_k_paths(
+                    tree=self._history_tree,
+                    destination_k_path=target,
+                    included_k_paths=self._session_covered_k_paths,
+                )
+            except UnreachableTargetError:
+                guide = None
+            if guide is not None:
+                self._guide_target = target
+                self._guide_path.set_guide_path(guide)
+                return
+            log_guidance_hint(
+                f"No path to {target} in this run or a new one. Leaving it out until a restriction is lifted."
+            )
+            self._unreachable_targets.add(target)
 
     def find_packets(
         self,
