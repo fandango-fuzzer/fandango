@@ -191,9 +191,8 @@ class PacketGuider:
             if self._guide_to_end:
                 self._end_route_refusals_in_session += 1
         if self._is_end_route_refused(deviation):
-            LOGGER.warning(
-                "NAVIGATORPANIC: Observed derivation of planned protocol path twice for the same transition. "
-                f"Hard-terminating protocol session. Observed derivation {deviation}"
+            log_guidance_hint(
+                f"{sender} refused the route to the end of the run at {deviation.refused}. Ending the session."
             )
             self._abandons_run = True
 
