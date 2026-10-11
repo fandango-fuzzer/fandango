@@ -1,5 +1,5 @@
 import math
-from collections import Counter
+from collections import Counter, deque
 from collections.abc import Callable, Hashable
 from typing import NamedTuple, Optional
 
@@ -39,17 +39,17 @@ _MessageIdentity = tuple[int, str, str, int]
 
 
 class _FeatureCounts:
-    def __init__(self, keep_messages: bool = False) -> None:
-        """keep_messages keeps the features of every message, not only their counts."""
+    """How many messages have each feature, and the features of the last keep_last messages."""
+
+    def __init__(self, keep_last: int = 0) -> None:
         self.messages = 0
         self.by_feature: Counter[_Feature] = Counter()
-        self.features_by_message: list[frozenset[_Feature]] = []
-        self._keep_messages = keep_messages
+        self.features_by_message: deque[frozenset[_Feature]] = deque(maxlen=keep_last)
 
     def add(self, features: frozenset[_Feature]) -> None:
         self.messages += 1
         self.by_feature.update(features)
-        if self._keep_messages:
+        if self.features_by_message.maxlen:
             self.features_by_message.append(features)
 
 
@@ -71,6 +71,8 @@ class ViolationProfile:
     MIN_COUNTEREXAMPLES = 3
     MAX_COUNTEREXAMPLE_SHARE = 0.1
     MIN_SUSPICION_SCORE = 0.9
+    # How many of the last triggers are checked for what a suspect feature explains
+    EXPLAINED_TRIGGERS = 32
     FIRST_RETRY_WAIT = 8
     MAX_RETRY_WAIT = 256
     LOGGED_FEATURES = 3
@@ -79,9 +81,12 @@ class ViolationProfile:
         self,
         k_paths_of: Callable[[DerivationTree], set[KPath]],
         is_fuzzer_party: Callable[[str], bool],
+        literals: frozenset[str],
     ) -> None:
+        """literals are the texts of the grammar's terminals that are not regular expressions."""
         self._k_paths_of = k_paths_of
         self._is_fuzzer_party = is_fuzzer_party
+        self._literals = literals
         self._sessions_ended = 0
         self._trigger_counts: dict[
             tuple[PacketNonTerminal, ViolationKind], _FeatureCounts
@@ -127,7 +132,7 @@ class ViolationProfile:
         packet_type, message = trigger
         kind = self._violation_kind(violation)
         self._trigger_counts.setdefault(
-            (packet_type, kind), _FeatureCounts(keep_messages=True)
+            (packet_type, kind), _FeatureCounts(keep_last=self.EXPLAINED_TRIGGERS)
         ).add(self._features_of(message))
         self._violations_by_packet_type.setdefault(packet_type, set()).add(kind)
         self._suspect_cache.pop(packet_type, None)
@@ -235,7 +240,8 @@ class ViolationProfile:
             _Feature("path", None, path) for path in self._k_paths_of(message)
         )
         values = frozenset(
-            _Feature("value", None, value) for value in value_features(message)
+            _Feature("value", None, value)
+            for value in value_features(message, self._literals)
         )
         return paths | values
 
@@ -375,8 +381,8 @@ class ViolationProfile:
     ) -> list[tuple[_Feature, float]]:
         """
         The suspect features, strongest first. Features of the same source, an earlier packet type, the message's
-        content or an earlier message's content, are kept only if they explain a trigger that stronger sources do
-        not. Without the content of earlier packets suspect by themselves.
+        content or an earlier message's content, are kept only if they explain one of the last triggers that
+        stronger sources do not. Without the content of earlier packets suspect by themselves.
         """
         counterexamples = self._counterexample_counts.get(packet_type)
         if (
@@ -426,7 +432,8 @@ class ViolationProfile:
                 for index, trigger in enumerate(triggers.features_by_message)
                 if any(feature in trigger for feature, _ in features)
             }
-            if not covered <= explained:
+            # A source absent from the last triggers is not judged by them
+            if not covered or not covered <= explained:
                 explaining.extend(features)
                 explained |= covered
         explaining.sort(key=lambda ranked_feature: -ranked_feature[1])

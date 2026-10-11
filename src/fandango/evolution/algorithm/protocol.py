@@ -17,6 +17,9 @@ from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.selection.coverage_tracker import KPathCounts
 from fandango.io.navigation.selection.packetselector import PacketSelector
+from fandango.io.navigation.selection.violation_profiler.value_features import (
+    literals_of,
+)
 from fandango.io.navigation.selection.violation_profiler.violation_profile import (
     ViolationProfile,
 )
@@ -85,13 +88,14 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._violation_profile = ViolationProfile(
             k_paths_of=lambda message: (
                 self._packet_selector.coverage_tracker.k_paths_of(
-                    message, overlap_to_root=True
+                    message, overlap_to_root=False
                 )
             ),
             is_fuzzer_party=lambda name: (
                 name in self._io_instance.parties
                 and self._io_instance.parties[name].is_fuzzer_controlled()
             ),
+            literals=literals_of(self.grammar.rules),
         )
         self._packet_selector: PacketSelector = PacketSelector(
             self.grammar,

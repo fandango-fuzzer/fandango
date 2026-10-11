@@ -12,6 +12,7 @@ from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.route import PlannedPacket
 from fandango.io.navigation.selection.violation_profiler.value_features import (
+    literals_of,
     value_features,
 )
 from fandango.io.navigation.selection.violation_profiler.violation_profile import (
@@ -99,7 +100,9 @@ class TestViolationProfile(unittest.TestCase):
     def setUp(self):
         self.grammar = load(GRAMMAR)
         self.profile = ViolationProfile(
-            k_paths_of=nonterminals_in, is_fuzzer_party=lambda name: name == "Fuzzer"
+            k_paths_of=nonterminals_in,
+            is_fuzzer_party=lambda name: name == "Fuzzer",
+            literals=literals_of(self.grammar.rules),
         )
 
     def trigger(
@@ -205,15 +208,21 @@ class TestViolationProfile(unittest.TestCase):
             message = last_message(session(self.grammar, messages))
             return {
                 level
-                for value_anchor, level in value_features(message)
+                for value_anchor, level in value_features(
+                    message, literals_of(self.grammar.rules)
+                )
                 if value_anchor == anchor
             }
 
-        # A value in one regular expression, <word>, gets the same features as one in rules, <argument>
+        # A value in one regular expression, <word>, gets the same features as one in rules, <argument>;
+        # the exact text counts for both, as '!' is a literal of the grammar
         self.assertEqual(
             levels(EHLO + "cmd !\n", ("<cmd>", "<word>")),
             levels(EHLO + "set !\n", ("<set>", "<argument>")),
         )
+        literals = literals_of(self.grammar.rules)
+        self.assertIn("!", literals)
+        self.assertNotIn("[abc!]", literals)
 
     def test_the_content_of_an_earlier_message_is_suspected(self):
         self.trigger(self.AFTER_BAD_SET, expected="<value>")

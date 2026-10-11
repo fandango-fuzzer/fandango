@@ -1,12 +1,15 @@
 from collections.abc import Hashable, Iterable
 from typing import NamedTuple, Optional
 
+from fandango.errors import FandangoConversionError
+from fandango.language.grammar.nodes.node import Node
+from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 
 # The last nonterminals above a value that tell where in the message it is
 ANCHOR_SYMBOLS = 3
-# Values up to this length count exactly as well
+# Values made of literals up to this length count exactly as well
 EXACT_LENGTH = 8
 
 
@@ -16,11 +19,28 @@ class _ValueSummary(NamedTuple):
     exact: Optional[str]
 
 
+def literals_of(rules: dict[NonTerminal, Node]) -> frozenset[str]:
+    """The texts of the grammar's terminals that are not regular expressions; bits are left out."""
+    literals = set()
+    pending = list(rules.values())
+    while pending:
+        node = pending.pop()
+        if not isinstance(node, TerminalNode):
+            pending.extend(node.children())
+        elif not node.symbol.is_regex:
+            try:
+                literals.add(node.symbol.value().to_string())
+            except FandangoConversionError:
+                pass
+    return frozenset(literals)
+
+
 def value_features(
-    message: DerivationTree,
+    message: DerivationTree, literals: frozenset[str]
 ) -> frozenset[tuple[tuple[str, ...], Hashable]]:
     """
     Coarse to fine abstractions of the values in the message, each tied to where in the message the value occurs.
+    The exact text of a value counts only if it is made of literals.
     """
     features: set[tuple[tuple[str, ...], Hashable]] = set()
     summaries: dict[int, _ValueSummary] = {}
@@ -29,7 +49,7 @@ def value_features(
     while stack:
         node, anchor, children_done = stack.pop()
         if not node.children:
-            summaries[id(node)] = _leaf_summary(node)
+            summaries[id(node)] = _leaf_summary(node, literals)
             continue
         if not children_done:
             name = _anchor_name(node)
@@ -65,13 +85,12 @@ def _anchor_name(node: DerivationTree) -> Optional[str]:
     return None if name.startswith("<__") else name
 
 
-def _leaf_summary(leaf: DerivationTree) -> _ValueSummary:
+def _leaf_summary(leaf: DerivationTree, literals: frozenset[str]) -> _ValueSummary:
     if not leaf.symbol.is_terminal:
         return _ValueSummary(0, frozenset(), "")
     text = leaf.to_string()
-    return _ValueSummary(
-        len(text), frozenset(text), text if len(text) <= EXACT_LENGTH else None
-    )
+    exact = text if len(text) <= EXACT_LENGTH and text in literals else None
+    return _ValueSummary(len(text), frozenset(text), exact)
 
 
 def _combined(children: Iterable[_ValueSummary]) -> _ValueSummary:
