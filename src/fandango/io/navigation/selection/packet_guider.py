@@ -22,7 +22,7 @@ from fandango.io.navigation.step import Step
 from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree
-from fandango.logger import LOGGER, log_guidance_hint
+from fandango.logger import log_guidance_hint
 
 
 class PacketGuider:
