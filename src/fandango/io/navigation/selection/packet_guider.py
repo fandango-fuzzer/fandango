@@ -265,11 +265,17 @@ class PacketGuider:
         if (
             len(list(history_tree.protocol_msgs())) > self._max_messages_per_tree
             or len(uncovered_paths) == 0
+            or self._step_refusals.has_deferred_blocks
         ):
             if len(uncovered_paths) == 0:
                 log_guidance_hint("Full coverage reached. Guiding to end of tree.")
                 if self._guide_target is not None:
                     self._confirm_covered_path(self._guide_target)
+            elif self._step_refusals.has_deferred_blocks:
+                if not self._guide_to_end:
+                    log_guidance_hint(
+                        "Steps wait for the session end to be blocked. Guiding to end of tree."
+                    )
             else:
                 log_guidance_hint(
                     f"Current tree contains more then {self._max_messages_per_tree} messages. Guiding to end of tree."
