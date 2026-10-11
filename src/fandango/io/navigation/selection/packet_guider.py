@@ -33,6 +33,8 @@ class PacketGuider:
     once coverage is full or the run grew too long.
     """
 
+    TARGET_ATTEMPTS = 4
+
     def __init__(
         self,
         model: ProtocolModel,
@@ -298,14 +300,12 @@ class PacketGuider:
         without a path until a restriction is lifted. Follows a path to the end of the run if no target has a path.
         """
         self._update_unreachable_targets()
-        while True:
+        for _ in range(self.TARGET_ATTEMPTS):
             target = self._target_selector.select(
                 uncovered_paths, get_coverage_scores(), self._is_reachable_target
             )
             if target is None:
-                log_guidance_hint("No target within reach. Guiding to end of tree.")
-                self._plan_path_to_end()
-                return
+                break
             try:
                 guide = self._navigator.astar_tree_including_k_paths(
                     tree=self._history_tree,
@@ -322,6 +322,8 @@ class PacketGuider:
                 f"No path to {target} in this run or a new one. Leaving it out until a restriction is lifted."
             )
             self._unreachable_targets.add(target)
+        log_guidance_hint("No target with a path. Guiding to end of tree.")
+        self._plan_path_to_end()
 
     def find_packets(
         self,
