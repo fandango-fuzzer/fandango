@@ -126,7 +126,9 @@ class PredecessorAvoidingTarget(SearchTarget):
             return context
         return context | {predecessor}
 
-    def _is_ruled_out(self, packet: PacketNonTerminal, context: frozenset) -> bool:
+    def _is_ruled_out(
+        self, packet: PacketNonTerminal, context: frozenset[Predecessor]
+    ) -> bool:
         return bool(self._ruled_out.get(packet, frozenset()) & context)
 
 

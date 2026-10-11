@@ -32,14 +32,15 @@ def value_features(
             summaries[id(node)] = _leaf_summary(node)
             continue
         if not children_done:
-            if _is_anchoring(node):
-                anchor = (*anchor, node.symbol.name())[-ANCHOR_SYMBOLS:]
+            name = _anchor_name(node)
+            if name is not None:
+                anchor = (*anchor, name)[-ANCHOR_SYMBOLS:]
             stack.append((node, anchor, True))
             stack.extend((child, anchor, False) for child in node.children)
             continue
         summary = _combined(summaries.pop(id(child)) for child in node.children)
         summaries[id(node)] = summary
-        if _is_anchoring(node):
+        if _anchor_name(node) is not None:
             features.update((anchor, level) for level in _levels(summary))
     return frozenset(features)
 
@@ -56,11 +57,12 @@ def describe_level(level: Hashable) -> str:
     return f"= {value!r}"
 
 
-def _is_anchoring(node: DerivationTree) -> bool:
-    """True for the nonterminals of the grammar, not for control flow."""
-    return isinstance(node.symbol, NonTerminal) and not node.symbol.name().startswith(
-        "<__"
-    )
+def _anchor_name(node: DerivationTree) -> Optional[str]:
+    """The name of a nonterminal of the grammar, None for terminals and control flow."""
+    if not isinstance(node.symbol, NonTerminal):
+        return None
+    name = node.symbol.name()
+    return None if name.startswith("<__") else name
 
 
 def _leaf_summary(leaf: DerivationTree) -> _ValueSummary:

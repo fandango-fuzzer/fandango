@@ -1,11 +1,13 @@
-from typing import Optional, Iterator
+from typing import Iterator, Optional
 
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.selection.coverage_tracker import (
     CoverageTracker,
     KPathCounts,
 )
-from fandango.io.navigation.selection.violation_profiler.violation_profile import ViolationProfile
+from fandango.io.navigation.selection.violation_profiler.violation_profile import (
+    ViolationProfile,
+)
 from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
