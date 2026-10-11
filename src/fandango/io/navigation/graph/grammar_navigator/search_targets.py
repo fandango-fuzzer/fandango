@@ -12,19 +12,52 @@ from fandango.language.symbols import Symbol
 
 
 class RunEndTarget(SearchTarget):
-    """The end of the run as target of a path search: reached by a node at which the run may end."""
+    """
+    The end of the run as target of a path search: reached by a node at which the run may end.
+    The estimate is the cheapest cost of finishing the rules the node lies in.
+    """
 
-    def __init__(self) -> None:
+    # No symbol is a target: the costs of what is left to derive, until the end of the run
+    _NO_TARGET: dict[str, int] = {}
+
+    def __init__(self, costs: RuleCosts) -> None:
+        self._costs = costs
         self._futures = FutureKeys()
+        self._costs_after: dict[GrammarGraphNode, int] = {}
 
     def is_reached(self, node: GrammarGraphNode) -> bool:
         return node.is_accepting
 
     def estimate(self, node: GrammarGraphNode) -> int:
-        return 1
+        return min(
+            RuleCosts.UNREACHABLE,
+            self._costs.cost_from(node.node, self._NO_TARGET, self._cost_after(node)),
+        )
+
+    def can_complete(self, node: GrammarGraphNode) -> bool:
+        """False if every way to finish the rules costs UNREACHABLE. The estimate never overrates, so this is safe."""
+        # The graph decides where the run may end, so a reached node is never pruned, whatever the costs say
+        return node.is_accepting or self.estimate(node) < RuleCosts.UNREACHABLE
 
     def state(self, node: GrammarGraphNode) -> Hashable:
         return self._futures.key(node)
+
+    def _cost_after(self, node: GrammarGraphNode) -> int:
+        """The cheapest cost from the end of node to the end of the run."""
+        unknown = []
+        current: Optional[GrammarGraphNode] = node
+        while current is not None and current not in self._costs_after:
+            unknown.append(current)
+            current = current.parent
+        after = 0 if current is None else self._costs_after[current]
+        for graph_node in reversed(unknown):
+            parent = graph_node.parent
+            if parent is not None:
+                (after,) = self._costs.costs_after(
+                    graph_node.node, parent.node, [self._NO_TARGET], (after,)
+                )
+            self._costs_after[graph_node] = after
+        return after
 
 
 class KPathMatcher:
@@ -64,6 +97,8 @@ class ChainSummary(NamedTuple):
     recent_matched_lengths: tuple[int, ...]
     # Cheapest cost from the end of the node to each symbol of the k-path.
     costs_after: tuple[int, ...]
+    # One bit per matched length of the k-path at the start or at any symbol of the chain.
+    matched_on_chain: int
 
 
 class KPathTarget(SearchTarget):
@@ -92,6 +127,7 @@ class KPathTarget(SearchTarget):
         self._futures = FutureKeys()
         self._summaries: dict[GrammarGraphNode, ChainSummary] = {}
         self._estimates: dict[GrammarGraphNode, int] = {}
+        self._rest_derivable: dict[int, bool] = {}
 
     def is_reached(self, node: GrammarGraphNode) -> bool:
         return self.estimate(node) == 0
@@ -111,7 +147,12 @@ class KPathTarget(SearchTarget):
                 summary.recent_matched_lengths,
                 summary.costs_after,
             )
-        return (self._futures.key(node), summary)
+        return (
+            self._futures.key(node),
+            summary.length,
+            summary.recent_matched_lengths,
+            summary.costs_after,
+        )
 
     def _estimate(self, summary: ChainSummary, graph_node: GrammarGraphNode) -> int:
         if summary.length == 0:
@@ -122,22 +163,51 @@ class KPathTarget(SearchTarget):
 
         # Inside an exchange the chain ends with symbols below the state, so the
         # suffix no longer matches the k-path and every transition looks like a
-        # step back. Rate the node by the best match among its nearest ancestors.
+        # step back. Rate the node by the best match on its chain, however deep:
+        # a path goes on from there once it leaves the symbols below.
         # The goal test above stays exact.
-        matched = min(max(recent, default=0), len(self._k_path) - 1)
-
-        # Sub-gradient toward the next symbol that would extend the match:
-        # the cheapest cost of the messages still to send until it begins,
-        # below the node or after its end.
-        cost_to_next_symbol = min(
-            RuleCosts.UNREACHABLE,
-            self._costs.cost_from(
+        for matched in reversed(range(len(self._k_path))):
+            if not summary.matched_on_chain >> matched & 1:
+                continue
+            if not self._is_rest_derivable(matched):
+                # A shorter match needs these symbols too
+                break
+            # Sub-gradient toward the next symbol that would extend the match:
+            # the cheapest cost of the messages still to send until it begins,
+            # below the node or after its end.
+            cost_to_next_symbol = self._costs.cost_from(
                 graph_node.node, self._distances[matched], summary.costs_after[matched]
-            ),
-        )
-        unmatched = len(self._k_path) - matched
-        # Never return 0 here
-        return max(unmatched * self.UNMATCHED_SYMBOL_COST + cost_to_next_symbol, 1)
+            )
+            if cost_to_next_symbol < RuleCosts.UNREACHABLE:
+                unmatched = len(self._k_path) - matched
+                # Never return 0 here
+                return max(
+                    unmatched * self.UNMATCHED_SYMBOL_COST + cost_to_next_symbol, 1
+                )
+        return self._dead_end_estimate()
+
+    def can_complete(self, node: GrammarGraphNode) -> bool:
+        """
+        False if no path from node reaches the k-path. A path goes on from a match on the chain of node, or from a
+        shorter match it falls back to. Either way it needs the symbols of the k-path after that match: derivable, and
+        the first of them reachable from node, by costs that never overrate. The estimate rates exactly such nodes as
+        dead ends.
+        """
+        return self.estimate(node) < self._dead_end_estimate()
+
+    def _dead_end_estimate(self) -> int:
+        """The estimate of a node the k-path cannot be completed from: after every node it can."""
+        return len(self._k_path) * self.UNMATCHED_SYMBOL_COST + RuleCosts.UNREACHABLE
+
+    def _is_rest_derivable(self, matched: int) -> bool:
+        """True if every symbol of the k-path after the matched ones can be derived."""
+        derivable = self._rest_derivable.get(matched)
+        if derivable is None:
+            derivable = all(
+                self._costs.is_derivable(symbol) for symbol in self._k_path[matched:]
+            )
+            self._rest_derivable[matched] = derivable
+        return derivable
 
     def _summary(self, node: GrammarGraphNode) -> ChainSummary:
         unsummarised = []
@@ -147,7 +217,7 @@ class KPathTarget(SearchTarget):
             current = current.parent
         if current is None:
             summary = ChainSummary(
-                0, 0, (), (RuleCosts.UNREACHABLE,) * len(self._k_path)
+                0, 0, (), (RuleCosts.UNREACHABLE,) * len(self._k_path), 1
             )
         else:
             summary = self._summaries[current]
@@ -186,4 +256,24 @@ class KPathTarget(SearchTarget):
             recent_matched_lengths=(summary.recent_matched_lengths + (matched,))[
                 -self.ANCESTOR_LOOKBACK :
             ],
+            matched_on_chain=summary.matched_on_chain | 1 << matched,
         )
+
+
+class AnyTarget(SearchTarget):
+    """Several targets as one: reached by a node that reaches any of them, aiming at the closest."""
+
+    def __init__(self, targets: Sequence[SearchTarget]):
+        self._targets = list(targets)
+
+    def is_reached(self, node: GrammarGraphNode) -> bool:
+        return any(target.is_reached(node) for target in self._targets)
+
+    def estimate(self, node: GrammarGraphNode) -> int:
+        return min(target.estimate(node) for target in self._targets)
+
+    def state(self, node: GrammarGraphNode) -> Hashable:
+        return tuple(target.state(node) for target in self._targets)
+
+    def can_complete(self, node: GrammarGraphNode) -> bool:
+        return any(target.can_complete(node) for target in self._targets)
