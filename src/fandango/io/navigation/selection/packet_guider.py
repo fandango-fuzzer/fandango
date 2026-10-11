@@ -3,7 +3,10 @@ from typing import Optional
 
 from fandango.io.navigation.forecasting.forecast_view import ForecastView
 from fandango.io.navigation.forecasting.forecasting_result import ForecastingPacket
-from fandango.io.navigation.graph.packetnavigator import PacketNavigator
+from fandango.io.navigation.graph.packetnavigator import (
+    PacketNavigator,
+    RuledOutPredecessors,
+)
 from fandango.io.navigation.route import GuidePath
 from fandango.io.navigation.selection.guide_path_tracker import (
     Deviation,
@@ -32,6 +35,7 @@ class PacketGuider:
         model: ProtocolModel,
         forecast: ForecastView,
         max_messages_per_tree: int,
+        ruled_out_predecessors: Callable[[], RuledOutPredecessors] = dict,
     ):
         self._model = model
         self._forecast = forecast
@@ -40,6 +44,7 @@ class PacketGuider:
             self._model.grammar,
             self._model.start_symbol,
             step_costs=self._step_refusals.repeat_costs,
+            ruled_out_predecessors=ruled_out_predecessors,
         )
         self._target_selector = TargetSelector(model)
         self._max_messages_per_tree = max_messages_per_tree
