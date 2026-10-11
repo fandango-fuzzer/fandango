@@ -16,11 +16,13 @@ class _ValueSummary(NamedTuple):
     exact: Optional[str]
 
 
-def value_features(message: DerivationTree) -> frozenset[Hashable]:
+def value_features(
+    message: DerivationTree,
+) -> frozenset[tuple[tuple[str, ...], Hashable]]:
     """
     Coarse to fine abstractions of the values in the message, each tied to where in the message the value occurs.
     """
-    features: set[Hashable] = set()
+    features: set[tuple[tuple[str, ...], Hashable]] = set()
     summaries: dict[int, _ValueSummary] = {}
     # Post-order without recursion, as messages can be deep
     stack: list[tuple[DerivationTree, tuple[str, ...], bool]] = [(message, (), False)]
@@ -38,7 +40,7 @@ def value_features(message: DerivationTree) -> frozenset[Hashable]:
         summary = _combined(summaries.pop(id(child)) for child in node.children)
         summaries[id(node)] = summary
         if _is_anchoring(node):
-            features.update(("value", anchor, level) for level in _levels(summary))
+            features.update((anchor, level) for level in _levels(summary))
     return frozenset(features)
 
 
