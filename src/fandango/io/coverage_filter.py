@@ -110,8 +110,8 @@ class PacketCoverageFilter:
         packet_type = PacketNonTerminal(msg.sender, msg.recipient, symbol)
         profile = self._violation_profile
         if profile is not None:
-            suspected = profile.suspected_violation(msg, packet_type)
-            if suspected is not None and not profile.retry_due(packet_type, suspected):
+            suspicion = profile.suspicion(msg, packet_type)
+            if suspicion is not None and not profile.retry_due(*suspicion):
                 return None
         msg_hash = hash(msg)
 

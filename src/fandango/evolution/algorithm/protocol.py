@@ -479,16 +479,18 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             packet.sender, packet.recipient, packet.nonterminal
         )
         with self._packet_mounter.mounted_context(packet) as mounted_packet:
-            suspected = self._violation_profile.suspected_violation(
-                mounted_packet, packet_type
-            )
-        if suspected is None:
+            suspicion = self._violation_profile.suspicion(mounted_packet, packet_type)
+        if suspicion is None:
             return
-        if self._violation_profile.retry_due(packet_type, suspected):
-            self._violation_profile.consume_retry(packet_type, suspected)
+        if self._violation_profile.retry_due(*suspicion):
+            self._violation_profile.consume_retry(*suspicion)
             return
+        suspect = (
+            "" if suspicion.packet_type == packet_type else f" {suspicion.packet_type}"
+        )
         log_guidance_hint(
-            f"Sending {packet_type}, suspected to cause {ViolationProfile.describe_violation(suspected)}."
+            f"Sending {packet_type}, suspected to cause{suspect} "
+            f"{ViolationProfile.describe_violation(suspicion.violation)}."
         )
 
     def _configure_fuzzable_packets(self) -> None:

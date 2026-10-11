@@ -27,6 +27,13 @@ class _Feature(NamedTuple):
 
 
 ViolationKind = tuple[str, tuple[str, ...], tuple[str, ...]]
+
+
+class Suspicion(NamedTuple):
+    packet_type: PacketNonTerminal
+    violation: ViolationKind
+
+
 # Position in the session, sender, packet symbol and content hash: a message's identity across mounted copies
 _MessageIdentity = tuple[int, str, str, int]
 
@@ -140,17 +147,30 @@ class ViolationProfile:
         )
         self._suspect_cache.pop(packet_type, None)
 
-    def suspected_violation(
+    def suspicion(
         self, message: DerivationTree, packet_type: PacketNonTerminal
-    ) -> Optional[ViolationKind]:
-        """The violation the message is suspected to cause, if any. The message must be mounted in its session."""
+    ) -> Optional[Suspicion]:
+        """
+        The suspicion the message confirms, if any: one about its own packet type, or one about a later packet type
+        whose suspect features name the message as predecessor with its content. The message must be mounted in its
+        session.
+        """
+        content = self._content_of(message)
         suspects = self._suspects(packet_type)
-        if not suspects:
-            return None
-        features = self._features_of(message)
-        for violation, suspect_features in suspects.items():
-            if features & suspect_features:
-                return violation
+        if suspects:
+            features = content | self._earlier_features(self._messages_before(message))
+            for violation, suspect_features in suspects.items():
+                if features & suspect_features:
+                    return Suspicion(packet_type, violation)
+        assert packet_type.sender is not None
+        predecessor = (packet_type.sender, packet_type.symbol.name())
+        as_predecessor = frozenset(
+            feature._replace(predecessor=predecessor) for feature in content
+        )
+        for later_type in self._violations_by_packet_type:
+            for violation, suspect_features in self._suspects(later_type).items():
+                if as_predecessor & suspect_features:
+                    return Suspicion(later_type, violation)
         return None
 
     def retry_due(
@@ -354,7 +374,7 @@ class ViolationProfile:
     def _ranked_suspect_features(
         self, packet_type: PacketNonTerminal, triggers: _FeatureCounts
     ) -> list[tuple[_Feature, float]]:
-        """The suspect features, strongest first."""
+        """The suspect features, strongest first, without the content of earlier packets suspect by themselves."""
         counterexamples = self._counterexample_counts.get(packet_type)
         if (
             counterexamples is None
@@ -378,4 +398,12 @@ class ViolationProfile:
             if score >= self.MIN_SUSPICION_SCORE:
                 ranked.append((feature, score))
         ranked.sort(key=lambda ranked_feature: -ranked_feature[1])
-        return ranked
+        suspect_predecessors = {
+            feature.predecessor for feature, _ in ranked if feature.kind == "packet"
+        }
+        return [
+            (feature, score)
+            for feature, score in ranked
+            if feature.kind == "packet"
+            or feature.predecessor not in suspect_predecessors
+        ]
