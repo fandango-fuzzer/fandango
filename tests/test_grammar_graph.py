@@ -1,11 +1,18 @@
 import unittest
 from typing import TypeGuard
+from unittest import mock
 
 from fandango.api import Fandango
 from fandango.errors import FandangoError
 from fandango.io.navigation.graph.grammar_navigator import GrammarNavigator
 from fandango.io.navigation.graph.grammar_navigator.grammar_graph_converter import (
+    EagerGrammarGraphNode,
     GrammarGraphNode,
+)
+from fandango.io.navigation.graph.grammar_navigator.rule_costs import RuleCosts
+from fandango.io.navigation.graph.grammar_navigator.search_targets import (
+    KPathTarget,
+    RunEndTarget,
 )
 from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.graph.reachability_checker import ReachabilityChecker
@@ -111,6 +118,51 @@ class TestGrammarGraph(unittest.TestCase):
                 NonTerminal("<E>"),
             ],
         )
+
+    def test_k_path_matched_deeper_than_the_lookback_is_aimed_at(self):
+        grammar = self.get_grammar(RESOURCES_ROOT / "deep_k_path.fan")
+        navigator = PacketNavigator(grammar)
+        navigator.set_message_cost(1)
+        guide = navigator.astar_tree_including_k_paths(
+            tree=DerivationTree(NonTerminal("<start>")),
+            destination_k_path=(NonTerminal("<a>"), NonTerminal("<b>")),
+        )
+        assert guide is not None
+        sent = [
+            step.packet.symbol
+            for step in guide.route
+            if isinstance(step, PlannedPacket)
+        ]
+        self.assertEqual(sent, [NonTerminal("<p>")])
+
+    def test_nodes_whose_matches_differ_only_far_up_the_chain_are_kept_apart(self):
+        grammar = self.get_grammar(RESOURCES_ROOT / "tail_recursive_k_path.fan")
+        navigator = PacketNavigator(grammar)
+        k_path = (
+            NonTerminal("<S>"),
+            NonTerminal("<S>"),
+            NonTerminal("<P>"),
+            NonTerminal("<_packet_q>"),
+        )
+        target = KPathTarget(k_path, navigator._costs)
+        p_by_depth: dict[int, GrammarGraphNode] = {}
+        unvisited = [navigator.graph.start]
+        while len(p_by_depth) < 2:
+            node = unvisited.pop(0)
+            chain = node.chain()
+            if chain[-1] == NonTerminal("<_packet_p>"):
+                p_by_depth.setdefault(chain.count(NonTerminal("<S>")), node)
+            unvisited.extend(node.reaches)
+        shallow, deep = p_by_depth[1], p_by_depth[2]
+        self.assertFalse(target.can_complete(shallow))
+        self.assertTrue(target.can_complete(deep))
+        self.assertNotEqual(target.state(shallow), target.state(deep))
+
+    def test_the_end_of_the_run_is_never_pruned_whatever_the_costs(self):
+        costs = mock.create_autospec(RuleCosts, instance=True)
+        costs.cost_from.return_value = RuleCosts.UNREACHABLE
+        end = EagerGrammarGraphNode(NonTerminalNode(NonTerminal("<quit>"), []), [])
+        self.assertTrue(RunEndTarget(costs).can_complete(end))
 
     def test_unreachable_k_path_from_start_raises(self):
         grammar = self.get_grammar(RESOURCES_ROOT / "minimal_io.fan")
