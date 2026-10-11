@@ -141,6 +141,13 @@ class TestViolationProfile(unittest.TestCase):
         self._learn(answers=ViolationProfile.MIN_COUNTEREXAMPLES - 1)
         self.assertIsNone(self.suspected(self.AFTER_EHLO, HELP))
 
+    def test_a_feature_explaining_no_further_trigger_is_not_suspected(self):
+        # <cmd a> rides along on the route of every trigger; <ehlo> explains them all
+        self.trigger(EHLO + "cmd a\nok\nhelp\n", ViolationProfile.MIN_TRIGGERS)
+        self.answer(HELO + "cmd b\nok\nhelp\nhelptext\n", 3)
+        (suspects,) = self.profile._suspects(HELP).values()
+        self.assertEqual(suspects, {_Feature("packet", ("Fuzzer", "<ehlo>"), None)})
+
     def test_a_feature_common_in_answers_is_not_suspected(self):
         self.trigger(self.AFTER_EHLO)
         self.answer(self.ANSWERED, 3)
