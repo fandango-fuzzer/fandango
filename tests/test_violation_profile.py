@@ -11,8 +11,8 @@ from fandango.io.navigation.graph.grammar_navigator.path_search import PathSearc
 from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.route import PlannedPacket
-from fandango.io.navigation.selection.value_features import value_features
-from fandango.io.navigation.selection.violation_profile import (
+from fandango.io.navigation.selection.violation_profiler.value_features import value_features
+from fandango.io.navigation.selection.violation_profiler.violation_profile import (
     ViolationProfile,
     _Feature,
 )

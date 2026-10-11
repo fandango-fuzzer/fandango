@@ -8,7 +8,7 @@ from fandango.io.navigation.graph.packetnavigator import (
     RuledOutPredecessors,
 )
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.io.navigation.selection.value_features import (
+from fandango.io.navigation.selection.violation_profiler.value_features import (
     describe_level,
     value_features,
 )

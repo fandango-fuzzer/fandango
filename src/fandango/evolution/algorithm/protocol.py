@@ -17,7 +17,7 @@ from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.selection.coverage_tracker import KPathCounts
 from fandango.io.navigation.selection.packetselector import PacketSelector
-from fandango.io.navigation.selection.violation_profile import (
+from fandango.io.navigation.selection.violation_profiler.violation_profile import (
     ViolationProfile,
 )
 from fandango.io.packet_evolution.decorators.mounting_crossover import (
