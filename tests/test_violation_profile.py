@@ -17,9 +17,9 @@ from fandango.io.navigation.selection.violation_profiler.value_features import (
     value_features,
 )
 from fandango.io.navigation.selection.violation_profiler.violation_profile import (
+    ViolationKind,
     ViolationProfile,
     _Feature,
-    ViolationKind,
 )
 from fandango.io.violation import FandangoRemoteViolation, RemoteViolationType
 from fandango.language.grammar import FuzzingMode, ParsingMode

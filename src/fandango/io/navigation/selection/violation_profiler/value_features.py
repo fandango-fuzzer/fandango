@@ -19,7 +19,7 @@ class _ValueSummary(NamedTuple):
     exact: Optional[str]
 
     @staticmethod
-    def merge(children: Iterable[_ValueSummary]) -> _ValueSummary:
+    def merge(children: Iterable["_ValueSummary"]) -> "_ValueSummary":
         length = 0
         chars: set[str] = set()
         exact: Optional[str] = ""
