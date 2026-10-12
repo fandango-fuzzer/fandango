@@ -19,6 +19,7 @@ from fandango.io.navigation.selection.violation_profiler.value_features import (
 from fandango.io.navigation.selection.violation_profiler.violation_profile import (
     ViolationProfile,
     _Feature,
+    ViolationKind,
 )
 from fandango.io.violation import FandangoRemoteViolation, RemoteViolationType
 from fandango.language.grammar import FuzzingMode, ParsingMode
@@ -33,7 +34,7 @@ GET = PacketNonTerminal("Fuzzer", "Extern", NonTerminal("<get>"))
 CMD = PacketNonTerminal("Fuzzer", "Extern", NonTerminal("<cmd>"))
 SET = PacketNonTerminal("Fuzzer", "Extern", NonTerminal("<set>"))
 EHLO_TYPE = PacketNonTerminal("Fuzzer", "Extern", NonTerminal("<ehlo>"))
-GARBAGE_INSTEAD_OF_HELPTEXT = ("SYNTAX", ("<helptext>",), ())
+GARBAGE_INSTEAD_OF_HELPTEXT = ViolationKind("SYNTAX", ("<helptext>",), ())
 SESSIONS = 60
 # <help> violates after <ehlo>, <cmd> with '!', and <get> after a <set> with <bad>
 GRAMMAR = "violation_profile.fan"
@@ -242,9 +243,7 @@ class TestViolationProfile(unittest.TestCase):
         self.assertEqual(self.suspected(EHLO + "set !\n", SET), (GET, violation))
         self.assertIsNone(self.suspected(EHLO + "set b\n", SET))
         self.assertEqual(
-            ViolationProfile._describe_feature(
-                _Feature("path", ("Fuzzer", "<set>"), (NonTerminal("<bad>"),))
-            ),
+            _Feature("path", ("Fuzzer", "<set>"), (NonTerminal("<bad>"),)).describe(),
             "after <set> from Fuzzer with <bad>",
         )
         # A route cannot tell the content of the earlier <set>, so no packet is ruled out
