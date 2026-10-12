@@ -494,7 +494,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         )
         log_guidance_hint(
             f"Sending {packet_type}, suspected to cause{suspect} "
-            f"{ViolationProfile.describe_violation(suspicion.violation)}."
+            f"{suspicion.violation.describe()}."
         )
 
     def _configure_fuzzable_packets(self) -> None:

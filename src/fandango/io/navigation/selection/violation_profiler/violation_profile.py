@@ -42,7 +42,25 @@ class _Feature(NamedTuple):
         return after if what is None else f"{after} with {what}"
 
 
-ViolationKind = tuple[str, tuple[str, ...], tuple[str, ...]]
+class ViolationKind(NamedTuple):
+    error_type: str
+    expected: tuple[str, ...]
+    constraints: tuple[str, ...]
+
+    @classmethod
+    def from_remote_violation(cls, violation: FandangoRemoteViolation):
+        return ViolationKind(
+            violation.error_type.name,
+            tuple(
+                sorted(nt.format_as_spec() for nt in violation.expected_nonterminals)
+            ),
+            tuple(sorted(violation.failed_constraints or [])),
+        )
+
+    def describe(self) -> str:
+        text = f"{self.error_type.lower()} {' | '.join(self.expected)}"
+        return f"{text}: {'; '.join(self.constraints)}" if self.constraints else text
+
 
 
 class Suspicion(NamedTuple):
@@ -146,7 +164,7 @@ class ViolationProfile:
         if trigger is None:
             return
         packet_type, message = trigger
-        kind = self._violation_kind(violation)
+        kind = ViolationKind.from_remote_violation(violation)
         self._trigger_counts.setdefault(
             (packet_type, kind), _FeatureCounts(keep_last=self.EXPLAINED_TRIGGERS)
         ).add(self._features_of(message))
@@ -222,7 +240,7 @@ class ViolationProfile:
         retry.wait_sessions = min(self.MAX_RETRY_WAIT, 2 * retry.wait_sessions)
         retry.due_at_session = self._sessions_ended + retry.wait_sessions
         log_guidance_hint(
-            f"Trying {packet_type} again, suspected to cause {self.describe_violation(violation)}."
+            f"Trying {packet_type} again, suspected to cause {violation.describe()}."
         )
 
     def ruled_out_predecessors(self) -> RuledOutPredecessors:
@@ -283,23 +301,6 @@ class ViolationProfile:
                 self._earlier_cache[prefix] = cached
             features = cached
         return features
-
-    @staticmethod
-    def _violation_kind(violation: FandangoRemoteViolation) -> ViolationKind:
-        return (
-            violation.error_type.name,
-            tuple(
-                sorted(nt.format_as_spec() for nt in violation.expected_nonterminals)
-            ),
-            tuple(sorted(violation.failed_constraints or [])),
-        )
-
-    @staticmethod
-    def describe_violation(violation: ViolationKind) -> str:
-        error_type, expected, constraints = violation
-        text = f"{error_type.lower()} {' | '.join(expected)}"
-        return f"{text}: {'; '.join(constraints)}" if constraints else text
-
 
     @staticmethod
     def _message_identity(
@@ -369,7 +370,7 @@ class ViolationProfile:
             return
         self._last_announcement[(packet_type, violation)] = text
         log_guidance_hint(
-            f"{packet_type} is suspected to cause {self.describe_violation(violation)} by {text}. Holding back such messages."
+            f"{packet_type} is suspected to cause {violation.describe()} by {text}. Holding back such messages."
         )
 
     def _ranked_suspect_features(
