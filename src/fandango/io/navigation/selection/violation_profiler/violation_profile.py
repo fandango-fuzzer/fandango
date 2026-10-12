@@ -167,7 +167,7 @@ class ViolationProfile:
         kind = ViolationKind.from_remote_violation(violation)
         self._trigger_counts.setdefault(
             (packet_type, kind), _FeatureCounts(keep_last=self.EXPLAINED_TRIGGERS)
-        ).add(self._features_of(message))
+        ).add(self._overall_features_of(message))
         self._violations_by_packet_type.setdefault(packet_type, set()).add(kind)
         self._suspect_cache.pop(packet_type, None)
 
@@ -187,7 +187,7 @@ class ViolationProfile:
             return
         self._last_counted_answer = identity
         self._counterexample_counts.setdefault(packet_type, _FeatureCounts()).add(
-            self._features_of(message)
+            self._overall_features_of(message)
         )
         self._suspect_cache.pop(packet_type, None)
 
@@ -199,7 +199,7 @@ class ViolationProfile:
         whose suspect features name the message as predecessor with its content. The message must be mounted in its
         session.
         """
-        content = self._content_of(message)
+        content = self._message_features(message)
         suspects = self._suspects(packet_type)
         if suspects:
             features = content | self._earlier_features(self._messages_before(message))
@@ -262,13 +262,13 @@ class ViolationProfile:
                 ruled_out[packet_type] = frozenset(predecessors)
         return ruled_out
 
-    def _features_of(self, message: DerivationTree) -> frozenset[_Feature]:
+    def _overall_features_of(self, message: DerivationTree) -> frozenset[_Feature]:
         """The message's content, the packet types before it, and the content of the last messages before it."""
-        return self._content_of(message) | self._earlier_features(
+        return self._message_features(message) | self._earlier_features(
             self._messages_before(message)
         )
 
-    def _content_of(self, message: DerivationTree) -> frozenset[_Feature]:
+    def _message_features(self, message: DerivationTree) -> frozenset[_Feature]:
         """The message's k-paths and the abstractions of its values."""
         paths = frozenset(
             _Feature("path", None, path) for path in self._k_paths_of(message)
@@ -295,7 +295,7 @@ class ViolationProfile:
                     | {_Feature("packet", predecessor, None)}
                     | {
                         feature._replace(predecessor=predecessor)
-                        for feature in self._content_of(message)
+                        for feature in self._message_features(message)
                     }
                 )
                 self._earlier_cache[prefix] = cached
