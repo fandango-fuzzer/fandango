@@ -25,6 +25,22 @@ class _Feature(NamedTuple):
     predecessor: Optional[Predecessor]
     detail: Hashable
 
+    def describe(self) -> str:
+        what = None
+        if self.kind == "path":
+            assert isinstance(self.detail, tuple)
+            what = "/".join(symbol.format_as_spec() for symbol in self.detail)
+        elif self.kind == "value":
+            assert isinstance(self.detail, tuple)
+            anchor, level = self.detail
+            what = f"{'/'.join(anchor)} {describe_level(level)}"
+        if self.predecessor is None:
+            assert what is not None
+            return what
+        sender, symbol = self.predecessor
+        after = f"after {symbol} from {sender}"
+        return after if what is None else f"{after} with {what}"
+
 
 ViolationKind = tuple[str, tuple[str, ...], tuple[str, ...]]
 
@@ -284,26 +300,6 @@ class ViolationProfile:
         text = f"{error_type.lower()} {' | '.join(expected)}"
         return f"{text}: {'; '.join(constraints)}" if constraints else text
 
-    @staticmethod
-    def _describe_feature(feature: _Feature) -> str:
-        what = None
-        if feature.kind == "path":
-            assert isinstance(feature.detail, tuple)
-            what = ViolationProfile._describe_path(feature.detail)
-        elif feature.kind == "value":
-            assert isinstance(feature.detail, tuple)
-            anchor, level = feature.detail
-            what = f"{'/'.join(anchor)} {describe_level(level)}"
-        if feature.predecessor is None:
-            assert what is not None
-            return what
-        sender, symbol = feature.predecessor
-        after = f"after {symbol} from {sender}"
-        return after if what is None else f"{after} with {what}"
-
-    @staticmethod
-    def _describe_path(path: KPath) -> str:
-        return "/".join(symbol.format_as_spec() for symbol in path)
 
     @staticmethod
     def _message_identity(
@@ -364,7 +360,7 @@ class ViolationProfile:
     ) -> None:
         """Logs the strongest suspect features, whenever they change."""
         top = ", ".join(
-            self._describe_feature(feature)
+            feature.describe()
             for feature, _ in ranked[: self.LOGGED_FEATURES]
         )
         more = len(ranked) - self.LOGGED_FEATURES

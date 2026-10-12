@@ -18,6 +18,55 @@ class _ValueSummary(NamedTuple):
     chars: frozenset[str]
     exact: Optional[str]
 
+    @staticmethod
+    def merge(children: Iterable[_ValueSummary]) -> _ValueSummary:
+        length = 0
+        chars: set[str] = set()
+        exact: Optional[str] = ""
+        for child in children:
+            length += child.length
+            chars |= child.chars
+            exact = (
+                None
+                if exact is None or child.exact is None or length > EXACT_LENGTH
+                else exact + child.exact
+            )
+        return _ValueSummary(length, frozenset(chars), exact)
+
+    def levels(self) -> list[Hashable]:
+        """The value of a subtree from coarse to fine."""
+        levels: list[Hashable] = [
+            ("classes", tuple(sorted({self._char_class(char) for char in self.chars}))),
+            ("length", self.length.bit_length()),
+        ]
+        levels.extend(
+            ("char", char)
+            for char in sorted(self.chars)
+            if not char.isalnum() and ord(char) < 0x80
+        )
+        if self.exact is not None:
+            levels.append(("exact", self.exact))
+        return levels
+
+    @staticmethod
+    def _char_class(char: str) -> str:
+        code = ord(char)
+        if code >= 0x80:
+            return "non-ascii"
+        if char.islower():
+            return "lower"
+        if char.isupper():
+            return "upper"
+        if char.isdigit():
+            return "digit"
+        if char == " ":
+            return "space"
+        if char in "\r\n":
+            return "newline"
+        if code < 0x20 or code == 0x7F:
+            return "control"
+        return "punctuation"
+
 
 def literals_of(rules: dict[NonTerminal, Node]) -> frozenset[str]:
     """The texts of the grammar's terminals that are not regular expressions; bits are left out."""
@@ -44,7 +93,6 @@ def value_features(
     """
     features: set[tuple[tuple[str, ...], Hashable]] = set()
     summaries: dict[int, _ValueSummary] = {}
-    # Post-order without recursion, as messages can be deep
     stack: list[tuple[DerivationTree, tuple[str, ...], bool]] = [(message, (), False)]
     while stack:
         node, anchor, children_done = stack.pop()
@@ -58,10 +106,10 @@ def value_features(
             stack.append((node, anchor, True))
             stack.extend((child, anchor, False) for child in node.children)
             continue
-        summary = _combined(summaries.pop(id(child)) for child in node.children)
+        summary = _ValueSummary.merge(summaries.pop(id(child)) for child in node.children)
         summaries[id(node)] = summary
         if _anchor_name(node) is not None:
-            features.update((anchor, level) for level in _levels(summary))
+            features.update((anchor, level) for level in summary.levels())
     return frozenset(features)
 
 
@@ -93,51 +141,3 @@ def _leaf_summary(leaf: DerivationTree, literals: frozenset[str]) -> _ValueSumma
     return _ValueSummary(len(text), frozenset(text), exact)
 
 
-def _combined(children: Iterable[_ValueSummary]) -> _ValueSummary:
-    length = 0
-    chars: set[str] = set()
-    exact: Optional[str] = ""
-    for child in children:
-        length += child.length
-        chars |= child.chars
-        exact = (
-            None
-            if exact is None or child.exact is None or length > EXACT_LENGTH
-            else exact + child.exact
-        )
-    return _ValueSummary(length, frozenset(chars), exact)
-
-
-def _levels(summary: _ValueSummary) -> list[Hashable]:
-    """The value of a subtree from coarse to fine."""
-    levels: list[Hashable] = [
-        ("classes", tuple(sorted({_char_class(char) for char in summary.chars}))),
-        ("length", summary.length.bit_length()),
-    ]
-    levels.extend(
-        ("char", char)
-        for char in sorted(summary.chars)
-        if not char.isalnum() and ord(char) < 0x80
-    )
-    if summary.exact is not None:
-        levels.append(("exact", summary.exact))
-    return levels
-
-
-def _char_class(char: str) -> str:
-    code = ord(char)
-    if code >= 0x80:
-        return "non-ascii"
-    if char.islower():
-        return "lower"
-    if char.isupper():
-        return "upper"
-    if char.isdigit():
-        return "digit"
-    if char == " ":
-        return "space"
-    if char in "\r\n":
-        return "newline"
-    if code < 0x20 or code == 0x7F:
-        return "control"
-    return "punctuation"
