@@ -48,7 +48,9 @@ class ViolationKind(NamedTuple):
     constraints: tuple[str, ...]
 
     @classmethod
-    def from_remote_violation(cls, violation: FandangoRemoteViolation):
+    def from_remote_violation(
+        cls, violation: FandangoRemoteViolation
+    ) -> "ViolationKind":
         return ViolationKind(
             violation.error_type.name,
             tuple(
@@ -60,7 +62,6 @@ class ViolationKind(NamedTuple):
     def describe(self) -> str:
         text = f"{self.error_type.lower()} {' | '.join(self.expected)}"
         return f"{text}: {'; '.join(self.constraints)}" if self.constraints else text
-
 
 
 class Suspicion(NamedTuple):
@@ -361,8 +362,7 @@ class ViolationProfile:
     ) -> None:
         """Logs the strongest suspect features, whenever they change."""
         top = ", ".join(
-            feature.describe()
-            for feature, _ in ranked[: self.LOGGED_FEATURES]
+            feature.describe() for feature, _ in ranked[: self.LOGGED_FEATURES]
         )
         more = len(ranked) - self.LOGGED_FEATURES
         text = f"{top} and {more} more" if more > 0 else top

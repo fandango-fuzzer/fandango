@@ -106,7 +106,9 @@ def value_features(
             stack.append((node, anchor, True))
             stack.extend((child, anchor, False) for child in node.children)
             continue
-        summary = _ValueSummary.merge(summaries.pop(id(child)) for child in node.children)
+        summary = _ValueSummary.merge(
+            summaries.pop(id(child)) for child in node.children
+        )
         summaries[id(node)] = summary
         if _anchor_name(node) is not None:
             features.update((anchor, level) for level in summary.levels())
@@ -139,5 +141,3 @@ def _leaf_summary(leaf: DerivationTree, literals: frozenset[str]) -> _ValueSumma
     text = leaf.to_string()
     exact = text if len(text) <= EXACT_LENGTH and text in literals else None
     return _ValueSummary(len(text), frozenset(text), exact)
-
-
