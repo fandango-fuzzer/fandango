@@ -62,7 +62,9 @@ class FakeClock:
 
 
 def filter_after(finished_session, clock=None):
-    return PacketCoverageFilter(tracker_after(finished_session), clock=clock or FakeClock())
+    return PacketCoverageFilter(
+        tracker_after(finished_session), clock=clock or FakeClock()
+    )
 
 
 def test_new_k_path_passes():
