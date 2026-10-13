@@ -53,8 +53,16 @@ def tracker_after(finished_session):
     return tracker
 
 
-def filter_after(finished_session):
-    return PacketCoverageFilter(tracker_after(finished_session))
+class FakeClock:
+    def __init__(self):
+        self.now = 0.0
+
+    def __call__(self):
+        return self.now
+
+
+def filter_after(finished_session, clock=None):
+    return PacketCoverageFilter(tracker_after(finished_session), clock=clock or FakeClock())
 
 
 def test_new_k_path_passes():

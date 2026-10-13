@@ -1,4 +1,5 @@
-from typing import Iterator, Optional
+import time
+from typing import Callable, Iterator, Optional
 
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.selection.coverage_tracker import (
@@ -16,6 +17,8 @@ from fandango.language.tree import DerivationTree
 class PacketCoverageFilter:
     # Valid candidates held back for one message before searching on is not worth the time
     HELD_BACK_PER_MESSAGE = 10
+    # Seconds of searching for one message after which holding back is not worth the time either
+    HOLD_BACK_SECONDS = 2.5
     # Valid candidates of one packet type held back in a row before its uncovered k-paths count as unreachable
     HELD_BACK_UNTIL_UNREACHABLE = 100
 
@@ -23,9 +26,12 @@ class PacketCoverageFilter:
         self,
         coverage_tracker: CoverageTracker,
         violation_profile: Optional[ViolationProfile] = None,
+        clock: Callable[[], float] = time.monotonic,
     ):
         self._coverage_tracker = coverage_tracker
         self._violation_profile = violation_profile
+        self._clock = clock
+        self._message_started_at = clock()
         self._held_back_count = 0
         self._held_back_in_a_row: dict[PacketNonTerminal, int] = {}
         self._submitted_solutions: set[int] = set()
@@ -47,6 +53,7 @@ class PacketCoverageFilter:
         self._solution_set.clear()
         self._held_back_packet_types.clear()
         self._held_back_count = 0
+        self._message_started_at = self._clock()
         for record in current_tree.protocol_msgs():
             self._submitted_solutions.add(
                 hash((record.sender, record.recipient, record.msg))
@@ -60,13 +67,20 @@ class PacketCoverageFilter:
         self._unreachable_k_paths.clear()
         self._held_back_count = 0
         self._held_back_in_a_row.clear()
+        self._message_started_at = self._clock()
 
     def held_back_enough(self) -> bool:
-        """Whether the current message has held back so many valid candidates that a held-back one should be sent."""
+        """
+        Whether the current message has held back so many valid candidates, or searched so long, that a held-back
+        one should be sent.
+        """
         return (
             self._held_back_count >= self.HELD_BACK_PER_MESSAGE
-            and len(self.hold_back_solutions_by_msg_hash) > 0
-        )
+            or self._hold_back_time_is_up()
+        ) and len(self.hold_back_solutions_by_msg_hash) > 0
+
+    def _hold_back_time_is_up(self) -> bool:
+        return self._clock() - self._message_started_at >= self.HOLD_BACK_SECONDS
 
     def mark_uncovered_k_paths_unreachable(self) -> None:
         for packet_type in self._held_back_packet_types:
@@ -113,6 +127,9 @@ class PacketCoverageFilter:
             suspicion = profile.suspicion(msg, packet_type)
             if suspicion is not None and not profile.retry_due(*suspicion):
                 return None
+        if self._hold_back_time_is_up() and not self.hold_back_solutions_by_msg_hash:
+            # Searched long enough without a candidate to hold back: the first valid one is sent
+            return individual
         msg_hash = hash(msg)
 
         state_path_tree = msg.get_path()
