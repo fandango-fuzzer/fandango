@@ -43,13 +43,10 @@ class GeneticBase(abc.ABC):
         Get the access points of the genetic base, i.e., the non-terminal that are considered in this genetic base.
         :return list[NonTerminal]: The list of access points.
         """
-        return sum(
-            [
-                search.get_access_points(include_base)
-                for search in self.searches.values()
-            ],
-            [],
-        )
+        access_points: list[NonTerminal] = []
+        for search in self.searches.values():
+            access_points.extend(search.get_access_points(include_base))
+        return access_points
 
     @abc.abstractmethod
     def fitness(
