@@ -257,6 +257,9 @@ class NonTerminalSearch(abc.ABC):
     def get_access_points(self, include_base: bool = False) -> list[NonTerminal]:
         """
         Get the access points of the non-terminal search, i.e., the non-terminal that are considered in this search.
+        :param bool include_base: Whether to include the non-terminals of the bases the search starts from.
+            A base is the left-hand part of an attribute or selector search, e.g. `<a>` in `<a>.<b>` or
+            `<a>..<b>`. Without bases, only `<b>` is returned; with bases, `<a>` and `<b>`.
         :return list[NonTerminal]: The list of access points.
         """
 
@@ -803,6 +806,8 @@ class AnnotatedSearch(NonTerminalSearch, Generic[Annotation]):
         """
         Get the access points of the non-terminal search, i.e., the non-terminal that are considered in this search.
         :param bool include_base: Whether to include the non-terminals of the bases the search starts from.
+            A base is the left-hand part of an attribute or selector search, e.g. `<a>` in `<a>.<b>` or
+            `<a>..<b>`. Without bases, only `<b>` is returned; with bases, `<a>` and `<b>`.
         :return list[NonTerminal]: The list of access points.
         """
         return self._inner.get_access_points(include_base)

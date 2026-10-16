@@ -41,15 +41,15 @@ class GeneticBase(abc.ABC):
     def get_access_points(self, include_base: bool = False) -> list[NonTerminal]:
         """
         Get the access points of the genetic base, i.e., the non-terminal that are considered in this genetic base.
+        :param bool include_base: Whether to include the non-terminals of the bases the search starts from.
+            A base is the left-hand part of an attribute or selector search, e.g. `<a>` in `<a>.<b>` or
+            `<a>..<b>`. Without bases, only `<b>` is returned; with bases, `<a>` and `<b>`.
         :return list[NonTerminal]: The list of access points.
         """
-        return sum(
-            [
-                search.get_access_points(include_base)
-                for search in self.searches.values()
-            ],
-            [],
-        )
+        access_points: list[NonTerminal] = []
+        for search in self.searches.values():
+            access_points.extend(search.get_access_points(include_base))
+        return access_points
 
     @abc.abstractmethod
     def fitness(
