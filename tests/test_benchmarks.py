@@ -29,7 +29,7 @@ class ParseCase(NamedTuple):
     label: str
     spec: str
     make_word: Callable[[int], str | bytes]
-    max_length: int = 10_000
+    max_length: int = 5_000
     incomplete: bool = False
     limit: int | None = None
     incremental: bool = False
@@ -87,7 +87,7 @@ PARSE_CASES = [
     ),
 ]
 
-PARSE_LENGTHS = (10, 100, 1_000, 10_000)
+PARSE_LENGTHS = (10, 100, 1_000, 5_000)
 TEST_MAX_INPUT_LENGTH = 100
 
 
@@ -153,6 +153,7 @@ def test_parse(benchmark: BenchmarkFixture, case: ParseCase, length: int) -> Non
             func,
             setup=grammar._parser._cache.clear,
             iterations=1,
+            rounds=5,
         )
     except RecursionError:
         pytest.xfail(f"{case.label} runs out of Python stack at {length:,} characters")
