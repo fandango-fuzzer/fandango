@@ -1,0 +1,444 @@
+import math
+from collections import Counter, deque
+from collections.abc import Callable, Hashable
+from typing import NamedTuple, Optional
+
+from fandango.io.navigation.graph.packetnavigator import (
+    Predecessor,
+    RuledOutPredecessors,
+)
+from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
+from fandango.io.navigation.selection.violation_profiler.value_features import (
+    describe_level,
+    value_features,
+)
+from fandango.io.violation import FandangoRemoteViolation
+from fandango.language.grammar.grammar import KPath
+from fandango.language.tree import DerivationTree
+from fandango.logger import log_guidance_hint
+
+
+class _Feature(NamedTuple):
+    # "path" (a k-path), "value" (anchor and abstraction of a value) or "packet"
+    kind: str
+    # Sender and symbol of the earlier message the feature is of, or None for the message itself
+    predecessor: Optional[Predecessor]
+    detail: Hashable
+
+    def describe(self) -> str:
+        what = None
+        if self.kind == "path":
+            assert isinstance(self.detail, tuple)
+            what = "/".join(symbol.format_as_spec() for symbol in self.detail)
+        elif self.kind == "value":
+            assert isinstance(self.detail, tuple)
+            anchor, level = self.detail
+            what = f"{'/'.join(anchor)} {describe_level(level)}"
+        if self.predecessor is None:
+            assert what is not None
+            return what
+        sender, symbol = self.predecessor
+        after = f"after {symbol} from {sender}"
+        return after if what is None else f"{after} with {what}"
+
+
+class ViolationKind(NamedTuple):
+    error_type: str
+    expected: tuple[str, ...]
+    constraints: tuple[str, ...]
+
+    @classmethod
+    def from_remote_violation(
+        cls, violation: FandangoRemoteViolation
+    ) -> "ViolationKind":
+        return ViolationKind(
+            violation.error_type.name,
+            tuple(
+                sorted(nt.format_as_spec() for nt in violation.expected_nonterminals)
+            ),
+            tuple(sorted(violation.failed_constraints or [])),
+        )
+
+    def describe(self) -> str:
+        text = f"{self.error_type.lower()} {' | '.join(self.expected)}"
+        return f"{text}: {'; '.join(self.constraints)}" if self.constraints else text
+
+
+class Suspicion(NamedTuple):
+    packet_type: PacketNonTerminal
+    violation: ViolationKind
+
+
+# Position in the session, sender, packet symbol and content hash: a message's identity across mounted copies
+_MessageIdentity = tuple[int, str, str, int]
+
+
+class _FeatureCounts:
+    """How many messages have each feature, and the features of the last keep_last messages."""
+
+    def __init__(self, keep_last: int = 0) -> None:
+        self.messages = 0
+        self.by_feature: Counter[_Feature] = Counter()
+        self.features_by_message: deque[frozenset[_Feature]] = deque(maxlen=keep_last)
+
+    def add(self, features: frozenset[_Feature]) -> None:
+        self.messages += 1
+        self.by_feature.update(features)
+        if self.features_by_message.maxlen:
+            self.features_by_message.append(features)
+
+
+class _Retry:
+    """When a suspect message of one kind may be sent again, to see whether it still causes the violation."""
+
+    def __init__(self, first_wait: int) -> None:
+        self.wait_sessions = first_wait
+        self.due_at_session = 0
+
+
+class ViolationProfile:
+    """
+    Learns which features of sent messages make the remote party violate the grammar, by comparing the messages sent
+    last before a violation with messages it answered.
+    """
+
+    MIN_TRIGGERS = 3
+    MIN_COUNTEREXAMPLES = 3
+    MAX_COUNTEREXAMPLE_SHARE = 0.1
+    MIN_SUSPICION_SCORE = 0.9
+    # How many of the last triggers are checked for what a suspect feature explains
+    EXPLAINED_TRIGGERS = 32
+    FIRST_RETRY_WAIT = 8
+    MAX_RETRY_WAIT = 256
+    LOGGED_FEATURES = 3
+
+    def __init__(
+        self,
+        k_paths_of: Callable[[DerivationTree], set[KPath]],
+        is_fuzzer_party: Callable[[str], bool],
+        literals: frozenset[str],
+    ) -> None:
+        """literals are the texts of the grammar's terminals that are not regular expressions."""
+        self._k_paths_of = k_paths_of
+        self._is_fuzzer_party = is_fuzzer_party
+        self._literals = literals
+        self._sessions_ended = 0
+        self._trigger_counts: dict[
+            tuple[PacketNonTerminal, ViolationKind], _FeatureCounts
+        ] = {}
+        self._violations_by_packet_type: dict[
+            PacketNonTerminal, set[ViolationKind]
+        ] = {}
+        self._counterexample_counts: dict[PacketNonTerminal, _FeatureCounts] = {}
+        self._retries: dict[tuple[PacketNonTerminal, ViolationKind], _Retry] = {}
+        self._suspect_cache: dict[
+            PacketNonTerminal, dict[ViolationKind, frozenset[_Feature]]
+        ] = {}
+        self._last_announcement: dict[tuple[PacketNonTerminal, ViolationKind], str] = {}
+        self._last_counted_answer: Optional[_MessageIdentity] = None
+        # The features of the messages before a message, per prefix of the session
+        self._earlier_cache: dict[tuple[int, ...], frozenset[_Feature]] = {}
+
+    def reset(self) -> None:
+        self._sessions_ended = 0
+        self._trigger_counts.clear()
+        self._violations_by_packet_type.clear()
+        self._counterexample_counts.clear()
+        self._retries.clear()
+        self._suspect_cache.clear()
+        self._last_announcement.clear()
+        self._last_counted_answer = None
+        self._earlier_cache.clear()
+
+    def signal_session_end(self) -> None:
+        self._sessions_ended += 1
+        self._last_counted_answer = None
+        self._earlier_cache.clear()
+
+    def observe_violation(
+        self, session_tree: DerivationTree, violation: Exception
+    ) -> None:
+        """Records the last message the fuzzer sent in the session as a trigger of the violation."""
+        if not isinstance(violation, FandangoRemoteViolation):
+            return
+        trigger = self._last_fuzzer_message(session_tree)
+        if trigger is None:
+            return
+        packet_type, message = trigger
+        kind = ViolationKind.from_remote_violation(violation)
+        self._trigger_counts.setdefault(
+            (packet_type, kind), _FeatureCounts(keep_last=self.EXPLAINED_TRIGGERS)
+        ).add(self._overall_features_of(message))
+        self._violations_by_packet_type.setdefault(packet_type, set()).add(kind)
+        self._suspect_cache.pop(packet_type, None)
+
+    def observe_answer(self, session_tree: DerivationTree) -> None:
+        """
+        Records the last message the fuzzer sent as a counterexample, as the remote party answered it within the
+        grammar. Ignores packet types never triggered a violation before.
+        """
+        sent = self._last_fuzzer_message(session_tree)
+        if sent is None:
+            return
+        packet_type, message = sent
+        if packet_type not in self._violations_by_packet_type:
+            return
+        identity = self._message_identity(message, self._messages_before(message))
+        if identity == self._last_counted_answer:
+            return
+        self._last_counted_answer = identity
+        self._counterexample_counts.setdefault(packet_type, _FeatureCounts()).add(
+            self._overall_features_of(message)
+        )
+        self._suspect_cache.pop(packet_type, None)
+
+    def suspicion(
+        self, message: DerivationTree, packet_type: PacketNonTerminal
+    ) -> Optional[Suspicion]:
+        """
+        The suspicion the message confirms, if any: one about its own packet type, or one about a later packet type
+        whose suspect features name the message as predecessor with its content. The message must be mounted in its
+        session.
+        """
+        content = self._message_features(message)
+        suspects = self._suspects(packet_type)
+        if suspects:
+            features = content | self._earlier_features(self._messages_before(message))
+            for violation, suspect_features in suspects.items():
+                if features & suspect_features:
+                    return Suspicion(packet_type, violation)
+        assert packet_type.sender is not None
+        predecessor = (packet_type.sender, packet_type.symbol.name())
+        as_predecessor = frozenset(
+            feature._replace(predecessor=predecessor) for feature in content
+        )
+        for later_type in self._violations_by_packet_type:
+            for violation, suspect_features in self._suspects(later_type).items():
+                if as_predecessor & suspect_features:
+                    return Suspicion(later_type, violation)
+        return None
+
+    def retry_due(
+        self, packet_type: PacketNonTerminal, violation: ViolationKind
+    ) -> bool:
+        """
+        True once the wait for this suspect is over. The first call starts the wait; the retry is used up only by
+        consume_retry, when a suspect is actually sent.
+        """
+        retry = self._retries.setdefault(
+            (packet_type, violation), _Retry(self.FIRST_RETRY_WAIT)
+        )
+        if retry.due_at_session == 0:
+            retry.due_at_session = self._sessions_ended + retry.wait_sessions
+            return False
+        return self._sessions_ended >= retry.due_at_session
+
+    def consume_retry(
+        self, packet_type: PacketNonTerminal, violation: ViolationKind
+    ) -> None:
+        """Uses up the due retry of a suspect that is sent now; the next wait is twice as long."""
+        retry = self._retries[(packet_type, violation)]
+        retry.wait_sessions = min(self.MAX_RETRY_WAIT, 2 * retry.wait_sessions)
+        retry.due_at_session = self._sessions_ended + retry.wait_sessions
+        log_guidance_hint(
+            f"Trying {packet_type} again, suspected to cause {violation.describe()}."
+        )
+
+    def ruled_out_predecessors(self) -> RuledOutPredecessors:
+        """
+        Per packet type, the earlier packets, as sender and symbol, after which every message of the type is
+        suspected to cause a violation, whatever its content. Leaves out the violations whose retry is due.
+        """
+        ruled_out = {}
+        for packet_type in self._violations_by_packet_type:
+            predecessors: set[Predecessor] = set()
+            for violation, features in self._suspects(packet_type).items():
+                if self.retry_due(packet_type, violation):
+                    continue
+                for feature in features:
+                    if feature.kind == "packet":
+                        assert feature.predecessor is not None
+                        predecessors.add(feature.predecessor)
+            if predecessors:
+                ruled_out[packet_type] = frozenset(predecessors)
+        return ruled_out
+
+    def _overall_features_of(self, message: DerivationTree) -> frozenset[_Feature]:
+        """The message's content, the packet types before it, and the content of the last messages before it."""
+        return self._message_features(message) | self._earlier_features(
+            self._messages_before(message)
+        )
+
+    def _message_features(self, message: DerivationTree) -> frozenset[_Feature]:
+        """The message's k-paths and the abstractions of its values."""
+        paths = frozenset(
+            _Feature("path", None, path) for path in self._k_paths_of(message)
+        )
+        values = frozenset(
+            _Feature("value", None, value)
+            for value in value_features(message, self._literals)
+        )
+        return paths | values
+
+    def _earlier_features(
+        self, earlier: list[tuple[str, DerivationTree]]
+    ) -> frozenset[_Feature]:
+        """The features of the messages before a message: their packet types and their content."""
+        hashes = tuple(hash(message) for _, message in earlier)
+        features: frozenset[_Feature] = frozenset()
+        for index, (sender, message) in enumerate(earlier):
+            prefix = hashes[: index + 1]
+            cached = self._earlier_cache.get(prefix)
+            if cached is None:
+                predecessor = (sender, message.nonterminal.name())
+                cached = (
+                    features
+                    | {_Feature("packet", predecessor, None)}
+                    | {
+                        feature._replace(predecessor=predecessor)
+                        for feature in self._message_features(message)
+                    }
+                )
+                self._earlier_cache[prefix] = cached
+            features = cached
+        return features
+
+    @staticmethod
+    def _message_identity(
+        message: DerivationTree, earlier: list[tuple[str, DerivationTree]]
+    ) -> _MessageIdentity:
+        return (
+            len(earlier),
+            str(message.sender),
+            message.nonterminal.name(),
+            hash(message),
+        )
+
+    @staticmethod
+    def _messages_before(message: DerivationTree) -> list[tuple[str, DerivationTree]]:
+        session = message.get_root()
+        earlier = []
+        for record in session.protocol_msgs():
+            if record.msg is message:
+                break
+            earlier.append((record.sender, record.msg))
+        return earlier
+
+    def _last_fuzzer_message(
+        self, session_tree: DerivationTree
+    ) -> Optional[tuple[PacketNonTerminal, DerivationTree]]:
+        for record in session_tree.protocol_msgs(reverse=True):
+            if self._is_fuzzer_party(record.sender):
+                return (
+                    PacketNonTerminal(
+                        record.sender, record.recipient, record.msg.nonterminal
+                    ),
+                    record.msg,
+                )
+        return None
+
+    def _suspects(
+        self, packet_type: PacketNonTerminal
+    ) -> dict[ViolationKind, frozenset[_Feature]]:
+        """The suspect features per violation for one packet type."""
+        suspects = self._suspect_cache.get(packet_type)
+        if suspects is None:
+            suspects = {}
+            for violation in self._violations_by_packet_type.get(packet_type, ()):
+                ranked = self._ranked_suspect_features(
+                    packet_type, self._trigger_counts[(packet_type, violation)]
+                )
+                if ranked:
+                    suspects[violation] = frozenset(feature for feature, _ in ranked)
+                    self._log_suspicion(packet_type, violation, ranked)
+            self._suspect_cache[packet_type] = suspects
+        return suspects
+
+    def _log_suspicion(
+        self,
+        packet_type: PacketNonTerminal,
+        violation: ViolationKind,
+        ranked: list[tuple[_Feature, float]],
+    ) -> None:
+        """Logs the strongest suspect features, whenever they change."""
+        top = ", ".join(
+            feature.describe() for feature, _ in ranked[: self.LOGGED_FEATURES]
+        )
+        more = len(ranked) - self.LOGGED_FEATURES
+        text = f"{top} and {more} more" if more > 0 else top
+        if self._last_announcement.get((packet_type, violation)) == text:
+            return
+        self._last_announcement[(packet_type, violation)] = text
+        log_guidance_hint(
+            f"{packet_type} is suspected to cause {violation.describe()} by {text}. Holding back such messages."
+        )
+
+    def _ranked_suspect_features(
+        self, packet_type: PacketNonTerminal, triggers: _FeatureCounts
+    ) -> list[tuple[_Feature, float]]:
+        """
+        The suspect features, strongest first. Features of the same source, an earlier packet type, the message's
+        content or an earlier message's content, are kept only if they explain one of the last triggers that
+        stronger sources do not. Without the content of earlier packets suspect by themselves.
+        """
+        counterexamples = self._counterexample_counts.get(packet_type)
+        if (
+            counterexamples is None
+            or counterexamples.messages < self.MIN_COUNTEREXAMPLES
+        ):
+            return []
+        ranked = []
+        for feature, triggers_with_feature in triggers.by_feature.items():
+            if triggers_with_feature < self.MIN_TRIGGERS:
+                continue
+            counterexamples_with_feature = counterexamples.by_feature[feature]
+            if (
+                counterexamples_with_feature
+                > self.MAX_COUNTEREXAMPLE_SHARE * counterexamples.messages
+            ):
+                continue
+            score = triggers_with_feature / math.sqrt(
+                triggers.messages
+                * (triggers_with_feature + counterexamples_with_feature)
+            )
+            if score >= self.MIN_SUSPICION_SCORE:
+                ranked.append((feature, score))
+        suspect_predecessors = {
+            feature.predecessor for feature, _ in ranked if feature.kind == "packet"
+        }
+        by_source: dict[
+            tuple[bool, Optional[Predecessor]], list[tuple[_Feature, float]]
+        ] = {}
+        for feature, score in ranked:
+            if feature.kind != "packet" and feature.predecessor in suspect_predecessors:
+                continue
+            source = (feature.kind == "packet", feature.predecessor)
+            by_source.setdefault(source, []).append((feature, score))
+        sources = sorted(
+            by_source.values(),
+            key=lambda features: (
+                -max(score for _, score in features),
+                self._simplicity(features[0][0]),
+            ),
+        )
+        explaining = []
+        explained: set[int] = set()
+        for features in sources:
+            covered = {
+                index
+                for index, trigger in enumerate(triggers.features_by_message)
+                if any(feature in trigger for feature, _ in features)
+            }
+            # A source absent from the last triggers is not judged by them
+            if not covered or not covered <= explained:
+                explaining.extend(features)
+                explained |= covered
+        explaining.sort(key=lambda ranked_feature: -ranked_feature[1])
+        return explaining
+
+    @staticmethod
+    def _simplicity(feature: _Feature) -> int:
+        """0 for a packet type, 1 for the message's own content, 2 for the content of an earlier message."""
+        if feature.kind == "packet":
+            return 0
+        return 1 if feature.predecessor is None else 2

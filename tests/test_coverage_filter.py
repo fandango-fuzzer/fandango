@@ -53,8 +53,18 @@ def tracker_after(finished_session):
     return tracker
 
 
-def filter_after(finished_session):
-    return PacketCoverageFilter(tracker_after(finished_session))
+class FakeClock:
+    def __init__(self):
+        self.now = 0.0
+
+    def __call__(self):
+        return self.now
+
+
+def filter_after(finished_session, clock=None):
+    return PacketCoverageFilter(
+        tracker_after(finished_session), clock=clock or FakeClock()
+    )
 
 
 def test_new_k_path_passes():
@@ -87,3 +97,28 @@ def test_unreachable_k_path_still_counts_when_hit():
     packet_filter.filter(session(("A", None)))
     packet_filter.mark_uncovered_k_paths_unreachable()
     assert packet_filter.filter(session(("B", None))) is not None
+
+
+def test_enough_held_back_candidates_end_the_search_for_the_message():
+    packet_filter = filter_after(session(("A", "C")))
+    packet_filter.set_current_tree(DerivationTree(START))
+    for _ in range(PacketCoverageFilter.HELD_BACK_PER_MESSAGE - 1):
+        assert packet_filter.filter(session(("A", None))) is None
+    assert not packet_filter.held_back_enough()
+    assert packet_filter.filter(session(("A", None))) is None
+    assert packet_filter.held_back_enough()
+
+    packet_filter.set_current_tree(DerivationTree(START))
+    assert not packet_filter.held_back_enough()
+
+
+def test_k_paths_count_as_unreachable_only_after_many_held_back_in_a_row():
+    packet_filter = filter_after(session(("A", "C")))
+    candidate = session(("A", None))
+    for _ in range(PacketCoverageFilter.HELD_BACK_UNTIL_UNREACHABLE - 1):
+        assert packet_filter.filter(candidate) is None
+    assert packet_filter.filter(session(("B", None))) is not None
+    for _ in range(PacketCoverageFilter.HELD_BACK_UNTIL_UNREACHABLE - 1):
+        assert packet_filter.filter(candidate) is None
+    assert packet_filter.filter(candidate) is None
+    assert packet_filter.filter(candidate) is not None

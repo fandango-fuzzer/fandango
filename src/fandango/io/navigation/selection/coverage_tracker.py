@@ -69,6 +69,13 @@ class GroupedKPathCoverage(Generic[Group]):
             }
         return self._covered_by_history
 
+    def __repr__(self) -> str:
+        return (
+            f"GroupedKPathCoverage(covered_by_finished_runs="
+            f"{ {group: len(paths) for group, paths in self._covered_by_finished_runs.items()} }, "
+            f"history_cached={self._covered_by_history is not None})"
+        )
+
 
 class CoverageTracker:
     """
@@ -274,3 +281,9 @@ class CoverageTracker:
             else:
                 nt_coverage[symbol] = len(covered) / len(all_paths)
         return list(sorted(nt_coverage.items(), key=lambda x: (x[1], x[0].name())))
+
+    def __repr__(self) -> str:
+        return (
+            f"CoverageTracker(k={self._diversity_k}, goal={self._coverage_goal!r}, start={self._start_symbol!r}, "
+            f"{self._goal_coverage!r})"
+        )
