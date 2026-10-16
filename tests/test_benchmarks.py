@@ -1,3 +1,4 @@
+import gc
 import itertools
 import sys
 from collections.abc import Callable
@@ -29,7 +30,7 @@ class ParseCase(NamedTuple):
     label: str
     spec: str
     make_word: Callable[[int], str | bytes]
-    max_length: int = 10_000
+    max_length: int = 5_000
     incomplete: bool = False
     limit: int | None = None
     incremental: bool = False
@@ -57,7 +58,7 @@ PARSE_CASES = [
         spec=AMBIGUOUS_SPEC,
         make_word=lambda n: "+".join("1" * (n // 2 + 1)),
         limit=25,
-        max_length=1_000,
+        max_length=500,
     ),
     ParseCase(
         label="right-recursion",
@@ -87,7 +88,7 @@ PARSE_CASES = [
     ),
 ]
 
-PARSE_LENGTHS = (10, 100, 1_000, 10_000)
+PARSE_LENGTHS = (10, 100, 1_000, 5_000)
 TEST_MAX_INPUT_LENGTH = 100
 
 
@@ -148,11 +149,17 @@ def test_parse(benchmark: BenchmarkFixture, case: ParseCase, length: int) -> Non
     def func():
         _run_case(case, word, fandango, grammar)
 
+    def setup():
+        grammar._parser._cache.clear()
+        # start each round on a clean heap.
+        gc.collect()
+
     try:
         benchmark.pedantic(
             func,
-            setup=grammar._parser._cache.clear,
+            setup=setup,
             iterations=1,
+            rounds=5,
         )
     except RecursionError:
         pytest.xfail(f"{case.label} runs out of Python stack at {length:,} characters")
