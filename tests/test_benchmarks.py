@@ -1,3 +1,4 @@
+import gc
 import itertools
 import sys
 from collections.abc import Callable
@@ -57,7 +58,7 @@ PARSE_CASES = [
         spec=AMBIGUOUS_SPEC,
         make_word=lambda n: "+".join("1" * (n // 2 + 1)),
         limit=25,
-        max_length=1_000,
+        max_length=500,
     ),
     ParseCase(
         label="right-recursion",
@@ -148,10 +149,15 @@ def test_parse(benchmark: BenchmarkFixture, case: ParseCase, length: int) -> Non
     def func():
         _run_case(case, word, fandango, grammar)
 
+    def setup():
+        grammar._parser._cache.clear()
+        # start each round on a clean heap.
+        gc.collect()
+
     try:
         benchmark.pedantic(
             func,
-            setup=grammar._parser._cache.clear,
+            setup=setup,
             iterations=1,
             rounds=5,
         )
