@@ -106,6 +106,9 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
             )
             if not enter_non_terminal:
                 return continue_exploring
+            # A third visit while exploring repeats a cycle without a packet.
+            if tree is None and self.current_path.count((node.symbol, True)) > 2:
+                return False
             result = yield self.grammar.rules[node.symbol]
             return result
         finally:

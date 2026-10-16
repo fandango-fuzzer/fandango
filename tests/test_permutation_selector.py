@@ -4,11 +4,11 @@ from typing import Optional
 from fandango.api import Fandango
 from fandango.io import ConnectionMode, FandangoIO, FandangoParty
 from fandango.io.navigation.forecasting.forecast_view import ForecastView
-from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.io.navigation.selection.packet_guide import PacketGuide
+from fandango.io.navigation.route import GuidePath, PlannedPacket
+from fandango.io.navigation.selection.packet_guider import PacketGuider
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
-from fandango.io.navigation.selection.target_selector import TargetSelector
+from fandango.io.navigation.step import Step
 from fandango.language import DerivationTree, NonTerminal
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.grammar import Grammar
@@ -16,6 +16,8 @@ from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from tests.utils import RESOURCES_ROOT
+
+UNUSED_STEP = Step((NonTerminal("<start>"),))
 
 
 def _load_grammar() -> Grammar:
@@ -73,7 +75,7 @@ class TestPermutationGroupBuilding(unittest.TestCase):
     def _bare_model(self):
         """Return a ProtocolModel instance with only ._grammar set (no full __init__)."""
         model = object.__new__(ProtocolModel)
-        model._grammar = self.grammar
+        model.grammar = self.grammar
         return model
 
     def test_permutation_peers_share_group(self):
@@ -133,22 +135,25 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
     def setUpClass(cls):
         cls.grammar = _load_grammar()
 
-    def _make_guide(self) -> PacketGuide:
+    def _make_guide(self) -> PacketGuider:
         start = NonTerminal("<start>")
         self.history = DerivationTree(start)
         model = ProtocolModel(self.grammar, start)
         forecast = _StubForecast(self.grammar, _make_test_io(), lambda: self.history)
-        navigator = PacketNavigator(self.grammar, start)
-        target_selector = TargetSelector(model)
-        return PacketGuide(
-            model, forecast, navigator, target_selector, max_messages_per_tree=200
-        )
+        return PacketGuider(model, forecast, max_messages_per_tree=200)
 
-    def _select(self, guide: PacketGuide) -> None:
+    def _select(self, guide: PacketGuider) -> None:
         # a non-empty uncovered list keeps the guide off the "guide to end" path
         guide.select_next_packet(
-            self.history, None, 0, lambda: [(NonTerminal("<msg_c>"),)], lambda: []
+            self.history, lambda: [(NonTerminal("<msg_c>"),)], lambda: []
         )
+
+    def _receive(self, guide: PacketGuider, text: str) -> None:
+        """Makes the parse of text the history and notifies the guide of its last message."""
+        history = self._parse(text)
+        assert history is not None
+        self.history = history
+        guide.observe_message(history)
 
     def _parse(self, text: str) -> Optional[DerivationTree]:
         return self.grammar.parse(
@@ -157,67 +162,75 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
 
     def test_out_of_order_permutation_peer_removed_from_guide_path(self):
         guide = self._make_guide()
-        pnt_a = PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>"))
-        pnt_b = PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>"))
-        pnt_c = PacketNonTerminal("StdOut", None, NonTerminal("<msg_c>"))
+        pnt_a = PlannedPacket(
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>")), UNUSED_STEP
+        )
+        pnt_b = PlannedPacket(
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>")), UNUSED_STEP
+        )
+        pnt_c = PlannedPacket(
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_c>")), UNUSED_STEP
+        )
 
-        guide._guide_path = [pnt_a, pnt_b, pnt_c]
+        guide._guide_path.set_guide_path(GuidePath([pnt_a, pnt_b, pnt_c]))
         guide._guide_target = (NonTerminal("<msg_c>"),)
-        guide._prev_session_msgs = []
-        history = self._parse("b")
-        assert history is not None
-        self.history = history
+        self._receive(guide, "b")
         self._select(guide)
 
-        self.assertEqual(guide._guide_path, [pnt_a, pnt_c])
+        self.assertEqual(guide._guide_path.route, [pnt_a, pnt_c])
 
     def test_guide_path_unchanged_when_no_new_messages(self):
         guide = self._make_guide()
-        pnt_a = PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>"))
-        pnt_b = PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>"))
+        pnt_a = PlannedPacket(
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>")), UNUSED_STEP
+        )
+        pnt_b = PlannedPacket(
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>")), UNUSED_STEP
+        )
 
-        guide._guide_path = [pnt_a, pnt_b]
+        guide._guide_path.set_guide_path(GuidePath([pnt_a, pnt_b]))
         guide._guide_target = (NonTerminal("<msg_b>"),)
-        guide._prev_session_msgs = []
         self._select(guide)
 
-        self.assertEqual(guide._guide_path, [pnt_a, pnt_b])
+        self.assertEqual(guide._guide_path.route, [pnt_a, pnt_b])
 
     def test_expected_message_advances_guide_path(self):
         guide = self._make_guide()
-        pnt_a = PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>"))
-        pnt_b = PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>"))
+        pnt_a = PlannedPacket(
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>")), UNUSED_STEP
+        )
+        pnt_b = PlannedPacket(
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>")), UNUSED_STEP
+        )
 
-        guide._guide_path = [pnt_a, pnt_b]
+        guide._guide_path.set_guide_path(GuidePath([pnt_a, pnt_b]))
         guide._guide_target = (NonTerminal("<msg_b>"),)
-        guide._prev_session_msgs = []
-        history = self._parse("a")
-        assert history is not None
-        self.history = history
+        self._receive(guide, "a")
         self._select(guide)
 
-        self.assertEqual(guide._guide_path, [pnt_b])
+        self.assertEqual(guide._guide_path.route, [pnt_b])
 
     def test_both_permutation_peers_out_of_order_both_consumed(self):
         guide = self._make_guide()
-        pnt_a = PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>"))
-        pnt_b = PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>"))
-        pnt_c = PacketNonTerminal("StdOut", None, NonTerminal("<msg_c>"))
+        pnt_a = PlannedPacket(
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_a>")), UNUSED_STEP
+        )
+        pnt_b = PlannedPacket(
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_b>")), UNUSED_STEP
+        )
+        pnt_c = PlannedPacket(
+            PacketNonTerminal("StdOut", None, NonTerminal("<msg_c>")), UNUSED_STEP
+        )
 
-        guide._guide_path = [pnt_a, pnt_b, pnt_c]
+        guide._guide_path.set_guide_path(GuidePath([pnt_a, pnt_b, pnt_c]))
         guide._guide_target = (NonTerminal("<msg_c>"),)
-        guide._prev_session_msgs = []
-        history = self._parse("b")
-        assert history is not None
-        self.history = history
+        self._receive(guide, "b")
         self._select(guide)
-        self.assertEqual(guide._guide_path, [pnt_a, pnt_c])
+        self.assertEqual(guide._guide_path.route, [pnt_a, pnt_c])
 
-        history = self._parse("ba")
-        assert history is not None
-        self.history = history
+        self._receive(guide, "ba")
         self._select(guide)
-        self.assertEqual(guide._guide_path, [pnt_c])
+        self.assertEqual(guide._guide_path.route, [pnt_c])
 
 
 if __name__ == "__main__":

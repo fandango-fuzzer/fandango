@@ -9,10 +9,12 @@ from fandango.io.navigation.forecasting.forecasting_result import (
     MountingPath,
 )
 from fandango.io.navigation.graph.packetiterativeparser import PacketIterativeParser
+from fandango.io.navigation.graph.rule_recursion_tester import RuleRecursionTester
 from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConverter
 from fandango.io.navigation.graph.visitor.continuing_nodevisitor import (
     ContinuingNodeVisitor,
 )
+from fandango.io.navigation.step import Step
 from fandango.io.packet_evolution.packet_mounter import MessageHolder
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
@@ -28,14 +30,22 @@ class _PathFinder(ContinuingNodeVisitor):
     can be added to the DerivationTree.
     """
 
-    def __init__(self, grammar: Grammar):
+    def __init__(self, grammar: Grammar, references: RuleRecursionTester):
         super().__init__(grammar)
         self.collapsed_tree: Optional[DerivationTree] = None
         self.result = ForecastingResult()
+        self._references = references
 
     def add_option(self, node: NonTerminalNode) -> None:
         assert self.collapsed_tree is not None
-        mounting_path = MountingPath(self.collapsed_tree, tuple(self.current_path))
+        path = [symbol for symbol, _ in self.current_path]
+        packet = StateGrammarConverter.to_packet_non_terminal(path[-1])
+        assert isinstance(packet, NonTerminal)
+        path[-1] = packet
+        step = Step.of_path(path, self._references.is_recursive_call)
+        mounting_path = MountingPath(
+            self.collapsed_tree, tuple(self.current_path), step
+        )
         f_packet = ForecastingPacket(node)
         f_packet.add_path(mounting_path)
         self.result.add_packet(node.sender, f_packet)
@@ -85,6 +95,7 @@ class PacketForecaster:
         )
         self.grammar = grammar
         self._parser = PacketIterativeParser(reduced_rules)
+        self._references = RuleRecursionTester(reduced_rules)
 
     def predict(self, tree: DerivationTree) -> ForecastingResult:
         """
@@ -93,7 +104,7 @@ class PacketForecaster:
         :param tree: The DerivationTree to base the prediction on.
         """
         messages = list(tree.protocol_msgs())
-        finder = _PathFinder(self.grammar)
+        finder = _PathFinder(self.grammar, self._references)
         options = ForecastingResult()
         if not messages:
             return options.union(finder.forecast())
@@ -103,15 +114,28 @@ class PacketForecaster:
             history_nts += message.msg.symbol.name()
         self._parser.reference_tree = tree
         self._parser.parse_history(history_nts)
+        last_message_steps: set[Step] = set()
         with MessageHolder(tree).hold_messages_context() as session_messages:
             for suggested_tree, is_complete in self._parser.tree_at(
                 self._parser.consumed_length(), incomplete=True
             ):
                 if not StateGrammarConverter.matches_history(suggested_tree, messages):
                     continue
+                last_placeholder = next(suggested_tree.protocol_msgs(reverse=True))
+                last_message_steps.add(
+                    Step.of_message(
+                        last_placeholder.msg, self._references.is_recursive_call
+                    )
+                )
                 options = options.union(
                     finder.forecast(suggested_tree, session_messages)
                 )
                 if is_complete and finder.collapsed_tree is not None:
                     options.complete_trees.add(finder.collapsed_tree)
+        options.last_message_steps = last_message_steps
         return options
+
+    def __repr__(self) -> str:
+        return (
+            f"PacketForecaster({len(self.grammar.rules)} rules, {self._references!r})"
+        )

@@ -13,6 +13,7 @@ class RemoteViolationType(enum.Enum):
     CONSTRAINT = "CONSTRAINT"
     PARAMETER_DERIVATION = "PARAMETER_DERIVATION"
     TIMEOUT = "TIMEOUT"
+    CONNECTION = "CONNECTION"
 
 
 class FandangoRemoteViolation(FandangoFailedError):
@@ -46,6 +47,8 @@ class FandangoRemoteViolation(FandangoFailedError):
     def __repr__(self) -> str:
         if self.error_type == RemoteViolationType.TIMEOUT:
             parts = [f"no message from {self.sender}"]
+        elif self.error_type == RemoteViolationType.CONNECTION:
+            parts = [f"no connection to {self.sender}"]
         else:
             parts = [f"{self.sender} -> {self.recipient}: {self.payload_raw!r}"]
         if self.expected_nonterminals:
