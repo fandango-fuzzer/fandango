@@ -1,0 +1,23 @@
+[package]
+name = "fandango_earley_rs"
+version = "0.1.0"
+edition = "2021"
+description = "Rust port of Fandango's Earley parser (IterativeParser)"
+publish = false
+
+[lib]
+name = "fandango_earley_rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.30", features = ["extension-module", "abi3-py311"] }
+rustc-hash = "2.1"
+indexmap = "2.14"
+smallvec = { version = "1.15", features = ["union"] }
+xxhash-rust = { version = "0.8", features = ["xxh3"] }
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "unwind"

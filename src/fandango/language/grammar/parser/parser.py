@@ -1,4 +1,5 @@
 import gc
+import os
 from collections.abc import Generator, Iterator
 from contextlib import contextmanager
 from copy import deepcopy
@@ -9,6 +10,7 @@ from cachetools import LRUCache
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.parser.iterative_parser import IterativeParser
+from fandango.language.grammar.parser.rust_iterative_parser import RustIterativeParser
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.utils import cache_size
@@ -28,11 +30,36 @@ def _gc_paused() -> Iterator[None]:
             gc.enable()
 
 
+#: Parser backends: the Python Earley parser, or its Rust port.
+PARSER_BACKENDS: dict[str, type[IterativeParser] | type[RustIterativeParser]] = {
+    "python": IterativeParser,
+    "rust": RustIterativeParser,
+}
+
+
+def default_parser_backend() -> str:
+    """The backend `Parser` uses by default; set with `FANDANGO_PARSER`."""
+    return os.environ.get("FANDANGO_PARSER", "python")
+
+
 class Parser:
-    def __init__(self, grammar_rules: dict[NonTerminal, Node]):
+    def __init__(
+        self,
+        grammar_rules: dict[NonTerminal, Node],
+        backend: Optional[str] = None,
+    ):
         self._grammar_rules = grammar_rules
-        self._iter_parser = IterativeParser(grammar_rules)
-        self._iter_parsers_by_start: dict[NonTerminal, IterativeParser] = {}
+        self.backend = backend or default_parser_backend()
+        if self.backend not in PARSER_BACKENDS:
+            raise ValueError(
+                f"Unknown parser backend {self.backend!r}; "
+                f"choose one of {sorted(PARSER_BACKENDS)}"
+            )
+        self._iter_parser_class = PARSER_BACKENDS[self.backend]
+        self._iter_parser = self._iter_parser_class(grammar_rules)
+        self._iter_parsers_by_start: dict[
+            NonTerminal, IterativeParser | RustIterativeParser
+        ] = {}
         self._cache: LRUCache[
             tuple[
                 str | bytes,
@@ -165,9 +192,13 @@ class Parser:
         )
         return next(tree_gen, None)
 
-    def iterative_parser(self, start: NonTerminal) -> IterativeParser:
+    def iterative_parser(
+        self, start: NonTerminal
+    ) -> IterativeParser | RustIterativeParser:
         if start not in self._iter_parsers_by_start:
-            self._iter_parsers_by_start[start] = IterativeParser(self._grammar_rules)
+            self._iter_parsers_by_start[start] = self._iter_parser_class(
+                self._grammar_rules
+            )
         return self._iter_parsers_by_start[start]
 
     def collapse(self, tree: Optional[DerivationTree]) -> Optional[DerivationTree]:

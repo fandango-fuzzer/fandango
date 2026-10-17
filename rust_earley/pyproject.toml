@@ -1,0 +1,13 @@
+[build-system]
+requires = ["maturin>=1.7,<2"]
+build-backend = "maturin"
+
+[project]
+name = "fandango-earley-rs"
+version = "0.1.0"
+description = "Rust port of Fandango's Earley parser, usable as an alternative parser backend"
+requires-python = ">=3.11"
+
+[tool.maturin]
+module-name = "fandango_earley_rs"
+features = ["pyo3/extension-module"]
