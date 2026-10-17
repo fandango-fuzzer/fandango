@@ -15,9 +15,11 @@ class PopulationManager:
         self,
         grammar: Grammar,
         start_symbol: str,
+        max_consecutive_duplicates: Optional[int] = None,
     ):
         self._grammar = grammar
         self._start_symbol = start_symbol
+        self.max_consecutive_duplicates = max_consecutive_duplicates
 
     def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
         """
@@ -88,6 +90,8 @@ class PopulationManager:
         unique_hashes = {self.individual_hash(ind) for ind in current_population}
         attempts = 0
         max_attempts = (target_population_size - len(current_population)) * 10
+        max_consecutive_duplicates = self.max_consecutive_duplicates
+        consecutive_duplicates = 0
 
         while (
             not self._is_population_complete(current_population, target_population_size)
@@ -111,10 +115,21 @@ class PopulationManager:
                 if self.add_unique_individual(
                     current_population, candidate, unique_hashes
                 ):
+                    consecutive_duplicates = 0
                     yield from found_solution
                     yield from new_found_solution
                 else:
                     attempts += 1
+                    consecutive_duplicates += 1
+                    if (
+                        max_consecutive_duplicates is not None
+                        and consecutive_duplicates >= max_consecutive_duplicates
+                    ):
+                        LOGGER.warning(
+                            f"Stopped refilling the population after {consecutive_duplicates} duplicates in a row. "
+                            f"Population size reduced to {len(current_population)}."
+                        )
+                        return
 
         if not self._is_population_complete(current_population, target_population_size):
             LOGGER.warning(

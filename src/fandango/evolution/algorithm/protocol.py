@@ -61,6 +61,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             packet_mounter=self._packet_mounter,
             grammar=self.grammar,
             start_symbol=str(self._start_symbol),
+            max_consecutive_duplicates=5,
         )
         self._packet_algorithm.population_manager = self._population_manager
         old_evaluator = self._packet_algorithm.evaluator
