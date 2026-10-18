@@ -234,7 +234,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     )
                     return packet_tree
                 for failing_tree in failing_trees:
-                    constraint = failing_tree.cause.format_as_spec()
+                    constraint = f"{packet_tree.nonterminal.format_as_spec()}: {failing_tree.cause.format_as_spec()}"
                     if constraint not in failed_constraints:
                         failed_constraints.append(constraint)
             if packet_tree.nonterminal not in expected_nonterminals:
