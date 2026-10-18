@@ -113,6 +113,14 @@ class TestBlockedStepPruner(unittest.TestCase):
         blocked = navigator.gen_with_blocked_steps(frozenset([guide.target_step]))
         self.assertFalse(blocked.is_derivable((AFTER_OK,)))
 
+    def test_step_every_run_takes_stays_while_other_steps_are_removed(self):
+        hello = self._step("hello\n")
+        rules = self.pruner.prune(
+            self.state_rules, START, frozenset([hello, self._step("hello\na\nok\n")])
+        )
+        self.assertIn(START, rules)
+        self.assertNotIn(AFTER_OK, rules)
+
 
 class TestBlockedStepInContext(unittest.TestCase):
     def setUp(self):
