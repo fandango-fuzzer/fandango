@@ -101,14 +101,14 @@ def test_constraint_violation() -> None:
             "PONG7;",
         )
         assert error.expected_nonterminals == [NonTerminal("<pong>")]
-        assert error.failed_constraints == ["str(<counter>) == '1'"]
+        assert error.failed_constraints == ["<pong>: str(<counter>) == '1'"]
         assert str(next(error.session_tree.protocol_msgs(reverse=True)).msg) == "PING;"
         assert error.payload_tree is not None
         assert error.payload_tree.nonterminal == NonTerminal("<pong>")
         assert error.payload_tree.to_string() == "PONG7;"
         assert repr(error) == (
             "FandangoRemoteViolation(CONSTRAINT, Server -> Client: 'PONG7;', "
-            "expected <pong>, violates str(<counter>) == '1')"
+            "expected <pong>, violates <pong>: str(<counter>) == '1')"
         )
 
 
