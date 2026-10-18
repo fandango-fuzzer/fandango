@@ -60,10 +60,13 @@ class PacketSelector:
         self._set_history(history_tree)
         self._guider.observe_message(history_tree)
 
-    def signal_session_end(self) -> None:
-        """Notifies that the session ended, completed or aborted. Its history counts as covered; the history starts empty again."""
+    def signal_session_end(self, generation_failed: bool = False) -> None:
+        """
+        Notifies that the session ended, completed or aborted. Its history counts as covered; the history starts empty again.
+        generation_failed tells that it ended because no packet could be generated for the fuzzer's next step.
+        """
         self._coverage_tracker.add_completed_tree(self.history_tree)
-        self._guider.observe_session_end()
+        self._guider.observe_session_end(generation_failed)
         self._set_history(DerivationTree(NonTerminal("<start>")))
 
     def _set_history(self, history_tree: DerivationTree) -> None:

@@ -42,6 +42,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         max_messages_per_tree: int = 200,
     ):
         self.CLEAR_CONSTRAINT_CACHE_INTERVAL = 100
+        # Generations of the last fallback in _generate_packet if generate() is called without max_generations
+        self.FALLBACK_MAX_GENERATIONS = 50
         self._start_symbol = NonTerminal("<start>")
         self._packet_algorithm = packet_algorithm
         self.grammar = packet_algorithm.grammar
@@ -246,10 +248,13 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 return None
             return packet
 
-    def _generate_packet(self, max_generations: int | None = None) -> DerivationTree:
+    def _generate_packet(
+        self, max_generations: int | None = None
+    ) -> Optional[DerivationTree]:
+        """The next packet to send, or None if no packet satisfying the constraints was found within the generations."""
         if max_generations is None:
             selected_packet_max_generations = 10
-            overall_max_generations = max_generations
+            overall_max_generations = self.FALLBACK_MAX_GENERATIONS
         else:
             selected_packet_max_generations = int(max_generations / 3)
             overall_max_generations = max_generations - selected_packet_max_generations
@@ -318,9 +323,10 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             nonterminals_str = " | ".join(
                 map(lambda x: str(x.node.symbol), all_allowed_packets)
             )
-            raise FandangoFailedError(
-                f"Couldn't find solution for any packet: {nonterminals_str}"
-            ) from None
+            LOGGER.warning(
+                f"Couldn't find solution for any packet within {overall_max_generations} generations: {nonterminals_str}"
+            )
+            return None
 
     def _is_derivable_coverage_complete(self) -> bool:
         if self.coverage_goal == CoverageGoal.RANDOM:
@@ -405,7 +411,15 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     new_packet = self._generate_packet(max_generations=max_generations)
                     if self._io_instance.received_msg():
                         continue
-                assert new_packet is not None and new_packet.sender is not None
+                if new_packet is None:
+                    log_guidance_hint(
+                        "No packet could be generated. Ending the session."
+                    )
+                    self._packet_selector.signal_session_end(generation_failed=True)
+                    self._packet_coverage_filter.add_completed_tree(self._protocol_tree)
+                    self._start_new_run()
+                    continue
+                assert new_packet.sender is not None
                 if (
                     new_packet.recipient is None
                     or not self._io_instance.parties[
