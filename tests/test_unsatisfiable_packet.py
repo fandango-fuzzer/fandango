@@ -1,5 +1,6 @@
 import random
 import unittest
+from unittest.mock import patch
 
 from fandango.evolution.algorithm.protocol import ProtocolAlgorithm
 from fandango.evolution.algorithm.simple import SimpleGeneticAlgorithm
@@ -32,15 +33,6 @@ class TestUnsatisfiablePacket(unittest.TestCase):
         )
         algorithm.FALLBACK_MAX_GENERATIONS = FALLBACK_MAX_GENERATIONS
 
-        generations_per_call = []
-        generate_packet = packet_algorithm.generate
-
-        def counting_generate(max_generations=None, mode=FuzzingMode.COMPLETE):
-            generations_per_call.append(max_generations)
-            return generate_packet(max_generations=max_generations, mode=mode)
-
-        packet_algorithm.generate = counting_generate
-
         ended_sessions = []
         selector = algorithm._packet_selector
         signal_session_end = selector.signal_session_end
@@ -51,13 +43,22 @@ class TestUnsatisfiablePacket(unittest.TestCase):
             if len(ended_sessions) >= SESSIONS:
                 raise _SessionsEnded()
 
-        selector.signal_session_end = counting_signal_session_end
-
-        with self.assertRaises(_SessionsEnded):
+        with (
+            patch.object(
+                packet_algorithm, "generate", wraps=packet_algorithm.generate
+            ) as generate,
+            patch.object(
+                selector, "signal_session_end", side_effect=counting_signal_session_end
+            ),
+            self.assertRaises(_SessionsEnded),
+        ):
             for _ in algorithm.generate(mode=FuzzingMode.IO):
                 pass
 
         self.assertTrue(all(session == "hello\n" for session in ended_sessions))
-        self.assertNotIn(None, generations_per_call)
+        self.assertNotIn(
+            None,
+            [call.kwargs.get("max_generations") for call in generate.call_args_list],
+        )
         refusals = algorithm._packet_selector._guider._step_refusals
         self.assertTrue(refusals.blocked_steps)
