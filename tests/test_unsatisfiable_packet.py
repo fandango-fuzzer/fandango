@@ -56,6 +56,7 @@ class TestUnsatisfiablePacket(unittest.TestCase):
                 pass
 
         self.assertTrue(all(session == "hello\n" for session in ended_sessions))
+        self.assertTrue(generate.call_args_list)
         self.assertNotIn(
             None,
             [call.kwargs.get("max_generations") for call in generate.call_args_list],
