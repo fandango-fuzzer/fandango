@@ -96,14 +96,15 @@ class PacketGuider:
         self._clear_plan()
         self._start_session()
 
-    def observe_session_end(self) -> None:
+    def observe_session_end(self, generation_failed: bool = False) -> None:
         """
         Notifies that the session ended, completed or aborted.
         Counts the step an external party still had to take as refused, unless the guider gave the session up.
+        If generation_failed, the fuzzer could not generate a packet for its next step, which then counts as refused.
         Keeps the current route only if the session was not given up and its route leads to a target in the next session.
         """
         if not self._abandons_run:
-            self._count_pending_step_as_refused()
+            self._count_pending_step_as_refused(generation_failed)
         self._step_refusals.signal_session_end()
         if (
             self._abandons_run
@@ -391,17 +392,17 @@ class PacketGuider:
     def _is_external_party(self, party: Optional[str]) -> bool:
         return party is not None and not self._forecast.is_fuzzer_controlled(party)
 
-    def _count_pending_step_as_refused(self) -> None:
+    def _count_pending_step_as_refused(self, generation_failed: bool) -> None:
         """
         Checks whether an external party still had to take a step of the plan when the session ended,
-        and counts that step as refused.
+        and counts that step as refused. If generation_failed, a step of the fuzzer counts as well.
         """
         if self._deviated_from_guide:
             # The plan was left, so nothing of it is pending.
             return
         planned = self._guide_path.next_packet()
         if planned is not None:
-            if self._is_external_party(planned.packet.sender):
+            if generation_failed or self._is_external_party(planned.packet.sender):
                 assert planned.packet.sender is not None
                 self._step_refusals.count_refusal(planned.step, planned.packet.sender)
             return
@@ -413,7 +414,11 @@ class PacketGuider:
         ):
             # The target is reached, or it lies in the next session.
             return
-        parties = self._forecast.next_external_parties()
+        parties = (
+            self._forecast.next_fuzzer_parties()
+            if generation_failed
+            else self._forecast.next_external_parties()
+        )
         if parties:
             self._step_refusals.count_refusal(target_step, parties[0])
 

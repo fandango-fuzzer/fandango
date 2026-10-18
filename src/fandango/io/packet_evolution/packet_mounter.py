@@ -116,13 +116,7 @@ class PacketMounter:
     def attach(self, tree: DerivationTree, mounting_path: MountingPath) -> None:
         """
         Attaches an existing packet, at the mounting path's mount point; a packet already under the mount point is taken out of its children.
-        It stops being a stand-in for equal packets, since at another mount point its whole tree differs.
         """
-        self._first_mounted_packets_by_root_hash = {
-            root_hash: first_equal_packet
-            for root_hash, first_equal_packet in self._first_mounted_packets_by_root_hash.items()
-            if first_equal_packet is not tree
-        }
         mount_point = self._mount_point(mounting_path)
         if index_by_reference(mount_point.children, tree) is None:
             mount_point.add_child(tree)
@@ -183,12 +177,16 @@ class PacketMounter:
         """
         Mounts and returns the packet's stand-in.
         Mounts and returns the packet itself if it is the first with its whole tree or its stand-in is mounted right now.
+        A stand-in that was attached elsewhere since is replaced by the packet.
         """
         self._mount(packet)
         root_hash = hash(packet.get_root())
-        first_equal_packet = self._first_mounted_packets_by_root_hash.setdefault(
-            root_hash, packet
-        )
+        first_equal_packet = self._first_mounted_packets_by_root_hash.get(root_hash)
+        # Mount points are built once per mounting path and history, so the same mount point and root hash mean the
+        # same whole tree; at another mount point the stand-in's whole tree differs.
+        if first_equal_packet is None or first_equal_packet.parent is not packet.parent:
+            self._first_mounted_packets_by_root_hash[root_hash] = packet
+            return packet
         if first_equal_packet is packet or not self._is_attached(first_equal_packet):
             return packet
         self._unmount(packet)
