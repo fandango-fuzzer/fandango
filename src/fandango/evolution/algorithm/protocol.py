@@ -364,8 +364,13 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             raise violation
         LOGGER.warning(f"{reason} Recording violation: {violation}")
 
-    def _end_session(self, session_tree: DerivationTree, generation_failed=False) -> None:
-        """Notifies all components that the session ended."""
+    def _end_session(
+        self, session_tree: DerivationTree, generation_failed: bool = False
+    ) -> None:
+        """
+        Notifies all components that the session ended. generation_failed tells that it ended because no packet could
+        be generated for the fuzzer's next step.
+        """
         self._packet_selector.signal_session_end(generation_failed=generation_failed)
         self._violation_profile.signal_session_end()
         self._packet_coverage_filter.add_completed_tree(session_tree)
@@ -431,6 +436,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                         "No packet could be generated. Ending the session."
                     )
                     self._end_session(self._protocol_tree, generation_failed=True)
+                    if self._attainable_coverage_reached():
+                        return None
                     self._start_new_run()
                     continue
                 assert new_packet.sender is not None
