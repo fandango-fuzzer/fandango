@@ -56,7 +56,22 @@ class BlockedStepPruner(NodeVisitor[list[Pruned], Pruned]):
         start_symbol: NonTerminal,
         blocked_steps: frozenset[Step],
     ) -> dict[NonTerminal, Node]:
+        """
+        Removes the blocked steps.
+        Steps that would remove the start symbol are ignored
+        """
         self._state_rules = state_rules
+        rules = self._prune_steps(blocked_steps)
+        if start_symbol not in rules:
+            applied: frozenset[Step] = frozenset()
+            for step in sorted(blocked_steps, key=repr):
+                if start_symbol in self._prune_steps(applied | {step}):
+                    applied |= {step}
+            rules = self._prune_steps(applied)
+        return self._reachable_rules(rules, start_symbol)
+
+    def _prune_steps(self, blocked_steps: frozenset[Step]) -> dict[NonTerminal, Node]:
+        """The state rules without the blocked steps; rules deriving nothing anymore are left out."""
         self._blocked_paths = {}
         for step in blocked_steps:
             self._blocked_paths[step.path[0]] = self._blocked_paths.get(
@@ -71,7 +86,7 @@ class BlockedStepPruner(NodeVisitor[list[Pruned], Pruned]):
             self._pruned[rule] = self._prune_rule(rule)
             if self._pruned[rule].node is None:
                 pending.update(self._referrers(rule))
-        return self._reachable_rules(self._rules(), start_symbol)
+        return self._rules()
 
     def _prune_rule(self, rule: NonTerminal) -> Pruned:
         """Always from the original body: blocked paths name its control-flow nodes."""
