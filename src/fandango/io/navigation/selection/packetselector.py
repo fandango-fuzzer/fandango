@@ -96,13 +96,20 @@ class PacketSelector:
     def _ensure_next_packets(self) -> list[ForecastingPacket]:
         if self._next_packets is None:
             if self._coverage_tracker.coverage_goal == CoverageGoal.RANDOM:
-                self._next_packets = self._guider.find_packets()
-                return self._next_packets
-            self._next_packets = self._guider.select_next_packet(
-                self.history_tree,
-                self._coverage_tracker.uncovered_paths,
-                self._coverage_tracker.coverage_scores,
-            )
+                packets = self._guider.find_packets()
+                if packets and random.choice(packets).node.sender != "TimerEvent":
+                    packets = [
+                        packet
+                        for packet in packets
+                        if packet.node.sender != "TimerEvent"
+                    ]
+                self._next_packets = packets
+            else:
+                self._next_packets = self._guider.select_next_packet(
+                    self.history_tree,
+                    self._coverage_tracker.uncovered_paths,
+                    self._coverage_tracker.coverage_scores,
+                )
         return self._next_packets
 
     @property
