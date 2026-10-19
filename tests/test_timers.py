@@ -97,3 +97,15 @@ def test_a_cancelled_timer_started_again_at_once_expires_once(io: FandangoIO) ->
     time.sleep(1.6)
 
     assert expired_count(io) == 1
+
+
+def test_a_timer_cancelled_after_it_expired_drops_its_expiry_not_handled_yet(
+    io: FandangoIO,
+) -> None:
+    timers = TimerControl()
+
+    timers.start_timer("1", 1)
+    time.sleep(1.5)
+    timers.stop_timers("1")
+
+    assert expired_count(io) == 0
