@@ -180,11 +180,15 @@ class FandangoParty(  # noqa: B024 # this is an abstract base class without any 
                 f"Party {self.party_name} received None-type message. This indicates a socket closing event. Override the receive() method of {self.party_name} to handle this case."
             )
         if sender is None:
+            # Timers name themselves as sender, so they are no candidates
             parties = list(
                 map(
                     lambda x: x.party_name,
                     filter(
-                        lambda party: not party.is_fuzzer_controlled(),
+                        lambda party: (
+                            not party.is_fuzzer_controlled()
+                            and not isinstance(party, TimerEvent)
+                        ),
                         self.io_instance.parties.values(),
                     ),
                 )
@@ -428,7 +432,7 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
                         assert self._sock is not None
                         while self._running:
                             rlist, _, _ = select.select(
-                                [self._sock], [], [], 0.0000000001
+                                [self._sock], [], [], 0.01
                             )
                             if rlist:
                                 self._connection, _ = self._sock.accept()
@@ -492,7 +496,10 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
                         self._connection.shutdown(socket.SHUT_RDWR)
                         continue
                     self._party_instance.receive(data, None)
-            except Exception:
+            except Exception as error:
+                LOGGER.warning(
+                    f"{self._party_instance.party_name}: stopped receiving: {error!r}"
+                )
                 self._running = False
                 break
 
@@ -785,13 +792,20 @@ class TimerControl(FandangoParty):
     def stop(self) -> None:
         self.stop_timers()
 
+    def _is_running_timer(self, name: str) -> bool:
+        """
+        Whether the timer `name` runs and is the calling thread's own, not one
+        started after it was cancelled. Must be called with `self.lock` held.
+        """
+        entry = self.timers.get(name)
+        return entry is not None and entry[1] and entry[2] is threading.current_thread()
+
     def start_timer(self, name: str, time_s: int) -> None:
         def timer_sleep() -> None:
             timer_start_time = time.time()
             while (time.time() - timer_start_time) < time_s:
                 with self.lock:
-                    entry = self.timers.get(name)
-                    if entry is None or not entry[1]:
+                    if not self._is_running_timer(name):
                         return
                 time.sleep(0.1)
             self._on_timer_expire(name)
@@ -850,8 +864,9 @@ class TimerControl(FandangoParty):
 
     def _on_timer_expire(self, name: str) -> None:
         with self.lock:
-            if name in self.timers:
-                del self.timers[name]
+            if not self._is_running_timer(name):
+                return
+            del self.timers[name]
         self.receive(f"expired: {name}\n", "TimerEvent")
 
 
