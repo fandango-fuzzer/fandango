@@ -175,7 +175,20 @@ class PacketSelector:
                 if packet.node.sender == "TimerEvent":
                     return False
         return (
-            len(self.next_fuzzer_parties()) != 0 and not self.io_instance.received_msg()
+            len(self.next_fuzzer_parties()) != 0 and not self.has_message_to_handle()
+        )
+
+    def has_message_to_handle(self) -> bool:
+        """
+        Whether a received message waits to be handled. A timer's expiry waits only
+        where the grammar takes one next.
+        """
+        timer_event_next = any(
+            packet.node.sender == "TimerEvent" for packet in self.next_packets
+        )
+        return any(
+            timer_event_next or sender != "TimerEvent"
+            for sender in self.io_instance.get_received_parties()
         )
 
     def __repr__(self) -> str:

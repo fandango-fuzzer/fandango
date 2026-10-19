@@ -430,7 +430,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     self._configure_fuzzable_packets()
                     self._packet_coverage_filter.set_current_tree(self._protocol_tree)
                     new_packet = self._generate_packet(max_generations=max_generations)
-                    if self._io_instance.received_msg():
+                    if self._packet_selector.has_message_to_handle():
                         continue
                 if new_packet is None:
                     log_guidance_hint(

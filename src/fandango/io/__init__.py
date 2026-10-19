@@ -823,6 +823,9 @@ class TimerControl(FandangoParty):
                 timers_to_stop = list(self.timers.keys())
             to_join: list[tuple[str, threading.Thread]] = []
             for timer_name in timers_to_stop:
+                self.io_instance.drop_received_msg(
+                    "TimerEvent", f"expired: {timer_name}\n"
+                )
                 if timer_name not in self.timers:
                     continue
                 timeout, _, timer_thread = self.timers[timer_name]
@@ -867,7 +870,7 @@ class TimerControl(FandangoParty):
             if not self._is_running_timer(name):
                 return
             del self.timers[name]
-        self.receive(f"expired: {name}\n", "TimerEvent")
+            self.receive(f"expired: {name}\n", "TimerEvent")
 
 
 class TimerEvent(FandangoParty):
@@ -1020,6 +1023,15 @@ class FandangoIO(object):
         """Clears a specific received message by its index."""
         with self.receive_lock:
             del self.receive[idx]
+
+    def drop_received_msg(self, sender: str, message: str | bytes) -> None:
+        """Drops the received messages from `sender` that are `message`."""
+        with self.receive_lock:
+            self.receive = [
+                entry
+                for entry in self.receive
+                if entry[0] != sender or entry[2] != message
+            ]
 
     def clear_received_msgs(self) -> None:
         """Clears all received messages."""
