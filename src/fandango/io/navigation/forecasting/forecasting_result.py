@@ -35,7 +35,7 @@ class MountingPath:
             (nt, new_node) for nt, new_node in path if not Step.is_control_flow(nt)
         )
 
-    def hookin_path(self, include_controlflow=False) -> tuple[NonTerminal, ...]:
+    def hookin_path(self, include_controlflow: bool = False) -> tuple[NonTerminal, ...]:
         path = self.path
         if include_controlflow:
             path = self.controlflow_path
