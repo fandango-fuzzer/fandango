@@ -15,6 +15,12 @@ kernelspec:
 
 This document lists major changes across releases.
 
+```{versionchanged} 1.3.1 (October 2026)
+* **More effective protocol fuzzing.** Navigation and coverage guidance now better account for blocked or unreachable steps, helping Fandango choose useful packet sequences and avoid paths that cannot make progress.
+* **Improved packet generation.** Packet populations can be evolved and mounted more efficiently, improving the search for valid protocol interactions.
+* Constraint scoping and repetition-bound handling have been improved for more reliable constraint evaluation and repair.
+```
+
 ```{versionadded} 1.3 (October 2026)
 * **Specs from [Fanbase](sec:fanbase).** `fandango fuzz -F png` fetches the default PNG spec from Fanbase, a registry of ready-made specs for file formats, and produces PNG files. Variants have names such as `png-apng`. Since the format is known, the file name extension is set for you, and files are written to a fresh directory unless you give `-o` or `-d`. Fanbase specs can be overridden with specs of your own given with `-f`.
 * The new `fanbase` command lists, shows, installs, and updates specs, together with the Python packages they need. It comes with Fandango, which now depends on the `fanbase` package.
