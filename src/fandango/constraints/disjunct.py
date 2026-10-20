@@ -5,7 +5,11 @@ from typing import Any, Optional, Unpack
 from fandango.constraints.base import GeneticBaseInitArgs
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.constraint_visitor import ConstraintVisitor
-from fandango.constraints.failing_tree import ApplyAllSuggestions
+from fandango.constraints.failing_tree import (
+    ApplyAllSuggestions,
+    NopSuggestion,
+    Suggestion,
+)
 from fandango.constraints.fitness import ConstraintFitness
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
@@ -72,7 +76,11 @@ class DisjunctionConstraint(Constraint):
                 fitness.failing_trees for fitness in fitness_values
             )
         )
-        suggestion = ApplyAllSuggestions([e.suggestion for e in fitness_values])
+        # A fulfilled disjunction must not suggest fixes for its failing branches
+        if overall:
+            suggestion: Suggestion = NopSuggestion()
+        else:
+            suggestion = ApplyAllSuggestions([e.suggestion for e in fitness_values])
         if len(self.constraints) > 1:
             if overall:
                 solved = total + 1

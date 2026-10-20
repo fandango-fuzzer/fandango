@@ -31,6 +31,29 @@ def test_with_passed_eq_constraints():
 @pytest.mark.parametrize(
     "constraint",
     [
+        "where <first_name> == 'First' or <first_name> == 'John'",
+        "where <first_name> == 'John' or <first_name> == 'First'",
+    ],
+)
+def test_fulfilled_disjunction_provides_no_suggestion(constraint):
+    with open(RESOURCES_ROOT / "persons.fan", "r") as file:
+        grammar, constraints = parse([file, constraint])
+
+    assert grammar is not None
+    fan = DefaultAlgorithm(grammar, constraints)
+    individual = grammar.parse("First Last,30")
+    assert individual is not None
+    gen = GeneratorWithReturn(fan.evaluator.evaluate_individual(individual=individual))
+    solutions, (fitness, _failing_trees, suggestion) = gen.collect()
+    assert len(solutions) == 1
+    assert fitness == 1.0
+    suggested_replacements = suggestion.get_replacements(individual, grammar)
+    assert len(suggested_replacements) == 0
+
+
+@pytest.mark.parametrize(
+    "constraint",
+    [
         ("where <first_name> == 'John'"),
         ("where 'John' == <first_name>"),
     ],
