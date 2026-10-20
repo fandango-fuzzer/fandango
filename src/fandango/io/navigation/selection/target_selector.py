@@ -39,15 +39,14 @@ class TargetSelector:
 
     def select(
         self,
-        uncovered_paths: list[KPath],
+        uncovered_paths: set[KPath],
         coverage_scores: list[tuple[NonTerminal, float]],
         is_derivable: Callable[[KPath], bool],
     ) -> Optional[KPath]:
         """Picks a derivable uncovered k-path, or else a derivable message. None if there is neither."""
-        unreached_paths = set(uncovered_paths)
-        self._update_open_below(unreached_paths)
+        self._update_open_below(uncovered_paths)
         candidates = self._targets_up_to_current_length(
-            unreached_paths, is_derivable
+            uncovered_paths, is_derivable
         ) or list(filter(is_derivable, self._open_below))
         if len(candidates) == 0:
             derivable_scores = [
@@ -86,6 +85,8 @@ class TargetSelector:
 
     def _update_open_below(self, uncovered: set[KPath]) -> None:
         """Updated the cached counts of k-paths that are currently uncovered."""
+        if uncovered is self._uncovered:
+            return
         newly_uncovered = uncovered - self._uncovered
         newly_covered = self._uncovered - uncovered
         for path in newly_uncovered:
@@ -102,7 +103,7 @@ class TargetSelector:
 
     def is_every_path_underivable(
         self,
-        uncovered_paths: list[KPath],
+        uncovered_paths: set[KPath],
         is_derivable: Callable[[KPath], bool],
     ) -> bool:
         return not any(

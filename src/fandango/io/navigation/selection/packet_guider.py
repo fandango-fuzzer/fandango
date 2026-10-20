@@ -197,7 +197,7 @@ class PacketGuider:
             )
             self._abandons_run = True
 
-    def is_derivable_coverage_complete(self, uncovered_paths: list[KPath]) -> bool:
+    def is_derivable_coverage_complete(self, uncovered_paths: set[KPath]) -> bool:
         return self._target_selector.is_every_path_underivable(
             uncovered_paths, self._navigator.is_derivable
         )
@@ -246,7 +246,7 @@ class PacketGuider:
     def select_next_packet(
         self,
         history_tree: DerivationTree,
-        get_uncovered_paths: Callable[[], list[KPath]],
+        get_uncovered_paths: Callable[[], set[KPath]],
         get_coverage_scores: Callable[[], list[tuple[NonTerminal, float]]],
     ) -> list[ForecastingPacket]:
         self._history_tree = history_tree
@@ -298,7 +298,7 @@ class PacketGuider:
 
     def _plan_path_to_reachable_target(
         self,
-        uncovered_paths: list[KPath],
+        uncovered_paths: set[KPath],
         get_coverage_scores: Callable[[], list[tuple[NonTerminal, float]]],
     ) -> None:
         """
