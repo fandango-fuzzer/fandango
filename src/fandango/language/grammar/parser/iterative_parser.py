@@ -1,4 +1,4 @@
-from collections.abc import Generator, Iterable
+from collections.abc import Generator, Iterable, Sequence
 from copy import deepcopy
 from typing import Any, Optional
 
@@ -494,15 +494,25 @@ class IterativeParser:
 
     def new_parse(
         self,
-        start: str | NonTerminal = "<start>",
+        start: str | NonTerminal | Sequence[NonTerminal] = "<start>",
         mode: ParsingMode = ParsingMode.COMPLETE,
         hookin_parent: Optional[DerivationTree] = None,
         starter_bit: int = -1,
     ) -> None:
+        """With several start symbols, parses the input as each of them at once."""
         if isinstance(start, str):
             start = NonTerminal(start)
-        self._start = start
-        self._columns_per_byte = self._compiler.columns_per_byte_for(start)
+        starts = [start] if isinstance(start, NonTerminal) else list(start)
+        self._compiler._clear_tmp()
+        if len(starts) == 1:
+            (self._start,) = starts
+        else:
+            any_start, _ = self._compiler.set_tmp_rule(
+                [[(s, frozenset())] for s in starts]
+            )
+            assert isinstance(any_start, NonTerminal)
+            self._start = any_start
+        self._columns_per_byte = max(map(self._compiler.columns_per_byte_for, starts))
         self._column_index = (7 - starter_bit) % 8 if self._columns_per_byte == 8 else 0
         self._table = []
         self._table.append(Column())
@@ -514,7 +524,6 @@ class IterativeParser:
         self._incomplete = {}
         self._parsing_mode = mode
         self._hookin_parent = hookin_parent
-        self._compiler._clear_tmp()
 
     def consume(self, char: str | bytes | int) -> None:
         """
@@ -628,10 +637,15 @@ class IterativeParser:
         return list(self._completed)
 
     def tree_at(
-        self, offset: int, *, incomplete: bool = False
+        self,
+        offset: int,
+        *,
+        incomplete: bool = False,
+        start: Optional[NonTerminal] = None,
     ) -> Generator[tuple[DerivationTree, bool], None, None]:
         """
-        Every parse parsable with `offset` given bytes, as `(tree, is_complete)`.
+        Every parse parsable with `offset` given bytes, as `(tree, is_complete)`;
+        with `start`, only the parses as `start`, one of several start symbols.
         """
         flagged = [(state, True) for state in self._completed.get(offset, {}).values()]
         if incomplete:
@@ -641,6 +655,8 @@ class IterativeParser:
         seen_hashes_and_flags: set[tuple[int, bool]] = set()
         for state, flag in flagged:
             for tree in self._forest.derivations_of(state):
+                if start is not None and tree.symbol != start:
+                    continue
                 hash_and_flag = (hash(tree), flag)
                 if hash_and_flag in seen_hashes_and_flags:
                     continue
