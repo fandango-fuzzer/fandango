@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fandango.errors import FandangoFailedError, FandangoParseError
 from fandango.io import FandangoIO
 from fandango.io.navigation.forecasting.forecasting_result import (
@@ -14,6 +16,8 @@ from fandango.logger import LOGGER
 
 WAIT_FOR_EXPECTED_PARTY_TIME = 10.0
 DEFAULT_WAIT_FOR_COMPLETION_TIME = 0.15
+# Parsers kept for reuse; a packet mounted at more places gets more for itself only
+MAX_REUSED_PARSERS = 4
 
 ReceivedMessages = list[tuple[str, str, str | bytes]]
 
@@ -25,6 +29,7 @@ def parse_next_remote_packet(
     session_tree: DerivationTree,
     *,
     wait_for_completion_time: float = DEFAULT_WAIT_FOR_COMPLETION_TIME,
+    parsers: Optional[list[IterativeParser]] = None,
 ) -> list[tuple[ForecastingPacket, DerivationTree]]:
     """
     Parse the next packet a remote party sent, as one of the forecast
@@ -35,12 +40,18 @@ def parse_next_remote_packet(
     complete parse is only handed back after no more data has arrived for
     that long. It is paid per packet, so a caller that knows its packets
     cannot grow can turn it down.
+
+    `parsers` are parsers of `grammar` to reuse, one per place the forecast
+    mounts packets at; the list gets a new one for each place beyond them,
+    up to `MAX_REUSED_PARSERS`. Without, every call creates its parsers.
     """
     if not io_instance.received_msg():
         return []
 
     sender = _wait_for_expected_sender(forecast, io_instance, session_tree)
-    candidates = _PacketCandidates(grammar, forecast[sender], session_tree)
+    candidates = _PacketCandidates(
+        grammar, forecast[sender], session_tree, [] if parsers is None else parsers
+    )
     fed_blocks_nr = 0
     while candidates.open:
         fresh_blocks = _wait_for_new_blocks(
@@ -130,32 +141,46 @@ def _wait_for_new_blocks(
 
 
 class _PacketCandidates:
-    """One parser per forecast non-terminal, and the longest packet each has found so far."""
+    """
+    One parser per place the forecast mounts packets at, parsing as all its
+    non-terminals at once, and the longest packet each has found so far.
+    """
 
     def __init__(
         self,
         grammar: Grammar,
         expected: ForecastingNonTerminals,
         session_tree: DerivationTree,
+        parsers: list[IterativeParser],
     ):
         self._grammar = grammar
         self._expected = expected
         self._session_tree = session_tree
         self.parsers: dict[NonTerminal, IterativeParser] = {}
         self._session_messages = MessageHolder(session_tree)
-        self._message_holders: dict[NonTerminal, MessageHolder] = {}
-        for non_terminal in expected.get_non_terminals():
-            mounting_path = next(iter(expected[non_terminal].paths))
-            self._message_holders[non_terminal] = MessageHolder(mounting_path.tree)
-            hookin_path = [nt for nt, is_new in mounting_path.path if not is_new]
-            hookin_parent = mounting_path.tree.get_last_by_path(hookin_path)
-            parser = grammar.iterative_parser(non_terminal)
+        self._mounting_points: list[
+            tuple[IterativeParser, MessageHolder, list[NonTerminal]]
+        ] = []
+        mounting_points = expected.by_mounting_point()
+        while len(parsers) < min(len(mounting_points), MAX_REUSED_PARSERS):
+            parsers.append(IterativeParser(grammar.rules))
+        # Add temporary extra parsers
+        packet_parsers = parsers[: len(mounting_points)] + [
+            IterativeParser(grammar.rules)
+            for _ in range(len(mounting_points) - len(parsers))
+        ]
+        for parser, (mounting_path, non_terminals) in zip(
+            packet_parsers, mounting_points, strict=True
+        ):
             parser.new_parse(
-                start=non_terminal,
+                non_terminals,
                 mode=ParsingMode.COMPLETE,
-                hookin_parent=hookin_parent,
+                hookin_parent=mounting_path.hookin_parent(),
             )
-            self.parsers[non_terminal] = parser
+            self._mounting_points.append(
+                (parser, MessageHolder(mounting_path.tree), non_terminals)
+            )
+            self.parsers.update(dict.fromkeys(non_terminals, parser))
         self.open: set[NonTerminal] = set(self.parsers)
         self.found: dict[NonTerminal, tuple[int, DerivationTree]] = {}
         self.last_parameter_error: (
@@ -164,14 +189,16 @@ class _PacketCandidates:
 
     def consume(self, blocks: list[str | bytes]) -> None:
         with self._session_messages.hold_messages_context():
-            for non_terminal in list(self.open):
-                self._message_holders[non_terminal].hold_messages()
-                parser = self.parsers[non_terminal]
+            for parser, message_holder, non_terminals in self._mounting_points:
+                if self.open.isdisjoint(non_terminals):
+                    continue
+                message_holder.hold_messages()
                 for block in blocks:
                     parser.consume(block)
-                self._take_longest_packet(non_terminal)
+                for non_terminal in non_terminals:
+                    self._take_longest_packet(non_terminal)
                 if not parser.can_continue():
-                    self.open.remove(non_terminal)
+                    self.open.difference_update(non_terminals)
 
     def _take_longest_packet(self, non_terminal: NonTerminal) -> None:
         parser = self.parsers[non_terminal]
@@ -179,7 +206,9 @@ class _PacketCandidates:
         packet_ends = [end for end in parser.parsed_positions() if end > 0]
         # Longest first
         for packet_end in reversed(packet_ends):
-            parsed, _ = next(parser.tree_at(packet_end), (None, None))
+            parsed, _ = next(
+                parser.tree_at(packet_end, start=non_terminal), (None, None)
+            )
             if parsed is None:
                 continue
             tree = parser.collapse(parsed)

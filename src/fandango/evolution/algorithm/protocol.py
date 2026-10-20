@@ -35,6 +35,7 @@ from fandango.io.packet_evolution.packet_mounter import MessageHolder, PacketMou
 from fandango.io.packetparser import parse_next_remote_packet
 from fandango.io.violation import FandangoRemoteViolation, RemoteViolationType
 from fandango.language.grammar import FuzzingMode
+from fandango.language.grammar.parser.iterative_parser import IterativeParser
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER, log_guidance_hint, log_message_transfer
@@ -87,6 +88,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         )
         self._protocol_tree: DerivationTree = DerivationTree(self._start_symbol)
         self._remote_response_timeout = remote_response_timeout
+        self._packet_parsers: list[IterativeParser] = []
         self._io_instance: FandangoIO = FandangoIO.instance()
         self._violation_profile = ViolationProfile(
             k_paths_of=lambda message: (
@@ -214,6 +216,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             self._packet_selector.forecasting_result,
             self._io_instance,
             self._protocol_tree,
+            parsers=self._packet_parsers,
         ):
             packet_sender = packet_tree.sender
             packet_recipient = packet_tree.recipient
