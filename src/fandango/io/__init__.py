@@ -807,7 +807,7 @@ class TimerControl(FandangoParty):
                 with self.lock:
                     if not self._is_running_timer(name):
                         return
-                time.sleep(max(0.001, remaining_s - 1))
+                time.sleep(max(0.001, remaining_s - 0.1))
             self._on_timer_expire(name)
 
         timer_thread = threading.Thread(target=timer_sleep, daemon=True)
