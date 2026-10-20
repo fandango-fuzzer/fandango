@@ -329,7 +329,7 @@ class TestViolationAvoidance(unittest.TestCase):
         history = session(algorithm.grammar, EHLO + "help\nhelptext\n")
         algorithm._packet_selector.history_tree = history
         target = (NonTerminal("<exchange_cmd>"),)
-        guider.select_next_packet(history, lambda: [target], lambda: [])
+        guider.select_next_packet(history, lambda: {target}, lambda: [])
         self.assertTrue(guider.is_guide_to_end)
         self.assertTrue(
             any(True for _ in guider._navigator.get_controlflow_tree(history))

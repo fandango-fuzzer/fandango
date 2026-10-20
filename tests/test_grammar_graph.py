@@ -401,10 +401,8 @@ class TestTargetSelector(unittest.TestCase):
         b_follows_a = tuple([nt_msg_b, nt_msg_a])
         pm = ProtocolModel(grammar, start_symbol)
         ts = TargetSelector(pm)
-        all_paths = list(
-            grammar.generate_all_k_paths(
-                k=5, non_terminal=start_symbol, input_parties={"Party"}
-            )
+        all_paths = grammar.generate_all_k_paths(
+            k=5, non_terminal=start_symbol, input_parties={"Party"}
         )
         for _ in range(10):
             target = ts.select(all_paths, [], lambda path: True)
