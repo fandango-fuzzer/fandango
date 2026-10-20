@@ -16,6 +16,7 @@ from fandango.io import (
     TimerControl,
     TimerEvent,
 )
+from fandango.language.parse.parse import parse
 
 
 class Server(FandangoParty):
@@ -109,3 +110,32 @@ def test_a_timer_cancelled_after_it_expired_drops_its_expiry_not_handled_yet(
     timers.stop_timers("1")
 
     assert expired_count(io) == 0
+
+
+def test_a_timer_of_a_fraction_of_a_second_expires_on_time(io: FandangoIO) -> None:
+    timers = TimerControl()
+
+    timers.start_timer("1", 0.3)
+    time.sleep(0.2)
+    assert expired_count(io) == 0
+    time.sleep(0.2)
+
+    assert expired_count(io) == 1
+
+
+def test_a_start_message_with_a_decimal_timeout_starts_a_timer_of_that_duration() -> (
+    None
+):
+    grammar, _ = parse("<start> ::= <timer_start>", use_cache=False)
+    assert grammar is not None
+    start_message = grammar.parse("start: 7 (0.25)\n")
+    assert start_message is not None
+    # parse() enters an environment of its own, with its own FandangoIO
+    io = FandangoIO.instance()
+    timers = TimerControl()
+
+    timers.send(start_message, None)
+    time.sleep(0.4)
+
+    assert io.get_received_msgs() == [("TimerEvent", "TimerControl", "expired: 7\n")]
+    timers.stop()

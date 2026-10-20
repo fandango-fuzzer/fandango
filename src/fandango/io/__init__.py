@@ -800,14 +800,14 @@ class TimerControl(FandangoParty):
         entry = self.timers.get(name)
         return entry is not None and entry[1] and entry[2] is threading.current_thread()
 
-    def start_timer(self, name: str, time_s: int) -> None:
+    def start_timer(self, name: str, time_s: float | int) -> None:
         def timer_sleep() -> None:
-            timer_start_time = time.time()
-            while (time.time() - timer_start_time) < time_s:
+            expires_at = time.monotonic() + time_s
+            while (remaining_s := expires_at - time.monotonic()) > 0:
                 with self.lock:
                     if not self._is_running_timer(name):
                         return
-                time.sleep(0.1)
+                time.sleep(max(0.001, remaining_s - 1))
             self._on_timer_expire(name)
 
         timer_thread = threading.Thread(target=timer_sleep, daemon=True)
@@ -857,7 +857,7 @@ class TimerControl(FandangoParty):
             if len(timer_time_s_nodes) == 0:
                 raise ValueError("No timer_timeout found in timer message")
             self.stop_timers(timer_id)
-            self.start_timer(timer_id, int(timer_time_s_nodes[0]))
+            self.start_timer(timer_id, float(str(timer_time_s_nodes[0])))
         elif timer_cmd == "cancel:":
             self.stop_timers(timer_id)
         else:
