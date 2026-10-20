@@ -181,9 +181,25 @@ class PacketSelector:
             for packet in self.next_packets:
                 if packet.node.sender == "TimerEvent":
                     return False
-        return (
-            len(self.next_fuzzer_parties()) != 0 and not self.has_message_to_handle()
+        if self._guider.awaited_external_packet() is not None:
+            # The plan waits for an external party; a packet of the fuzzer would leave it
+            return False
+        return len(self.next_fuzzer_parties()) != 0 and not self.has_message_to_handle()
+
+    def may_go_on_without_awaited_packet(self) -> bool:
+        """
+        True if the plan awaits a packet from an external party while the grammar would allow the fuzzer to send
+        a packet too instead.
+        """
+        self._ensure_next_packets()
+        return self._guider.awaited_external_packet() is not None and bool(
+            self.next_fuzzer_parties()
         )
+
+    def observe_silence(self) -> None:
+        """Notifies that the awaited packet did not arrive in time."""
+        self._guider.observe_silence()
+        self._next_packets = None
 
     def has_message_to_handle(self) -> bool:
         """

@@ -473,6 +473,19 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 self._protocol_tree = packet_mounter.commit(new_packet)
                 self._packet_selector.observe_message(self._protocol_tree)
             else:
+                if (
+                    self._packet_selector.may_go_on_without_awaited_packet()
+                    and not self._io_instance.wait_until(
+                        self._io_instance.received_msg, self._remote_response_timeout
+                    )
+                ):
+                    # Silence was allowed.
+                    log_guidance_hint(
+                        f"Planned packet did not arrive within {self._remote_response_timeout}s. "
+                        "Continuing on without it."
+                    )
+                    self._packet_selector.observe_silence()
+                    continue
                 try:
                     with packet_mounter.history_context(self._protocol_tree):
                         remote_packet = self._handle_remote_response()

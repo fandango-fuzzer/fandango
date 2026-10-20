@@ -10,9 +10,8 @@ from fandango.io.navigation.graph.packetnavigator import (
     PacketNavigator,
     RuledOutPredecessors,
 )
-from fandango.io.navigation.route import GuidePath
+from fandango.io.navigation.route import GuidePath, PlannedPacket
 from fandango.io.navigation.selection.guide_path_tracker import (
-    Deviation,
     GuidePathTracker,
 )
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
@@ -64,6 +63,8 @@ class PacketGuider:
         self._session_covered_k_paths: set[KPath] = set()
         self._steps_keeping_covered_paths: dict[str, set[Step]] = {}
         self._end_route_refusals_in_session = 0
+        # The external party sent nothing while the packet of its next planned step was waited for
+        self._external_party_silent = False
         # Targets out of reach of every run under the restrictions last seen
         self._unreachable_targets: set[KPath] = set()
         self._last_restrictions: Optional[
@@ -129,6 +130,7 @@ class PacketGuider:
         self._session_covered_k_paths.clear()
         self._steps_keeping_covered_paths = {}
         self._end_route_refusals_in_session = 0
+        self._external_party_silent = False
 
     def observe_message(self, history_tree: DerivationTree) -> None:
         """Notifies that a message was sent or received. It is the last message of history_tree, the new history."""
@@ -137,9 +139,37 @@ class PacketGuider:
         steps = self._forecast.result.last_message_steps
         for step in steps:
             self._step_refusals.observe_taken(step, message.sender)
+        self._external_party_silent = False
         self._check_covered_paths_kept(message.sender, history_tree)
         self._follow_guide_path(message.msg, message.sender, steps)
         self._steps_keeping_covered_paths = self._external_steps_keeping_covered_paths()
+
+    def awaited_external_packet(self) -> Optional[PlannedPacket]:
+        """
+        The next planned packet if an external party sends it.
+        """
+        if self._external_party_silent:
+            return None
+        planned = self._guide_path.next_packet()
+        if (
+            planned is None
+            or planned.packet.sender == "TimerEvent"
+            or not self._is_external_party(planned.packet.sender)
+        ):
+            return None
+        return planned
+
+    def observe_silence(self) -> None:
+        """
+        Notifies that the external party sent nothing while the awaited packet was waited for.
+        We note this as a derivation.
+        """
+        planned = self.awaited_external_packet()
+        if planned is not None:
+            assert planned.packet.sender is not None
+            self._count_refusal_on_route(planned.step, planned.packet.sender)
+        self._external_party_silent = True
+        self._deviated_from_guide = True
 
     def _check_covered_paths_kept(
         self, sender: str, history_tree: DerivationTree
@@ -188,12 +218,16 @@ class PacketGuider:
             return
         self._deviated_from_guide = True
         if deviation.refused is not None:
-            self._step_refusals.count_refusal(deviation.refused, sender)
-            if self._guide_to_end:
-                self._end_route_refusals_in_session += 1
-        if self._is_end_route_refused(deviation):
+            self._count_refusal_on_route(deviation.refused, sender)
+
+    def _count_refusal_on_route(self, step: Step, party: str) -> None:
+        """Counts that the party refused a step of the plan; gives the session up if no route to its end is left."""
+        self._step_refusals.count_refusal(step, party)
+        if self._guide_to_end:
+            self._end_route_refusals_in_session += 1
+        if self._is_end_route_refused(step):
             log_guidance_hint(
-                f"{sender} refused the route to the end of the run at {deviation.refused}. Ending the session."
+                f"{party} refused the route to the end of the run at {step}. Ending the session."
             )
             self._abandons_run = True
 
@@ -422,19 +456,14 @@ class PacketGuider:
         if parties:
             self._step_refusals.count_refusal(target_step, parties[0])
 
-    def _is_end_route_refused(self, deviation: Deviation) -> bool:
+    def _is_end_route_refused(self, refused: Step) -> bool:
         """
-        True if the party refused a step of the route to the end of the run and that step's block is deferred,
+        True if the refused step is on the route to the end of the run and its block is deferred,
         or if steps of routes to the end were refused REFUSAL_LIMIT times in this session.
         """
-        return (
-            self._guide_to_end
-            and deviation.refused is not None
-            and (
-                self._step_refusals.is_block_deferred(deviation.refused)
-                or self._end_route_refusals_in_session
-                >= StepRefusalCounter.REFUSAL_LIMIT
-            )
+        return self._guide_to_end and (
+            self._step_refusals.is_block_deferred(refused)
+            or self._end_route_refusals_in_session >= StepRefusalCounter.REFUSAL_LIMIT
         )
 
     @staticmethod
