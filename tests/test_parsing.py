@@ -51,18 +51,18 @@ class ParserTests(unittest.TestCase):
 
     def test_rules(self):
         self.assertEqual(
-            len(self.grammar._parser._iter_parser._rules),
+            len(self.grammar._parser._iter_parser._compiler._rules),
             9,
-            len(self.grammar._parser._iter_parser._rules),
+            len(self.grammar._parser._iter_parser._compiler._rules),
         )
         self.assertEqual(
-            len(self.grammar._parser._iter_parser._implicit_rules),
+            len(self.grammar._parser._iter_parser._compiler._implicit_rules),
             1,
-            len(self.grammar._parser._iter_parser._implicit_rules),
+            len(self.grammar._parser._iter_parser._compiler._implicit_rules),
         )
         self.assertEqual(
             {((NonTerminal("<number>"), frozenset()),)},
-            self.grammar._parser._iter_parser._rules[NonTerminal("<start>")],
+            self.grammar._parser._iter_parser._compiler._rules[NonTerminal("<start>")],
         )
         alt_1 = self.grammar.rules[NonTerminal("<number>")]
         assert isinstance(alt_1, Alternative)
@@ -77,19 +77,23 @@ class ParserTests(unittest.TestCase):
 
         self.assertEqual(
             {((NonTerminal(f"<__{alt_1.id}>"), frozenset()),)},
-            self.grammar._parser._iter_parser._rules[NonTerminal("<number>")],
+            self.grammar._parser._iter_parser._compiler._rules[NonTerminal("<number>")],
         )
         self.assertEqual(
             {((NonTerminal(f"<__{alt_2.id}>"), frozenset()),)},
-            self.grammar._parser._iter_parser._rules[NonTerminal("<non_zero>")],
+            self.grammar._parser._iter_parser._compiler._rules[
+                NonTerminal("<non_zero>")
+            ],
         )
         self.assertEqual(
             {((NonTerminal(f"<__{alt_3.id}>"), frozenset()),)},
-            self.grammar._parser._iter_parser._rules[NonTerminal("<digit>")],
+            self.grammar._parser._iter_parser._compiler._rules[NonTerminal("<digit>")],
         )
         self.assertEqual(
             {((NonTerminal("<*0*>"), frozenset()),)},
-            self.grammar._parser._iter_parser._rules[NonTerminal(f"<__{star_1.id}>")],
+            self.grammar._parser._iter_parser._compiler._rules[
+                NonTerminal(f"<__{star_1.id}>")
+            ],
         )
         self.assertEqual(
             {
@@ -98,7 +102,9 @@ class ParserTests(unittest.TestCase):
                     (NonTerminal(f"<__{star_1.id}>"), frozenset()),
                 )
             },
-            self.grammar._parser._iter_parser._rules[NonTerminal(f"<__{concat_1.id}>")],
+            self.grammar._parser._iter_parser._compiler._rules[
+                NonTerminal(f"<__{concat_1.id}>")
+            ],
         )
         self.assertEqual(
             {
@@ -110,7 +116,9 @@ class ParserTests(unittest.TestCase):
                     ),
                 ),
             },
-            self.grammar._parser._iter_parser._rules[NonTerminal(f"<__{alt_1.id}>")],
+            self.grammar._parser._iter_parser._compiler._rules[
+                NonTerminal(f"<__{alt_1.id}>")
+            ],
         )
         self.assertEqual(
             {
@@ -124,7 +132,9 @@ class ParserTests(unittest.TestCase):
                 ((Terminal("8"), frozenset()),),
                 ((Terminal("9"), frozenset()),),
             },
-            self.grammar._parser._iter_parser._rules[NonTerminal(f"<__{alt_2.id}>")],
+            self.grammar._parser._iter_parser._compiler._rules[
+                NonTerminal(f"<__{alt_2.id}>")
+            ],
         )
         self.assertEqual(
             {
@@ -139,7 +149,9 @@ class ParserTests(unittest.TestCase):
                 ((Terminal("8"), frozenset()),),
                 ((Terminal("9"), frozenset()),),
             },
-            self.grammar._parser._iter_parser._rules[NonTerminal(f"<__{alt_3.id}>")],
+            self.grammar._parser._iter_parser._compiler._rules[
+                NonTerminal(f"<__{alt_3.id}>")
+            ],
         )
 
 
@@ -639,6 +651,87 @@ class TestIncompleteFlag(unittest.TestCase):
 
     def test_prefix_of_a_parse(self):
         self.assertEqual([("a", False)], self._flagged("<start> ::= 'ab'\n", "a"))
+
+
+class TestParsingAsAnyOfSeveralStarts(unittest.TestCase):
+    @staticmethod
+    def _grammar(file_name: str, use_stdlib: bool = False) -> Grammar:
+        with open(RESOURCES_ROOT / file_name) as file:
+            grammar, _ = parse(file, use_stdlib=use_stdlib, use_cache=False)
+        assert grammar is not None
+        return grammar
+
+    @staticmethod
+    def _parses_by_start(
+        parser: IterativeParser,
+    ) -> dict[str, list[tuple[int, str]]]:
+        found: dict[str, list[tuple[int, str]]] = {}
+        for offset in parser.parsed_positions():
+            for parsed, _ in parser.tree_at(offset):
+                tree = parser.collapse(parsed)
+                assert tree is not None
+                found.setdefault(str(tree.symbol), []).append((offset, str(tree)))
+        return found
+
+    def _parse_each_and_all(
+        self, grammar: Grammar, starts: list[str], word: str | bytes
+    ) -> tuple[dict[str, list[tuple[int, str]]], dict[str, list[tuple[int, str]]]]:
+        """The parses of every start, parsed on its own and parsed with the others at once."""
+        alone: dict[str, list[tuple[int, str]]] = {}
+        for start in starts:
+            parser = IterativeParser(grammar.rules)
+            parser.new_parse(NonTerminal(start))
+            parser.consume(word)
+            alone.update(self._parses_by_start(parser))
+        parser = IterativeParser(grammar.rules)
+        parser.new_parse([NonTerminal(start) for start in starts])
+        parser.consume(word)
+        return alone, self._parses_by_start(parser)
+
+    def test_each_start_has_the_parses_it_has_on_its_own(self):
+        alone, at_once = self._parse_each_and_all(
+            self._grammar("ambiguous_io.fan"),
+            ["<query>", "<nt_pass>", "<nt_fail>"],
+            "response",
+        )
+        self.assertEqual(alone, at_once)
+        self.assertEqual(
+            at_once,
+            {"<nt_pass>": [(8, "response")], "<nt_fail>": [(8, "response")]},
+        )
+
+    def test_the_parses_as_one_of_several_starts_are_read_alone(self):
+        parser = IterativeParser(self._grammar("ambiguous_io.fan").rules)
+        parser.new_parse([NonTerminal("<nt_pass>"), NonTerminal("<nt_fail>")])
+        parser.consume("response")
+        self.assertEqual(
+            [
+                str(tree.symbol)
+                for tree, _ in parser.tree_at(8, start=NonTerminal("<nt_fail>"))
+            ],
+            ["<nt_fail>"],
+        )
+
+    def test_a_start_of_bits_and_a_start_of_bytes_are_parsed_at_once(self):
+        # <bit> of bitstream-a.fan encodes b"a" in bits, <byte> of the standard library is a byte
+        alone, at_once = self._parse_each_and_all(
+            self._grammar("bitstream-a.fan", use_stdlib=True), ["<bit>", "<byte>"], b"a"
+        )
+        self.assertEqual(alone, at_once)
+        self.assertEqual(set(at_once), {"<bit>", "<byte>"})
+
+
+class TestPredictingByTheNextCharacter(unittest.TestCase):
+    """`predict` only takes the alternatives that can begin with the next character."""
+
+    def test_characters_beyond_latin_1_are_predicted(self):
+        with open(RESOURCES_ROOT / "beyond_latin_1.fan") as file:
+            grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+        assert grammar is not None
+        parser = IterativeParser(grammar.rules)
+        parser.new_parse()
+        parser.consume("\u20acb\u4e2d")
+        self.assertEqual(parser.parsed_positions(), [1, 2, 3])
 
 
 class TestCLIParsing(unittest.TestCase):
