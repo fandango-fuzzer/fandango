@@ -8,6 +8,7 @@ from fandango.io.navigation.graph.grammar_navigator.grammar_graph_converter impo
 )
 from fandango.io.navigation.graph.grammar_navigator.path_search import SearchTarget
 from fandango.io.navigation.graph.grammar_navigator.rule_costs import RuleCosts
+from fandango.io.navigation.graph.reachability_checker import KPathMatcher
 from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols import Symbol
 
@@ -70,32 +71,6 @@ class RunEndTarget(CostBasedTarget):
                 )
             self._costs_after[graph_node] = after
         return after
-
-
-class KPathMatcher:
-    """Tells how many leading symbols of a k-path a sequence of symbols ends with, one symbol at a time."""
-
-    def __init__(self, k_path: Sequence[Symbol]):
-        self._k_path = list(k_path)
-        # Per matched length, the next shorter length that the matched symbols also end with.
-        self._fallbacks = [0] * len(self._k_path)
-        matched = 0
-        for i in range(1, len(self._k_path)):
-            while matched > 0 and self._k_path[i] != self._k_path[matched]:
-                matched = self._fallbacks[matched - 1]
-            if self._k_path[i] == self._k_path[matched]:
-                matched += 1
-            self._fallbacks[i] = matched
-
-    def matched_after(self, matched: int, symbol: Symbol) -> int:
-        """Returns the matched length after symbol is appended to a sequence with the given matched length."""
-        if matched == len(self._k_path):
-            matched = self._fallbacks[matched - 1]
-        while matched > 0 and self._k_path[matched] != symbol:
-            matched = self._fallbacks[matched - 1]
-        if self._k_path[matched] == symbol:
-            matched += 1
-        return matched
 
 
 class ChainSummary(NamedTuple):

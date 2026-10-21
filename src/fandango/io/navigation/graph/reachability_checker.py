@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import NamedTuple, Optional
 
 from fandango.io.navigation.graph.visitor.continuing_nodevisitor import (
@@ -10,6 +11,41 @@ from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree
+
+
+class KPathMatcher:
+    """Tells how many leading symbols of a k-path a sequence of symbols ends with, one symbol at a time."""
+
+    def __init__(self, k_path: Sequence[Symbol]):
+        self._k_path = list(k_path)
+        # Per matched length, the next shorter length that the matched symbols also end with.
+        self._fallbacks = [0] * len(self._k_path)
+        matched = 0
+        for i in range(1, len(self._k_path)):
+            while matched > 0 and self._k_path[i] != self._k_path[matched]:
+                matched = self._fallbacks[matched - 1]
+            if self._k_path[i] == self._k_path[matched]:
+                matched += 1
+            self._fallbacks[i] = matched
+
+    def matched_after(self, matched: int, symbol: Symbol) -> int:
+        """Returns the matched length after symbol is appended to a sequence with the given matched length."""
+        if matched == len(self._k_path):
+            matched = self._fallbacks[matched - 1]
+        while matched > 0 and self._k_path[matched] != symbol:
+            matched = self._fallbacks[matched - 1]
+        if self._k_path[matched] == symbol:
+            matched += 1
+        return matched
+
+    def matched_lengths(self, symbols: Sequence[Symbol]) -> list[int]:
+        """Returns the matched length after each prefix of the symbols, starting with the empty one."""
+        if not self._k_path:
+            return [0] * (len(symbols) + 1)
+        lengths = [0]
+        for symbol in symbols:
+            lengths.append(self.matched_after(lengths[-1], symbol))
+        return lengths
 
 
 class ReachabilityResult(NamedTuple):
@@ -74,6 +110,7 @@ class ReachabilityChecker(ContinuingNodeVisitor):
         self.seen_symbols: set[Symbol] = set()
         self.path_reached = False
         self.k_path_to_reach: KPath = tuple()
+        self._matcher = KPathMatcher(())
 
     def find_reachability(
         self,
@@ -85,6 +122,7 @@ class ReachabilityChecker(ContinuingNodeVisitor):
             return ReachabilityResult(False, False)
         self.path_reached = False
         self.k_path_to_reach = k_path_to_reach
+        self._matcher = KPathMatcher(k_path_to_reach)
         self.seen_symbols.clear()
         super().find(tree)
         completable = self._completable_by_extension(tree)
@@ -99,7 +137,7 @@ class ReachabilityChecker(ContinuingNodeVisitor):
             return False
         k_path = tuple(self.k_path_to_reach)
         # The whole k-path is already realized on the rightmost open path.
-        if len(self.find_longest_suffix(continuation.open_path, k_path)) == len(k_path):
+        if self._matcher.matched_lengths(continuation.open_path)[-1] == len(k_path):
             return True
         # A still-open node on the rightmost path already realizes a non-empty
         # prefix of the k-path and can produce the next k-path symbol as a child
@@ -108,8 +146,9 @@ class ReachabilityChecker(ContinuingNodeVisitor):
         for parent_path, child in continuation.extension_points:
             if not isinstance(child, NonTerminal):
                 continue
+            matched_by_prefix = self._matcher.matched_lengths(parent_path)
             for j in range(len(parent_path), 0, -1):
-                match_len = len(self.find_longest_suffix(parent_path[:j], k_path))
+                match_len = matched_by_prefix[j]
                 if not 0 < match_len < len(k_path):
                     continue
                 if child != k_path[match_len]:
@@ -154,12 +193,10 @@ class ReachabilityChecker(ContinuingNodeVisitor):
             return False, False
 
         current_path = tuple(map(lambda x: x[0], self.current_path_collapsed))
-        match = self.find_longest_suffix(current_path, tuple(self.k_path_to_reach))
-        if len(match) == 0:
+        matched = self._matcher.matched_lengths(current_path)[-1]
+        if matched == 0:
             return True, True
-        if self.test_reachability_from_node(
-            node, self.k_path_to_reach[len(match) - 1 :]
-        ):
+        if self.test_reachability_from_node(node, self.k_path_to_reach[matched - 1 :]):
             self.path_reached = True
         return False, False
 
@@ -167,17 +204,6 @@ class ReachabilityChecker(ContinuingNodeVisitor):
         if is_exploring:
             self.seen_symbols.add(node.symbol)
         return True
-
-    def find_longest_suffix(
-        self, path: tuple[Symbol, ...], suffix_path: tuple[Symbol, ...]
-    ) -> tuple[Symbol, ...]:
-        max_overlap = 0
-        search_len = len(suffix_path)
-        chain_len = len(path)
-        for i in range(1, min(search_len, chain_len) + 1):
-            if path[-i:] == suffix_path[:i]:
-                max_overlap = i
-        return suffix_path[:max_overlap]
 
     def __repr__(self) -> str:
         return (
