@@ -51,15 +51,17 @@ class SuspectAvoidingTarget(SearchTarget):
     def __init__(
         self,
         target: CostBasedTarget,
-        costs_without: Callable[[frozenset[PacketNonTerminal]], RuleCosts],
+        costs: RuleCosts,
+        message_nodes_by_packet_type: dict[PacketNonTerminal, frozenset[Node]],
         suspect_predecessors: SuspectPredecessors,
         history_predecessors: frozenset[Predecessor],
     ):
         """
-        target is the target on the unrestricted costs; costs_without gives the costs with some packets unreachable.
+        target is the target on costs; message_nodes_by_packet_type gives the rule nodes sending each packet.
         """
         self._unrestricted_target = target
-        self._costs_without = costs_without
+        self._costs = costs
+        self._message_nodes_by_packet_type = message_nodes_by_packet_type
         self._suspect_predecessors = suspect_predecessors
         self._tracked_predecessors = frozenset().union(*suspect_predecessors.values())
         self._start_context = history_predecessors & self._tracked_predecessors
@@ -95,7 +97,15 @@ class SuspectAvoidingTarget(SearchTarget):
         """The target on costs that count the avoided packets as unreachable."""
         target = self._targets_by_avoided.get(avoided)
         if target is None:
-            target = self._unrestricted_target.with_costs(self._costs_without(avoided))
+            nodes = frozenset[Node]().union(
+                *(
+                    self._message_nodes_by_packet_type.get(packet_type, frozenset())
+                    for packet_type in avoided
+                )
+            )
+            target = self._unrestricted_target.with_costs(
+                self._costs.without_messages(nodes)
+            )
             self._targets_by_avoided[avoided] = target
         return target
 
@@ -188,9 +198,9 @@ class PacketNavigator(GrammarNavigator):
         self._packet_symbols = packet_symbols
         self._step_costs = step_costs
         self._suspect_predecessors = suspect_predecessors
-        self._costs_by_avoided: dict[frozenset[PacketNonTerminal], RuleCosts] = {}
         self._seen_step_costs: dict[Step, int] = {}
         self._rule_step_by_node_id = self._rule_steps()
+        self._message_nodes_by_packet_type = self._message_nodes()
         self._step_cost_by_node_id: dict[int, int] = {}
         self._parser = NavigatorPacketIterativeParser(reduced_rules)
         self.set_message_cost(1)
@@ -229,6 +239,19 @@ class PacketNavigator(GrammarNavigator):
             collect(body, (self._pruner.original(symbol),))
         return steps
 
+    def _message_nodes(self) -> dict[PacketNonTerminal, frozenset[Node]]:
+        """Maps each packet type to the nodes in the rules that send it."""
+        nodes: dict[PacketNonTerminal, set[Node]] = {}
+        pending = list(self.grammar.rules.values())
+        while pending:
+            node = pending.pop()
+            packet_type = packet_type_of(node)
+            if packet_type is not None:
+                nodes.setdefault(packet_type, set()).add(node)
+            elif not isinstance(node, NonTerminalNode):
+                pending.extend(node.children())
+        return {packet_type: frozenset(ids) for packet_type, ids in nodes.items()}
+
     def _update_step_costs(self) -> None:
         """Reads the step costs. Clears the distances if they changed."""
         costs = self._step_costs()
@@ -240,7 +263,6 @@ class PacketNavigator(GrammarNavigator):
                 if step in costs
             }
             self._costs.clear()
-            self._costs_by_avoided.clear()
 
     def _message_cost_of(self, node: Node) -> int:
         return super()._message_cost_of(node) + self._step_cost_by_node_id.get(
@@ -427,31 +449,11 @@ class PacketNavigator(GrammarNavigator):
             return target
         return SuspectAvoidingTarget(
             target,
-            self._costs_without,
+            self._costs,
+            self._message_nodes_by_packet_type,
             suspect_predecessors,
             self._predecessors_in(tree),
         )
-
-    def _costs_without(self, avoided: frozenset[PacketNonTerminal]) -> RuleCosts:
-        """The costs of the messages, with the avoided packets unreachable."""
-        if not avoided:
-            return self._costs
-        costs = self._costs_by_avoided.get(avoided)
-        if costs is None:
-
-            def message_cost_of(node: Node) -> int:
-                if packet_type_of(node) in avoided:
-                    return RuleCosts.UNREACHABLE
-                return self._message_cost_of(node)
-
-            costs = RuleCosts(
-                self.grammar.rules,
-                message_cost_of,
-                self.message_cost == 0,
-                unrestricted=self._costs,
-            )
-            self._costs_by_avoided[avoided] = costs
-        return costs
 
     @staticmethod
     def _predecessors_in(tree: Optional[DerivationTree]) -> frozenset[Predecessor]:

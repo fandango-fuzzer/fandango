@@ -40,12 +40,36 @@ class RuleCosts:
         # including entering the reference.
         self._cached_reaching_costs_in_rules: Optional[dict[str, dict[str, int]]] = None
         self._distances_by_target: dict[str, dict[str, int]] = {}
+        self._costs_without_messages: dict[frozenset[Node], RuleCosts] = {}
 
     def clear(self) -> None:
         """Forgets every computed cost, as after the message costs changed."""
         self._cheapest_costs = None
         self._cached_reaching_costs_in_rules = None
         self._distances_by_target.clear()
+        self._costs_without_messages.clear()
+
+    def without_messages(self, nodes: frozenset[Node]) -> "RuleCosts":
+        """Returns these costs with the messages of the nodes unreachable."""
+        if not nodes:
+            return self
+        costs = self._costs_without_messages.get(nodes)
+        if costs is None:
+            message_cost_of = self._message_cost_of
+
+            def message_cost_without(node: Node) -> int:
+                if node in nodes:
+                    return self.UNREACHABLE
+                return message_cost_of(node)
+
+            costs = RuleCosts(
+                self._rules,
+                message_cost_without,
+                self._count_references,
+                unrestricted=self,
+            )
+            self._costs_without_messages[nodes] = costs
+        return costs
 
     def cost_of(self, node: Node) -> int:
         """Returns the cost of the cheapest messages that node derives."""
