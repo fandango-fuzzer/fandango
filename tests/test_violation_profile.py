@@ -17,7 +17,7 @@ from fandango.io.navigation.selection.violation_profiler.value_features import (
     value_features,
 )
 from fandango.io.navigation.selection.violation_profiler.violation_profile import (
-    ViolationKind,
+    Symptom,
     ViolationProfile,
     _Feature,
 )
@@ -32,9 +32,7 @@ from tests.utils import RESOURCES_ROOT
 HELP = PacketNonTerminal("Fuzzer", "Extern", NonTerminal("<help>"))
 GET = PacketNonTerminal("Fuzzer", "Extern", NonTerminal("<get>"))
 CMD = PacketNonTerminal("Fuzzer", "Extern", NonTerminal("<cmd>"))
-SET = PacketNonTerminal("Fuzzer", "Extern", NonTerminal("<set>"))
-EHLO_TYPE = PacketNonTerminal("Fuzzer", "Extern", NonTerminal("<ehlo>"))
-GARBAGE_INSTEAD_OF_HELPTEXT = ViolationKind("SYNTAX", ("<helptext>",), ())
+GARBAGE_INSTEAD_OF_HELPTEXT = Symptom(RemoteViolationType.SYNTAX, ("<helptext>",), ())
 SESSIONS = 60
 # <help> violates after <ehlo>, <cmd> with '!', and <get> after a <set> with <bad>
 GRAMMAR = "violation_profile.fan"
@@ -120,10 +118,8 @@ class TestViolationProfile(unittest.TestCase):
             self.profile.observe_answer(session(self.grammar, messages))
             self.profile.signal_session_end()
 
-    def suspected(self, messages: str, packet_type: PacketNonTerminal):
-        return self.profile.suspicion(
-            last_message(session(self.grammar, messages)), packet_type
-        )
+    def suspected(self, messages: str):
+        return self.profile.suspicion_of(last_message(session(self.grammar, messages)))
 
     def _learn(self, answers: int = 3) -> None:
         self.trigger(self.AFTER_EHLO)
@@ -133,24 +129,24 @@ class TestViolationProfile(unittest.TestCase):
     def test_the_history_that_triggers_the_violation_is_suspected(self):
         self._learn()
         self.assertEqual(
-            self.suspected(self.AFTER_EHLO, HELP),
+            self.suspected(self.AFTER_EHLO),
             (HELP, GARBAGE_INSTEAD_OF_HELPTEXT),
         )
-        self.assertIsNone(self.suspected(HELO + "help\n", HELP))
+        self.assertIsNone(self.suspected(HELO + "help\n"))
         # Features every <help> has are never suspect
-        (suspects,) = self.profile._suspects(HELP).values()
+        (suspects,) = self.profile._suspect_features(HELP).values()
         self.assertNotIn(_Feature("path", None, (NonTerminal("<help>"),)), suspects)
         self.assertNotIn(_Feature("packet", ("Fuzzer", "<hello>"), None), suspects)
 
     def test_too_few_counterexamples_suspect_nothing(self):
         self._learn(answers=ViolationProfile.MIN_COUNTEREXAMPLES - 1)
-        self.assertIsNone(self.suspected(self.AFTER_EHLO, HELP))
+        self.assertIsNone(self.suspected(self.AFTER_EHLO))
 
     def test_a_feature_explaining_no_further_trigger_is_not_suspected(self):
         # <cmd a> rides along on the route of every trigger; <ehlo> explains them all
         self.trigger(EHLO + "cmd a\nok\nhelp\n", ViolationProfile.MIN_TRIGGERS)
         self.answer(HELO + "cmd b\nok\nhelp\nhelptext\n", 3)
-        (suspects,) = self.profile._suspects(HELP).values()
+        (suspects,) = self.profile._suspect_features(HELP).values()
         self.assertEqual(suspects, {_Feature("packet", ("Fuzzer", "<ehlo>"), None)})
 
     def test_a_feature_common_in_answers_is_not_suspected(self):
@@ -158,32 +154,35 @@ class TestViolationProfile(unittest.TestCase):
         self.answer(self.ANSWERED, 3)
         self.answer(EHLO + "help\nhelptext\n", 3)
         self.trigger(self.AFTER_EHLO, ViolationProfile.MIN_TRIGGERS - 1)
-        self.assertIsNone(self.suspected(self.AFTER_EHLO, HELP))
+        self.assertIsNone(self.suspected(self.AFTER_EHLO))
 
     def test_a_suspect_is_retried_after_waits_that_double(self):
         key = GARBAGE_INSTEAD_OF_HELPTEXT
         first_wait = ViolationProfile.FIRST_RETRY_WAIT
-        self.assertFalse(self.profile.retry_due(HELP, key))
+        self.assertFalse(self.profile.is_retry_due(HELP, key))
+        self._learn()
+        # The wait starts once the suspicion arises
+        self.assertIsNotNone(self.suspected(self.AFTER_EHLO))
         for _ in range(first_wait - 1):
             self.profile.signal_session_end()
-        self.assertFalse(self.profile.retry_due(HELP, key))
+            self.assertFalse(self.profile.is_retry_due(HELP, key))
         self.profile.signal_session_end()
-        self.assertTrue(self.profile.retry_due(HELP, key))
+        self.assertTrue(self.profile.is_retry_due(HELP, key))
         self.profile.consume_retry(HELP, key)
         for _ in range(2 * first_wait - 1):
             self.profile.signal_session_end()
-            self.assertFalse(self.profile.retry_due(HELP, key))
+            self.assertFalse(self.profile.is_retry_due(HELP, key))
         self.profile.signal_session_end()
-        self.assertTrue(self.profile.retry_due(HELP, key))
+        self.assertTrue(self.profile.is_retry_due(HELP, key))
 
     def test_a_suspect_earlier_packet_rules_the_packet_out(self):
         self._learn()
         # The earlier <ehlo> is suspect by itself, so its content is not
-        (suspects,) = self.profile._suspects(HELP).values()
+        (suspects,) = self.profile._suspect_features(HELP).values()
         self.assertEqual(
             {feature.kind for feature in suspects if feature.predecessor}, {"packet"}
         )
-        self.assertIsNone(self.suspected("hello\nehlo\n", EHLO_TYPE))
+        self.assertIsNone(self.suspected("hello\nehlo\n"))
         self.assertEqual(
             self.profile.ruled_out_predecessors(),
             {HELP: frozenset({("Fuzzer", "<ehlo>")})},
@@ -199,9 +198,9 @@ class TestViolationProfile(unittest.TestCase):
         self.trigger(EHLO + "cmd !\n", ViolationProfile.MIN_TRIGGERS, "<ok>")
         for argument in "abc":
             self.answer(EHLO + f"cmd {argument}\nok\n")
-        self.assertIsNotNone(self.suspected(EHLO + "cmd !\n", CMD))
-        self.assertIsNone(self.suspected(EHLO + "cmd b\n", CMD))
-        (suspects,) = self.profile._suspects(CMD).values()
+        self.assertIsNotNone(self.suspected(EHLO + "cmd !\n"))
+        self.assertIsNone(self.suspected(EHLO + "cmd b\n"))
+        (suspects,) = self.profile._suspect_features(CMD).values()
         self.assertIn(
             _Feature("value", None, (("<cmd>", "<word>"), ("char", "!"))), suspects
         )
@@ -232,16 +231,16 @@ class TestViolationProfile(unittest.TestCase):
         self.trigger(
             self.AFTER_BAD_SET, ViolationProfile.MIN_TRIGGERS - 1, expected="<value>"
         )
-        (suspects,) = self.profile._suspects(GET).values()
+        (suspects,) = self.profile._suspect_features(GET).values()
         self.assertIn(
             _Feature("path", ("Fuzzer", "<set>"), (NonTerminal("<bad>"),)), suspects
         )
-        self.assertIsNotNone(self.suspected(self.AFTER_BAD_SET, GET))
-        self.assertIsNone(self.suspected(EHLO + "set b\nok\nget\n", GET))
+        self.assertIsNotNone(self.suspected(self.AFTER_BAD_SET))
+        self.assertIsNone(self.suspected(EHLO + "set b\nok\nget\n"))
         # The <set> with <bad> is suspected as predecessor, so the filter avoids it
-        (violation,) = self.profile._suspects(GET)
-        self.assertEqual(self.suspected(EHLO + "set !\n", SET), (GET, violation))
-        self.assertIsNone(self.suspected(EHLO + "set b\n", SET))
+        (violation,) = self.profile._suspect_features(GET)
+        self.assertEqual(self.suspected(EHLO + "set !\n"), (GET, violation))
+        self.assertIsNone(self.suspected(EHLO + "set b\n"))
         self.assertEqual(
             _Feature("path", ("Fuzzer", "<set>"), (NonTerminal("<bad>"),)).describe(),
             "after <set> from Fuzzer with <bad>",
@@ -311,7 +310,7 @@ class TestViolationAvoidance(unittest.TestCase):
             profile.signal_session_end()
         self.assertIsNotNone(algorithm._packet_coverage_filter.filter(candidate))
         # Only sending the suspect uses the retry up
-        self.assertTrue(profile.retry_due(HELP, GARBAGE_INSTEAD_OF_HELPTEXT))
+        self.assertTrue(profile.is_retry_due(HELP, GARBAGE_INSTEAD_OF_HELPTEXT))
 
     def test_a_step_waiting_to_be_blocked_ends_the_run_with_the_history_derivable(
         self,

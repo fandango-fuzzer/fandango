@@ -123,10 +123,8 @@ class PacketCoverageFilter:
         assert isinstance(symbol, NonTerminal)
         packet_type = PacketNonTerminal(msg.sender, msg.recipient, symbol)
         profile = self._violation_profile
-        if profile is not None:
-            suspicion = profile.suspicion(msg, packet_type)
-            if suspicion is not None and not profile.retry_due(*suspicion):
-                return None
+        if profile is not None and profile.should_withhold(msg):
+            return None
         if self._hold_back_time_is_up() and not self.hold_back_solutions_by_msg_hash:
             # Searched long enough without a candidate to hold back: the first valid one is sent
             return individual

@@ -362,7 +362,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
 
     def _record_violation(self, violation: Exception, reason: str) -> None:
         """Records a violation that aborts the current session. Raises it instead if throw_on_violation is set."""
-        self._violation_profile.observe_violation(self._protocol_tree, violation)
+        if isinstance(violation, FandangoRemoteViolation):
+            self._violation_profile.observe_violation(self._protocol_tree, violation)
         self.violations.append((self._protocol_tree, violation))
         if self.throw_on_violation:
             raise violation
@@ -517,10 +518,10 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             packet.sender, packet.recipient, packet.nonterminal
         )
         with self._packet_mounter.mounted_context(packet) as mounted_packet:
-            suspicion = self._violation_profile.suspicion(mounted_packet, packet_type)
+            suspicion = self._violation_profile.suspicion_of(mounted_packet)
         if suspicion is None:
             return
-        if self._violation_profile.retry_due(*suspicion):
+        if self._violation_profile.is_retry_due(*suspicion):
             self._violation_profile.consume_retry(*suspicion)
             return
         suspect = (
@@ -528,7 +529,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         )
         log_guidance_hint(
             f"Sending {packet_type}, suspected to cause{suspect} "
-            f"{suspicion.violation.describe()}."
+            f"{suspicion.symptom.describe()}."
         )
 
     def _configure_fuzzable_packets(self) -> None:
