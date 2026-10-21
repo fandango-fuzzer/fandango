@@ -38,7 +38,7 @@ def packet_type_of(node: Node) -> Optional[PacketNonTerminal]:
     )
 
 
-class PredecessorAvoidingTarget(SearchTarget):
+class SuspectAvoidingTarget(SearchTarget):
     """
     A target reached only by routes that send no packet after one of its suspect predecessors in the run.
     The context of a route is the set of predecessors it sent, the history's included. The estimate in a context
@@ -58,18 +58,16 @@ class PredecessorAvoidingTarget(SearchTarget):
         self._target_with = target_with
         self._costs_without = costs_without
         self._suspect_predecessors = suspect_predecessors
-        self._marks = frozenset().union(*suspect_predecessors.values())
-        self._start = history_predecessors & self._marks
-        self._targets_by_unsendable: dict[
-            frozenset[PacketNonTerminal], SearchTarget
-        ] = {}
-        self._target = self._target_without(frozenset())
+        self._tracked_predecessors = frozenset().union(*suspect_predecessors.values())
+        self._start_context = history_predecessors & self._tracked_predecessors
+        self._targets_by_avoided: dict[frozenset[PacketNonTerminal], SearchTarget] = {}
+        self._unrestricted_target = self._target_without(frozenset())
 
     def is_reached(self, node: GrammarGraphNode) -> bool:
-        return self._target.is_reached(node)
+        return self._unrestricted_target.is_reached(node)
 
     def estimate(self, node: GrammarGraphNode) -> int:
-        return self._target.estimate(node)
+        return self._unrestricted_target.estimate(node)
 
     def estimate_in(self, context: Hashable, node: GrammarGraphNode) -> int:
         assert isinstance(context, frozenset)
@@ -83,25 +81,25 @@ class PredecessorAvoidingTarget(SearchTarget):
         """The target on costs that count the packets avoided in the context as unreachable."""
         return self._target_without(
             frozenset(
-                packet
-                for packet, predecessors in self._suspect_predecessors.items()
+                packet_type
+                for packet_type, predecessors in self._suspect_predecessors.items()
                 if predecessors & context
             )
         )
 
-    def _target_without(self, unsendable: frozenset[PacketNonTerminal]) -> SearchTarget:
-        """The target on costs that count the unsendable packets as unreachable."""
-        target = self._targets_by_unsendable.get(unsendable)
+    def _target_without(self, avoided: frozenset[PacketNonTerminal]) -> SearchTarget:
+        """The target on costs that count the avoided packets as unreachable."""
+        target = self._targets_by_avoided.get(avoided)
         if target is None:
-            target = self._target_with(self._costs_without(unsendable))
-            self._targets_by_unsendable[unsendable] = target
+            target = self._target_with(self._costs_without(avoided))
+            self._targets_by_avoided[avoided] = target
         return target
 
     def state(self, node: GrammarGraphNode) -> Hashable:
-        return self._target.state(node)
+        return self._unrestricted_target.state(node)
 
     def start_context(self) -> Hashable:
-        return self._start
+        return self._start_context
 
     def enter(self, context: Hashable, node: GrammarGraphNode) -> Optional[Hashable]:
         assert isinstance(context, frozenset)
@@ -115,21 +113,21 @@ class PredecessorAvoidingTarget(SearchTarget):
         self, context: frozenset[Predecessor], node: GrammarGraphNode
     ) -> Optional[frozenset[Predecessor]]:
         """The context after the route enters node, or None if the node sends a packet avoided in the context."""
-        packet = packet_type_of(node.node)
-        if packet is None:
+        packet_type = packet_type_of(node.node)
+        if packet_type is None:
             return context
-        if self._is_avoided(packet, context):
+        if self._is_avoided(packet_type, context):
             return None
-        assert packet.sender is not None
-        predecessor = (packet.sender, packet.symbol.name())
-        if predecessor not in self._marks:
+        assert packet_type.sender is not None
+        predecessor = (packet_type.sender, packet_type.symbol.name())
+        if predecessor not in self._tracked_predecessors:
             return context
         return context | {predecessor}
 
     def _is_avoided(
-        self, packet: PacketNonTerminal, context: frozenset[Predecessor]
+        self, packet_type: PacketNonTerminal, context: frozenset[Predecessor]
     ) -> bool:
-        return bool(self._suspect_predecessors.get(packet, frozenset()) & context)
+        return bool(self._suspect_predecessors.get(packet_type, frozenset()) & context)
 
 
 class PacketNavigator(GrammarNavigator):
@@ -186,7 +184,7 @@ class PacketNavigator(GrammarNavigator):
         self._packet_symbols = packet_symbols
         self._step_costs = step_costs
         self._suspect_predecessors = suspect_predecessors
-        self._costs_by_unsendable: dict[frozenset[PacketNonTerminal], RuleCosts] = {}
+        self._costs_by_avoided: dict[frozenset[PacketNonTerminal], RuleCosts] = {}
         self._seen_step_costs: dict[Step, int] = {}
         self._rule_step_by_node_id = self._rule_steps()
         self._step_cost_by_node_id: dict[int, int] = {}
@@ -238,7 +236,7 @@ class PacketNavigator(GrammarNavigator):
                 if step in costs
             }
             self._costs.clear()
-            self._costs_by_unsendable.clear()
+            self._costs_by_avoided.clear()
 
     def _message_cost_of(self, node: Node) -> int:
         return super()._message_cost_of(node) + self._step_cost_by_node_id.get(
@@ -425,22 +423,22 @@ class PacketNavigator(GrammarNavigator):
         suspect_predecessors = self._suspect_predecessors()
         if not suspect_predecessors:
             return target_with(self._costs)
-        return PredecessorAvoidingTarget(
+        return SuspectAvoidingTarget(
             target_with,
             self._costs_without,
             suspect_predecessors,
             self._predecessors_in(tree),
         )
 
-    def _costs_without(self, unsendable: frozenset[PacketNonTerminal]) -> RuleCosts:
-        """The costs of the messages, with the unsendable packets unreachable."""
-        if not unsendable:
+    def _costs_without(self, avoided: frozenset[PacketNonTerminal]) -> RuleCosts:
+        """The costs of the messages, with the avoided packets unreachable."""
+        if not avoided:
             return self._costs
-        costs = self._costs_by_unsendable.get(unsendable)
+        costs = self._costs_by_avoided.get(avoided)
         if costs is None:
 
             def message_cost_of(node: Node) -> int:
-                if packet_type_of(node) in unsendable:
+                if packet_type_of(node) in avoided:
                     return RuleCosts.UNREACHABLE
                 return self._message_cost_of(node)
 
@@ -450,7 +448,7 @@ class PacketNavigator(GrammarNavigator):
                 self.message_cost == 0,
                 unrestricted=self._costs,
             )
-            self._costs_by_unsendable[unsendable] = costs
+            self._costs_by_avoided[avoided] = costs
         return costs
 
     @staticmethod
