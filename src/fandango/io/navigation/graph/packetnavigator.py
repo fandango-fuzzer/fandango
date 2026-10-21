@@ -41,6 +41,12 @@ def packet_type_of(node: Node) -> Optional[PacketNonTerminal]:
     )
 
 
+def predecessor_of(packet_type: PacketNonTerminal) -> Predecessor:
+    """Identifies the packet type as predecessor by its sender and symbol."""
+    assert packet_type.sender is not None
+    return packet_type.sender, packet_type.symbol.name()
+
+
 class SuspectAvoidingTarget(SearchTarget):
     """
     A target reached only by routes that send no packet after one of its suspect predecessors in the run.
@@ -132,8 +138,7 @@ class SuspectAvoidingTarget(SearchTarget):
             return context
         if self._is_avoided(packet_type, context):
             return None
-        assert packet_type.sender is not None
-        predecessor = (packet_type.sender, packet_type.symbol.name())
+        predecessor = predecessor_of(packet_type)
         if predecessor not in self._tracked_predecessors:
             return context
         return context | {predecessor}
@@ -266,7 +271,7 @@ class PacketNavigator(GrammarNavigator):
         if key not in self._contained_by_k_paths:
             self._contained_by_k_paths[key] = any(
                 self._includes_k_paths(k_paths, controlflow_tree)
-                for controlflow_tree, _ in self.get_controlflow_tree(tree)
+                for controlflow_tree, _ in self.controlflow_trees(tree)
             )
         return self._contained_by_k_paths[key]
 
@@ -283,17 +288,14 @@ class PacketNavigator(GrammarNavigator):
             self._pruned_k_paths_by_k_path[k_path] = pruned
         return pruned
 
-    def get_controlflow_tree(
+    def controlflow_trees(
         self, tree: DerivationTree
     ) -> Generator[tuple[DerivationTree, bool], None, None]:
         messages = list(tree.protocol_msgs())
         if not messages:
             yield DerivationTree(NonTerminal("<start>")), False
             return
-        history_nts = ""
-        for message in messages:
-            assert isinstance(message.msg.symbol, NonTerminal)
-            history_nts += message.msg.symbol.name()
+        history_nts = "".join(message.msg.nonterminal.name() for message in messages)
         self._parser.reference_tree = tree
         self._parser.parse_history(history_nts)
         for suggested_tree, is_complete in self._parser.tree_at(
@@ -315,19 +317,15 @@ class PacketNavigator(GrammarNavigator):
         return Step.of_path(path[::-1], self._references.is_recursive_call)
 
     def _to_route(self, path: list[Optional[GrammarGraphNode]]) -> Route:
-        path = list(
-            filter(lambda n: n is None or isinstance(n.node, NonTerminalNode), path)
-        )
         route: Route = []
-        for n in path:
-            if n is None:
+        for node in path:
+            if node is None:
                 route.append(None)
-                continue
-            assert isinstance(n.node, NonTerminalNode)
-            if n.node.sender is not None:
-                route.append(self._planned_packet(n))
-            else:
-                route.append(self._pruner.original(n.node.symbol))
+            elif isinstance(node.node, NonTerminalNode):
+                if node.node.sender is not None:
+                    route.append(self._planned_packet(node))
+                else:
+                    route.append(self._pruner.original(node.node.symbol))
         return route
 
     def _planned_packet(self, graph_node: GrammarGraphNode) -> PlannedPacket:
@@ -345,18 +343,10 @@ class PacketNavigator(GrammarNavigator):
     ) -> bool:
         if len(k_paths) == 0:
             return True
-        packet_k_paths = set()
-        for k_path in k_paths:
-            packet_path: KPath = tuple()
-            for symbol in k_path:
-                if symbol in self._packet_symbols:
-                    assert isinstance(symbol, NonTerminal)
-                    symbol = StateGrammarConverter.to_packet_non_terminal(symbol)
-                packet_path += (symbol,)
-            packet_k_paths.add(packet_path)
-        k = max(1, max(map(lambda x: len(x), k_paths)))
-        col_tree = self.grammar.collapse(controlflow_tree)
-        if col_tree is None:
+        packet_k_paths = {self._search_k_path(k_path) for k_path in k_paths}
+        k = max(1, max(len(k_path) for k_path in k_paths))
+        collapsed = self.grammar.collapse(controlflow_tree)
+        if collapsed is None:
             return False
         covered_k_paths = {
             tuple(
@@ -365,9 +355,9 @@ class PacketNavigator(GrammarNavigator):
                 else symbol
                 for symbol in k_path
             )
-            for k_path in self.grammar._extract_k_paths_from_tree(col_tree, k)
+            for k_path in self.grammar._extract_k_paths_from_tree(collapsed, k)
         }
-        return len(packet_k_paths.difference(covered_k_paths)) == 0
+        return packet_k_paths <= covered_k_paths
 
     def _trees_including_k_paths(
         self, k_paths: set[KPath], tree: DerivationTree
@@ -375,7 +365,7 @@ class PacketNavigator(GrammarNavigator):
         """The control-flow trees of tree that include the k-paths."""
         return [
             (controlflow_tree, is_complete)
-            for controlflow_tree, is_complete in self.get_controlflow_tree(tree)
+            for controlflow_tree, is_complete in self.controlflow_trees(tree)
             if self._includes_k_paths(k_paths, controlflow_tree)
         ]
 
@@ -446,12 +436,16 @@ class PacketNavigator(GrammarNavigator):
         """The packets of the control-flow tree, as sender and symbol."""
         if tree is None:
             return frozenset()
-        predecessors = set()
-        for record in tree.protocol_msgs():
-            assert record.sender is not None
-            symbol = StateGrammarConverter.to_non_terminal(record.msg.nonterminal)
-            predecessors.add((record.sender, symbol.name()))
-        return frozenset(predecessors)
+        return frozenset(
+            predecessor_of(
+                PacketNonTerminal(
+                    record.sender,
+                    record.recipient,
+                    StateGrammarConverter.to_non_terminal(record.msg.nonterminal),
+                )
+            )
+            for record in tree.protocol_msgs()
+        )
 
     def _search_k_path(self, k_path: KPath) -> KPath:
         search_symbols = []

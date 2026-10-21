@@ -159,7 +159,7 @@ class TestBlockedStepInContext(unittest.TestCase):
             "login\nsuccess\n", mode=ParsingMode.INCOMPLETE, include_controlflow=True
         )
         assert history is not None
-        self.assertTrue(any(True for _ in navigator.get_controlflow_tree(history)))
+        self.assertTrue(any(True for _ in navigator.controlflow_trees(history)))
         self.assertTrue(navigator.is_derivable((EXCHANGE_LOGIN, SUCCESS)))
         self.assertTrue(navigator.is_derivable((LOGGED_IN, EXCHANGE_LOGIN, FAILED)))
         self.assertFalse(navigator.is_derivable((LOGGED_IN, EXCHANGE_LOGIN, SUCCESS)))
