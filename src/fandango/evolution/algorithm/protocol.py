@@ -14,7 +14,6 @@ from fandango.evolution.algorithm.simple import SimpleGeneticAlgorithm
 from fandango.io import FandangoIO
 from fandango.io.coverage_filter import PacketCoverageFilter
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
-from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.selection.coverage_tracker import KPathCounts
 from fandango.io.navigation.selection.packetselector import PacketSelector
 from fandango.io.navigation.selection.violation_profiler.value_features import (
@@ -442,7 +441,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     self._start_new_run()
                     continue
                 assert new_packet.sender is not None
-                self._note_suspect_sent(new_packet)
+                with packet_mounter.mounted_context(new_packet) as mounted_packet:
+                    self._violation_profiler.observe_sending(mounted_packet)
                 if (
                     new_packet.recipient is None
                     or not self._io_instance.parties[
@@ -491,30 +491,6 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     continue
             self._protocol_tree.set_all_read_only(True)
         log_guidance_hint("Coverage goal reached, stopping evolution.")
-
-    def _note_suspect_sent(self, packet: DerivationTree) -> None:
-        """
-        Uses up the due retry of a suspect about to be sent; logs a suspect sent without one, e.g. as the last resort
-        of generation.
-        """
-        assert packet.sender is not None
-        packet_type = PacketNonTerminal(
-            packet.sender, packet.recipient, packet.nonterminal
-        )
-        with self._packet_mounter.mounted_context(packet) as mounted_packet:
-            suspicion = self._violation_profiler.suspicion_of(mounted_packet)
-        if suspicion is None:
-            return
-        if self._violation_profiler.is_retry_due(*suspicion):
-            self._violation_profiler.consume_retry(*suspicion)
-            return
-        suspect = (
-            "" if suspicion.packet_type == packet_type else f" {suspicion.packet_type}"
-        )
-        log_guidance_hint(
-            f"Sending {packet_type}, suspected to cause{suspect} "
-            f"{suspicion.symptom.describe()}."
-        )
 
     def _configure_fuzzable_packets(self) -> None:
         self._clear_constraint_caches()

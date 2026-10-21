@@ -215,6 +215,27 @@ class ViolationProfiler:
         ).add_message(self._features_in_session(message))
         self._suspect_cache.pop(packet_type, None)
 
+    def observe_sending(self, message: DerivationTree) -> None:
+        """Logs the sending of the mounted suspect message and uses up its due retry."""
+        suspicion = self.suspicion_of(message)
+        if suspicion is None:
+            return
+        if self._is_retry_due(*suspicion):
+            self._consume_retry(*suspicion)
+            log_guidance_hint(
+                f"Trying {suspicion.packet_type} again, suspected to cause "
+                f"{suspicion.symptom.describe()}."
+            )
+            return
+        packet_type = PacketNonTerminal.of_message(message)
+        suspect = (
+            "" if suspicion.packet_type == packet_type else f" {suspicion.packet_type}"
+        )
+        log_guidance_hint(
+            f"Sending {packet_type}, suspected to cause{suspect} "
+            f"{suspicion.symptom.describe()}."
+        )
+
     def suspicion_of(self, message: DerivationTree) -> Optional[Suspicion]:
         """Finds the suspicion the mounted message confirms, about its own packet type or a later one."""
         features = self._content_features(message)
@@ -226,21 +247,7 @@ class ViolationProfiler:
     def should_withhold(self, message: DerivationTree) -> bool:
         """Tells whether the mounted message confirms a suspicion whose retry is still pending."""
         suspicion = self.suspicion_of(message)
-        return suspicion is not None and not self.is_retry_due(*suspicion)
-
-    def is_retry_due(self, packet_type: PacketNonTerminal, symptom: Symptom) -> bool:
-        """Tells whether the wait for retrying the suspect is over."""
-        schedule = self._retry_schedules.get((packet_type, symptom))
-        return schedule is not None and schedule.is_due(self._sessions_ended)
-
-    def consume_retry(self, packet_type: PacketNonTerminal, symptom: Symptom) -> None:
-        """Uses up the due retry of a suspect being sent and doubles its next wait."""
-        self._retry_schedules[(packet_type, symptom)].postpone(
-            self._sessions_ended, self.MAX_RETRY_WAIT
-        )
-        log_guidance_hint(
-            f"Trying {packet_type} again, suspected to cause {symptom.describe()}."
-        )
+        return suspicion is not None and not self._is_retry_due(*suspicion)
 
     def suspect_predecessors(self) -> SuspectPredecessors:
         """Maps each packet type to the earlier packets that make all its messages suspect until the retry is due."""
@@ -248,7 +255,7 @@ class ViolationProfiler:
         for packet_type in self._symptoms_by_packet_type:
             predecessors: set[Predecessor] = set()
             for symptom, features in self._suspect_features(packet_type).items():
-                if self.is_retry_due(packet_type, symptom):
+                if self._is_retry_due(packet_type, symptom):
                     continue
                 for feature in features:
                     if feature.kind == "packet":
@@ -257,6 +264,17 @@ class ViolationProfiler:
             if predecessors:
                 suspect_predecessors[packet_type] = frozenset(predecessors)
         return suspect_predecessors
+
+    def _is_retry_due(self, packet_type: PacketNonTerminal, symptom: Symptom) -> bool:
+        """Tells whether the wait for retrying the suspect is over."""
+        schedule = self._retry_schedules.get((packet_type, symptom))
+        return schedule is not None and schedule.is_due(self._sessions_ended)
+
+    def _consume_retry(self, packet_type: PacketNonTerminal, symptom: Symptom) -> None:
+        """Uses up the due retry of a suspect being sent and doubles its next wait."""
+        self._retry_schedules[(packet_type, symptom)].postpone(
+            self._sessions_ended, self.MAX_RETRY_WAIT
+        )
 
     def _suspicion_about_own_type(
         self, message: DerivationTree, content: frozenset[_Feature]

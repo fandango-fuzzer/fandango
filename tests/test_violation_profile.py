@@ -162,21 +162,21 @@ class TestViolationProfile(unittest.TestCase):
     def test_a_suspect_is_retried_after_waits_that_double(self):
         key = GARBAGE_INSTEAD_OF_HELPTEXT
         first_wait = ViolationProfiler.FIRST_RETRY_WAIT
-        self.assertFalse(self.profile.is_retry_due(HELP, key))
+        self.assertFalse(self.profile._is_retry_due(HELP, key))
         self._learn()
         # The wait starts once the suspicion arises
         self.assertIsNotNone(self.suspected(self.AFTER_EHLO))
         for _ in range(first_wait - 1):
             self.profile.signal_session_end()
-            self.assertFalse(self.profile.is_retry_due(HELP, key))
+            self.assertFalse(self.profile._is_retry_due(HELP, key))
         self.profile.signal_session_end()
-        self.assertTrue(self.profile.is_retry_due(HELP, key))
-        self.profile.consume_retry(HELP, key)
+        self.assertTrue(self.profile._is_retry_due(HELP, key))
+        self.profile._consume_retry(HELP, key)
         for _ in range(2 * first_wait - 1):
             self.profile.signal_session_end()
-            self.assertFalse(self.profile.is_retry_due(HELP, key))
+            self.assertFalse(self.profile._is_retry_due(HELP, key))
         self.profile.signal_session_end()
-        self.assertTrue(self.profile.is_retry_due(HELP, key))
+        self.assertTrue(self.profile._is_retry_due(HELP, key))
 
     def test_a_suspect_earlier_packet_becomes_a_suspect_predecessor_while_its_retry_waits(
         self,
@@ -189,7 +189,7 @@ class TestViolationProfile(unittest.TestCase):
         for _ in range(ViolationProfiler.FIRST_RETRY_WAIT):
             self.profile.signal_session_end()
         self.assertEqual(self.profile.suspect_predecessors(), {})
-        self.profile.consume_retry(HELP, GARBAGE_INSTEAD_OF_HELPTEXT)
+        self.profile._consume_retry(HELP, GARBAGE_INSTEAD_OF_HELPTEXT)
         self.assertIn(HELP, self.profile.suspect_predecessors())
 
     def test_a_value_inside_a_regular_expression_is_suspected(self):
@@ -313,7 +313,7 @@ class TestViolationAvoidance(unittest.TestCase):
             profile.signal_session_end()
         self.assertIsNotNone(algorithm._packet_coverage_filter.filter(candidate))
         # Only sending the suspect uses the retry up
-        self.assertTrue(profile.is_retry_due(HELP, GARBAGE_INSTEAD_OF_HELPTEXT))
+        self.assertTrue(profile._is_retry_due(HELP, GARBAGE_INSTEAD_OF_HELPTEXT))
 
 
 class TestRoutingAroundSuspectPredecessors(unittest.TestCase):
