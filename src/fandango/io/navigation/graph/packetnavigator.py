@@ -288,18 +288,10 @@ class PacketNavigator(GrammarNavigator):
     def controlflow_trees(
         self, tree: DerivationTree
     ) -> Generator[tuple[DerivationTree, bool], None, None]:
-        messages = list(tree.protocol_msgs())
-        if not messages:
+        if next(tree.protocol_msgs(), None) is None:
             yield DerivationTree(NonTerminal("<start>")), False
             return
-        history_nts = "".join(message.msg.nonterminal.name() for message in messages)
-        self._parser.reference_tree = tree
-        self._parser.parse_history(history_nts)
-        for suggested_tree, is_complete in self._parser.tree_at(
-            self._parser.consumed_length(), incomplete=True
-        ):
-            if StateGrammarConverter.matches_history(suggested_tree, messages):
-                yield suggested_tree, is_complete
+        yield from self._parser.controlflow_trees(tree)
 
     def _step_of_graph_node(self, graph_node: GrammarGraphNode) -> Step:
         """The step that produces the packet of the graph node."""
@@ -326,14 +318,9 @@ class PacketNavigator(GrammarNavigator):
         return route
 
     def _planned_packet(self, graph_node: GrammarGraphNode) -> PlannedPacket:
-        assert isinstance(graph_node.node, NonTerminalNode)
-        assert graph_node.node.sender is not None
-        packet = PacketNonTerminal(
-            graph_node.node.sender,
-            graph_node.node.recipient,
-            StateGrammarConverter.to_non_terminal(graph_node.node.symbol),
-        )
-        return PlannedPacket(packet, self._step_of_graph_node(graph_node))
+        packet_type = packet_type_of(graph_node.node)
+        assert packet_type is not None
+        return PlannedPacket(packet_type, self._step_of_graph_node(graph_node))
 
     def _includes_k_paths(
         self, k_paths: set[KPath], controlflow_tree: DerivationTree

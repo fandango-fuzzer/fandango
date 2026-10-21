@@ -108,19 +108,10 @@ class PacketForecaster:
         options = ForecastingResult()
         if not messages:
             return options.union(finder.forecast())
-        history_nts = ""
-        for message in messages:
-            assert isinstance(message.msg.symbol, NonTerminal)
-            history_nts += message.msg.symbol.name()
-        self._parser.reference_tree = tree
-        self._parser.parse_history(history_nts)
+        controlflow_trees = self._parser.controlflow_trees(tree)
         last_message_steps: set[Step] = set()
         with MessageHolder(tree).hold_messages_context() as session_messages:
-            for suggested_tree, is_complete in self._parser.tree_at(
-                self._parser.consumed_length(), incomplete=True
-            ):
-                if not StateGrammarConverter.matches_history(suggested_tree, messages):
-                    continue
+            for suggested_tree, is_complete in controlflow_trees:
                 last_placeholder = next(suggested_tree.protocol_msgs(reverse=True))
                 last_message_steps.add(
                     Step.of_message(
