@@ -11,7 +11,7 @@ from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.selection.violation_profiler.value_features import (
     value_features,
 )
-from fandango.io.violation import FandangoRemoteViolation
+from fandango.io.violation import FandangoRemoteViolation, RemoteViolationType
 from fandango.language.grammar.grammar import KPath
 from fandango.language.tree import DerivationTree
 from fandango.logger import log_guidance_hint
@@ -53,17 +53,15 @@ class _Feature(NamedTuple):
         return after if what is None else f"{after} with {what}"
 
 
-class ViolationKind(NamedTuple):
-    error_type: str
+class Symptom(NamedTuple):
+    error_type: RemoteViolationType
     expected_nonterminals: tuple[str, ...]
     failed_constraints: tuple[str, ...]
 
     @classmethod
-    def from_remote_violation(
-        cls, violation: FandangoRemoteViolation
-    ) -> "ViolationKind":
-        return ViolationKind(
-            violation.error_type.name,
+    def of_violation(cls, violation: FandangoRemoteViolation) -> "Symptom":
+        return cls(
+            violation.error_type,
             tuple(
                 sorted(nt.format_as_spec() for nt in violation.expected_nonterminals)
             ),
@@ -71,7 +69,9 @@ class ViolationKind(NamedTuple):
         )
 
     def describe(self) -> str:
-        text = f"{self.error_type.lower()} {' | '.join(self.expected_nonterminals)}"
+        text = (
+            f"{self.error_type.name.lower()} {' | '.join(self.expected_nonterminals)}"
+        )
         return (
             f"{text}: {'; '.join(self.failed_constraints)}"
             if self.failed_constraints
@@ -81,7 +81,7 @@ class ViolationKind(NamedTuple):
 
 class Suspicion(NamedTuple):
     packet_type: PacketNonTerminal
-    violation_kind: ViolationKind
+    symptom: Symptom
 
 
 # Position in the session, sender, packet symbol and content hash: recognizes mounted copies of an answered message
@@ -150,21 +150,17 @@ class ViolationProfile:
         self._literals = literals
         self._sessions_ended = 0
         self._trigger_counts: dict[
-            tuple[PacketNonTerminal, ViolationKind], _FeatureCounts
+            tuple[PacketNonTerminal, Symptom], _FeatureCounts
         ] = {}
-        self._violation_kinds_by_packet_type: dict[
-            PacketNonTerminal, set[ViolationKind]
-        ] = {}
+        self._symptoms_by_packet_type: dict[PacketNonTerminal, set[Symptom]] = {}
         self._counterexample_counts: dict[PacketNonTerminal, _FeatureCounts] = {}
         self._retry_schedules: dict[
-            tuple[PacketNonTerminal, ViolationKind], _RetrySchedule
+            tuple[PacketNonTerminal, Symptom], _RetrySchedule
         ] = {}
         self._suspect_cache: dict[
-            PacketNonTerminal, dict[ViolationKind, frozenset[_Feature]]
+            PacketNonTerminal, dict[Symptom, frozenset[_Feature]]
         ] = {}
-        self._last_logged_suspects: dict[
-            tuple[PacketNonTerminal, ViolationKind], str
-        ] = {}
+        self._last_logged_suspects: dict[tuple[PacketNonTerminal, Symptom], str] = {}
         self._last_counted_answer: Optional[_AnswerKey] = None
         self._history_features_by_prefix: dict[
             tuple[int, ...], frozenset[_Feature]
@@ -173,7 +169,7 @@ class ViolationProfile:
     def reset(self) -> None:
         self._sessions_ended = 0
         self._trigger_counts.clear()
-        self._violation_kinds_by_packet_type.clear()
+        self._symptoms_by_packet_type.clear()
         self._counterexample_counts.clear()
         self._retry_schedules.clear()
         self._suspect_cache.clear()
@@ -194,14 +190,12 @@ class ViolationProfile:
         if trigger is None:
             return
         packet_type, message = trigger
-        violation_kind = ViolationKind.from_remote_violation(violation)
+        symptom = Symptom.of_violation(violation)
         self._trigger_counts.setdefault(
-            (packet_type, violation_kind),
+            (packet_type, symptom),
             _FeatureCounts(keep_last=self.RECENT_TRIGGERS),
         ).add_message(self._features_in_session(message))
-        self._violation_kinds_by_packet_type.setdefault(packet_type, set()).add(
-            violation_kind
-        )
+        self._symptoms_by_packet_type.setdefault(packet_type, set()).add(symptom)
         self._suspect_cache.pop(packet_type, None)
 
     def observe_answer(self, session_tree: DerivationTree) -> None:
@@ -210,7 +204,7 @@ class ViolationProfile:
         if sent is None:
             return
         packet_type, message = sent
-        if packet_type not in self._violation_kinds_by_packet_type:
+        if packet_type not in self._symptoms_by_packet_type:
             return
         answer_key = self._answer_key_of(message)
         if answer_key == self._last_counted_answer:
@@ -234,31 +228,27 @@ class ViolationProfile:
         suspicion = self.suspicion_of(message)
         return suspicion is not None and not self.is_retry_due(*suspicion)
 
-    def is_retry_due(
-        self, packet_type: PacketNonTerminal, violation_kind: ViolationKind
-    ) -> bool:
+    def is_retry_due(self, packet_type: PacketNonTerminal, symptom: Symptom) -> bool:
         """Tells whether the wait for retrying the suspect is over."""
-        schedule = self._retry_schedules.get((packet_type, violation_kind))
+        schedule = self._retry_schedules.get((packet_type, symptom))
         return schedule is not None and schedule.is_due(self._sessions_ended)
 
-    def consume_retry(
-        self, packet_type: PacketNonTerminal, violation_kind: ViolationKind
-    ) -> None:
+    def consume_retry(self, packet_type: PacketNonTerminal, symptom: Symptom) -> None:
         """Uses up the due retry of a suspect being sent and doubles its next wait."""
-        self._retry_schedules[(packet_type, violation_kind)].postpone(
+        self._retry_schedules[(packet_type, symptom)].postpone(
             self._sessions_ended, self.MAX_RETRY_WAIT
         )
         log_guidance_hint(
-            f"Trying {packet_type} again, suspected to cause {violation_kind.describe()}."
+            f"Trying {packet_type} again, suspected to cause {symptom.describe()}."
         )
 
     def ruled_out_predecessors(self) -> RuledOutPredecessors:
         """Maps each packet type to the earlier packets that make all its messages suspect until the retry is due."""
         ruled_out = {}
-        for packet_type in self._violation_kinds_by_packet_type:
+        for packet_type in self._symptoms_by_packet_type:
             predecessors: set[Predecessor] = set()
-            for violation_kind, features in self._suspect_features(packet_type).items():
-                if self.is_retry_due(packet_type, violation_kind):
+            for symptom, features in self._suspect_features(packet_type).items():
+                if self.is_retry_due(packet_type, symptom):
                     continue
                 for feature in features:
                     if feature.kind == "packet":
@@ -277,9 +267,9 @@ class ViolationProfile:
         if not suspects:
             return None
         features = content | self._history_features(self._messages_before(message))
-        for violation_kind, suspect_features in suspects.items():
+        for symptom, suspect_features in suspects.items():
             if features & suspect_features:
-                return Suspicion(packet_type, violation_kind)
+                return Suspicion(packet_type, symptom)
         return None
 
     def _suspicion_about_later_types(
@@ -287,12 +277,10 @@ class ViolationProfile:
     ) -> Optional[Suspicion]:
         """Finds the suspicion about a later packet type that the message's content confirms as predecessor."""
         as_predecessor = self._as_predecessor(content, self._predecessor_of(message))
-        for later_type in self._violation_kinds_by_packet_type:
-            for violation_kind, suspect_features in self._suspect_features(
-                later_type
-            ).items():
+        for later_type in self._symptoms_by_packet_type:
+            for symptom, suspect_features in self._suspect_features(later_type).items():
                 if as_predecessor & suspect_features:
-                    return Suspicion(later_type, violation_kind)
+                    return Suspicion(later_type, symptom)
         return None
 
     def _features_in_session(self, message: DerivationTree) -> frozenset[_Feature]:
@@ -374,7 +362,7 @@ class ViolationProfile:
 
     def _suspect_features(
         self, packet_type: PacketNonTerminal
-    ) -> dict[ViolationKind, frozenset[_Feature]]:
+    ) -> dict[Symptom, frozenset[_Feature]]:
         suspects = self._suspect_cache.get(packet_type)
         if suspects is None:
             suspects = self._compute_suspect_features(packet_type)
@@ -383,8 +371,8 @@ class ViolationProfile:
 
     def _compute_suspect_features(
         self, packet_type: PacketNonTerminal
-    ) -> dict[ViolationKind, frozenset[_Feature]]:
-        """Ranks the suspect features per violation kind of a packet type, logs them and schedules new retries."""
+    ) -> dict[Symptom, frozenset[_Feature]]:
+        """Ranks the suspect features per symptom of a packet type, logs them and schedules new retries."""
         counterexamples = self._counterexample_counts.get(packet_type)
         if (
             counterexamples is None
@@ -392,29 +380,29 @@ class ViolationProfile:
         ):
             return {}
         suspects = {}
-        for violation_kind in self._violation_kinds_by_packet_type[packet_type]:
+        for symptom in self._symptoms_by_packet_type[packet_type]:
             ranked = self._ranked_suspect_features(
-                self._trigger_counts[(packet_type, violation_kind)], counterexamples
+                self._trigger_counts[(packet_type, symptom)], counterexamples
             )
             if not ranked:
                 continue
-            suspects[violation_kind] = frozenset(feature for feature, _ in ranked)
-            self._log_suspect_features(packet_type, violation_kind, ranked)
-            self._schedule_retry_if_new(packet_type, violation_kind)
+            suspects[symptom] = frozenset(feature for feature, _ in ranked)
+            self._log_suspect_features(packet_type, symptom, ranked)
+            self._schedule_retry_if_new(packet_type, symptom)
         return suspects
 
     def _schedule_retry_if_new(
-        self, packet_type: PacketNonTerminal, violation_kind: ViolationKind
+        self, packet_type: PacketNonTerminal, symptom: Symptom
     ) -> None:
-        if (packet_type, violation_kind) not in self._retry_schedules:
-            self._retry_schedules[(packet_type, violation_kind)] = _RetrySchedule(
+        if (packet_type, symptom) not in self._retry_schedules:
+            self._retry_schedules[(packet_type, symptom)] = _RetrySchedule(
                 self._sessions_ended, self.FIRST_RETRY_WAIT
             )
 
     def _log_suspect_features(
         self,
         packet_type: PacketNonTerminal,
-        violation_kind: ViolationKind,
+        symptom: Symptom,
         ranked: list[_ScoredFeature],
     ) -> None:
         """Logs the strongest suspect features, whenever they change."""
@@ -423,11 +411,11 @@ class ViolationProfile:
         )
         more = len(ranked) - self.MAX_LOGGED_FEATURES
         text = f"{top} and {more} more" if more > 0 else top
-        if self._last_logged_suspects.get((packet_type, violation_kind)) == text:
+        if self._last_logged_suspects.get((packet_type, symptom)) == text:
             return
-        self._last_logged_suspects[(packet_type, violation_kind)] = text
+        self._last_logged_suspects[(packet_type, symptom)] = text
         log_guidance_hint(
-            f"{packet_type} is suspected to cause {violation_kind.describe()} by {text}. Holding back such messages."
+            f"{packet_type} is suspected to cause {symptom.describe()} by {text}. Holding back such messages."
         )
 
     def _ranked_suspect_features(

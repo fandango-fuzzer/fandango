@@ -17,7 +17,7 @@ from fandango.io.navigation.selection.violation_profiler.value_features import (
     value_features,
 )
 from fandango.io.navigation.selection.violation_profiler.violation_profile import (
-    ViolationKind,
+    Symptom,
     ViolationProfile,
     _Feature,
 )
@@ -32,7 +32,7 @@ from tests.utils import RESOURCES_ROOT
 HELP = PacketNonTerminal("Fuzzer", "Extern", NonTerminal("<help>"))
 GET = PacketNonTerminal("Fuzzer", "Extern", NonTerminal("<get>"))
 CMD = PacketNonTerminal("Fuzzer", "Extern", NonTerminal("<cmd>"))
-GARBAGE_INSTEAD_OF_HELPTEXT = ViolationKind("SYNTAX", ("<helptext>",), ())
+GARBAGE_INSTEAD_OF_HELPTEXT = Symptom(RemoteViolationType.SYNTAX, ("<helptext>",), ())
 SESSIONS = 60
 # <help> violates after <ehlo>, <cmd> with '!', and <get> after a <set> with <bad>
 GRAMMAR = "violation_profile.fan"
