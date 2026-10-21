@@ -3,6 +3,7 @@ from typing import Optional
 
 from fandango.errors import FandangoError
 from fandango.io.navigation.graph.grammar_navigator.grammar_graph_converter import (
+    GrammarGraph,
     GrammarGraphConverter,
     GrammarGraphNode,
 )
@@ -43,7 +44,7 @@ class GrammarNavigator:
             start_symbol = NonTerminal("<start>")
         self.grammar = grammar
         self._start_symbol = start_symbol
-        self.graph = GrammarGraphConverter(grammar.rules, start_symbol).process()
+        self.graph = self._new_graph()
         self.max_comparisons = 10_000_000
         self.comparisons = 0
         self.set_message_cost(0)
@@ -59,31 +60,32 @@ class GrammarNavigator:
             return self.message_cost
         return 0
 
-    def check_reachability_w_controlflow(
+    def _entering_cost(self, graph_node: GrammarGraphNode) -> int:
+        """Returns what stepping onto the graph node costs a path."""
+        return self._message_cost_of(graph_node.node)
+
+    def _check_reachability(
         self, *, tree: Optional[DerivationTree] = None, destination_k_path: KPath
     ) -> ReachabilityResult:
         checker = ReachabilityChecker(self.grammar)
         return checker.find_reachability(tree=tree, k_path_to_reach=destination_k_path)
 
     def astar_tree(
-        self, *, tree: DerivationTree, destination_k_path: KPath
-    ) -> Optional[list[GrammarGraphNode | None]]:
-        return self.astar_tree_w_controlflow(
-            tree=tree, destination_k_path=destination_k_path
-        )
-
-    def astar_tree_w_controlflow(
-        self, *, tree: Optional[DerivationTree] = None, destination_k_path: KPath
+        self,
+        *,
+        controlflow_tree: Optional[DerivationTree] = None,
+        destination_k_path: KPath,
     ) -> Optional[list[GrammarGraphNode | None]]:
         """
-        Returns the cheapest path from the end of tree, or from the start symbol, to the k-path.
+        Returns the cheapest path from the end of controlflow_tree, or from the start symbol, to the k-path.
         If the k-path is only reachable in a new run, the path leads to the end of this run first, marked by None.
+        controlflow_tree is a derivation of the grammar with its control-flow nodes, as parsed with include_controlflow.
         """
-        return self.astar_tree_to_any(
-            tree=tree, destination_k_paths=[destination_k_path]
+        return self._astar_tree_to_any(
+            tree=controlflow_tree, destination_k_paths=[destination_k_path]
         )
 
-    def astar_tree_to_any(
+    def _astar_tree_to_any(
         self,
         *,
         tree: Optional[DerivationTree] = None,
@@ -114,7 +116,7 @@ class GrammarNavigator:
         """The k-paths reachable from the end of tree, or from the start symbol, with how."""
         reachable = []
         for k_path in k_paths:
-            reachability = self.check_reachability_w_controlflow(
+            reachability = self._check_reachability(
                 destination_k_path=k_path, tree=tree
             )
             if reachability.path_reachable:
@@ -161,27 +163,26 @@ class GrammarNavigator:
             raise UnreachableTargetError(
                 f"Symbols {list(destination_k_paths)} are not reachable in grammar."
             )
-        to_end = self.astar_search_end_w_controlflow(tree)
+        to_end = self.astar_search_end(tree)
         return [*to_end, None, *from_start]
 
-    def astar_search_end(self, tree: DerivationTree) -> Iterable[GrammarGraphNode]:
-        return self.astar_search_end_w_controlflow(tree)
-
-    def astar_search_end_w_controlflow(
-        self, tree: Optional[DerivationTree]
+    def astar_search_end(
+        self, controlflow_tree: Optional[DerivationTree]
     ) -> Iterable[GrammarGraphNode]:
-        """Returns the cheapest path from the end of tree to the end of the run."""
-        if tree is None:
+        """Returns the cheapest path from the end of controlflow_tree to the end of the run."""
+        if controlflow_tree is None:
             return []
-        start = self.graph.walk(tree)
+        start = self.graph.walk(controlflow_tree)
         if start.is_accepting:
             self._clear_graph()
             return []
-        searched = self._search_target(RunEndTarget(self._costs), tree)
+        searched = self._search_target(RunEndTarget(self._costs), controlflow_tree)
         path = self._search(start, searched)
         if path is None and not isinstance(searched, RunEndTarget):
             # Ending the run outweighs avoiding what the searched target rules out
-            path = self._search(self.graph.walk(tree), RunEndTarget(self._costs))
+            path = self._search(
+                self.graph.walk(controlflow_tree), RunEndTarget(self._costs)
+            )
         return path or []
 
     def _search(
@@ -190,7 +191,7 @@ class GrammarNavigator:
         """Returns the cheapest path from start to target. Leaves a fresh graph, as a search unfolds it."""
         search = PathSearch(
             target,
-            lambda graph_node: self._message_cost_of(graph_node.node),
+            self._entering_cost,
             self.max_comparisons,
         )
         try:
@@ -200,6 +201,7 @@ class GrammarNavigator:
             self._clear_graph()
 
     def _clear_graph(self) -> None:
-        self.graph = GrammarGraphConverter(
-            self.grammar.rules, self._start_symbol
-        ).process()
+        self.graph = self._new_graph()
+
+    def _new_graph(self) -> GrammarGraph:
+        return GrammarGraphConverter(self.grammar.rules, self._start_symbol).process()

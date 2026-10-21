@@ -31,11 +31,11 @@ class BlockedStepPruner(NodeVisitor[list[Pruned], Pruned]):
     COPY_MARK = "#Pr#"
 
     @staticmethod
-    def original(symbol: NonTerminal) -> NonTerminal:
+    def original(pruned_symbol: NonTerminal) -> NonTerminal:
         """The symbol of the state grammar that a copy or its control flow stands for."""
-        name = symbol.name()
+        name = pruned_symbol.name()
         if BlockedStepPruner.COPY_MARK not in name:
-            return symbol
+            return pruned_symbol
         return NonTerminal(name[: name.index(BlockedStepPruner.COPY_MARK)] + ">")
 
     def __init__(self, grammar_settings: Sequence[HasSettings]):
@@ -302,6 +302,7 @@ class KPathTranslation:
             self._instances.setdefault(BlockedStepPruner.original(symbol), []).append(
                 symbol
             )
+        self._pruned_k_paths_by_k_path: dict[KPath, list[KPath]] = {}
 
     def __repr__(self) -> str:
         copies = {
@@ -311,12 +312,29 @@ class KPathTranslation:
         }
         return f"KPathTranslation({len(self._references)} rules, copies={copies})"
 
-    def to_pruned_k_paths(self, k_path: KPath) -> list[KPath]:
+    def to_pruned_k_paths(self, state_k_path: KPath) -> list[KPath]:
         """
         Translates a k-path of the state grammar into those of the pruned grammar.
         """
+        pruned = self._pruned_k_paths_by_k_path.get(state_k_path)
+        if pruned is None:
+            pruned = self._translate(state_k_path)
+            self._pruned_k_paths_by_k_path[state_k_path] = pruned
+        return pruned
+
+    @staticmethod
+    def to_state_k_path(pruned_k_path: KPath) -> KPath:
+        """Translates a k-path of the pruned grammar back into the state grammar."""
+        return tuple(
+            BlockedStepPruner.original(symbol)
+            if isinstance(symbol, NonTerminal)
+            else symbol
+            for symbol in pruned_k_path
+        )
+
+    def _translate(self, state_k_path: KPath) -> list[KPath]:
         paths: list[KPath] = [()]
-        for original_symbol in k_path:
+        for original_symbol in state_k_path:
             extended_paths: list[KPath] = []
             for path in paths:
                 for symbol in self._instances.get(original_symbol, ()):

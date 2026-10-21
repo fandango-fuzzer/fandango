@@ -1,7 +1,8 @@
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from typing import Optional
 
 from fandango.errors import FandangoValueError
+from fandango.language.grammar.grammar import KPath
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
@@ -33,10 +34,24 @@ class StateGrammarConverter(NodeVisitor[list[Node], Node]):
         self.processed_keys: set[NonTerminal] = set()
 
     @staticmethod
-    def to_packet_non_terminal(symbol: Symbol) -> Symbol:
-        if not isinstance(symbol, NonTerminal) or symbol.name().startswith("<_packet_"):
-            return symbol
-        return NonTerminal(f"<_packet_{symbol.name()[1:]}")
+    def to_packet_non_terminal(spec_symbol: Symbol) -> Symbol:
+        if not isinstance(spec_symbol, NonTerminal) or spec_symbol.name().startswith(
+            "<_packet_"
+        ):
+            return spec_symbol
+        return NonTerminal(f"<_packet_{spec_symbol.name()[1:]}")
+
+    @staticmethod
+    def to_state_k_path(
+        spec_k_path: KPath, packet_symbols: Collection[Symbol]
+    ) -> KPath:
+        """Translates a k-path of the spec, with its message symbols, into the state grammar."""
+        return tuple(
+            StateGrammarConverter.to_packet_non_terminal(symbol)
+            if symbol in packet_symbols
+            else symbol
+            for symbol in spec_k_path
+        )
 
     @staticmethod
     def matches_history(
@@ -53,11 +68,11 @@ class StateGrammarConverter(NodeVisitor[list[Node], Node]):
         )
 
     @staticmethod
-    def to_non_terminal(symbol: NonTerminal) -> NonTerminal:
-        if symbol.name().startswith("<_packet_"):
-            return NonTerminal(f"<{symbol.name()[9:]}")
+    def to_non_terminal(state_symbol: NonTerminal) -> NonTerminal:
+        if state_symbol.name().startswith("<_packet_"):
+            return NonTerminal(f"<{state_symbol.name()[9:]}")
         else:
-            return NonTerminal(symbol.name())
+            return NonTerminal(state_symbol.name())
 
     def process(
         self,
