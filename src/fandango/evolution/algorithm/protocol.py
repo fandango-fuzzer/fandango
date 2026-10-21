@@ -348,13 +348,11 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             )
             return None
 
-    def _attainable_coverage_reached(self) -> bool:
-        if self.coverage_goal == CoverageGoal.RANDOM:
-            return False
-        if not self._packet_selector.is_derivable_coverage_complete():
-            return False
-        log_guidance_hint("Attainable coverage reached, stopping evolution.")
-        return True
+    def _coverage_goal_reached(self) -> bool:
+        return (
+            self.coverage_goal != CoverageGoal.RANDOM
+            and self._packet_selector.is_derivable_coverage_complete()
+        )
 
     def _record_violation(self, violation: Exception, reason: str) -> None:
         """Records a violation that aborts the current session. Raises it instead if throw_on_violation is set."""
@@ -413,8 +411,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 MessageHolder(final_tree).hold_messages()
                 self._signal_session_end_to_components(final_tree)
                 yield final_tree
-                if self._attainable_coverage_reached():
-                    return None
+                if self._coverage_goal_reached():
+                    break
                 self._start_new_run()
                 continue
 
@@ -436,9 +434,11 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     log_guidance_hint(
                         "No packet could be generated. Ending the session."
                     )
-                    self._signal_session_end_to_components(self._protocol_tree, generation_failed=True)
-                    if self._attainable_coverage_reached():
-                        return None
+                    self._signal_session_end_to_components(
+                        self._protocol_tree, generation_failed=True
+                    )
+                    if self._coverage_goal_reached():
+                        break
                     self._start_new_run()
                     continue
                 assert new_packet.sender is not None
@@ -457,8 +457,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                         violation = self._gen_connection_violation(new_packet, error)
                         self._record_violation(violation, "Could not send the message.")
                         self._signal_session_end_to_components(self._protocol_tree)
-                        if self._attainable_coverage_reached():
-                            return None
+                        if self._coverage_goal_reached():
+                            break
                         self._start_new_run()
                         continue
                     log_message_transfer(
@@ -485,11 +485,12 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                         exc, "Discarding remote response that could not be handled."
                     )
                     self._signal_session_end_to_components(self._protocol_tree)
-                    if self._attainable_coverage_reached():
-                        return None
+                    if self._coverage_goal_reached():
+                        break
                     self._start_new_run()
                     continue
             self._protocol_tree.set_all_read_only(True)
+        log_guidance_hint("Coverage goal reached, stopping evolution.")
 
     def _note_suspect_sent(self, packet: DerivationTree) -> None:
         """
