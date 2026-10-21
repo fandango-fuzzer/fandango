@@ -14,14 +14,13 @@ from fandango.evolution.algorithm.simple import SimpleGeneticAlgorithm
 from fandango.io import FandangoIO
 from fandango.io.coverage_filter import PacketCoverageFilter
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
-from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.selection.coverage_tracker import KPathCounts
 from fandango.io.navigation.selection.packetselector import PacketSelector
 from fandango.io.navigation.selection.violation_profiler.value_features import (
     literals_of,
 )
 from fandango.io.navigation.selection.violation_profiler.violation_profile import (
-    ViolationProfile,
+    ViolationProfiler,
 )
 from fandango.io.packet_evolution.decorators.mounting_crossover import (
     MountingCrossover,
@@ -90,7 +89,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._remote_response_timeout = remote_response_timeout
         self._packet_parsers: list[IterativeParser] = []
         self._io_instance: FandangoIO = FandangoIO.instance()
-        self._violation_profile = ViolationProfile(
+        self._violation_profiler = ViolationProfiler(
             k_paths_of=lambda message: (
                 self._packet_selector.coverage_tracker.k_paths_of(
                     message, overlap_to_root=False
@@ -108,11 +107,11 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             self._protocol_tree,
             self._packet_algorithm.diversity_k,
             max_messages_per_tree=max_messages_per_tree,
-            ruled_out_predecessors=self._violation_profile.ruled_out_predecessors,
+            suspect_predecessors=self._violation_profiler.suspect_predecessors,
         )
         self._packet_selector.set_coverage_goal(coverage_goal)
         self._packet_coverage_filter = PacketCoverageFilter(
-            self._packet_selector.coverage_tracker, self._violation_profile
+            self._packet_selector.coverage_tracker, self._violation_profiler
         )
         self.violations: list[tuple[DerivationTree, Exception]] = []
         self.throw_on_violation = False
@@ -352,24 +351,22 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             )
             return None
 
-    def _attainable_coverage_reached(self) -> bool:
-        if self.coverage_goal == CoverageGoal.RANDOM:
-            return False
-        if not self._packet_selector.is_derivable_coverage_complete():
-            return False
-        log_guidance_hint("Attainable coverage reached, stopping evolution.")
-        return True
+    def _coverage_goal_reached(self) -> bool:
+        return (
+            self.coverage_goal != CoverageGoal.RANDOM
+            and self._packet_selector.is_derivable_coverage_complete()
+        )
 
     def _record_violation(self, violation: Exception, reason: str) -> None:
         """Records a violation that aborts the current session. Raises it instead if throw_on_violation is set."""
         if isinstance(violation, FandangoRemoteViolation):
-            self._violation_profile.observe_violation(self._protocol_tree, violation)
+            self._violation_profiler.observe_violation(self._protocol_tree, violation)
         self.violations.append((self._protocol_tree, violation))
         if self.throw_on_violation:
             raise violation
         LOGGER.warning(f"{reason} Recording violation: {violation}")
 
-    def _end_session(
+    def _signal_session_end_to_components(
         self, session_tree: DerivationTree, generation_failed: bool = False
     ) -> None:
         """
@@ -377,7 +374,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         be generated for the fuzzer's next step.
         """
         self._packet_selector.signal_session_end(generation_failed=generation_failed)
-        self._violation_profile.signal_session_end()
+        self._violation_profiler.signal_session_end()
         self._packet_coverage_filter.add_completed_tree(session_tree)
 
     def _start_new_run(self) -> None:
@@ -415,15 +412,15 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     list(self._packet_selector.forecasting_result.complete_trees)
                 )
                 MessageHolder(final_tree).hold_messages()
-                self._end_session(final_tree)
+                self._signal_session_end_to_components(final_tree)
                 yield final_tree
-                if self._attainable_coverage_reached():
-                    return None
+                if self._coverage_goal_reached():
+                    break
                 self._start_new_run()
                 continue
 
             if self._packet_selector.is_run_abandoned():
-                self._end_session(self._protocol_tree)
+                self._signal_session_end_to_components(self._protocol_tree)
                 self._start_new_run()
                 continue
 
@@ -440,13 +437,16 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     log_guidance_hint(
                         "No packet could be generated. Ending the session."
                     )
-                    self._end_session(self._protocol_tree, generation_failed=True)
-                    if self._attainable_coverage_reached():
-                        return None
+                    self._signal_session_end_to_components(
+                        self._protocol_tree, generation_failed=True
+                    )
+                    if self._coverage_goal_reached():
+                        break
                     self._start_new_run()
                     continue
                 assert new_packet.sender is not None
-                self._note_suspect_sent(new_packet)
+                with packet_mounter.mounted_context(new_packet) as mounted_packet:
+                    self._violation_profiler.observe_sending(mounted_packet)
                 if (
                     new_packet.recipient is None
                     or not self._io_instance.parties[
@@ -460,9 +460,9 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     except FandangoConnectionError as error:
                         violation = self._gen_connection_violation(new_packet, error)
                         self._record_violation(violation, "Could not send the message.")
-                        self._end_session(self._protocol_tree)
-                        if self._attainable_coverage_reached():
-                            return None
+                        self._signal_session_end_to_components(self._protocol_tree)
+                        if self._coverage_goal_reached():
+                            break
                         self._start_new_run()
                         continue
                     log_message_transfer(
@@ -492,7 +492,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                         remote_packet = self._handle_remote_response()
                     self._protocol_tree = packet_mounter.commit(remote_packet)
                     self._packet_selector.observe_message(self._protocol_tree)
-                    self._violation_profile.observe_answer(self._protocol_tree)
+                    self._violation_profiler.observe_answer(self._protocol_tree)
                 except (
                     FandangoFailedError,
                     FandangoParseError,
@@ -501,36 +501,13 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     self._record_violation(
                         exc, "Discarding remote response that could not be handled."
                     )
-                    self._end_session(self._protocol_tree)
-                    if self._attainable_coverage_reached():
-                        return None
+                    self._signal_session_end_to_components(self._protocol_tree)
+                    if self._coverage_goal_reached():
+                        break
                     self._start_new_run()
                     continue
             self._protocol_tree.set_all_read_only(True)
-
-    def _note_suspect_sent(self, packet: DerivationTree) -> None:
-        """
-        Uses up the due retry of a suspect about to be sent; logs a suspect sent without one, e.g. as the last resort
-        of generation.
-        """
-        assert packet.sender is not None
-        packet_type = PacketNonTerminal(
-            packet.sender, packet.recipient, packet.nonterminal
-        )
-        with self._packet_mounter.mounted_context(packet) as mounted_packet:
-            suspicion = self._violation_profile.suspicion_of(mounted_packet)
-        if suspicion is None:
-            return
-        if self._violation_profile.is_retry_due(*suspicion):
-            self._violation_profile.consume_retry(*suspicion)
-            return
-        suspect = (
-            "" if suspicion.packet_type == packet_type else f" {suspicion.packet_type}"
-        )
-        log_guidance_hint(
-            f"Sending {packet_type}, suspected to cause{suspect} "
-            f"{suspicion.symptom.describe()}."
-        )
+        log_guidance_hint("Coverage goal reached, stopping evolution.")
 
     def _configure_fuzzable_packets(self) -> None:
         self._clear_constraint_caches()
@@ -555,5 +532,5 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._packet_algorithm.reset()
         self._packet_selector.reset()
         self._packet_coverage_filter.reset()
-        self._violation_profile.reset()
+        self._violation_profiler.reset()
         self._protocol_tree = DerivationTree(self._start_symbol)
