@@ -8,7 +8,7 @@ from fandango.io.navigation.graph.grammar_navigator.navigator import (
 )
 from fandango.io.navigation.graph.packetnavigator import (
     PacketNavigator,
-    RuledOutPredecessors,
+    SuspectPredecessors,
 )
 from fandango.io.navigation.route import GuidePath
 from fandango.io.navigation.selection.guide_path_tracker import (
@@ -40,17 +40,17 @@ class PacketGuider:
         model: ProtocolModel,
         forecast: ForecastView,
         max_messages_per_tree: int,
-        ruled_out_predecessors: Callable[[], RuledOutPredecessors] = dict,
+        suspect_predecessors: Callable[[], SuspectPredecessors] = dict,
     ):
         self._model = model
         self._forecast = forecast
         self._step_refusals = StepRefusalCounter()
-        self._ruled_out_predecessors = ruled_out_predecessors
+        self._suspect_predecessors = suspect_predecessors
         self._navigator_instance = PacketNavigator(
             self._model.grammar,
             self._model.start_symbol,
             step_costs=self._step_refusals.repeat_costs,
-            ruled_out_predecessors=ruled_out_predecessors,
+            suspect_predecessors=suspect_predecessors,
         )
         self._target_selector = TargetSelector(model)
         self._max_messages_per_tree = max_messages_per_tree
@@ -67,7 +67,7 @@ class PacketGuider:
         # Targets out of reach of every run under the restrictions last seen
         self._unreachable_targets: set[KPath] = set()
         self._last_restrictions: Optional[
-            tuple[frozenset[Step], RuledOutPredecessors]
+            tuple[frozenset[Step], SuspectPredecessors]
         ] = None
 
     @property
@@ -213,10 +213,10 @@ class PacketGuider:
         return self._navigator_instance
 
     def _update_unreachable_targets(self) -> None:
-        """Forgets the targets out of reach of every run once a blocked step or ruled-out predecessor was lifted."""
+        """Forgets the targets out of reach of every run once a blocked step or suspect predecessor was lifted."""
         restrictions = (
             self._step_refusals.blocked_steps,
-            self._ruled_out_predecessors(),
+            self._suspect_predecessors(),
         )
         if self._last_restrictions is not None and self._is_lifted(
             self._last_restrictions, restrictions
@@ -226,15 +226,15 @@ class PacketGuider:
 
     @staticmethod
     def _is_lifted(
-        last: tuple[frozenset[Step], RuledOutPredecessors],
-        current: tuple[frozenset[Step], RuledOutPredecessors],
+        last: tuple[frozenset[Step], SuspectPredecessors],
+        current: tuple[frozenset[Step], SuspectPredecessors],
     ) -> bool:
-        """True if a blocked step or ruled-out predecessor of last is missing in current."""
-        last_steps, last_ruled_out = last
-        steps, ruled_out = current
+        """True if a blocked step or suspect predecessor of last is missing in current."""
+        last_steps, last_suspect_predecessors = last
+        steps, suspect_predecessors = current
         return not last_steps <= steps or any(
-            not predecessors <= ruled_out.get(packet_type, frozenset())
-            for packet_type, predecessors in last_ruled_out.items()
+            not predecessors <= suspect_predecessors.get(packet_type, frozenset())
+            for packet_type, predecessors in last_suspect_predecessors.items()
         )
 
     def _is_reachable_target(self, target: KPath) -> bool:

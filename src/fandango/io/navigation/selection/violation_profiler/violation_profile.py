@@ -5,7 +5,7 @@ from typing import NamedTuple, Optional
 
 from fandango.io.navigation.graph.packetnavigator import (
     Predecessor,
-    RuledOutPredecessors,
+    SuspectPredecessors,
 )
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.selection.violation_profiler.value_features import (
@@ -242,9 +242,9 @@ class ViolationProfile:
             f"Trying {packet_type} again, suspected to cause {symptom.describe()}."
         )
 
-    def ruled_out_predecessors(self) -> RuledOutPredecessors:
+    def suspect_predecessors(self) -> SuspectPredecessors:
         """Maps each packet type to the earlier packets that make all its messages suspect until the retry is due."""
-        ruled_out = {}
+        suspect_predecessors = {}
         for packet_type in self._symptoms_by_packet_type:
             predecessors: set[Predecessor] = set()
             for symptom, features in self._suspect_features(packet_type).items():
@@ -255,8 +255,8 @@ class ViolationProfile:
                         assert feature.predecessor is not None
                         predecessors.add(feature.predecessor)
             if predecessors:
-                ruled_out[packet_type] = frozenset(predecessors)
-        return ruled_out
+                suspect_predecessors[packet_type] = frozenset(predecessors)
+        return suspect_predecessors
 
     def _suspicion_about_own_type(
         self, message: DerivationTree, content: frozenset[_Feature]

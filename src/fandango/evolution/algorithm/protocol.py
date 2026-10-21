@@ -105,7 +105,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             self._protocol_tree,
             self._packet_algorithm.diversity_k,
             max_messages_per_tree=max_messages_per_tree,
-            ruled_out_predecessors=self._violation_profile.ruled_out_predecessors,
+            suspect_predecessors=self._violation_profile.suspect_predecessors,
         )
         self._packet_selector.set_coverage_goal(coverage_goal)
         self._packet_coverage_filter = PacketCoverageFilter(

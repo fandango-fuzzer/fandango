@@ -178,19 +178,19 @@ class TestViolationProfile(unittest.TestCase):
         self.profile.signal_session_end()
         self.assertTrue(self.profile.is_retry_due(HELP, key))
 
-    def test_a_suspect_earlier_packet_rules_the_packet_out_while_its_retry_waits(
+    def test_a_suspect_earlier_packet_becomes_a_suspect_predecessor_while_its_retry_waits(
         self,
     ):
         self._learn()
         self.assertEqual(
-            self.profile.ruled_out_predecessors(),
+            self.profile.suspect_predecessors(),
             {HELP: frozenset({("Fuzzer", "<ehlo>")})},
         )
         for _ in range(ViolationProfile.FIRST_RETRY_WAIT):
             self.profile.signal_session_end()
-        self.assertEqual(self.profile.ruled_out_predecessors(), {})
+        self.assertEqual(self.profile.suspect_predecessors(), {})
         self.profile.consume_retry(HELP, GARBAGE_INSTEAD_OF_HELPTEXT)
-        self.assertIn(HELP, self.profile.ruled_out_predecessors())
+        self.assertIn(HELP, self.profile.suspect_predecessors())
 
     def test_a_value_inside_a_regular_expression_is_suspected(self):
         self.trigger(EHLO + "cmd !\n", ViolationProfile.MIN_TRIGGERS, "<ok>")
@@ -243,8 +243,8 @@ class TestViolationProfile(unittest.TestCase):
             _Feature("path", ("Fuzzer", "<set>"), (NonTerminal("<bad>"),)).describe(),
             "after <set> from Fuzzer with <bad>",
         )
-        # A route cannot tell the content of the earlier <set>, so no packet is ruled out
-        self.assertEqual(self.profile.ruled_out_predecessors(), {})
+        # A route cannot tell the content of the earlier <set>, so no packet has a suspect predecessor
+        self.assertEqual(self.profile.suspect_predecessors(), {})
 
 
 def new_algorithm(
@@ -316,8 +316,8 @@ class TestViolationAvoidance(unittest.TestCase):
         self.assertTrue(profile.is_retry_due(HELP, GARBAGE_INSTEAD_OF_HELPTEXT))
 
 
-class TestRoutingAroundRuledOutPackets(unittest.TestCase):
-    """The navigation with <help> ruled out after <ehlo>."""
+class TestRoutingAroundSuspectPredecessors(unittest.TestCase):
+    """The navigation with <help> avoided after <ehlo>."""
 
     HELP_AFTER_EHLO = {HELP: frozenset({("Fuzzer", "<ehlo>")})}
 
@@ -347,7 +347,7 @@ class TestRoutingAroundRuledOutPackets(unittest.TestCase):
     def route(self, history: str, k_path: KPath) -> list:
         grammar = new_algorithm().grammar
         navigator = PacketNavigator(
-            grammar, ruled_out_predecessors=lambda: self.HELP_AFTER_EHLO
+            grammar, suspect_predecessors=lambda: self.HELP_AFTER_EHLO
         )
         navigator.set_message_cost(1)
         guide = navigator.astar_tree_including_k_paths(
@@ -356,10 +356,10 @@ class TestRoutingAroundRuledOutPackets(unittest.TestCase):
         assert guide is not None
         return guide.route
 
-    def test_the_search_never_goes_beyond_a_predecessor_that_rules_the_target_out(
+    def test_the_search_never_goes_beyond_a_suspect_predecessor_of_the_target(
         self,
     ):
-        # <ehlo> is the cheaper way into <greeted>, but rules out <help> after it
+        # <ehlo> is the cheaper way into <greeted>, but <help> is avoided after it
         route = self.route(
             "hello\n",
             (NonTerminal("<greeted>"), NonTerminal("<exchange_help>")),
@@ -372,14 +372,14 @@ class TestRoutingAroundRuledOutPackets(unittest.TestCase):
             any(NonTerminal("<_packet_ehlo>") in chain for chain in self.expanded)
         )
 
-    def test_a_route_to_the_end_only_through_a_ruled_out_packet_is_given_up_at_once(
+    def test_a_route_to_the_end_only_through_an_avoided_packet_is_given_up_at_once(
         self,
     ):
         grammar = new_algorithm().grammar
         quit_packet = PacketNonTerminal("Fuzzer", "Extern", NonTerminal("<quit>"))
         navigator = PacketNavigator(
             grammar,
-            ruled_out_predecessors=lambda: {
+            suspect_predecessors=lambda: {
                 quit_packet: frozenset({("Fuzzer", "<ehlo>")})
             },
         )

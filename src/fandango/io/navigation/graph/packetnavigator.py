@@ -27,7 +27,7 @@ from fandango.language.symbols import NonTerminal, Symbol
 
 # Sender and packet symbol of an earlier message
 Predecessor = tuple[str, str]
-RuledOutPredecessors = dict[PacketNonTerminal, frozenset[Predecessor]]
+SuspectPredecessors = dict[PacketNonTerminal, frozenset[Predecessor]]
 
 
 def packet_type_of(node: Node) -> Optional[PacketNonTerminal]:
@@ -40,16 +40,16 @@ def packet_type_of(node: Node) -> Optional[PacketNonTerminal]:
 
 class PredecessorAvoidingTarget(SearchTarget):
     """
-    A target reached only by routes that send no packet after a predecessor that rules it out in the run.
+    A target reached only by routes that send no packet after one of its suspect predecessors in the run.
     The context of a route is the set of predecessors it sent, the history's included. The estimate in a context
-    counts the packets it rules out as unreachable, so the search heads for routes around them.
+    counts the packets avoided in it as unreachable, so the search heads for routes around them.
     """
 
     def __init__(
         self,
         target_with: Callable[[RuleCosts], SearchTarget],
         costs_without: Callable[[frozenset[PacketNonTerminal]], RuleCosts],
-        ruled_out: RuledOutPredecessors,
+        suspect_predecessors: SuspectPredecessors,
         history_predecessors: frozenset[Predecessor],
     ):
         """
@@ -57,8 +57,8 @@ class PredecessorAvoidingTarget(SearchTarget):
         """
         self._target_with = target_with
         self._costs_without = costs_without
-        self._ruled_out = ruled_out
-        self._marks = frozenset().union(*ruled_out.values())
+        self._suspect_predecessors = suspect_predecessors
+        self._marks = frozenset().union(*suspect_predecessors.values())
         self._start = history_predecessors & self._marks
         self._targets_by_unsendable: dict[
             frozenset[PacketNonTerminal], SearchTarget
@@ -80,11 +80,11 @@ class PredecessorAvoidingTarget(SearchTarget):
         return self._target_in(context).can_complete(node)
 
     def _target_in(self, context: frozenset[Predecessor]) -> SearchTarget:
-        """The target on costs that count the packets the context rules out as unreachable."""
+        """The target on costs that count the packets avoided in the context as unreachable."""
         return self._target_without(
             frozenset(
                 packet
-                for packet, predecessors in self._ruled_out.items()
+                for packet, predecessors in self._suspect_predecessors.items()
                 if predecessors & context
             )
         )
@@ -114,11 +114,11 @@ class PredecessorAvoidingTarget(SearchTarget):
     def _context_after(
         self, context: frozenset[Predecessor], node: GrammarGraphNode
     ) -> Optional[frozenset[Predecessor]]:
-        """The context after the route enters node, or None if the node sends a packet the context rules out."""
+        """The context after the route enters node, or None if the node sends a packet avoided in the context."""
         packet = packet_type_of(node.node)
         if packet is None:
             return context
-        if self._is_ruled_out(packet, context):
+        if self._is_avoided(packet, context):
             return None
         assert packet.sender is not None
         predecessor = (packet.sender, packet.symbol.name())
@@ -126,10 +126,10 @@ class PredecessorAvoidingTarget(SearchTarget):
             return context
         return context | {predecessor}
 
-    def _is_ruled_out(
+    def _is_avoided(
         self, packet: PacketNonTerminal, context: frozenset[Predecessor]
     ) -> bool:
-        return bool(self._ruled_out.get(packet, frozenset()) & context)
+        return bool(self._suspect_predecessors.get(packet, frozenset()) & context)
 
 
 class PacketNavigator(GrammarNavigator):
@@ -141,13 +141,13 @@ class PacketNavigator(GrammarNavigator):
         state_rules: Optional[dict[NonTerminal, Node]] = None,
         packet_symbols: Optional[set[NonTerminal]] = None,
         step_costs: Callable[[], dict[Step, int]] = dict,
-        ruled_out_predecessors: Callable[[], RuledOutPredecessors] = dict,
+        suspect_predecessors: Callable[[], SuspectPredecessors] = dict,
     ):
         """
         Navigates the state grammar of the grammar, around the blocked steps.
         state_rules is that state grammar and packet_symbols are the grammar's message symbols.
         step_costs gives the costs that packet steps, as in their calling rule, add to their message.
-        ruled_out_predecessors gives per packet type the earlier packets, as sender and symbol, after which no route
+        suspect_predecessors gives per packet type the earlier packets, as sender and symbol, after which no route
         sends it in the same run.
         """
         if start_symbol is None:
@@ -185,7 +185,7 @@ class PacketNavigator(GrammarNavigator):
         )
         self._packet_symbols = packet_symbols
         self._step_costs = step_costs
-        self._ruled_out_predecessors = ruled_out_predecessors
+        self._suspect_predecessors = suspect_predecessors
         self._costs_by_unsendable: dict[frozenset[PacketNonTerminal], RuleCosts] = {}
         self._seen_step_costs: dict[Step, int] = {}
         self._rule_step_by_node_id = self._rule_steps()
@@ -204,7 +204,7 @@ class PacketNavigator(GrammarNavigator):
             self._state_rules,
             self._packet_symbols,
             self._step_costs,
-            self._ruled_out_predecessors,
+            self._suspect_predecessors,
         )
 
     def _rule_steps(self) -> dict[int, Step]:
@@ -422,13 +422,13 @@ class PacketNavigator(GrammarNavigator):
         target_with: Callable[[RuleCosts], SearchTarget],
         tree: Optional[DerivationTree],
     ) -> SearchTarget:
-        ruled_out = self._ruled_out_predecessors()
-        if not ruled_out:
+        suspect_predecessors = self._suspect_predecessors()
+        if not suspect_predecessors:
             return target_with(self._costs)
         return PredecessorAvoidingTarget(
             target_with,
             self._costs_without,
-            ruled_out,
+            suspect_predecessors,
             self._predecessors_in(tree),
         )
 
