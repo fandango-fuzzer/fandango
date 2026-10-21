@@ -3,6 +3,7 @@ from typing import Optional
 
 from fandango.errors import FandangoError
 from fandango.io.navigation.graph.grammar_navigator.grammar_graph_converter import (
+    GrammarGraph,
     GrammarGraphConverter,
     GrammarGraphNode,
 )
@@ -43,7 +44,7 @@ class GrammarNavigator:
             start_symbol = NonTerminal("<start>")
         self.grammar = grammar
         self._start_symbol = start_symbol
-        self.graph = GrammarGraphConverter(grammar.rules, start_symbol).process()
+        self.graph = self._new_graph()
         self.max_comparisons = 10_000_000
         self.comparisons = 0
         self.set_message_cost(0)
@@ -200,6 +201,7 @@ class GrammarNavigator:
             self._clear_graph()
 
     def _clear_graph(self) -> None:
-        self.graph = GrammarGraphConverter(
-            self.grammar.rules, self._start_symbol
-        ).process()
+        self.graph = self._new_graph()
+
+    def _new_graph(self) -> GrammarGraph:
+        return GrammarGraphConverter(self.grammar.rules, self._start_symbol).process()

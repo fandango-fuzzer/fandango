@@ -6,7 +6,7 @@ from typing import Optional
 
 from fandango.errors import FandangoError
 from fandango.io.navigation.nested_steps import run_nested_steps
-from fandango.language import DerivationTree, NonTerminal, Symbol, Terminal
+from fandango.language import DerivationTree, NonTerminal, Symbol
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
@@ -26,14 +26,6 @@ class GrammarGraphNode(abc.ABC):
     def __init__(self, node: Node):
         self.node = node
         self.parent = None
-
-    def consumes(self) -> Optional[Terminal]:
-        if isinstance(self.node, TerminalNode):
-            return self.node.symbol
-        return None
-
-    def is_lazy(self) -> bool:
-        return False
 
     def chain_symbol(self) -> Optional[Symbol]:
         """Returns the symbol that this node adds to its chain. Control-flow nodes add none."""
@@ -139,9 +131,6 @@ class LazyGrammarGraphNode(GrammarGraphNode):
         self._pre_load_reaches: list[GrammarGraphNode] = list()
         self._loaded_reaches: Optional[list[GrammarGraphNode]] = None
 
-    def is_lazy(self) -> bool:
-        return True
-
     def add_egress(self, node: GrammarGraphNode) -> None:
         if self._loaded_reaches is None:
             self._pre_load_reaches.append(node)
@@ -171,7 +160,6 @@ class LazyGrammarGraphNode(GrammarGraphNode):
 class GrammarGraph:
     def __init__(self, start: GrammarGraphNode):
         self.start = start
-        self.id_to_state: dict[str, GrammarGraphNode] = {}
 
     def walk(self, tree_root: DerivationTree) -> GrammarGraphNode:
         return self.start.walk(tree_root)
