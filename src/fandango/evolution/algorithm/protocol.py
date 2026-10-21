@@ -21,7 +21,7 @@ from fandango.io.navigation.selection.violation_profiler.value_features import (
     literals_of,
 )
 from fandango.io.navigation.selection.violation_profiler.violation_profile import (
-    ViolationProfile,
+    ViolationProfiler,
 )
 from fandango.io.packet_evolution.decorators.mounting_crossover import (
     MountingCrossover,
@@ -87,7 +87,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._protocol_tree: DerivationTree = DerivationTree(self._start_symbol)
         self._remote_response_timeout = remote_response_timeout
         self._io_instance: FandangoIO = FandangoIO.instance()
-        self._violation_profile = ViolationProfile(
+        self._violation_profiler = ViolationProfiler(
             k_paths_of=lambda message: (
                 self._packet_selector.coverage_tracker.k_paths_of(
                     message, overlap_to_root=False
@@ -105,11 +105,11 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             self._protocol_tree,
             self._packet_algorithm.diversity_k,
             max_messages_per_tree=max_messages_per_tree,
-            suspect_predecessors=self._violation_profile.suspect_predecessors,
+            suspect_predecessors=self._violation_profiler.suspect_predecessors,
         )
         self._packet_selector.set_coverage_goal(coverage_goal)
         self._packet_coverage_filter = PacketCoverageFilter(
-            self._packet_selector.coverage_tracker, self._violation_profile
+            self._packet_selector.coverage_tracker, self._violation_profiler
         )
         self.violations: list[tuple[DerivationTree, Exception]] = []
         self.throw_on_violation = False
@@ -357,7 +357,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
     def _record_violation(self, violation: Exception, reason: str) -> None:
         """Records a violation that aborts the current session. Raises it instead if throw_on_violation is set."""
         if isinstance(violation, FandangoRemoteViolation):
-            self._violation_profile.observe_violation(self._protocol_tree, violation)
+            self._violation_profiler.observe_violation(self._protocol_tree, violation)
         self.violations.append((self._protocol_tree, violation))
         if self.throw_on_violation:
             raise violation
@@ -371,7 +371,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         be generated for the fuzzer's next step.
         """
         self._packet_selector.signal_session_end(generation_failed=generation_failed)
-        self._violation_profile.signal_session_end()
+        self._violation_profiler.signal_session_end()
         self._packet_coverage_filter.add_completed_tree(session_tree)
 
     def _start_new_run(self) -> None:
@@ -475,7 +475,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                         remote_packet = self._handle_remote_response()
                     self._protocol_tree = packet_mounter.commit(remote_packet)
                     self._packet_selector.observe_message(self._protocol_tree)
-                    self._violation_profile.observe_answer(self._protocol_tree)
+                    self._violation_profiler.observe_answer(self._protocol_tree)
                 except (
                     FandangoFailedError,
                     FandangoParseError,
@@ -502,11 +502,11 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             packet.sender, packet.recipient, packet.nonterminal
         )
         with self._packet_mounter.mounted_context(packet) as mounted_packet:
-            suspicion = self._violation_profile.suspicion_of(mounted_packet)
+            suspicion = self._violation_profiler.suspicion_of(mounted_packet)
         if suspicion is None:
             return
-        if self._violation_profile.is_retry_due(*suspicion):
-            self._violation_profile.consume_retry(*suspicion)
+        if self._violation_profiler.is_retry_due(*suspicion):
+            self._violation_profiler.consume_retry(*suspicion)
             return
         suspect = (
             "" if suspicion.packet_type == packet_type else f" {suspicion.packet_type}"
@@ -539,5 +539,5 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._packet_algorithm.reset()
         self._packet_selector.reset()
         self._packet_coverage_filter.reset()
-        self._violation_profile.reset()
+        self._violation_profiler.reset()
         self._protocol_tree = DerivationTree(self._start_symbol)

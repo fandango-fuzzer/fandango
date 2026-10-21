@@ -7,7 +7,7 @@ from fandango.io.navigation.selection.coverage_tracker import (
     KPathCounts,
 )
 from fandango.io.navigation.selection.violation_profiler.violation_profile import (
-    ViolationProfile,
+    ViolationProfiler,
 )
 from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols.non_terminal import NonTerminal
@@ -25,7 +25,7 @@ class PacketCoverageFilter:
     def __init__(
         self,
         coverage_tracker: CoverageTracker,
-        violation_profile: Optional[ViolationProfile] = None,
+        violation_profile: Optional[ViolationProfiler] = None,
         clock: Callable[[], float] = time.monotonic,
     ):
         self._coverage_tracker = coverage_tracker

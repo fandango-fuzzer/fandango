@@ -122,7 +122,7 @@ class _RetrySchedule:
         self.due_at_session = now + self.wait_sessions
 
 
-class ViolationProfile:
+class ViolationProfiler:
     """
     Learns which features of sent messages make the remote party violate the grammar, by comparing the messages sent
     last before a violation with messages it answered.
