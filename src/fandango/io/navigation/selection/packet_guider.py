@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Optional
+from typing import NamedTuple, Optional
 
 from fandango.io.navigation.forecasting.forecast_view import ForecastView
 from fandango.io.navigation.forecasting.forecasting_result import ForecastingPacket
@@ -23,6 +23,18 @@ from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree
 from fandango.logger import log_guidance_hint
+
+
+class RouteRestrictions(NamedTuple):
+    blocked_steps: frozenset[Step]
+    suspect_predecessors: SuspectPredecessors
+
+    def lifts_any_of(self, last: "RouteRestrictions") -> bool:
+        """Tells whether a blocked step or suspect predecessor of last is missing here."""
+        return not last.blocked_steps <= self.blocked_steps or any(
+            not predecessors <= self.suspect_predecessors.get(packet_type, frozenset())
+            for packet_type, predecessors in last.suspect_predecessors.items()
+        )
 
 
 class PacketGuider:
@@ -66,9 +78,7 @@ class PacketGuider:
         self._end_route_refusals_in_session = 0
         # Targets out of reach of every run under the restrictions last seen
         self._unreachable_targets: set[KPath] = set()
-        self._last_restrictions: Optional[
-            tuple[frozenset[Step], SuspectPredecessors]
-        ] = None
+        self._last_restrictions: Optional[RouteRestrictions] = None
 
     @property
     def is_guide_to_end(self) -> bool:
@@ -214,28 +224,14 @@ class PacketGuider:
 
     def _update_unreachable_targets(self) -> None:
         """Forgets the targets out of reach of every run once a blocked step or suspect predecessor was lifted."""
-        restrictions = (
-            self._step_refusals.blocked_steps,
-            self._suspect_predecessors(),
+        restrictions = RouteRestrictions(
+            self._step_refusals.blocked_steps, self._suspect_predecessors()
         )
-        if self._last_restrictions is not None and self._is_lifted(
-            self._last_restrictions, restrictions
+        if self._last_restrictions is not None and restrictions.lifts_any_of(
+            self._last_restrictions
         ):
             self._unreachable_targets.clear()
         self._last_restrictions = restrictions
-
-    @staticmethod
-    def _is_lifted(
-        last: tuple[frozenset[Step], SuspectPredecessors],
-        current: tuple[frozenset[Step], SuspectPredecessors],
-    ) -> bool:
-        """True if a blocked step or suspect predecessor of last is missing in current."""
-        last_steps, last_suspect_predecessors = last
-        steps, suspect_predecessors = current
-        return not last_steps <= steps or any(
-            not predecessors <= suspect_predecessors.get(packet_type, frozenset())
-            for packet_type, predecessors in last_suspect_predecessors.items()
-        )
 
     def _is_reachable_target(self, target: KPath) -> bool:
         """True if the target is derivable and not known to be out of reach of every run."""
