@@ -217,11 +217,11 @@ class ViolationProfile:
 
     def suspicion_of(self, message: DerivationTree) -> Optional[Suspicion]:
         """Finds the suspicion the mounted message confirms, about its own packet type or a later one."""
-        content = self._content_features(message)
-        suspicion = self._suspicion_about_own_type(message, content)
+        features = self._content_features(message)
+        suspicion = self._suspicion_about_own_type(message, features)
         if suspicion is not None:
             return suspicion
-        return self._suspicion_about_later_types(message, content)
+        return self._suspicion_about_later_types(message, features)
 
     def should_withhold(self, message: DerivationTree) -> bool:
         """Tells whether the mounted message confirms a suspicion whose retry is still pending."""
@@ -273,10 +273,10 @@ class ViolationProfile:
         return None
 
     def _suspicion_about_later_types(
-        self, message: DerivationTree, content: frozenset[_Feature]
+        self, message: DerivationTree, content_features: frozenset[_Feature]
     ) -> Optional[Suspicion]:
         """Finds the suspicion about a later packet type that the message's content confirms as predecessor."""
-        as_predecessor = self._as_predecessor(content, self._predecessor_of(message))
+        as_predecessor = self._as_predecessor(content_features, self._predecessor_of(message))
         for later_type in self._symptoms_by_packet_type:
             for symptom, suspect_features in self._suspect_features(later_type).items():
                 if as_predecessor & suspect_features:
