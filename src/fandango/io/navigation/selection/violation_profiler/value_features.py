@@ -8,45 +8,45 @@ from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 
 # The last nonterminals above a value that tell where in the message it is
-ANCHOR_SYMBOLS = 3
+ANCHOR_LENGTH = 3
 # Values made of literals up to this length count exactly as well
-EXACT_LENGTH = 8
+MAX_EXACT_LENGTH = 8
 
 
 class _ValueSummary(NamedTuple):
     length: int
     chars: frozenset[str]
-    exact: Optional[str]
+    exact_text: Optional[str]
 
     @staticmethod
-    def merge(children: Iterable["_ValueSummary"]) -> "_ValueSummary":
+    def concatenate(parts: Iterable["_ValueSummary"]) -> "_ValueSummary":
         length = 0
         chars: set[str] = set()
         exact: Optional[str] = ""
-        for child in children:
-            length += child.length
-            chars |= child.chars
+        for part in parts:
+            length += part.length
+            chars |= part.chars
             exact = (
                 None
-                if exact is None or child.exact is None or length > EXACT_LENGTH
-                else exact + child.exact
+                if exact is None or part.exact_text is None or length > MAX_EXACT_LENGTH
+                else exact + part.exact_text
             )
         return _ValueSummary(length, frozenset(chars), exact)
 
-    def levels(self) -> list[Hashable]:
+    def abstractions(self) -> list[Hashable]:
         """The value of a subtree from coarse to fine."""
-        levels: list[Hashable] = [
+        abstractions: list[Hashable] = [
             ("classes", tuple(sorted({self._char_class(char) for char in self.chars}))),
             ("length", self.length.bit_length()),
         ]
-        levels.extend(
+        abstractions.extend(
             ("char", char)
             for char in sorted(self.chars)
             if not char.isalnum() and ord(char) < 0x80
         )
-        if self.exact is not None:
-            levels.append(("exact", self.exact))
-        return levels
+        if self.exact_text is not None:
+            abstractions.append(("exact", self.exact_text))
+        return abstractions
 
     @staticmethod
     def _char_class(char: str) -> str:
@@ -102,22 +102,24 @@ def value_features(
         if not children_done:
             name = _anchor_name(node)
             if name is not None:
-                anchor = (*anchor, name)[-ANCHOR_SYMBOLS:]
+                anchor = (*anchor, name)[-ANCHOR_LENGTH:]
             stack.append((node, anchor, True))
             stack.extend((child, anchor, False) for child in node.children)
             continue
-        summary = _ValueSummary.merge(
+        summary = _ValueSummary.concatenate(
             summaries.pop(id(child)) for child in node.children
         )
         summaries[id(node)] = summary
         if _anchor_name(node) is not None:
-            features.update((anchor, level) for level in summary.levels())
+            features.update(
+                (anchor, abstraction) for abstraction in summary.abstractions()
+            )
     return frozenset(features)
 
 
-def describe_level(level: Hashable) -> str:
-    assert isinstance(level, tuple)
-    kind, value = level
+def describe_abstraction(abstraction: Hashable) -> str:
+    assert isinstance(abstraction, tuple)
+    kind, value = abstraction
     if kind == "classes":
         return "+".join(value) or "empty"
     if kind == "length":
@@ -139,5 +141,5 @@ def _leaf_summary(leaf: DerivationTree, literals: frozenset[str]) -> _ValueSumma
     if not leaf.symbol.is_terminal:
         return _ValueSummary(0, frozenset(), "")
     text = leaf.to_string()
-    exact = text if len(text) <= EXACT_LENGTH and text in literals else None
+    exact = text if len(text) <= MAX_EXACT_LENGTH and text in literals else None
     return _ValueSummary(len(text), frozenset(text), exact)

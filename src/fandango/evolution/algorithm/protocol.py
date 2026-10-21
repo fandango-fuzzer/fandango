@@ -500,10 +500,10 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             packet.sender, packet.recipient, packet.nonterminal
         )
         with self._packet_mounter.mounted_context(packet) as mounted_packet:
-            suspicion = self._violation_profile.suspicion(mounted_packet, packet_type)
+            suspicion = self._violation_profile.suspicion_of(mounted_packet)
         if suspicion is None:
             return
-        if self._violation_profile.retry_due(*suspicion):
+        if self._violation_profile.is_retry_due(*suspicion):
             self._violation_profile.consume_retry(*suspicion)
             return
         suspect = (
@@ -511,7 +511,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         )
         log_guidance_hint(
             f"Sending {packet_type}, suspected to cause{suspect} "
-            f"{suspicion.violation.describe()}."
+            f"{suspicion.violation_kind.describe()}."
         )
 
     def _configure_fuzzable_packets(self) -> None:
