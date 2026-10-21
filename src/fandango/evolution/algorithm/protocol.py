@@ -19,7 +19,7 @@ from fandango.io.navigation.selection.packetselector import PacketSelector
 from fandango.io.navigation.selection.violation_profiler.value_features import (
     literals_of,
 )
-from fandango.io.navigation.selection.violation_profiler.violation_profile import (
+from fandango.io.navigation.selection.violation_profiler.violation_profiler import (
     ViolationProfiler,
 )
 from fandango.io.packet_evolution.decorators.mounting_crossover import (

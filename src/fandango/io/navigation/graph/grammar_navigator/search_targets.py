@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from collections.abc import Hashable, Sequence
 from typing import NamedTuple, Optional
 
@@ -11,7 +12,15 @@ from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols import Symbol
 
 
-class RunEndTarget(SearchTarget):
+class CostBasedTarget(SearchTarget, ABC):
+    """A search target that estimates by rule costs."""
+
+    @abstractmethod
+    def with_costs(self, costs: RuleCosts) -> "CostBasedTarget":
+        """Returns the same target on the given costs."""
+
+
+class RunEndTarget(CostBasedTarget):
     """
     The end of the run as target of a path search: reached by a node at which the run may end.
     The estimate is the cheapest cost of finishing the rules the node lies in.
@@ -24,6 +33,9 @@ class RunEndTarget(SearchTarget):
         self._costs = costs
         self._futures = FutureKeys()
         self._costs_after: dict[GrammarGraphNode, int] = {}
+
+    def with_costs(self, costs: RuleCosts) -> "RunEndTarget":
+        return RunEndTarget(costs)
 
     def is_reached(self, node: GrammarGraphNode) -> bool:
         return node.is_accepting
@@ -102,7 +114,7 @@ class ChainSummary(NamedTuple):
     matched_on_chain: int
 
 
-class KPathTarget(SearchTarget):
+class KPathTarget(CostBasedTarget):
     """A k-path as target of a path search: reached by a node whose chain ends with the k-path."""
 
     ANCESTOR_LOOKBACK = 6
@@ -129,6 +141,9 @@ class KPathTarget(SearchTarget):
         self._summaries: dict[GrammarGraphNode, ChainSummary] = {}
         self._estimates: dict[GrammarGraphNode, int] = {}
         self._rest_derivable: dict[int, bool] = {}
+
+    def with_costs(self, costs: RuleCosts) -> "KPathTarget":
+        return KPathTarget(self._k_path, costs, self._forbidden_chain)
 
     def is_reached(self, node: GrammarGraphNode) -> bool:
         return self.estimate(node) == 0
@@ -272,11 +287,14 @@ class KPathTarget(SearchTarget):
         )
 
 
-class AnyTarget(SearchTarget):
+class AnyTarget(CostBasedTarget):
     """Several targets as one: reached by a node that reaches any of them, aiming at the closest."""
 
-    def __init__(self, targets: Sequence[SearchTarget]):
+    def __init__(self, targets: Sequence[CostBasedTarget]):
         self._targets = list(targets)
+
+    def with_costs(self, costs: RuleCosts) -> "AnyTarget":
+        return AnyTarget([target.with_costs(costs) for target in self._targets])
 
     def is_reached(self, node: GrammarGraphNode) -> bool:
         return any(target.is_reached(node) for target in self._targets)

@@ -14,7 +14,7 @@ from fandango.io.navigation.selection.violation_profiler.value_features import (
     literals_of,
     value_features,
 )
-from fandango.io.navigation.selection.violation_profiler.violation_profile import (
+from fandango.io.navigation.selection.violation_profiler.violation_profiler import (
     Symptom,
     ViolationProfiler,
     _Feature,
@@ -134,10 +134,11 @@ class TestViolationProfile(unittest.TestCase):
         (suspects,) = self.profile._suspect_features(HELP).values()
         # Features every <help> has are never suspect
         self.assertNotIn(_Feature("path", None, (NonTerminal("<help>"),)), suspects)
-        self.assertNotIn(_Feature("packet", ("Fuzzer", "<hello>"), None), suspects)
+        self.assertNotIn(_Feature("predecessor", ("Fuzzer", "<hello>"), None), suspects)
         # The earlier <ehlo> is suspect by itself, so its content is not
         self.assertEqual(
-            {feature.kind for feature in suspects if feature.predecessor}, {"packet"}
+            {feature.kind for feature in suspects if feature.predecessor},
+            {"predecessor"},
         )
         self.assertIsNone(self.suspected("hello\nehlo\n"))
 
@@ -150,7 +151,9 @@ class TestViolationProfile(unittest.TestCase):
         self.trigger(EHLO + "cmd a\nok\nhelp\n", ViolationProfiler.MIN_TRIGGERS)
         self.answer(HELO + "cmd b\nok\nhelp\nhelptext\n", 3)
         (suspects,) = self.profile._suspect_features(HELP).values()
-        self.assertEqual(suspects, {_Feature("packet", ("Fuzzer", "<ehlo>"), None)})
+        self.assertEqual(
+            suspects, {_Feature("predecessor", ("Fuzzer", "<ehlo>"), None)}
+        )
 
     def test_a_feature_common_in_answers_is_not_suspected(self):
         self.trigger(self.AFTER_EHLO)
@@ -163,8 +166,12 @@ class TestViolationProfile(unittest.TestCase):
         key = GARBAGE_INSTEAD_OF_HELPTEXT
         first_wait = ViolationProfiler.FIRST_RETRY_WAIT
         self.assertFalse(self.profile._is_retry_due(HELP, key))
-        self._learn()
-        # The wait starts once the suspicion arises
+        self.trigger(self.AFTER_EHLO)
+        self.answer(self.ANSWERED, ViolationProfiler.MIN_COUNTEREXAMPLES)
+        self.trigger(self.AFTER_EHLO, ViolationProfiler.MIN_TRIGGERS - 2)
+        # The suspicion arises with the last trigger, so its wait starts in this session
+        tree = session(self.grammar, self.AFTER_EHLO)
+        self.profile.observe_violation(tree, garbage_instead_of(tree, "<helptext>"))
         self.assertIsNotNone(self.suspected(self.AFTER_EHLO))
         for _ in range(first_wait - 1):
             self.profile.signal_session_end()
@@ -369,9 +376,8 @@ class TestRoutingAroundSuspectPredecessors(unittest.TestCase):
 
     def route(self, history: str, k_path: KPath) -> list:
         grammar = new_algorithm().grammar
-        navigator = PacketNavigator(
-            grammar, suspect_predecessors=lambda: self.HELP_AFTER_EHLO
-        )
+        navigator = PacketNavigator(grammar)
+        navigator.set_suspect_predecessors(self.HELP_AFTER_EHLO)
         navigator.set_message_cost(1)
         guide = navigator.astar_tree_including_k_paths(
             tree=session(grammar, history), destination_k_path=k_path
@@ -400,11 +406,9 @@ class TestRoutingAroundSuspectPredecessors(unittest.TestCase):
     ):
         grammar = new_algorithm().grammar
         quit_packet = PacketNonTerminal("Fuzzer", "Extern", NonTerminal("<quit>"))
-        navigator = PacketNavigator(
-            grammar,
-            suspect_predecessors=lambda: {
-                quit_packet: frozenset({("Fuzzer", "<ehlo>")})
-            },
+        navigator = PacketNavigator(grammar)
+        navigator.set_suspect_predecessors(
+            {quit_packet: frozenset({("Fuzzer", "<ehlo>")})}
         )
         navigator.set_message_cost(1)
         route = navigator.astar_search_end_including_k_paths(session(grammar, EHLO))

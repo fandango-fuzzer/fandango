@@ -18,7 +18,7 @@ from fandango.logger import log_guidance_hint
 
 
 class _Feature(NamedTuple):
-    # "path" (a k-path), "value" (an anchored value abstraction) or "packet" (an earlier packet type)
+    # "path" (a k-path), "value" (an anchored value abstraction) or "predecessor" (an earlier packet type)
     kind: str
     # Sender and symbol of the earlier message the feature belongs to; None stands for the message itself
     predecessor: Optional[Predecessor]
@@ -27,12 +27,12 @@ class _Feature(NamedTuple):
     @property
     def source(self) -> tuple[bool, Optional[Predecessor]]:
         """Identifies the feature's source: an earlier packet type, the message's content or an earlier message's."""
-        return self.kind == "packet", self.predecessor
+        return self.kind == "predecessor", self.predecessor
 
     @property
     def complexity(self) -> int:
         """Ranks the source: 0 for a packet type, 1 for the message's content, 2 for an earlier message's."""
-        if self.kind == "packet":
+        if self.kind == "predecessor":
             return 0
         return 1 if self.predecessor is None else 2
 
@@ -157,7 +157,7 @@ class ViolationProfiler:
         self._retry_schedules: dict[
             tuple[PacketNonTerminal, Symptom], _RetrySchedule
         ] = {}
-        self._suspect_cache: dict[
+        self._suspects_by_packet_type: dict[
             PacketNonTerminal, dict[Symptom, frozenset[_Feature]]
         ] = {}
         self._last_logged_suspects: dict[tuple[PacketNonTerminal, Symptom], str] = {}
@@ -172,7 +172,7 @@ class ViolationProfiler:
         self._symptoms_by_packet_type.clear()
         self._counterexample_counts.clear()
         self._retry_schedules.clear()
-        self._suspect_cache.clear()
+        self._suspects_by_packet_type.clear()
         self._last_logged_suspects.clear()
         self._last_counted_answer = None
         self._history_features_by_prefix.clear()
@@ -186,24 +186,24 @@ class ViolationProfiler:
         self, session_tree: DerivationTree, violation: FandangoRemoteViolation
     ) -> None:
         """Records the last message the fuzzer sent in the session as a trigger of the violation."""
-        trigger = self._last_fuzzer_message(session_tree)
-        if trigger is None:
+        last_sent = self._last_fuzzer_message(session_tree)
+        if last_sent is None:
             return
-        packet_type, message = trigger
+        packet_type, message = last_sent
         symptom = Symptom.of_violation(violation)
         self._trigger_counts.setdefault(
             (packet_type, symptom),
             _FeatureCounts(keep_last=self.RECENT_TRIGGERS),
         ).add_message(self._features_in_session(message))
         self._symptoms_by_packet_type.setdefault(packet_type, set()).add(symptom)
-        self._suspect_cache.pop(packet_type, None)
+        self._update_suspects(packet_type)
 
     def observe_answer(self, session_tree: DerivationTree) -> None:
         """Records the fuzzer's last message once as a counterexample if its packet type triggered a violation."""
-        sent = self._last_fuzzer_message(session_tree)
-        if sent is None:
+        last_sent = self._last_fuzzer_message(session_tree)
+        if last_sent is None:
             return
-        packet_type, message = sent
+        packet_type, message = last_sent
         if packet_type not in self._symptoms_by_packet_type:
             return
         answer_key = self._answer_key_of(message)
@@ -213,7 +213,7 @@ class ViolationProfiler:
         self._counterexample_counts.setdefault(
             packet_type, _FeatureCounts()
         ).add_message(self._features_in_session(message))
-        self._suspect_cache.pop(packet_type, None)
+        self._update_suspects(packet_type)
 
     def observe_sending(self, message: DerivationTree) -> None:
         """Logs the sending of the mounted suspect message and uses up its due retry."""
@@ -260,7 +260,7 @@ class ViolationProfiler:
                 if self._is_retry_due(packet_type, symptom):
                     continue
                 for feature in features:
-                    if feature.kind == "packet":
+                    if feature.kind == "predecessor":
                         predecessor = feature.predecessor
                         assert predecessor is not None
                         predecessors.add(predecessor)
@@ -339,7 +339,7 @@ class ViolationProfiler:
         """Collects the packet type and content of a message as features of the messages after it."""
         predecessor = self._predecessor_of(message)
         return self._as_predecessor(self._content_features(message), predecessor) | {
-            _Feature("packet", predecessor, None)
+            _Feature("predecessor", predecessor, None)
         }
 
     @staticmethod
@@ -387,33 +387,37 @@ class ViolationProfiler:
     def _suspect_features(
         self, packet_type: PacketNonTerminal
     ) -> dict[Symptom, frozenset[_Feature]]:
-        suspects = self._suspect_cache.get(packet_type)
-        if suspects is None:
-            suspects = self._compute_suspect_features(packet_type)
-            self._suspect_cache[packet_type] = suspects
-        return suspects
+        return self._suspects_by_packet_type.get(packet_type, {})
 
-    def _compute_suspect_features(
+    def _update_suspects(self, packet_type: PacketNonTerminal) -> None:
+        """Ranks the suspect features of the packet type anew, logs them and schedules the retries of new suspects."""
+        ranked_by_symptom = self._ranked_suspects_by_symptom(packet_type)
+        self._suspects_by_packet_type[packet_type] = {
+            symptom: frozenset(feature for feature, _ in ranked)
+            for symptom, ranked in ranked_by_symptom.items()
+        }
+        for symptom, ranked in ranked_by_symptom.items():
+            self._log_suspect_features(packet_type, symptom, ranked)
+            self._schedule_retry_if_new(packet_type, symptom)
+
+    def _ranked_suspects_by_symptom(
         self, packet_type: PacketNonTerminal
-    ) -> dict[Symptom, frozenset[_Feature]]:
-        """Ranks the suspect features per symptom of a packet type, logs them and schedules new retries."""
+    ) -> dict[Symptom, list[_ScoredFeature]]:
+        """Ranks the suspect features per symptom of the packet type once it has enough counterexamples."""
         counterexamples = self._counterexample_counts.get(packet_type)
         if (
             counterexamples is None
             or counterexamples.message_count < self.MIN_COUNTEREXAMPLES
         ):
             return {}
-        suspects = {}
+        ranked_by_symptom = {}
         for symptom in self._symptoms_by_packet_type[packet_type]:
             ranked = self._ranked_suspect_features(
                 self._trigger_counts[(packet_type, symptom)], counterexamples
             )
-            if not ranked:
-                continue
-            suspects[symptom] = frozenset(feature for feature, _ in ranked)
-            self._log_suspect_features(packet_type, symptom, ranked)
-            self._schedule_retry_if_new(packet_type, symptom)
-        return suspects
+            if ranked:
+                ranked_by_symptom[symptom] = ranked
+        return ranked_by_symptom
 
     def _schedule_retry_if_new(
         self, packet_type: PacketNonTerminal, symptom: Symptom
@@ -493,11 +497,16 @@ class ViolationProfiler:
     ) -> list[list[_ScoredFeature]]:
         """Groups the scored features by source, strongest and simplest first, dropping content of suspect packets."""
         suspect_predecessors = {
-            feature.predecessor for feature, _ in scored if feature.kind == "packet"
+            feature.predecessor
+            for feature, _ in scored
+            if feature.kind == "predecessor"
         }
         by_source: dict[tuple[bool, Optional[Predecessor]], list[_ScoredFeature]] = {}
         for feature, score in scored:
-            if feature.kind != "packet" and feature.predecessor in suspect_predecessors:
+            if (
+                feature.kind != "predecessor"
+                and feature.predecessor in suspect_predecessors
+            ):
                 continue
             by_source.setdefault(feature.source, []).append((feature, score))
         return sorted(
