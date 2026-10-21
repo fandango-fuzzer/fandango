@@ -42,6 +42,17 @@ class GrammarGraphNode(abc.ABC):
             current = current.parent
         return tuple(reversed(symbols))
 
+    def enclosing_rule_instance(self) -> Optional["GrammarGraphNode"]:
+        """Returns the rule instance this node lies in, or None if it lies in a repetition."""
+        current = self.parent
+        while current is not None and not isinstance(current, LazyGrammarGraphNode):
+            if isinstance(current.node, Repetition):
+                return None
+            if current.parent is None:
+                return current
+            current = current.parent
+        return current
+
     @abc.abstractmethod
     def add_egress(self, node: "GrammarGraphNode") -> None:
         raise NotImplementedError()
@@ -128,15 +139,16 @@ class LazyGrammarGraphNode(GrammarGraphNode):
     def __init__(self, node: NonTerminalNode, grammar_rules: dict[NonTerminal, Node]):
         super().__init__(node)
         self.grammar_rules = grammar_rules
-        self._pre_load_reaches: list[GrammarGraphNode] = list()
+        # The nodes that follow this rule instance once its rule ends
+        self.following_nodes: list[GrammarGraphNode] = []
         self._loaded_reaches: Optional[list[GrammarGraphNode]] = None
+        # The nodes that end the rule, once it is loaded
+        self._end_nodes: list[GrammarGraphNode] = []
 
     def add_egress(self, node: GrammarGraphNode) -> None:
-        if self._loaded_reaches is None:
-            self._pre_load_reaches.append(node)
-        else:
-            for end_node in self._loaded_reaches:
-                end_node.add_egress(node)
+        self.following_nodes.append(node)
+        for end_node in self._end_nodes:
+            end_node.add_egress(node)
 
     @property
     def reaches(self) -> list["GrammarGraphNode"]:
@@ -150,9 +162,10 @@ class LazyGrammarGraphNode(GrammarGraphNode):
         )
         graph_converter.current_parent.pop()
         self._loaded_reaches = [start_node]
+        self._end_nodes = end_nodes
         for end_node in end_nodes:
-            for chain_end in self._pre_load_reaches:
-                end_node.add_egress(chain_end)
+            for following in self.following_nodes:
+                end_node.add_egress(following)
 
         return self._loaded_reaches
 
