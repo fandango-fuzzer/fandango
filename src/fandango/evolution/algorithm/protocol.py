@@ -365,7 +365,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             raise violation
         LOGGER.warning(f"{reason} Recording violation: {violation}")
 
-    def _end_session(
+    def _signal_session_end_to_components(
         self, session_tree: DerivationTree, generation_failed: bool = False
     ) -> None:
         """
@@ -411,7 +411,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     list(self._packet_selector.forecasting_result.complete_trees)
                 )
                 MessageHolder(final_tree).hold_messages()
-                self._end_session(final_tree)
+                self._signal_session_end_to_components(final_tree)
                 yield final_tree
                 if self._attainable_coverage_reached():
                     return None
@@ -419,7 +419,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 continue
 
             if self._packet_selector.is_run_abandoned():
-                self._end_session(self._protocol_tree)
+                self._signal_session_end_to_components(self._protocol_tree)
                 self._start_new_run()
                 continue
 
@@ -436,7 +436,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     log_guidance_hint(
                         "No packet could be generated. Ending the session."
                     )
-                    self._end_session(self._protocol_tree, generation_failed=True)
+                    self._signal_session_end_to_components(self._protocol_tree, generation_failed=True)
                     if self._attainable_coverage_reached():
                         return None
                     self._start_new_run()
@@ -456,7 +456,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     except FandangoConnectionError as error:
                         violation = self._gen_connection_violation(new_packet, error)
                         self._record_violation(violation, "Could not send the message.")
-                        self._end_session(self._protocol_tree)
+                        self._signal_session_end_to_components(self._protocol_tree)
                         if self._attainable_coverage_reached():
                             return None
                         self._start_new_run()
@@ -484,7 +484,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     self._record_violation(
                         exc, "Discarding remote response that could not be handled."
                     )
-                    self._end_session(self._protocol_tree)
+                    self._signal_session_end_to_components(self._protocol_tree)
                     if self._attainable_coverage_reached():
                         return None
                     self._start_new_run()
