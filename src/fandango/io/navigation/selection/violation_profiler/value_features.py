@@ -108,6 +108,7 @@ def literals_of(rules: dict[NonTerminal, Node]) -> frozenset[str]:
             try:
                 literals.add(node.symbol.value().to_string())
             except FandangoConversionError:
+                # Skip literals that cannot be converted to strings.
                 pass
     return frozenset(literals)
 

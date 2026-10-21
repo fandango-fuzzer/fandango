@@ -1,7 +1,6 @@
 import random
-import unittest
+import unittest.mock
 from collections.abc import Iterator
-from unittest import mock
 
 from fandango.evolution.algorithm.protocol import ProtocolAlgorithm
 from fandango.evolution.algorithm.simple import SimpleGeneticAlgorithm
@@ -361,7 +360,7 @@ class TestRoutingAroundRuledOutPackets(unittest.TestCase):
             (GrammarNavigator, "_search", logged_search),
             (PathSearch, "_is_reached", logged_is_reached),
         ):
-            patcher = mock.patch.object(owner, name, wrapper)
+            patcher = unittest.mock.patch.object(owner, name, wrapper)
             patcher.start()
             self.addCleanup(patcher.stop)
 
