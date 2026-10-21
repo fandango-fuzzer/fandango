@@ -247,7 +247,9 @@ class ViolationProfiler:
     def should_withhold(self, message: DerivationTree) -> bool:
         """Tells whether the mounted message confirms a suspicion whose retry is still pending."""
         suspicion = self.suspicion_of(message)
-        return suspicion is not None and not self._is_retry_due(*suspicion)
+        return suspicion is not None and not self._is_retry_due(
+            packet_type=suspicion.packet_type, symptom=suspicion.symptom
+        )
 
     def suspect_predecessors(self) -> SuspectPredecessors:
         """Maps each packet type to the earlier packets that make all its messages suspect until the retry is due."""
