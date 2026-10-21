@@ -280,8 +280,10 @@ class PacketNavigator(GrammarNavigator):
             self._contained_by_k_paths.clear()
         key = frozenset(k_paths)
         if key not in self._contained_by_k_paths:
-            _trees, contained = self._find_trees_including_k_paths(k_paths, tree)
-            self._contained_by_k_paths[key] = contained
+            self._contained_by_k_paths[key] = any(
+                self._includes_k_paths(k_paths, controlflow_tree)
+                for controlflow_tree, _ in self.get_controlflow_tree(tree)
+            )
         return self._contained_by_k_paths[key]
 
     def is_derivable(self, destination_k_path: KPath) -> bool:
@@ -383,18 +385,15 @@ class PacketNavigator(GrammarNavigator):
         }
         return len(packet_k_paths.difference(covered_k_paths)) == 0
 
-    def _find_trees_including_k_paths(
+    def _trees_including_k_paths(
         self, k_paths: set[KPath], tree: DerivationTree
-    ) -> tuple[list[tuple[DerivationTree, bool]], bool]:
-        match_k_paths_trees = []
-        process_trees = []
-        for suggested_tree, is_complete in self.get_controlflow_tree(tree):
-            process_trees.append((suggested_tree, is_complete))
-            if self._includes_k_paths(k_paths, suggested_tree):
-                match_k_paths_trees.append((suggested_tree, is_complete))
-        if len(match_k_paths_trees) != 0:
-            return match_k_paths_trees, True
-        return process_trees, False
+    ) -> list[tuple[DerivationTree, bool]]:
+        """The control-flow trees of tree that include the k-paths."""
+        return [
+            (controlflow_tree, is_complete)
+            for controlflow_tree, is_complete in self.get_controlflow_tree(tree)
+            if self._includes_k_paths(k_paths, controlflow_tree)
+        ]
 
     def astar_tree_including_k_paths(
         self,
@@ -406,9 +405,7 @@ class PacketNavigator(GrammarNavigator):
         if included_k_paths is None:
             included_k_paths = set()
         routes: list[tuple[Route, Optional[GrammarGraphNode]]] = []
-        found_trees, include_k_paths = self._find_trees_including_k_paths(
-            included_k_paths, tree
-        )
+        found_trees = self._trees_including_k_paths(included_k_paths, tree)
         for suggested_tree, _is_complete in found_trees:
             path = self.astar_tree(
                 tree=suggested_tree, destination_k_path=destination_k_path
@@ -487,13 +484,11 @@ class PacketNavigator(GrammarNavigator):
             included_k_paths = set()
         self._update_step_costs()
         routes: list[Route] = []
-        found_trees, include_k_paths = self._find_trees_including_k_paths(
-            included_k_paths, tree
-        )
+        found_trees = self._trees_including_k_paths(included_k_paths, tree)
         for suggested_tree, is_complete in found_trees:
             if is_complete:
                 return []
-            node_path = super().astar_search_end(suggested_tree)
+            node_path = self.astar_search_end(suggested_tree)
             routes.append(self._to_route(list(node_path)))
 
         if len(routes) == 0:
