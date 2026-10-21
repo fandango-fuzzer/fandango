@@ -1,4 +1,4 @@
-from collections.abc import Generator, Hashable
+from collections.abc import Generator, Hashable, Sequence
 from typing import Optional
 
 from fandango.io.navigation.graph.blocked_step_pruner import (
@@ -388,7 +388,7 @@ class PacketNavigator(GrammarNavigator):
     ) -> Optional[GuidePath]:
         if included_k_paths is None:
             included_k_paths = set()
-        routes: list[tuple[Route, Optional[GrammarGraphNode]]] = []
+        routes: list[tuple[int, Route, Optional[GrammarGraphNode]]] = []
         found_trees = self._trees_including_k_paths(included_k_paths, tree)
         for suggested_tree, _is_complete in found_trees:
             path = self.astar_tree(
@@ -396,12 +396,16 @@ class PacketNavigator(GrammarNavigator):
             )
             if path is None:
                 continue
-            routes.append((self._to_route(path), path[-1] if len(path) != 0 else None))
+            routes.append(
+                (
+                    self._path_cost(path),
+                    self._to_route(path),
+                    path[-1] if len(path) != 0 else None,
+                )
+            )
         if len(routes) == 0:
             return None
-        route, target = min(
-            routes, key=lambda route_and_target: len(route_and_target[0])
-        )
+        _, route, target = min(routes, key=lambda costed: (costed[0], len(costed[1])))
         if (
             target is None
             or not isinstance(target.node, NonTerminalNode)
@@ -464,18 +468,26 @@ class PacketNavigator(GrammarNavigator):
     ) -> Optional[Route]:
         if included_k_paths is None:
             included_k_paths = set()
-        routes: list[Route] = []
+        routes: list[tuple[int, Route]] = []
         found_trees = self._trees_including_k_paths(included_k_paths, tree)
         for suggested_tree, is_complete in found_trees:
             if is_complete:
                 return []
-            node_path = self.astar_search_end(suggested_tree)
-            routes.append(self._to_route(list(node_path)))
+            node_path: list[Optional[GrammarGraphNode]] = list(
+                self.astar_search_end(suggested_tree)
+            )
+            routes.append((self._path_cost(node_path), self._to_route(node_path)))
 
         if len(routes) == 0:
             return None
-        routes.sort(key=len)
-        return routes[0]
+        _, route = min(routes, key=lambda costed: (costed[0], len(costed[1])))
+        return route
+
+    def _path_cost(self, path: Sequence[Optional[GrammarGraphNode]]) -> int:
+        """Sums what entering the nodes of the path costs, as the search counts it."""
+        return sum(
+            self._message_cost_of(node.node) for node in path if node is not None
+        )
 
     def __repr__(self) -> str:
         return (
