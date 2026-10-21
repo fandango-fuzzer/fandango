@@ -261,8 +261,9 @@ class ViolationProfiler:
                     continue
                 for feature in features:
                     if feature.kind == "packet":
-                        assert feature.predecessor is not None
-                        predecessors.add(feature.predecessor)
+                        predecessor = feature.predecessor
+                        assert predecessor is not None
+                        predecessors.add(predecessor)
             if predecessors:
                 suspect_predecessors[packet_type] = frozenset(predecessors)
         return suspect_predecessors
@@ -371,8 +372,9 @@ class ViolationProfiler:
     @staticmethod
     def _predecessor_of(message: DerivationTree) -> Predecessor:
         """Identifies the message as predecessor by its sender and symbol."""
-        assert message.sender is not None
-        return message.sender, message.nonterminal.name()
+        sender = message.sender
+        assert sender is not None
+        return sender, message.nonterminal.name()
 
     def _last_fuzzer_message(
         self, session_tree: DerivationTree
@@ -427,7 +429,7 @@ class ViolationProfiler:
         symptom: Symptom,
         ranked: list[_ScoredFeature],
     ) -> None:
-        """Logs the strongest suspect features, whenever they change."""
+        """Logs the strongest suspect features whenever they change."""
         top = ", ".join(
             feature.describe() for feature, _ in ranked[: self.MAX_LOGGED_FEATURES]
         )
