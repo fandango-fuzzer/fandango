@@ -28,7 +28,6 @@ class PacketSelector:
         max_messages_per_tree: int = 200,
         ruled_out_predecessors: Callable[[], RuledOutPredecessors] = dict,
     ):
-        """ruled_out_predecessors gives per packet type the earlier packets after which no route sends it in a run."""
         self.RANDOM_END_PROBABILITY = 0.5
         self.start_symbol = NonTerminal("<start>")
         self.grammar = grammar
