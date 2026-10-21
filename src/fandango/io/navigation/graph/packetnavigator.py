@@ -172,7 +172,6 @@ class PacketNavigator(GrammarNavigator):
         self._pruner = BlockedStepPruner(grammar.grammar_settings)
         reduced_rules = self._pruner.prune(state_rules, start_symbol, blocked_steps)
         self._k_paths = KPathTranslation(reduced_rules)
-        self._pruned_k_paths_by_k_path: dict[KPath, list[KPath]] = {}
         super().__init__(
             Grammar(
                 grammar_settings=grammar.grammar_settings,
@@ -282,11 +281,9 @@ class PacketNavigator(GrammarNavigator):
         return len(self._pruned_k_paths(destination_k_path)) != 0
 
     def _pruned_k_paths(self, k_path: KPath) -> list[KPath]:
-        pruned = self._pruned_k_paths_by_k_path.get(k_path)
-        if pruned is None:
-            pruned = self._k_paths.to_pruned_k_paths(self._search_k_path(k_path))
-            self._pruned_k_paths_by_k_path[k_path] = pruned
-        return pruned
+        return self._k_paths.to_pruned_k_paths(
+            StateGrammarConverter.to_state_k_path(k_path, self._packet_symbols)
+        )
 
     def controlflow_trees(
         self, tree: DerivationTree
@@ -343,7 +340,10 @@ class PacketNavigator(GrammarNavigator):
     ) -> bool:
         if len(k_paths) == 0:
             return True
-        packet_k_paths = {self._search_k_path(k_path) for k_path in k_paths}
+        packet_k_paths = {
+            StateGrammarConverter.to_state_k_path(k_path, self._packet_symbols)
+            for k_path in k_paths
+        }
         k = max(1, max(len(k_path) for k_path in k_paths))
         collapsed = self.grammar.collapse(controlflow_tree)
         if collapsed is None:
@@ -446,17 +446,6 @@ class PacketNavigator(GrammarNavigator):
             )
             for record in tree.protocol_msgs()
         )
-
-    def _search_k_path(self, k_path: KPath) -> KPath:
-        search_symbols = []
-        for symbol in k_path:
-            if symbol in self._packet_symbols:
-                search_symbols.append(
-                    StateGrammarConverter.to_packet_non_terminal(symbol)
-                )
-            else:
-                search_symbols.append(symbol)
-        return tuple(search_symbols)
 
     def astar_search_end_including_k_paths(
         self,

@@ -1,7 +1,8 @@
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from typing import Optional
 
 from fandango.errors import FandangoValueError
+from fandango.language.grammar.grammar import KPath
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
@@ -37,6 +38,16 @@ class StateGrammarConverter(NodeVisitor[list[Node], Node]):
         if not isinstance(symbol, NonTerminal) or symbol.name().startswith("<_packet_"):
             return symbol
         return NonTerminal(f"<_packet_{symbol.name()[1:]}")
+
+    @staticmethod
+    def to_state_k_path(k_path: KPath, packet_symbols: Collection[Symbol]) -> KPath:
+        """Translates a k-path of the protocol grammar, with its message symbols, into the state grammar."""
+        return tuple(
+            StateGrammarConverter.to_packet_non_terminal(symbol)
+            if symbol in packet_symbols
+            else symbol
+            for symbol in k_path
+        )
 
     @staticmethod
     def matches_history(

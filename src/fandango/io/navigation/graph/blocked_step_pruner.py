@@ -302,6 +302,7 @@ class KPathTranslation:
             self._instances.setdefault(BlockedStepPruner.original(symbol), []).append(
                 symbol
             )
+        self._pruned_k_paths_by_k_path: dict[KPath, list[KPath]] = {}
 
     def __repr__(self) -> str:
         copies = {
@@ -315,6 +316,13 @@ class KPathTranslation:
         """
         Translates a k-path of the state grammar into those of the pruned grammar.
         """
+        pruned = self._pruned_k_paths_by_k_path.get(k_path)
+        if pruned is None:
+            pruned = self._translate(k_path)
+            self._pruned_k_paths_by_k_path[k_path] = pruned
+        return pruned
+
+    def _translate(self, k_path: KPath) -> list[KPath]:
         paths: list[KPath] = [()]
         for original_symbol in k_path:
             extended_paths: list[KPath] = []
