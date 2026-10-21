@@ -11,6 +11,9 @@ from fandango.io.navigation.graph.grammar_navigator.grammar_graph_converter impo
 )
 from fandango.io.navigation.graph.grammar_navigator.path_search import SearchTarget
 from fandango.io.navigation.graph.grammar_navigator.rule_costs import RuleCosts
+from fandango.io.navigation.graph.grammar_navigator.search_targets import (
+    CostBasedTarget,
+)
 from fandango.io.navigation.graph.packetiterativeparser import (
     NavigatorPacketIterativeParser,
 )
@@ -47,21 +50,22 @@ class SuspectAvoidingTarget(SearchTarget):
 
     def __init__(
         self,
-        target_with: Callable[[RuleCosts], SearchTarget],
+        target: CostBasedTarget,
         costs_without: Callable[[frozenset[PacketNonTerminal]], RuleCosts],
         suspect_predecessors: SuspectPredecessors,
         history_predecessors: frozenset[Predecessor],
     ):
         """
-        target_with builds the target on given costs; costs_without gives the costs with some packets unreachable.
+        target is the target on the unrestricted costs; costs_without gives the costs with some packets unreachable.
         """
-        self._target_with = target_with
+        self._unrestricted_target = target
         self._costs_without = costs_without
         self._suspect_predecessors = suspect_predecessors
         self._tracked_predecessors = frozenset().union(*suspect_predecessors.values())
         self._start_context = history_predecessors & self._tracked_predecessors
-        self._targets_by_avoided: dict[frozenset[PacketNonTerminal], SearchTarget] = {}
-        self._unrestricted_target = self._target_without(frozenset())
+        self._targets_by_avoided: dict[frozenset[PacketNonTerminal], SearchTarget] = {
+            frozenset(): target
+        }
 
     def is_reached(self, node: GrammarGraphNode) -> bool:
         return self._unrestricted_target.is_reached(node)
@@ -91,7 +95,7 @@ class SuspectAvoidingTarget(SearchTarget):
         """The target on costs that count the avoided packets as unreachable."""
         target = self._targets_by_avoided.get(avoided)
         if target is None:
-            target = self._target_with(self._costs_without(avoided))
+            target = self._unrestricted_target.with_costs(self._costs_without(avoided))
             self._targets_by_avoided[avoided] = target
         return target
 
@@ -416,15 +420,13 @@ class PacketNavigator(GrammarNavigator):
         return self.astar_tree_to_any(tree=tree, destination_k_paths=pruned_k_paths)
 
     def _search_target(
-        self,
-        target_with: Callable[[RuleCosts], SearchTarget],
-        tree: Optional[DerivationTree],
+        self, target: CostBasedTarget, tree: Optional[DerivationTree]
     ) -> SearchTarget:
         suspect_predecessors = self._suspect_predecessors()
         if not suspect_predecessors:
-            return target_with(self._costs)
+            return target
         return SuspectAvoidingTarget(
-            target_with,
+            target,
             self._costs_without,
             suspect_predecessors,
             self._predecessors_in(tree),

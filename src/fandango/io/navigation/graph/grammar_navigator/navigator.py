@@ -1,4 +1,4 @@
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Iterable, Sequence
 from typing import Optional
 
 from fandango.errors import FandangoError
@@ -13,6 +13,7 @@ from fandango.io.navigation.graph.grammar_navigator.path_search import (
 from fandango.io.navigation.graph.grammar_navigator.rule_costs import RuleCosts
 from fandango.io.navigation.graph.grammar_navigator.search_targets import (
     AnyTarget,
+    CostBasedTarget,
     KPathTarget,
     RunEndTarget,
 )
@@ -127,35 +128,25 @@ class GrammarNavigator:
     ) -> Optional[list[GrammarGraphNode | None]]:
         """Returns the cheapest path from the end of tree, or from the start symbol, to any of the reachable k-paths."""
         start = self.graph.start if tree is None else self.graph.walk(tree)
-        targets_by_chain = []
+        targets = []
         for k_path, reachability in reachable:
             # The chain of the existing derivation is forbidden only if it matches
             # the k-path in a way that extending the derivation cannot complete.
             forbidden_chain: tuple[Symbol, ...] = ()
             if tree is not None and not reachability.completable_by_extension:
                 forbidden_chain = start.chain()
-            targets_by_chain.append((k_path, forbidden_chain))
-
-        def target_with(costs: RuleCosts) -> SearchTarget:
-            targets = [
-                KPathTarget(k_path, costs, forbidden_chain)
-                for k_path, forbidden_chain in targets_by_chain
-            ]
-            return targets[0] if len(targets) == 1 else AnyTarget(targets)
-
-        path = self._search(start, self._search_target(target_with, tree))
+            targets.append(KPathTarget(k_path, self._costs, forbidden_chain))
+        target: CostBasedTarget = (
+            targets[0] if len(targets) == 1 else AnyTarget(targets)
+        )
+        path = self._search(start, self._search_target(target, tree))
         return None if path is None else list(path)
 
     def _search_target(
-        self,
-        target_with: Callable[[RuleCosts], SearchTarget],
-        tree: Optional[DerivationTree],
+        self, target: CostBasedTarget, tree: Optional[DerivationTree]
     ) -> SearchTarget:
-        """
-        The target as searched from the end of tree, or from the start symbol if tree is None.
-        target_with builds the target on given costs.
-        """
-        return target_with(self._costs)
+        """The target as searched from the end of tree, or from the start symbol if tree is None."""
+        return target
 
     def _path_through_new_run(
         self, tree: Optional[DerivationTree], destination_k_paths: Sequence[KPath]
@@ -186,7 +177,7 @@ class GrammarNavigator:
         if start.is_accepting:
             self._clear_graph()
             return []
-        searched = self._search_target(RunEndTarget, tree)
+        searched = self._search_target(RunEndTarget(self._costs), tree)
         path = self._search(start, searched)
         if path is None and not isinstance(searched, RunEndTarget):
             # Ending the run outweighs avoiding what the searched target rules out
