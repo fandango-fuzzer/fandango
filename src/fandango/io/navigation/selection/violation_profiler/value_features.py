@@ -7,9 +7,9 @@ from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 
-# The last nonterminals above a value that tell where in the message it is
+# How many of the nonterminals above a value locate it in the message
 ANCHOR_LENGTH = 3
-# Values made of literals up to this length count exactly as well
+# The maximum length of a value made of literals that is also abstracted by its exact text
 MAX_EXACT_LENGTH = 8
 
 
@@ -59,7 +59,7 @@ class _ValueSummary(NamedTuple):
         return _ValueSummary(length, frozenset(chars), exact)
 
     def abstractions(self) -> list[ValueAbstraction]:
-        """The value of a subtree from coarse to fine."""
+        """Abstracts the value from coarse to fine."""
         abstractions = [
             ValueAbstraction(
                 "classes",
@@ -97,7 +97,7 @@ class _ValueSummary(NamedTuple):
 
 
 def literals_of(rules: dict[NonTerminal, Node]) -> frozenset[str]:
-    """The texts of the grammar's terminals that are not regular expressions; bits are left out."""
+    """Collects the texts of the grammar's literal terminals."""
     literals = set()
     pending = list(rules.values())
     while pending:
@@ -115,10 +115,7 @@ def literals_of(rules: dict[NonTerminal, Node]) -> frozenset[str]:
 def value_features(
     message: DerivationTree, literals: frozenset[str]
 ) -> frozenset[tuple[tuple[str, ...], ValueAbstraction]]:
-    """
-    Coarse to fine abstractions of the values in the message, each tied to where in the message the value occurs.
-    The exact text of a value counts only if it is made of literals.
-    """
+    """Abstracts each value in the message from coarse to fine, tied to where in the message it occurs."""
     features: set[tuple[tuple[str, ...], ValueAbstraction]] = set()
     summaries: dict[int, _ValueSummary] = {}
     stack: list[tuple[DerivationTree, tuple[str, ...], bool]] = [(message, (), False)]
@@ -146,7 +143,7 @@ def value_features(
 
 
 def _anchor_name(node: DerivationTree) -> Optional[str]:
-    """The name of a nonterminal of the grammar, None for terminals and control flow."""
+    """Returns the name of the node if it is a nonterminal of the grammar."""
     if not isinstance(node.symbol, NonTerminal):
         return None
     name = node.symbol.name()

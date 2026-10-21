@@ -358,7 +358,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
 
     def _record_violation(self, violation: Exception, reason: str) -> None:
         """Records a violation that aborts the current session. Raises it instead if throw_on_violation is set."""
-        self._violation_profile.observe_violation(self._protocol_tree, violation)
+        if isinstance(violation, FandangoRemoteViolation):
+            self._violation_profile.observe_violation(self._protocol_tree, violation)
         self.violations.append((self._protocol_tree, violation))
         if self.throw_on_violation:
             raise violation
