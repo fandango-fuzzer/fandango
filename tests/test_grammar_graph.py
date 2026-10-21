@@ -75,7 +75,8 @@ class TestGrammarGraph(unittest.TestCase):
             )
 
         path = navigator.astar_tree(
-            tree=tree_to_continue, destination_k_path=(NonTerminal("<paff>"),)
+            controlflow_tree=tree_to_continue,
+            destination_k_path=(NonTerminal("<paff>"),),
         )
 
         path_iter: list[GrammarGraphNode | None] = path or []
@@ -90,7 +91,7 @@ class TestGrammarGraph(unittest.TestCase):
     def test_k_path_repeating_a_state_is_found(self):
         grammar = self.get_grammar(RESOURCES_ROOT / "navigation_io.fan")
         navigator = GrammarNavigator(grammar)
-        path = navigator.astar_tree_w_controlflow(
+        path = navigator.astar_tree(
             destination_k_path=(
                 NonTerminal("<start>"),
                 NonTerminal("<test>"),
@@ -190,7 +191,7 @@ class TestGrammarGraph(unittest.TestCase):
         grammar = self.get_grammar(RESOURCES_ROOT / "minimal_io.fan")
         navigator = GrammarNavigator(grammar)
         with self.assertRaises(FandangoError):
-            navigator.astar_tree_w_controlflow(
+            navigator.astar_tree(
                 destination_k_path=(NonTerminal("<start>"), NonTerminal("<start>"))
             )
 
@@ -382,7 +383,9 @@ class Server(FandangoParty):
         self.assertTrue(result.completable_by_extension)
 
         navigator = PacketNavigator(grammar, NonTerminal("<start>"))
-        path = navigator.astar_tree(tree=hist_tree, destination_k_path=dest_k_path)
+        path = navigator.astar_tree(
+            controlflow_tree=hist_tree, destination_k_path=dest_k_path
+        )
         self.assertIsNotNone(path)
 
 

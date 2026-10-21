@@ -392,7 +392,7 @@ class PacketNavigator(GrammarNavigator):
         found_trees = self._trees_including_k_paths(included_k_paths, tree)
         for suggested_tree, _is_complete in found_trees:
             path = self.astar_tree(
-                tree=suggested_tree, destination_k_path=destination_k_path
+                controlflow_tree=suggested_tree, destination_k_path=destination_k_path
             )
             if path is None:
                 continue
@@ -417,13 +417,16 @@ class PacketNavigator(GrammarNavigator):
     def astar_tree(
         self,
         *,
-        tree: DerivationTree,
+        controlflow_tree: Optional[DerivationTree] = None,
         destination_k_path: KPath,
     ) -> Optional[list[GrammarGraphNode | None]]:
+        """Returns the cheapest path to the k-path, translated into the state grammar without the blocked steps."""
         pruned_k_paths = self._pruned_k_paths(destination_k_path)
         if not pruned_k_paths:
             return None
-        return self.astar_tree_to_any(tree=tree, destination_k_paths=pruned_k_paths)
+        return self._astar_tree_to_any(
+            tree=controlflow_tree, destination_k_paths=pruned_k_paths
+        )
 
     def _search_target(
         self, target: CostBasedTarget, tree: Optional[DerivationTree]
