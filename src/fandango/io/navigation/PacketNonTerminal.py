@@ -1,6 +1,7 @@
 from typing import Any, Optional
 
 from fandango.language.symbols.non_terminal import NonTerminal
+from fandango.language.tree import DerivationTree
 
 
 class PacketNonTerminal:
@@ -10,6 +11,10 @@ class PacketNonTerminal:
         self.sender = sender
         self.recipient = recipient
         self.symbol = symbol
+
+    @classmethod
+    def of_message(cls, message: DerivationTree) -> "PacketNonTerminal":
+        return cls(message.sender, message.recipient, message.nonterminal)
 
     def __repr__(self) -> str:
         non_terminal_str = str(self.symbol)

@@ -1,4 +1,4 @@
-from collections.abc import Hashable, Iterable
+from collections.abc import Iterable
 from typing import NamedTuple, Optional
 
 from fandango.errors import FandangoConversionError
@@ -13,10 +13,35 @@ ANCHOR_LENGTH = 3
 MAX_EXACT_LENGTH = 8
 
 
+class ValueAbstraction(NamedTuple):
+    # "classes", "length", "char" or "exact"
+    kind: str
+    value: tuple[str, ...] | int | str
+
+    def describe(self) -> str:
+        if self.kind == "classes":
+            assert isinstance(self.value, tuple)
+            return "+".join(self.value) or "empty"
+        if self.kind == "length":
+            assert isinstance(self.value, int)
+            return f"length < {2**self.value}" if self.value else "length 0"
+        if self.kind == "char":
+            return f"with {self.value!r}"
+        return f"= {self.value!r}"
+
+
 class _ValueSummary(NamedTuple):
     length: int
     chars: frozenset[str]
     exact_text: Optional[str]
+
+    @staticmethod
+    def of_leaf(leaf: DerivationTree, literals: frozenset[str]) -> "_ValueSummary":
+        if not leaf.symbol.is_terminal:
+            return _ValueSummary(0, frozenset(), "")
+        text = leaf.to_string()
+        exact = text if len(text) <= MAX_EXACT_LENGTH and text in literals else None
+        return _ValueSummary(len(text), frozenset(text), exact)
 
     @staticmethod
     def concatenate(parts: Iterable["_ValueSummary"]) -> "_ValueSummary":
@@ -33,19 +58,22 @@ class _ValueSummary(NamedTuple):
             )
         return _ValueSummary(length, frozenset(chars), exact)
 
-    def abstractions(self) -> list[Hashable]:
+    def abstractions(self) -> list[ValueAbstraction]:
         """The value of a subtree from coarse to fine."""
-        abstractions: list[Hashable] = [
-            ("classes", tuple(sorted({self._char_class(char) for char in self.chars}))),
-            ("length", self.length.bit_length()),
+        abstractions = [
+            ValueAbstraction(
+                "classes",
+                tuple(sorted({self._char_class(char) for char in self.chars})),
+            ),
+            ValueAbstraction("length", self.length.bit_length()),
         ]
         abstractions.extend(
-            ("char", char)
+            ValueAbstraction("char", char)
             for char in sorted(self.chars)
             if not char.isalnum() and ord(char) < 0x80
         )
         if self.exact_text is not None:
-            abstractions.append(("exact", self.exact_text))
+            abstractions.append(ValueAbstraction("exact", self.exact_text))
         return abstractions
 
     @staticmethod
@@ -86,18 +114,18 @@ def literals_of(rules: dict[NonTerminal, Node]) -> frozenset[str]:
 
 def value_features(
     message: DerivationTree, literals: frozenset[str]
-) -> frozenset[tuple[tuple[str, ...], Hashable]]:
+) -> frozenset[tuple[tuple[str, ...], ValueAbstraction]]:
     """
     Coarse to fine abstractions of the values in the message, each tied to where in the message the value occurs.
     The exact text of a value counts only if it is made of literals.
     """
-    features: set[tuple[tuple[str, ...], Hashable]] = set()
+    features: set[tuple[tuple[str, ...], ValueAbstraction]] = set()
     summaries: dict[int, _ValueSummary] = {}
     stack: list[tuple[DerivationTree, tuple[str, ...], bool]] = [(message, (), False)]
     while stack:
         node, anchor, children_done = stack.pop()
         if not node.children:
-            summaries[id(node)] = _leaf_summary(node, literals)
+            summaries[id(node)] = _ValueSummary.of_leaf(node, literals)
             continue
         if not children_done:
             name = _anchor_name(node)
@@ -117,29 +145,9 @@ def value_features(
     return frozenset(features)
 
 
-def describe_abstraction(abstraction: Hashable) -> str:
-    assert isinstance(abstraction, tuple)
-    kind, value = abstraction
-    if kind == "classes":
-        return "+".join(value) or "empty"
-    if kind == "length":
-        return f"length < {2**value}" if value else "length 0"
-    if kind == "char":
-        return f"with {value!r}"
-    return f"= {value!r}"
-
-
 def _anchor_name(node: DerivationTree) -> Optional[str]:
     """The name of a nonterminal of the grammar, None for terminals and control flow."""
     if not isinstance(node.symbol, NonTerminal):
         return None
     name = node.symbol.name()
     return None if name.startswith("<__") else name
-
-
-def _leaf_summary(leaf: DerivationTree, literals: frozenset[str]) -> _ValueSummary:
-    if not leaf.symbol.is_terminal:
-        return _ValueSummary(0, frozenset(), "")
-    text = leaf.to_string()
-    exact = text if len(text) <= MAX_EXACT_LENGTH and text in literals else None
-    return _ValueSummary(len(text), frozenset(text), exact)

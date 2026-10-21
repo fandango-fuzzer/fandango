@@ -9,7 +9,6 @@ from fandango.io.navigation.graph.packetnavigator import (
 )
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.selection.violation_profiler.value_features import (
-    describe_abstraction,
     value_features,
 )
 from fandango.io.violation import FandangoRemoteViolation
@@ -25,6 +24,18 @@ class _Feature(NamedTuple):
     predecessor: Optional[Predecessor]
     detail: Hashable
 
+    @property
+    def source(self) -> tuple[bool, Optional[Predecessor]]:
+        """What the feature tells about: an earlier packet type, the message's own content or an earlier message's."""
+        return self.kind == "packet", self.predecessor
+
+    @property
+    def complexity(self) -> int:
+        """0 for a packet type, 1 for the message's own content, 2 for the content of an earlier message."""
+        if self.kind == "packet":
+            return 0
+        return 1 if self.predecessor is None else 2
+
     def describe(self) -> str:
         what = None
         if self.kind == "path":
@@ -33,7 +44,7 @@ class _Feature(NamedTuple):
         elif self.kind == "value":
             assert isinstance(self.detail, tuple)
             anchor, abstraction = self.detail
-            what = f"{'/'.join(anchor)} {describe_abstraction(abstraction)}"
+            what = f"{'/'.join(anchor)} {abstraction.describe()}"
         if self.predecessor is None:
             assert what is not None
             return what
@@ -221,10 +232,7 @@ class ViolationProfile:
         whose suspect features name the message as predecessor with its content. The message must be mounted in its
         session.
         """
-        assert message.sender is not None
-        packet_type = PacketNonTerminal(
-            message.sender, message.recipient, message.nonterminal
-        )
+        packet_type = PacketNonTerminal.of_message(message)
         content = self._content_features(message)
         suspects = self._suspect_features(packet_type)
         if suspects:
@@ -232,7 +240,7 @@ class ViolationProfile:
             for violation_kind, suspect_features in suspects.items():
                 if features & suspect_features:
                     return Suspicion(packet_type, violation_kind)
-        predecessor = (message.sender, packet_type.symbol.name())
+        predecessor = self._predecessor_of(message)
         as_predecessor = frozenset(
             feature._replace(predecessor=predecessor) for feature in content
         )
@@ -308,17 +316,15 @@ class ViolationProfile:
         )
         return paths | values
 
-    def _history_features(
-        self, history: list[tuple[str, DerivationTree]]
-    ) -> frozenset[_Feature]:
+    def _history_features(self, history: list[DerivationTree]) -> frozenset[_Feature]:
         """The features of the messages before a message: their packet types and their content."""
-        hashes = tuple(hash(message) for _, message in history)
+        hashes = tuple(hash(message) for message in history)
         features: frozenset[_Feature] = frozenset()
-        for index, (sender, message) in enumerate(history):
+        for index, message in enumerate(history):
             prefix = hashes[: index + 1]
             cached = self._history_features_by_prefix.get(prefix)
             if cached is None:
-                predecessor = (sender, message.nonterminal.name())
+                predecessor = self._predecessor_of(message)
                 cached = (
                     features
                     | {_Feature("packet", predecessor, None)}
@@ -341,26 +347,27 @@ class ViolationProfile:
         )
 
     @staticmethod
-    def _messages_before(message: DerivationTree) -> list[tuple[str, DerivationTree]]:
+    def _messages_before(message: DerivationTree) -> list[DerivationTree]:
         session = message.get_root()
         earlier = []
         for record in session.protocol_msgs():
             if record.msg is message:
                 break
-            earlier.append((record.sender, record.msg))
+            earlier.append(record.msg)
         return earlier
+
+    @staticmethod
+    def _predecessor_of(message: DerivationTree) -> Predecessor:
+        """The message as an earlier packet of a later one: its sender and symbol."""
+        assert message.sender is not None
+        return message.sender, message.nonterminal.name()
 
     def _last_fuzzer_message(
         self, session_tree: DerivationTree
     ) -> Optional[tuple[PacketNonTerminal, DerivationTree]]:
         for record in session_tree.protocol_msgs(reverse=True):
             if self._is_fuzzer_party(record.sender):
-                return (
-                    PacketNonTerminal(
-                        record.sender, record.recipient, record.msg.nonterminal
-                    ),
-                    record.msg,
-                )
+                return PacketNonTerminal.of_message(record.msg), record.msg
         return None
 
     def _suspect_features(
@@ -446,13 +453,12 @@ class ViolationProfile:
         for feature, score in ranked:
             if feature.kind != "packet" and feature.predecessor in suspect_predecessors:
                 continue
-            source = (feature.kind == "packet", feature.predecessor)
-            by_source.setdefault(source, []).append((feature, score))
+            by_source.setdefault(feature.source, []).append((feature, score))
         sources = sorted(
             by_source.values(),
             key=lambda features: (
                 -max(score for _, score in features),
-                self._complexity(features[0][0]),
+                features[0][0].complexity,
             ),
         )
         explaining = []
@@ -469,10 +475,3 @@ class ViolationProfile:
                 explained |= covered
         explaining.sort(key=lambda ranked_feature: -ranked_feature[1])
         return explaining
-
-    @staticmethod
-    def _complexity(feature: _Feature) -> int:
-        """0 for a packet type, 1 for the message's own content, 2 for the content of an earlier message."""
-        if feature.kind == "packet":
-            return 0
-        return 1 if feature.predecessor is None else 2
