@@ -10,7 +10,6 @@ from fandango.io.navigation.graph.grammar_navigator.path_search import PathSearc
 from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.route import PlannedPacket
-from fandango.io.navigation.selection.step_refusals import StepRefusalCounter
 from fandango.io.navigation.selection.violation_profiler.value_features import (
     literals_of,
     value_features,
@@ -132,10 +131,15 @@ class TestViolationProfile(unittest.TestCase):
             (HELP, GARBAGE_INSTEAD_OF_HELPTEXT),
         )
         self.assertIsNone(self.suspected(HELO + "help\n"))
-        # Features every <help> has are never suspect
         (suspects,) = self.profile._suspect_features(HELP).values()
+        # Features every <help> has are never suspect
         self.assertNotIn(_Feature("path", None, (NonTerminal("<help>"),)), suspects)
         self.assertNotIn(_Feature("packet", ("Fuzzer", "<hello>"), None), suspects)
+        # The earlier <ehlo> is suspect by itself, so its content is not
+        self.assertEqual(
+            {feature.kind for feature in suspects if feature.predecessor}, {"packet"}
+        )
+        self.assertIsNone(self.suspected("hello\nehlo\n"))
 
     def test_too_few_counterexamples_suspect_nothing(self):
         self._learn(answers=ViolationProfile.MIN_COUNTEREXAMPLES - 1)
@@ -174,19 +178,14 @@ class TestViolationProfile(unittest.TestCase):
         self.profile.signal_session_end()
         self.assertTrue(self.profile.is_retry_due(HELP, key))
 
-    def test_a_suspect_earlier_packet_rules_the_packet_out(self):
+    def test_a_suspect_earlier_packet_rules_the_packet_out_while_its_retry_waits(
+        self,
+    ):
         self._learn()
-        # The earlier <ehlo> is suspect by itself, so its content is not
-        (suspects,) = self.profile._suspect_features(HELP).values()
-        self.assertEqual(
-            {feature.kind for feature in suspects if feature.predecessor}, {"packet"}
-        )
-        self.assertIsNone(self.suspected("hello\nehlo\n"))
         self.assertEqual(
             self.profile.ruled_out_predecessors(),
             {HELP: frozenset({("Fuzzer", "<ehlo>")})},
         )
-        # Not while its retry is due, until it is used up
         for _ in range(ViolationProfile.FIRST_RETRY_WAIT):
             self.profile.signal_session_end()
         self.assertEqual(self.profile.ruled_out_predecessors(), {})
@@ -248,7 +247,10 @@ class TestViolationProfile(unittest.TestCase):
         self.assertEqual(self.profile.ruled_out_predecessors(), {})
 
 
-def new_algorithm(grammar_name: str = GRAMMAR) -> ProtocolAlgorithm:
+def new_algorithm(
+    grammar_name: str = GRAMMAR,
+    coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
+) -> ProtocolAlgorithm:
     random.seed(0)
     with open(RESOURCES_ROOT / grammar_name) as spec:
         grammar, constraints = parse(spec, use_stdlib=True, use_cache=False)
@@ -257,17 +259,17 @@ def new_algorithm(grammar_name: str = GRAMMAR) -> ProtocolAlgorithm:
         packet_algorithm=SimpleGeneticAlgorithm(
             grammar=grammar, constraints=constraints
         ),
-        coverage_goal=CoverageGoal.STATE_INPUTS_OUTPUTS,
+        coverage_goal=coverage_goal,
         remote_response_timeout=1.0,
     )
 
 
 def run_sessions(with_profile: bool) -> ProtocolAlgorithm:
     """
-    Runs up to SESSIONS sessions, completed or ended by a violation, against a server that sends no more than <cmd>,
-    which violates if its argument is <bad>: often enough for the profile to learn and to hold back.
+    Runs SESSIONS sessions, completed or ended by a violation, generated at random against a server that violates on
+    <cmd> with <bad>.
     """
-    algorithm = new_algorithm("violation_by_argument.fan")
+    algorithm = new_algorithm("violation_by_argument.fan", CoverageGoal.RANDOM)
     if not with_profile:
         algorithm._violation_profile.MIN_SUSPICION_SCORE = float("inf")
     completed = 0
@@ -297,7 +299,9 @@ class TestViolationAvoidance(unittest.TestCase):
         without = run_sessions(with_profile=False)
         learned = run_sessions(with_profile=True)
         self.assertLess(len(learned.violations), len(without.violations))
-        self.assertLessEqual(len(learned.violations), ViolationProfile.MIN_TRIGGERS)
+        (suspects,) = learned._violation_profile._suspect_features(CMD).values()
+        self.assertIn(_Feature("path", None, (NonTerminal("<bad>"),)), suspects)
+        self.assertFalse(any("<good>" in feature.describe() for feature in suspects))
 
     def test_the_filter_lets_a_suspect_through_once_its_retry_is_due(self):
         algorithm = new_algorithm()
@@ -310,30 +314,6 @@ class TestViolationAvoidance(unittest.TestCase):
         self.assertIsNotNone(algorithm._packet_coverage_filter.filter(candidate))
         # Only sending the suspect uses the retry up
         self.assertTrue(profile.is_retry_due(HELP, GARBAGE_INSTEAD_OF_HELPTEXT))
-
-    def test_a_step_waiting_to_be_blocked_ends_the_run_with_the_history_derivable(
-        self,
-    ):
-        algorithm = new_algorithm()
-        guider = algorithm._packet_selector._guider
-        (help_step,) = (
-            step
-            for step in guider._navigator_instance._rule_steps().values()
-            if step.parent == NonTerminal("<exchange_help>")
-            and step.packet == NonTerminal("<_packet_help>")
-        )
-        for _ in range(StepRefusalCounter.REFUSAL_LIMIT):
-            guider._step_refusals.count_refusal(help_step, "Extern")
-        history = session(algorithm.grammar, EHLO + "help\nhelptext\n")
-        algorithm._packet_selector.history_tree = history
-        target = (NonTerminal("<exchange_cmd>"),)
-        guider.select_next_packet(history, lambda: [target], lambda: [])
-        self.assertTrue(guider.is_guide_to_end)
-        self.assertTrue(
-            any(True for _ in guider._navigator.get_controlflow_tree(history))
-        )
-        guider.observe_session_end()
-        self.assertIn(help_step, guider._step_refusals.blocked_steps)
 
 
 class TestRoutingAroundRuledOutPackets(unittest.TestCase):

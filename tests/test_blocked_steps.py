@@ -107,6 +107,45 @@ class TestUnansweredStep(unittest.TestCase):
         self.assertTrue(any(ok_after_a in blocked for blocked in blocked_per_session))
 
 
+class TestStepWaitingToBeBlocked(unittest.TestCase):
+    def test_the_run_ends_with_the_history_derivable(self):
+        random.seed(0)
+        with open(RESOURCES_ROOT / "violation_profile.fan") as spec:
+            grammar, constraints = parse(spec, use_stdlib=True, use_cache=False)
+        assert grammar is not None
+        algorithm = ProtocolAlgorithm(
+            packet_algorithm=SimpleGeneticAlgorithm(
+                grammar=grammar, constraints=constraints
+            ),
+            coverage_goal=CoverageGoal.STATE_INPUTS_OUTPUTS,
+            remote_response_timeout=1.0,
+        )
+        guider = algorithm._packet_selector._guider
+        (help_step,) = (
+            step
+            for step in guider._navigator_instance._rule_steps().values()
+            if step.parent == NonTerminal("<exchange_help>")
+            and step.packet == NonTerminal("<_packet_help>")
+        )
+        for _ in range(StepRefusalCounter.REFUSAL_LIMIT):
+            guider._step_refusals.count_refusal(help_step, "Extern")
+        history = grammar.parse(
+            "hello\nehlo\nok\nhelp\nhelptext\n",
+            mode=ParsingMode.INCOMPLETE,
+            include_controlflow=True,
+        )
+        assert history is not None
+        algorithm._packet_selector.history_tree = history
+        target = (NonTerminal("<exchange_cmd>"),)
+        guider.select_next_packet(history, lambda: [target], lambda: [])
+        self.assertTrue(guider.is_guide_to_end)
+        self.assertTrue(
+            any(True for _ in guider._navigator.get_controlflow_tree(history))
+        )
+        guider.observe_session_end()
+        self.assertIn(help_step, guider._step_refusals.blocked_steps)
+
+
 class TestStep(unittest.TestCase):
     PATH = (
         NonTerminal("<start>"),
