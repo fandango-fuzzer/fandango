@@ -280,9 +280,9 @@ class PacketNavigator(GrammarNavigator):
             return True
         return len(self._pruned_k_paths(destination_k_path)) != 0
 
-    def _pruned_k_paths(self, k_path: KPath) -> list[KPath]:
+    def _pruned_k_paths(self, spec_k_path: KPath) -> list[KPath]:
         return self._k_paths.to_pruned_k_paths(
-            StateGrammarConverter.to_state_k_path(k_path, self._packet_symbols)
+            StateGrammarConverter.to_state_k_path(spec_k_path, self._packet_symbols)
         )
 
     def controlflow_trees(
@@ -336,12 +336,7 @@ class PacketNavigator(GrammarNavigator):
         if collapsed is None:
             return False
         covered_k_paths = {
-            tuple(
-                self._pruner.original(symbol)
-                if isinstance(symbol, NonTerminal)
-                else symbol
-                for symbol in k_path
-            )
+            self._k_paths.to_state_k_path(k_path)
             for k_path in self.grammar._extract_k_paths_from_tree(collapsed, k)
         }
         return packet_k_paths <= covered_k_paths
