@@ -73,8 +73,9 @@ class Suspicion(NamedTuple):
     violation_kind: ViolationKind
 
 
-# Position in the session, sender, packet symbol and content hash: a message's identity across mounted copies
-_MessageIdentity = tuple[int, str, str, int]
+# Position in the session, sender, packet symbol and content hash.
+# Tells mounted copies of the same answered message apart from other messages
+_AnswerKey = tuple[int, str, str, int]
 
 
 class _FeatureCounts:
@@ -95,9 +96,18 @@ class _FeatureCounts:
 class _RetrySchedule:
     """When a suspect message of one kind may be sent again, to see whether it still causes the violation."""
 
-    def __init__(self, first_wait: int) -> None:
+    def __init__(self, now: int, first_wait: int) -> None:
+        """now is the number of sessions ended so far."""
         self.wait_sessions = first_wait
-        self.due_at_session = 0
+        self.due_at_session = now + first_wait
+
+    def is_due(self, now: int) -> bool:
+        return now >= self.due_at_session
+
+    def postpone(self, now: int, max_wait: int) -> None:
+        """Doubles the wait, up to max_wait, and starts it now."""
+        self.wait_sessions = min(max_wait, 2 * self.wait_sessions)
+        self.due_at_session = now + self.wait_sessions
 
 
 class ViolationProfile:
@@ -143,7 +153,7 @@ class ViolationProfile:
         self._last_logged_suspects: dict[
             tuple[PacketNonTerminal, ViolationKind], str
         ] = {}
-        self._last_counted_answer: Optional[_MessageIdentity] = None
+        self._last_counted_answer: Optional[_AnswerKey] = None
         # The features of the messages before a message, per prefix of the session
         self._history_features_by_prefix: dict[
             tuple[int, ...], frozenset[_Feature]
@@ -196,10 +206,10 @@ class ViolationProfile:
         packet_type, message = sent
         if packet_type not in self._violation_kinds_by_packet_type:
             return
-        identity = self._identity_of(message, self._messages_before(message))
-        if identity == self._last_counted_answer:
+        answer_key = self._answer_key_of(message)
+        if answer_key == self._last_counted_answer:
             return
-        self._last_counted_answer = identity
+        self._last_counted_answer = answer_key
         self._counterexample_counts.setdefault(
             packet_type, _FeatureCounts()
         ).add_message(self._features_in_session(message))
@@ -234,28 +244,30 @@ class ViolationProfile:
                     return Suspicion(later_type, violation_kind)
         return None
 
+    def should_withhold(self, message: DerivationTree) -> bool:
+        """
+        True if the message confirms a suspicion whose retry is not due. The message must be mounted in its session.
+        """
+        suspicion = self.suspicion_of(message)
+        return suspicion is not None and not self.is_retry_due(*suspicion)
+
     def is_retry_due(
         self, packet_type: PacketNonTerminal, violation_kind: ViolationKind
     ) -> bool:
         """
-        True once the wait for this suspect is over. The first call starts the wait; the retry is used up only by
-        consume_retry, when a suspect is actually sent.
+        True once the wait for this suspect is over, which starts when the suspicion arises. False for what was never
+        suspected. The retry is used up only by consume_retry, when a suspect is actually sent.
         """
-        retry = self._retry_schedules.setdefault(
-            (packet_type, violation_kind), _RetrySchedule(self.FIRST_RETRY_WAIT)
-        )
-        if retry.due_at_session == 0:
-            retry.due_at_session = self._sessions_ended + retry.wait_sessions
-            return False
-        return self._sessions_ended >= retry.due_at_session
+        schedule = self._retry_schedules.get((packet_type, violation_kind))
+        return schedule is not None and schedule.is_due(self._sessions_ended)
 
     def consume_retry(
         self, packet_type: PacketNonTerminal, violation_kind: ViolationKind
     ) -> None:
         """Uses up the due retry of a suspect that is sent now; the next wait is twice as long."""
-        retry = self._retry_schedules[(packet_type, violation_kind)]
-        retry.wait_sessions = min(self.MAX_RETRY_WAIT, 2 * retry.wait_sessions)
-        retry.due_at_session = self._sessions_ended + retry.wait_sessions
+        self._retry_schedules[(packet_type, violation_kind)].postpone(
+            self._sessions_ended, self.MAX_RETRY_WAIT
+        )
         log_guidance_hint(
             f"Trying {packet_type} again, suspected to cause {violation_kind.describe()}."
         )
@@ -319,12 +331,10 @@ class ViolationProfile:
             features = cached
         return features
 
-    @staticmethod
-    def _identity_of(
-        message: DerivationTree, history: list[tuple[str, DerivationTree]]
-    ) -> _MessageIdentity:
+    @classmethod
+    def _answer_key_of(cls, message: DerivationTree) -> _AnswerKey:
         return (
-            len(history),
+            len(cls._messages_before(message)),
             str(message.sender),
             message.nonterminal.name(),
             hash(message),
@@ -371,6 +381,10 @@ class ViolationProfile:
                         feature for feature, _ in ranked
                     )
                     self._log_suspect_features(packet_type, violation_kind, ranked)
+                    if (packet_type, violation_kind) not in self._retry_schedules:
+                        self._retry_schedules[(packet_type, violation_kind)] = (
+                            _RetrySchedule(self._sessions_ended, self.FIRST_RETRY_WAIT)
+                        )
             self._suspect_cache[packet_type] = suspects
         return suspects
 

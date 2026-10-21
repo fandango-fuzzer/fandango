@@ -160,9 +160,12 @@ class TestViolationProfile(unittest.TestCase):
         key = GARBAGE_INSTEAD_OF_HELPTEXT
         first_wait = ViolationProfile.FIRST_RETRY_WAIT
         self.assertFalse(self.profile.is_retry_due(HELP, key))
+        self._learn()
+        # The wait starts once the suspicion arises
+        self.assertIsNotNone(self.suspected(self.AFTER_EHLO))
         for _ in range(first_wait - 1):
             self.profile.signal_session_end()
-        self.assertFalse(self.profile.is_retry_due(HELP, key))
+            self.assertFalse(self.profile.is_retry_due(HELP, key))
         self.profile.signal_session_end()
         self.assertTrue(self.profile.is_retry_due(HELP, key))
         self.profile.consume_retry(HELP, key)
