@@ -145,7 +145,7 @@ class TestGrammarGraph(unittest.TestCase):
             if step.parent == NonTerminal("<greeted>")
             and step.packet == NonTerminal("<_packet_quit>")
         )
-        navigator = navigator.gen_with_blocked_steps(frozenset({quit_step}))
+        navigator = navigator.with_blocked_steps(frozenset({quit_step}))
         navigator.set_message_cost(1)
         tree = grammar.parse(
             "hello\n", mode=ParsingMode.INCOMPLETE, include_controlflow=True

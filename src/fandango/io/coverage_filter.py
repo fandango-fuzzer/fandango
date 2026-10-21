@@ -6,7 +6,7 @@ from fandango.io.navigation.selection.coverage_tracker import (
     CoverageTracker,
     KPathCounts,
 )
-from fandango.io.navigation.selection.violation_profiler.violation_profile import (
+from fandango.io.navigation.selection.violation_profiler.violation_profiler import (
     ViolationProfiler,
 )
 from fandango.language.grammar.grammar import KPath

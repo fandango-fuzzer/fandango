@@ -1,4 +1,4 @@
-from collections.abc import Callable, Generator, Hashable
+from collections.abc import Generator, Hashable
 from typing import Optional
 
 from fandango.io.navigation.graph.blocked_step_pruner import (
@@ -150,31 +150,14 @@ class PacketNavigator(GrammarNavigator):
         grammar: Grammar,
         start_symbol: Optional[NonTerminal] = None,
         blocked_steps: frozenset[Step] = frozenset(),
-        state_rules: Optional[dict[NonTerminal, Node]] = None,
-        packet_symbols: Optional[set[NonTerminal]] = None,
-        step_costs: Callable[[], dict[Step, int]] = dict,
-        suspect_predecessors: Callable[[], SuspectPredecessors] = dict,
     ):
-        """
-        Navigates the state grammar of the grammar, around the blocked steps.
-        state_rules is that state grammar and packet_symbols are the grammar's message symbols.
-        step_costs gives the costs that packet steps, as in their calling rule, add to their message.
-        suspect_predecessors gives per packet type the earlier packets, as sender and symbol, after which no route
-        sends it in the same run.
-        """
+        """Navigates the state grammar of the grammar, around the blocked steps."""
         if start_symbol is None:
             start_symbol = NonTerminal("<start>")
-        if state_rules is None:
-            state_rules = StateGrammarConverter(grammar.grammar_settings).process(
-                grammar.rules, start_symbol
-            )
-        if packet_symbols is None:
-            packet_symbols = {
-                message.symbol
-                for message in grammar.get_protocol_messages(start_symbol)
-            }
+        state_rules = StateGrammarConverter(grammar.grammar_settings).process(
+            grammar.rules, start_symbol
+        )
         self._protocol_grammar = grammar
-        self._state_rules = state_rules
         self._references = RuleRecursionTester(state_rules)
         self.blocked_steps = blocked_steps
         self._history_of_contained_k_paths: tuple[
@@ -195,29 +178,42 @@ class PacketNavigator(GrammarNavigator):
             ),
             start_symbol,
         )
-        self._packet_symbols = packet_symbols
-        self._step_costs = step_costs
-        self._suspect_predecessors = suspect_predecessors
-        self._seen_step_costs: dict[Step, int] = {}
+        self._packet_symbols = {
+            message.symbol for message in grammar.get_protocol_messages(start_symbol)
+        }
+        self._step_costs: dict[Step, int] = {}
+        self._suspect_predecessors: SuspectPredecessors = {}
         self._rule_step_by_node_id = self._rule_steps()
         self._message_nodes_by_packet_type = self._message_nodes()
         self._step_cost_by_node_id: dict[int, int] = {}
         self._parser = NavigatorPacketIterativeParser(reduced_rules)
         self.set_message_cost(1)
 
-    def gen_with_blocked_steps(
-        self, blocked_steps: frozenset[Step]
-    ) -> "PacketNavigator":
-        """Returns a new navigator for the same grammar that routes around the blocked steps."""
-        return PacketNavigator(
-            self._protocol_grammar,
-            self._start_symbol,
-            blocked_steps,
-            self._state_rules,
-            self._packet_symbols,
-            self._step_costs,
-            self._suspect_predecessors,
+    def with_blocked_steps(self, blocked_steps: frozenset[Step]) -> "PacketNavigator":
+        """Returns the same navigator routing around the blocked steps."""
+        navigator = PacketNavigator(
+            self._protocol_grammar, self._start_symbol, blocked_steps
         )
+        navigator.set_step_costs(self._step_costs)
+        navigator.set_suspect_predecessors(self._suspect_predecessors)
+        return navigator
+
+    def set_step_costs(self, costs: dict[Step, int]) -> None:
+        """Sets the costs that packet steps, as in their calling rule, add to their message."""
+        if costs != self._step_costs:
+            self._step_costs = costs
+            self._step_cost_by_node_id = {
+                node_id: costs[step]
+                for node_id, step in self._rule_step_by_node_id.items()
+                if step in costs
+            }
+            self._costs.clear()
+
+    def set_suspect_predecessors(
+        self, suspect_predecessors: SuspectPredecessors
+    ) -> None:
+        """Sets per packet type the earlier packets after which routes avoid sending it."""
+        self._suspect_predecessors = suspect_predecessors
 
     def _rule_steps(self) -> dict[int, Step]:
         """Maps the id of each packet node in the rules to its step as in its calling rule."""
@@ -251,18 +247,6 @@ class PacketNavigator(GrammarNavigator):
             elif not isinstance(node, NonTerminalNode):
                 pending.extend(node.children())
         return {packet_type: frozenset(ids) for packet_type, ids in nodes.items()}
-
-    def _update_step_costs(self) -> None:
-        """Reads the step costs. Clears the distances if they changed."""
-        costs = self._step_costs()
-        if costs != self._seen_step_costs:
-            self._seen_step_costs = costs
-            self._step_cost_by_node_id = {
-                node_id: costs[step]
-                for node_id, step in self._rule_step_by_node_id.items()
-                if step in costs
-            }
-            self._costs.clear()
 
     def _message_cost_of(self, node: Node) -> int:
         return super()._message_cost_of(node) + self._step_cost_by_node_id.get(
@@ -432,7 +416,6 @@ class PacketNavigator(GrammarNavigator):
         tree: DerivationTree,
         destination_k_path: KPath,
     ) -> Optional[list[GrammarGraphNode | None]]:
-        self._update_step_costs()
         pruned_k_paths = self._pruned_k_paths(destination_k_path)
         if not pruned_k_paths:
             return None
@@ -441,14 +424,13 @@ class PacketNavigator(GrammarNavigator):
     def _search_target(
         self, target: CostBasedTarget, tree: Optional[DerivationTree]
     ) -> SearchTarget:
-        suspect_predecessors = self._suspect_predecessors()
-        if not suspect_predecessors:
+        if not self._suspect_predecessors:
             return target
         return SuspectAvoidingTarget(
             target,
             self._costs,
             self._message_nodes_by_packet_type,
-            suspect_predecessors,
+            self._suspect_predecessors,
             self._predecessors_in(tree),
         )
 
@@ -482,7 +464,6 @@ class PacketNavigator(GrammarNavigator):
     ) -> Optional[Route]:
         if included_k_paths is None:
             included_k_paths = set()
-        self._update_step_costs()
         routes: list[Route] = []
         found_trees = self._trees_including_k_paths(included_k_paths, tree)
         for suggested_tree, is_complete in found_trees:

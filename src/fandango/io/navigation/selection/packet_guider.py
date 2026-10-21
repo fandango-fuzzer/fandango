@@ -59,10 +59,7 @@ class PacketGuider:
         self._step_refusals = StepRefusalCounter()
         self._suspect_predecessors = suspect_predecessors
         self._navigator_instance = PacketNavigator(
-            self._model.grammar,
-            self._model.start_symbol,
-            step_costs=self._step_refusals.repeat_costs,
-            suspect_predecessors=suspect_predecessors,
+            self._model.grammar, self._model.start_symbol
         )
         self._target_selector = TargetSelector(model)
         self._max_messages_per_tree = max_messages_per_tree
@@ -209,17 +206,18 @@ class PacketGuider:
 
     def is_derivable_coverage_complete(self, uncovered_paths: list[KPath]) -> bool:
         return self._target_selector.is_every_path_underivable(
-            uncovered_paths, self._navigator.is_derivable
+            uncovered_paths, self._updated_navigator().is_derivable
         )
 
-    @property
-    def _navigator(self) -> PacketNavigator:
-        """The navigator around the currently blocked steps; rebuilt when they changed."""
+    def _updated_navigator(self) -> PacketNavigator:
+        """Brings the navigator up to the blocked steps, step costs and suspect predecessors and returns it."""
         blocked_steps = self._step_refusals.blocked_steps
         if blocked_steps != self._navigator_instance.blocked_steps:
-            self._navigator_instance = self._navigator_instance.gen_with_blocked_steps(
+            self._navigator_instance = self._navigator_instance.with_blocked_steps(
                 blocked_steps
             )
+        self._navigator_instance.set_step_costs(self._step_refusals.repeat_costs())
+        self._navigator_instance.set_suspect_predecessors(self._suspect_predecessors())
         return self._navigator_instance
 
     def _update_unreachable_targets(self) -> None:
@@ -235,8 +233,9 @@ class PacketGuider:
 
     def _is_reachable_target(self, target: KPath) -> bool:
         """True if the target is derivable and not known to be out of reach of every run."""
-        return target not in self._unreachable_targets and self._navigator.is_derivable(
-            target
+        return (
+            target not in self._unreachable_targets
+            and self._updated_navigator().is_derivable(target)
         )
 
     def select_next_packet(
@@ -309,7 +308,7 @@ class PacketGuider:
             if target is None:
                 break
             try:
-                guide = self._navigator.astar_tree_including_k_paths(
+                guide = self._updated_navigator().astar_tree_including_k_paths(
                     tree=self._history_tree,
                     destination_k_path=target,
                     included_k_paths=self._session_covered_k_paths,
@@ -370,7 +369,7 @@ class PacketGuider:
     def _plan_path_to_end(self) -> None:
         """Drops the target and follows a path to the end of the run from now on."""
         self._guide_target = None
-        path = self._navigator.astar_search_end_including_k_paths(
+        path = self._updated_navigator().astar_search_end_including_k_paths(
             self._history_tree, included_k_paths=self._session_covered_k_paths
         )
         # None marks the end of the run, as in the paths to a target.
@@ -380,7 +379,7 @@ class PacketGuider:
             self._guide_path.set_guide_path(GuidePath([*path, None]))
 
     def _is_tree_contains_paths(self, paths: set[KPath], tree: DerivationTree) -> bool:
-        return self._navigator.contains_k_paths(paths, tree)
+        return self._updated_navigator().contains_k_paths(paths, tree)
 
     def _confirm_covered_path(self, path: KPath) -> None:
         self._session_covered_k_paths.add(path)
