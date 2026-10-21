@@ -82,16 +82,10 @@ class GrammarGraphNode(abc.ABC):
     ) -> Generator[
         tuple[GrammarGraphNode, DerivationTree], GrammarGraphNode, GrammarGraphNode
     ]:
-        if issubclass(
-            self.node.__class__,
-            (NonTerminalNode, Concatenation, Repetition, Alternative),
+        if isinstance(
+            self.node, (NonTerminalNode, Concatenation, Repetition, Alternative)
         ):
-            if isinstance(self.node, NonTerminalNode):
-                symbol = self.node.symbol
-            else:
-                assert hasattr(self.node, "id")
-                node_id = self.node.id
-                symbol = NonTerminal(f"<__{node_id}>")
+            symbol = self.node.to_symbol()
             if tree_node.symbol != symbol:
                 raise GrammarWalkError(
                     f"Grammar graph node {symbol.value()} doesn't match tree node {tree_node.symbol.value()}."

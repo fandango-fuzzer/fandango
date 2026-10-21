@@ -452,10 +452,8 @@ class PacketNavigator(GrammarNavigator):
         return route
 
     def _path_cost(self, path: Sequence[Optional[GrammarGraphNode]]) -> int:
-        """Sums what entering the nodes of the path costs, as the search counts it."""
-        return sum(
-            self._message_cost_of(node.node) for node in path if node is not None
-        )
+        """Sums what entering the nodes of the path costs."""
+        return sum(self._entering_cost(node) for node in path if node is not None)
 
     def __repr__(self) -> str:
         return (

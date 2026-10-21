@@ -59,6 +59,10 @@ class GrammarNavigator:
             return self.message_cost
         return 0
 
+    def _entering_cost(self, graph_node: GrammarGraphNode) -> int:
+        """Returns what stepping onto the graph node costs a path."""
+        return self._message_cost_of(graph_node.node)
+
     def _check_reachability(
         self, *, tree: Optional[DerivationTree] = None, destination_k_path: KPath
     ) -> ReachabilityResult:
@@ -186,7 +190,7 @@ class GrammarNavigator:
         """Returns the cheapest path from start to target. Leaves a fresh graph, as a search unfolds it."""
         search = PathSearch(
             target,
-            lambda graph_node: self._message_cost_of(graph_node.node),
+            self._entering_cost,
             self.max_comparisons,
         )
         try:
