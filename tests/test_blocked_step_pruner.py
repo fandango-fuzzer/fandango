@@ -83,7 +83,7 @@ class TestBlockedStepPruner(unittest.TestCase):
         self.assertFalse(self.pruner.is_made_up(option.children()[0]))
 
     def test_planned_step_skips_the_made_up_option(self):
-        navigator = PacketNavigator(self.grammar).gen_with_blocked_steps(
+        navigator = PacketNavigator(self.grammar).with_blocked_steps(
             frozenset([self._step("hello\nc\nok\nbye\nnote\n")])
         )
         history = self.grammar.parse(
@@ -110,7 +110,7 @@ class TestBlockedStepPruner(unittest.TestCase):
         )
         assert guide is not None and guide.target_step is not None
         self.assertEqual(guide.target_step.packet, AFTER_OK)
-        blocked = navigator.gen_with_blocked_steps(frozenset([guide.target_step]))
+        blocked = navigator.with_blocked_steps(frozenset([guide.target_step]))
         self.assertFalse(blocked.is_derivable((AFTER_OK,)))
 
     def test_step_every_run_takes_stays_while_other_steps_are_removed(self):
@@ -152,20 +152,20 @@ class TestBlockedStepInContext(unittest.TestCase):
         self.assertNotIn("success", rules[copy].format_as_spec())
 
     def test_history_taking_the_step_in_another_context_still_parses(self):
-        navigator = PacketNavigator(self.grammar).gen_with_blocked_steps(
+        navigator = PacketNavigator(self.grammar).with_blocked_steps(
             frozenset([self.second_success])
         )
         history = self.grammar.parse(
             "login\nsuccess\n", mode=ParsingMode.INCOMPLETE, include_controlflow=True
         )
         assert history is not None
-        self.assertTrue(any(True for _ in navigator.get_controlflow_tree(history)))
+        self.assertTrue(any(True for _ in navigator.controlflow_trees(history)))
         self.assertTrue(navigator.is_derivable((EXCHANGE_LOGIN, SUCCESS)))
         self.assertTrue(navigator.is_derivable((LOGGED_IN, EXCHANGE_LOGIN, FAILED)))
         self.assertFalse(navigator.is_derivable((LOGGED_IN, EXCHANGE_LOGIN, SUCCESS)))
 
     def test_route_through_a_copy_names_the_state_grammar(self):
-        navigator = PacketNavigator(self.grammar).gen_with_blocked_steps(
+        navigator = PacketNavigator(self.grammar).with_blocked_steps(
             frozenset([self.second_success])
         )
         history = self.grammar.parse(
@@ -189,7 +189,7 @@ class TestBlockedStepInContext(unittest.TestCase):
         first_success = step_of_last_message(self.grammar, "login\nsuccess\n")
         self.assertEqual(first_success.path[0], START)
         self.assertEqual(self.second_success.path[0], LOGGED_IN)
-        blocked = PacketNavigator(self.grammar).gen_with_blocked_steps(
+        blocked = PacketNavigator(self.grammar).with_blocked_steps(
             frozenset([first_success])
         )
         self.assertFalse(blocked.is_derivable((START, EXCHANGE_LOGIN, SUCCESS)))

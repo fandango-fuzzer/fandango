@@ -54,7 +54,9 @@ def tracker_after(finished_session):
 
 
 def filter_after(finished_session):
-    return PacketCoverageFilter(tracker_after(finished_session))
+    packet_filter = PacketCoverageFilter(tracker_after(finished_session))
+    packet_filter.HOLD_BACK_SECONDS = float("inf")
+    return packet_filter
 
 
 def test_new_k_path_passes():

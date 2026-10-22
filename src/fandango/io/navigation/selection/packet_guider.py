@@ -1,9 +1,15 @@
 from collections.abc import Callable
-from typing import Optional
+from typing import NamedTuple, Optional
 
 from fandango.io.navigation.forecasting.forecast_view import ForecastView
 from fandango.io.navigation.forecasting.forecasting_result import ForecastingPacket
-from fandango.io.navigation.graph.packetnavigator import PacketNavigator
+from fandango.io.navigation.graph.grammar_navigator.navigator import (
+    UnreachableTargetError,
+)
+from fandango.io.navigation.graph.packetnavigator import (
+    PacketNavigator,
+    SuspectPredecessors,
+)
 from fandango.io.navigation.route import GuidePath
 from fandango.io.navigation.selection.guide_path_tracker import (
     Deviation,
@@ -16,7 +22,19 @@ from fandango.io.navigation.step import Step
 from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree
-from fandango.logger import LOGGER, log_guidance_hint
+from fandango.logger import log_guidance_hint
+
+
+class RouteRestrictions(NamedTuple):
+    blocked_steps: frozenset[Step]
+    suspect_predecessors: SuspectPredecessors
+
+    def lifts_any_of(self, last: "RouteRestrictions") -> bool:
+        """Tells whether a blocked step or suspect predecessor of last is missing here."""
+        return not last.blocked_steps <= self.blocked_steps or any(
+            not predecessors <= self.suspect_predecessors.get(packet_type, frozenset())
+            for packet_type, predecessors in last.suspect_predecessors.items()
+        )
 
 
 class PacketGuider:
@@ -27,19 +45,21 @@ class PacketGuider:
     once coverage is full or the run grew too long.
     """
 
+    TARGET_ATTEMPTS = 4
+
     def __init__(
         self,
         model: ProtocolModel,
         forecast: ForecastView,
         max_messages_per_tree: int,
+        suspect_predecessors: Callable[[], SuspectPredecessors] = dict,
     ):
         self._model = model
         self._forecast = forecast
         self._step_refusals = StepRefusalCounter()
+        self._suspect_predecessors = suspect_predecessors
         self._navigator_instance = PacketNavigator(
-            self._model.grammar,
-            self._model.start_symbol,
-            step_costs=self._step_refusals.repeat_costs,
+            self._model.grammar, self._model.start_symbol
         )
         self._target_selector = TargetSelector(model)
         self._max_messages_per_tree = max_messages_per_tree
@@ -53,6 +73,9 @@ class PacketGuider:
         self._session_covered_k_paths: set[KPath] = set()
         self._steps_keeping_covered_paths: dict[str, set[Step]] = {}
         self._end_route_refusals_in_session = 0
+        # Targets out of reach of every run under the restrictions last seen
+        self._unreachable_targets: set[KPath] = set()
+        self._last_restrictions: Optional[RouteRestrictions] = None
 
     @property
     def is_guide_to_end(self) -> bool:
@@ -75,6 +98,8 @@ class PacketGuider:
         """Forget everything about previous runs, as after construction."""
         self._target_selector.reset()
         self._step_refusals.reset()
+        self._unreachable_targets.clear()
+        self._last_restrictions = None
         self._clear_plan()
         self._start_session()
 
@@ -174,26 +199,44 @@ class PacketGuider:
             if self._guide_to_end:
                 self._end_route_refusals_in_session += 1
         if self._is_end_route_refused(deviation):
-            LOGGER.warning(
-                "NAVIGATORPANIC: Observed derivation of planned protocol path twice for the same transition. "
-                f"Hard-terminating protocol session. Observed derivation {deviation}"
+            log_guidance_hint(
+                f"{sender} refused the route to the end of the run at {deviation.refused}. Ending the session."
             )
             self._abandons_run = True
 
     def is_derivable_coverage_complete(self, uncovered_paths: list[KPath]) -> bool:
         return self._target_selector.is_every_path_underivable(
-            uncovered_paths, self._navigator.is_derivable
+            uncovered_paths, self._updated_navigator().is_derivable
         )
 
-    @property
-    def _navigator(self) -> PacketNavigator:
-        """The navigator around the currently blocked steps; rebuilt when they changed."""
+    def _updated_navigator(self) -> PacketNavigator:
+        """Brings the navigator up to the blocked steps, step costs and suspect predecessors and returns it."""
         blocked_steps = self._step_refusals.blocked_steps
         if blocked_steps != self._navigator_instance.blocked_steps:
-            self._navigator_instance = self._navigator_instance.gen_with_blocked_steps(
+            self._navigator_instance = self._navigator_instance.with_blocked_steps(
                 blocked_steps
             )
+        self._navigator_instance.set_step_costs(self._step_refusals.repeat_costs())
+        self._navigator_instance.set_suspect_predecessors(self._suspect_predecessors())
         return self._navigator_instance
+
+    def _update_unreachable_targets(self) -> None:
+        """Forgets the targets out of reach of every run once a blocked step or suspect predecessor was lifted."""
+        restrictions = RouteRestrictions(
+            self._step_refusals.blocked_steps, self._suspect_predecessors()
+        )
+        if self._last_restrictions is not None and restrictions.lifts_any_of(
+            self._last_restrictions
+        ):
+            self._unreachable_targets.clear()
+        self._last_restrictions = restrictions
+
+    def _is_reachable_target(self, target: KPath) -> bool:
+        """True if the target is derivable and not known to be out of reach of every run."""
+        return (
+            target not in self._unreachable_targets
+            and self._updated_navigator().is_derivable(target)
+        )
 
     def select_next_packet(
         self,
@@ -217,34 +260,24 @@ class PacketGuider:
         if (
             len(list(history_tree.protocol_msgs())) > self._max_messages_per_tree
             or len(uncovered_paths) == 0
+            or self._step_refusals.has_deferred_blocks
         ):
             if len(uncovered_paths) == 0:
                 log_guidance_hint("Full coverage reached. Guiding to end of tree.")
                 if self._guide_target is not None:
                     self._confirm_covered_path(self._guide_target)
+            elif self._step_refusals.has_deferred_blocks:
+                if not self._guide_to_end:
+                    log_guidance_hint(
+                        "Steps wait for the session end to be blocked. Guiding to end of tree."
+                    )
             else:
                 log_guidance_hint(
                     f"Current tree contains more then {self._max_messages_per_tree} messages. Guiding to end of tree."
                 )
             self._plan_path_to_end()
         elif self._guide_target is None or self._guide_path.is_empty or plan_left:
-            self._guide_target = self._target_selector.select(
-                uncovered_paths, get_coverage_scores(), self._navigator.is_derivable
-            )
-            guide = self._navigator.astar_tree_including_k_paths(
-                tree=history_tree,
-                destination_k_path=self._guide_target,
-                included_k_paths=self._session_covered_k_paths,
-            )
-            if guide is None:
-                # The target is not reachable from this tree; finish the run,
-                # the next one starts from scratch.
-                log_guidance_hint(
-                    "No path from the current tree to the selected k-path. Guiding to end of tree."
-                )
-                self._plan_path_to_end()
-            else:
-                self._guide_path.set_guide_path(guide)
+            self._plan_path_to_reachable_target(uncovered_paths, get_coverage_scores)
         self._guide_to_end = self._guide_path.ends_run
 
         next_packet = self._guide_path.next_packet()
@@ -257,6 +290,41 @@ class PacketGuider:
         if len(selected_packets) == 0:
             selected_packets = self._forecast.get_fuzzer_packets()
         return selected_packets
+
+    def _plan_path_to_reachable_target(
+        self,
+        uncovered_paths: list[KPath],
+        get_coverage_scores: Callable[[], list[tuple[NonTerminal, float]]],
+    ) -> None:
+        """
+        Selects targets until one has a path, in this run or a new one, and follows that path. Leaves out each target
+        without a path until a restriction is lifted. Follows a path to the end of the run if no target has a path.
+        """
+        self._update_unreachable_targets()
+        for _ in range(self.TARGET_ATTEMPTS):
+            target = self._target_selector.select(
+                uncovered_paths, get_coverage_scores(), self._is_reachable_target
+            )
+            if target is None:
+                break
+            try:
+                guide = self._updated_navigator().astar_tree_including_k_paths(
+                    tree=self._history_tree,
+                    destination_k_path=target,
+                    included_k_paths=self._session_covered_k_paths,
+                )
+            except UnreachableTargetError:
+                guide = None
+            if guide is not None:
+                self._guide_target = target
+                self._guide_path.set_guide_path(guide)
+                return
+            log_guidance_hint(
+                f"No path to {target} in this run or a new one. Leaving it out until a restriction is lifted."
+            )
+            self._unreachable_targets.add(target)
+        log_guidance_hint("No target with a path. Guiding to end of tree.")
+        self._plan_path_to_end()
 
     def find_packets(
         self,
@@ -301,7 +369,7 @@ class PacketGuider:
     def _plan_path_to_end(self) -> None:
         """Drops the target and follows a path to the end of the run from now on."""
         self._guide_target = None
-        path = self._navigator.astar_search_end_including_k_paths(
+        path = self._updated_navigator().astar_search_end_including_k_paths(
             self._history_tree, included_k_paths=self._session_covered_k_paths
         )
         # None marks the end of the run, as in the paths to a target.
@@ -311,7 +379,7 @@ class PacketGuider:
             self._guide_path.set_guide_path(GuidePath([*path, None]))
 
     def _is_tree_contains_paths(self, paths: set[KPath], tree: DerivationTree) -> bool:
-        return self._navigator.contains_k_paths(paths, tree)
+        return self._updated_navigator().contains_k_paths(paths, tree)
 
     def _confirm_covered_path(self, path: KPath) -> None:
         self._session_covered_k_paths.add(path)

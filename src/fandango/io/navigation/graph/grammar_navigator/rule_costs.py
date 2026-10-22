@@ -24,24 +24,52 @@ class RuleCosts:
         rules: dict[NonTerminal, Node],
         message_cost_of: Callable[[Node], int],
         count_references: bool = False,
+        unrestricted: Optional["RuleCosts"] = None,
     ):
         """
         message_cost_of gives the cost of the message that a node sends.
         count_references makes entering a symbol cost 1 instead, for rules whose messages cost nothing.
+        unrestricted are the costs without the restrictions, if message_cost_of makes some messages unreachable.
         """
         self._rules = rules
+        self._unrestricted = unrestricted
         self._message_cost_of = message_cost_of
         self._count_references = count_references
         self._cheapest_costs: Optional[dict[NonTerminal, int]] = None
-        # symbol -> symbols whose rule references it -> cheapest cost from the start of that rule to the reference.
-        self._referencing: Optional[dict[str, dict[str, int]]] = None
+        # symbol -> symbols whose rule references it -> cheapest cost within that rule, from its start up to and
+        # including entering the reference.
+        self._cached_reaching_costs_in_rules: Optional[dict[str, dict[str, int]]] = None
         self._distances_by_target: dict[str, dict[str, int]] = {}
+        self._costs_without_messages: dict[frozenset[Node], RuleCosts] = {}
 
     def clear(self) -> None:
         """Forgets every computed cost, as after the message costs changed."""
         self._cheapest_costs = None
-        self._referencing = None
+        self._cached_reaching_costs_in_rules = None
         self._distances_by_target.clear()
+        self._costs_without_messages.clear()
+
+    def without_messages(self, nodes: frozenset[Node]) -> "RuleCosts":
+        """Returns these costs with the messages of the nodes unreachable."""
+        if not nodes:
+            return self
+        costs = self._costs_without_messages.get(nodes)
+        if costs is None:
+            message_cost_of = self._message_cost_of
+
+            def message_cost_without(node: Node) -> int:
+                if node in nodes:
+                    return self.UNREACHABLE
+                return message_cost_of(node)
+
+            costs = RuleCosts(
+                self._rules,
+                message_cost_without,
+                self._count_references,
+                unrestricted=self,
+            )
+            self._costs_without_messages[nodes] = costs
+        return costs
 
     def cost_of(self, node: Node) -> int:
         """Returns the cost of the cheapest messages that node derives."""
@@ -56,7 +84,7 @@ class RuleCosts:
     def cost_into(self, node: Node, distances: dict[str, int]) -> int:
         """Returns the cheapest cost from before node to the target of distances below node."""
         if isinstance(node, (NonTerminalNode, TerminalNode)):
-            return self._reference_cost(node) + distances.get(
+            return self._entering_cost(node) + distances.get(
                 str(node.symbol), self.UNREACHABLE
             )
         if isinstance(node, Concatenation):
@@ -119,27 +147,44 @@ class RuleCosts:
             self.cost_ahead(following, distances, after) for distances, after in targets
         )
 
+    def is_derivable(self, symbol: Symbol) -> bool:
+        """
+        False if the symbol's rule has a derivation without the restrictions but none with them. True for every symbol
+        if there are no restrictions.
+        """
+        if (
+            self._unrestricted is None
+            or not isinstance(symbol, NonTerminal)
+            or symbol not in self._rules
+        ):
+            return True
+        return self._can_finish(symbol) or not self._unrestricted._can_finish(symbol)
+
+    def _can_finish(self, symbol: NonTerminal) -> bool:
+        """True if some derivation of the symbol's rule costs less than UNREACHABLE."""
+        return self._cheapest_cost_below(NonTerminalNode(symbol, [])) < self.UNREACHABLE
+
     def distances_to(self, target: Symbol) -> dict[str, int]:
         """Returns the cheapest cost from the start of every symbol's rule to target."""
         key = str(target)
         cached = self._distances_by_target.get(key)
         if cached is not None:
             return cached
-        referencing = self._reference_costs()
+        reaching_costs = self._reaching_costs_in_rules()
         distances: dict[str, int] = {key: 0}
         nearest = [(0, key)]
         while nearest:
             cost, symbol = heapq.heappop(nearest)
             if cost > distances[symbol]:
                 continue
-            for rule, reference_cost in referencing.get(symbol, {}).items():
-                if cost + reference_cost < distances.get(rule, self.UNREACHABLE):
-                    distances[rule] = cost + reference_cost
+            for rule, cost_in_rule in reaching_costs.get(symbol, {}).items():
+                if cost + cost_in_rule < distances.get(rule, self.UNREACHABLE):
+                    distances[rule] = cost + cost_in_rule
                     heapq.heappush(nearest, (distances[rule], rule))
         self._distances_by_target[key] = distances
         return distances
 
-    def _reference_cost(self, node: Node) -> int:
+    def _entering_cost(self, node: Node) -> int:
         """Returns the cost of entering the symbol of node."""
         return 1 if self._count_references else self._message_cost_of(node)
 
@@ -157,15 +202,19 @@ class RuleCosts:
                         changed = True
         return self._cheapest_costs.get(node.symbol, self.UNREACHABLE)
 
-    def _reference_costs(self) -> dict[str, dict[str, int]]:
-        if self._referencing is not None:
-            return self._referencing
-        referencing: dict[str, dict[str, int]] = {}
+    def _reaching_costs_in_rules(self) -> dict[str, dict[str, int]]:
+        """
+        Returns per symbol the rules that reference it, each with the cheapest cost within that rule from its start up
+        to and including entering the reference.
+        """
+        if self._cached_reaching_costs_in_rules is not None:
+            return self._cached_reaching_costs_in_rules
+        reaching_costs: dict[str, dict[str, int]] = {}
 
         def references(rule: str, node: Node, before: int) -> None:
             if isinstance(node, (NonTerminalNode, TerminalNode)):
-                cost = before + self._reference_cost(node)
-                rules = referencing.setdefault(str(node.symbol), {})
+                cost = before + self._entering_cost(node)
+                rules = reaching_costs.setdefault(str(node.symbol), {})
                 if cost < rules.get(rule, self.UNREACHABLE):
                     rules[rule] = cost
                 return
@@ -176,5 +225,5 @@ class RuleCosts:
 
         for symbol, body in self._rules.items():
             references(str(symbol), body, 0)
-        self._referencing = referencing
-        return referencing
+        self._cached_reaching_costs_in_rules = reaching_costs
+        return reaching_costs

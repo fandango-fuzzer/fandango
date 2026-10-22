@@ -1,7 +1,9 @@
+from collections.abc import Iterator
 from copy import deepcopy
 from typing import Optional
 
 from fandango.errors import FandangoValueError
+from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConverter
 from fandango.io.packet_evolution.packet_mounter import MessageHolder
 from fandango.language import NonTerminal
 from fandango.language.grammar import ParsingMode
@@ -30,6 +32,26 @@ class PacketIterativeParser(IterativeParser):
         if continuation != "":
             self.consume(continuation)
         self._consumed_history = history
+
+    def controlflow_trees(
+        self, history_tree: DerivationTree
+    ) -> Iterator[tuple[DerivationTree, bool]]:
+        """
+        Parses the messages of history_tree at once and returns the control-flow trees matching them as they are
+        built, each with whether it is complete.
+        """
+        messages = list(history_tree.protocol_msgs())
+        self.reference_tree = history_tree
+        self.parse_history(
+            "".join(message.msg.nonterminal.name() for message in messages)
+        )
+        return (
+            (controlflow_tree, is_complete)
+            for controlflow_tree, is_complete in self.tree_at(
+                self.consumed_length(), incomplete=True
+            )
+            if StateGrammarConverter.matches_history(controlflow_tree, messages)
+        )
 
     def construct_incomplete_tree(
         self, state: ParseState, table: list[Column]

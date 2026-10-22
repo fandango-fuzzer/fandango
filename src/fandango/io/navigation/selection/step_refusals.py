@@ -20,7 +20,6 @@ class StepRefusalCounter:
         self._refusals_in_a_row_by_rule_step: Counter[Step] = Counter()
         self._times_blocked_by_step: Counter[Step] = Counter()
         self._blocked_until_session_by_step: dict[Step, int] = {}
-        self._steps_taken_in_session: set[Step] = set()
         self._party_by_deferred_step: dict[Step, str] = {}
         self._takes_by_rule_step: Counter[Step] = Counter()
         self._contexts_taken_last_by_rule_step: defaultdict[Step, set[Step]] = (
@@ -33,7 +32,6 @@ class StepRefusalCounter:
 
     def observe_taken(self, step: Step, party: str) -> None:
         """Records that the party took the step. Refuse counters are reset. Step is unblocked if blocked."""
-        self._steps_taken_in_session.add(step)
         self._party_by_deferred_step.pop(step, None)
         del self._refusals_in_a_row_by_step[step]
         del self._times_blocked_by_step[step]
@@ -43,7 +41,6 @@ class StepRefusalCounter:
             )
             self._unblock(step)
         rule_step = step.as_in_calling_last_rule()
-        self._steps_taken_in_session.add(rule_step)
         self._party_by_deferred_step.pop(rule_step, None)
         self._takes_by_rule_step[rule_step] += 1
         self._contexts_taken_last_by_rule_step[rule_step].add(step)
@@ -71,8 +68,8 @@ class StepRefusalCounter:
 
     def count_refusal(self, step: Step, party: str) -> None:
         """
-        Counts that the party deviated from the step. Blocks the step after REFUSAL_LIMIT calls.
-        Defers blocking the rule if it was taken elsewhere in the current session.
+        Counts that the party deviated from the step. Blocks the step at the session end after REFUSAL_LIMIT calls,
+        unless the rule was taken elsewhere in the current session.
         It the step represents a recursive call, only the recursive version of that call is blocked.
         """
         rule_step = step.as_in_calling_last_rule()
@@ -88,18 +85,17 @@ class StepRefusalCounter:
                 f"{party} does not take {step.parent} -> {step.packet}. "
                 f"Routing around it wherever {step.parent} is used."
             )
-            self._block_now_or_at_session_end(rule_step, party)
+            self._party_by_deferred_step[rule_step] = party
         elif (
             self._refusals_in_a_row_by_step[step] >= self.REFUSAL_LIMIT
             and step not in self._blocked_until_session_by_step
         ):
-            self._block_now_or_at_session_end(step, party)
-
-    def _block_now_or_at_session_end(self, step: Step, party: str) -> None:
-        if step in self._steps_taken_in_session:
             self._party_by_deferred_step[step] = party
-        else:
-            self._block(step, party)
+
+    @property
+    def has_deferred_blocks(self) -> bool:
+        """True if steps wait for the session end to be blocked."""
+        return bool(self._party_by_deferred_step)
 
     def _block(self, step: Step, party: str) -> None:
         self._times_blocked_by_step[step] += 1
@@ -125,14 +121,12 @@ class StepRefusalCounter:
         for step, party in self._party_by_deferred_step.items():
             self._block(step, party)
         self._party_by_deferred_step.clear()
-        self._steps_taken_in_session.clear()
 
     def reset(self) -> None:
         self._session = 0
         self._refusals_in_a_row_by_step.clear()
         self._times_blocked_by_step.clear()
         self._blocked_until_session_by_step.clear()
-        self._steps_taken_in_session.clear()
         self._party_by_deferred_step.clear()
         self._refusals_in_a_row_by_rule_step.clear()
         self._takes_by_rule_step.clear()

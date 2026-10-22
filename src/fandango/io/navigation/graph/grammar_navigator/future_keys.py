@@ -6,7 +6,6 @@ from fandango.io.navigation.graph.grammar_navigator.grammar_graph_converter impo
     LazyGrammarGraphNode,
 )
 from fandango.io.navigation.nested_steps import run_nested_steps
-from fandango.language.grammar.nodes.repetition import Repetition
 
 
 class FutureKeys:
@@ -30,7 +29,7 @@ class FutureKeys:
     ) -> Generator[GrammarGraphNode, Hashable, Hashable]:
         """Computes the key of node; yields the nodes whose keys it needs first."""
         if node not in self._keys:
-            instance = self._enclosing_instance(node)
+            instance = node.enclosing_rule_instance()
             continuation = (
                 None
                 if instance is None
@@ -55,19 +54,7 @@ class FutureKeys:
         if instance not in self._continuation_keys:
             self._continuation_keys[instance] = None
             following_keys = []
-            for following in instance._pre_load_reaches:
+            for following in instance.following_nodes:
                 following_keys.append((yield following))
             self._continuation_keys[instance] = frozenset(following_keys)
         return self._continuation_keys[instance]
-
-    @staticmethod
-    def _enclosing_instance(node: GrammarGraphNode) -> Optional[GrammarGraphNode]:
-        """Returns the rule instance that node lies in, or None if node lies in a repetition."""
-        current = node.parent
-        while current is not None and not isinstance(current, LazyGrammarGraphNode):
-            if isinstance(current.node, Repetition):
-                return None
-            if current.parent is None:
-                return current
-            current = current.parent
-        return current

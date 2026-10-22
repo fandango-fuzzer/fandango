@@ -1,4 +1,5 @@
 import random
+from collections.abc import Callable
 from typing import Optional
 
 from fandango.io import FandangoIO
@@ -8,6 +9,7 @@ from fandango.io.navigation.forecasting.forecasting_result import (
     ForecastingPacket,
     ForecastingResult,
 )
+from fandango.io.navigation.graph.packetnavigator import SuspectPredecessors
 from fandango.io.navigation.selection.coverage_tracker import CoverageTracker
 from fandango.io.navigation.selection.packet_guider import PacketGuider
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
@@ -24,6 +26,7 @@ class PacketSelector:
         history_tree: DerivationTree,
         diversity_k: int,
         max_messages_per_tree: int = 200,
+        suspect_predecessors: Callable[[], SuspectPredecessors] = dict,
     ):
         self.RANDOM_END_PROBABILITY = 0.5
         self.start_symbol = NonTerminal("<start>")
@@ -35,6 +38,7 @@ class PacketSelector:
             self._model,
             self._forecast,
             max_messages_per_tree=max_messages_per_tree,
+            suspect_predecessors=suspect_predecessors,
         )
         self.history_tree = history_tree
         self._coverage_tracker = CoverageTracker(
