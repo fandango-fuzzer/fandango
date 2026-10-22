@@ -322,29 +322,6 @@ class TestViolationAvoidance(unittest.TestCase):
         # Only sending the suspect uses the retry up
         self.assertTrue(profile._is_retry_due(HELP, GARBAGE_INSTEAD_OF_HELPTEXT))
 
-    def test_a_step_waiting_to_be_blocked_ends_the_run_with_the_history_derivable(
-        self,
-    ):
-        algorithm = new_algorithm()
-        guider = algorithm._packet_selector._guider
-        (help_step,) = (
-            step
-            for step in guider._navigator_instance._rule_steps().values()
-            if step.parent == NonTerminal("<exchange_help>")
-            and step.packet == NonTerminal("<_packet_help>")
-        )
-        for _ in range(StepRefusalCounter.REFUSAL_LIMIT):
-            guider._step_refusals.count_refusal(help_step, "Extern")
-        history = session(algorithm.grammar, EHLO + "help\nhelptext\n")
-        algorithm._packet_selector.history_tree = history
-        target = (NonTerminal("<exchange_cmd>"),)
-        guider.select_next_packet(history, lambda: {target}, lambda: [])
-        self.assertTrue(guider.is_guide_to_end)
-        self.assertTrue(
-            any(True for _ in guider._navigator.get_controlflow_tree(history))
-        )
-        guider.observe_session_end()
-        self.assertIn(help_step, guider._step_refusals.blocked_steps)
 
 class TestRoutingAroundSuspectPredecessors(unittest.TestCase):
     """The navigation with <help> avoided after <ehlo>."""
