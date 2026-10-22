@@ -23,8 +23,7 @@ class CostBasedTarget(SearchTarget, ABC):
 
 class RunEndTarget(CostBasedTarget):
     """
-    The end of the run as target of a path search: reached by a node at which the run may end.
-    The estimate is the cheapest cost of finishing the rules the node lies in.
+    Finds a node at which the run may end.
     """
 
     # No symbol is a target: the costs of what is left to derive, until the end of the run
@@ -48,8 +47,6 @@ class RunEndTarget(CostBasedTarget):
         )
 
     def can_complete(self, node: GrammarGraphNode) -> bool:
-        """False if every way to finish the rules costs UNREACHABLE. The estimate never overrates, so this is safe."""
-        # The graph decides where the run may end, so a reached node is never pruned, whatever the costs say
         return node.is_accepting or self.estimate(node) < RuleCosts.UNREACHABLE
 
     def state(self, node: GrammarGraphNode) -> Hashable:
@@ -90,10 +87,11 @@ class ChainSummary(NamedTuple):
 
 
 class KPathTarget(CostBasedTarget):
-    """A k-path as target of a path search: reached by a node whose chain ends with the k-path."""
+    """
+    Finds a node whose chain ends with the k-path.
+    """
 
     ANCESTOR_LOOKBACK = 6
-    # Outweighs every cost, so matching one more symbol of the k-path always comes first.
     UNMATCHED_SYMBOL_COST = 1_000_000
 
     def __init__(
@@ -168,7 +166,7 @@ class KPathTarget(CostBasedTarget):
                 estimate = self._estimate_from(matched, summary, graph_node)
                 if estimate is not None:
                     return estimate
-        return self._dead_end_estimate()
+        return self._dead_end_estimate_costs()
 
     def _estimate_from(
         self, matched: int, summary: ChainSummary, graph_node: GrammarGraphNode
@@ -189,16 +187,9 @@ class KPathTarget(CostBasedTarget):
         return max(unmatched * self.UNMATCHED_SYMBOL_COST + cost_to_next_symbol, 1)
 
     def can_complete(self, node: GrammarGraphNode) -> bool:
-        """
-        False if no path from node reaches the k-path. A path goes on from a match on the chain of node, or from a
-        shorter match it falls back to. Either way it needs the symbols of the k-path after that match: derivable, and
-        the first of them reachable from node, by costs that never overrate. The estimate rates exactly such nodes as
-        dead ends.
-        """
-        return self.estimate(node) < self._dead_end_estimate()
+        return self.estimate(node) < self._dead_end_estimate_costs()
 
-    def _dead_end_estimate(self) -> int:
-        """The estimate of a node the k-path cannot be completed from: after every node it can."""
+    def _dead_end_estimate_costs(self) -> int:
         return len(self._k_path) * self.UNMATCHED_SYMBOL_COST + RuleCosts.UNREACHABLE
 
     def _is_rest_derivable(self, matched: int) -> bool:
@@ -263,7 +254,9 @@ class KPathTarget(CostBasedTarget):
 
 
 class AnyTarget(CostBasedTarget):
-    """Several targets as one: reached by a node that reaches any of them, aiming at the closest."""
+    """
+    Finds a node that reaches any of the targets, aiming at the closest.
+    """
 
     def __init__(self, targets: Sequence[CostBasedTarget]):
         self._targets = list(targets)
