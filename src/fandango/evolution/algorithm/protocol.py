@@ -200,7 +200,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         timeout = self._remote_response_timeout
         for packet in self._packet_selector.next_packets:
             if packet.node.sender == "TimerEvent":
-                timeout = -1
+                timeout = -1.0
         if not self._io_instance.wait_until(self._io_instance.received_msg, timeout):
             raise self._gen_timeout_violation()
 
