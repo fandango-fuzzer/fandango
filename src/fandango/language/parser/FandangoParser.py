@@ -1479,59 +1479,59 @@ class FandangoParser ( Parser ):
 
     sharedContextCache = PredictionContextCache()
 
-    literalNames = [ "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>",
-                     "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>",
-                     "<INVALID>", "<INVALID>", "'<py>'", "'</py>'", "'and'",
-                     "'as'", "'assert'", "'async'", "'await'", "'break'",
-                     "'case'", "'class'", "'continue'", "'def'", "'del'",
-                     "'elif'", "'else'", "'except'", "'False'", "'finally'",
-                     "'for'", "'from'", "'global'", "'if'", "'import'",
-                     "'in'", "'include'", "'is'", "'lambda'", "'match'",
-                     "'None'", "'nonlocal'", "'not'", "'or'", "'pass'",
-                     "'raise'", "'return'", "'True'", "'try'", "'type'",
-                     "'while'", "'where'", "'with'", "'yield'", "'forall'",
-                     "'exists'", "'maximizing'", "'minimizing'", "'any'",
-                     "'all'", "'len'", "'setting'", "'all_with_type'", "<INVALID>",
-                     "<INVALID>", "<INVALID>", "'\"\"\"'", "'''''", "'\"'",
-                     "'''", "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>",
-                     "<INVALID>", "<INVALID>", "<INVALID>", "'::='", "'?'",
-                     "'\\'", "'...'", "'..'", "'.'", "'*'", "'('", "')'",
-                     "','", "':'", "';'", "'**'", "'='", "'['", "']'", "'|'",
-                     "'^'", "'&'", "'<<'", "'>>'", "'+'", "'-'", "'/'",
-                     "'%'", "'//'", "'~'", "'{'", "'}'", "'<'", "'>'", "'=='",
-                     "'>='", "'<='", "'<>'", "'!='", "'@'", "'->'", "'+='",
-                     "'-='", "'*='", "'@='", "'/='", "'%='", "'&='", "'|='",
-                     "'^='", "'<<='", "'>>='", "'**='", "'//='", "':='",
+    literalNames = [ "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
+                     "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
+                     "<INVALID>", "<INVALID>", "'<py>'", "'</py>'", "'and'", 
+                     "'as'", "'assert'", "'async'", "'await'", "'break'", 
+                     "'case'", "'class'", "'continue'", "'def'", "'del'", 
+                     "'elif'", "'else'", "'except'", "'False'", "'finally'", 
+                     "'for'", "'from'", "'global'", "'if'", "'import'", 
+                     "'in'", "'include'", "'is'", "'lambda'", "'match'", 
+                     "'None'", "'nonlocal'", "'not'", "'or'", "'pass'", 
+                     "'raise'", "'return'", "'True'", "'try'", "'type'", 
+                     "'while'", "'where'", "'with'", "'yield'", "'forall'", 
+                     "'exists'", "'maximizing'", "'minimizing'", "'any'", 
+                     "'all'", "'len'", "'setting'", "'all_with_type'", "<INVALID>", 
+                     "<INVALID>", "<INVALID>", "'\"\"\"'", "'''''", "'\"'", 
+                     "'''", "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
+                     "<INVALID>", "<INVALID>", "<INVALID>", "'::='", "'?'", 
+                     "'\\'", "'...'", "'..'", "'.'", "'*'", "'('", "')'", 
+                     "','", "':'", "';'", "'**'", "'='", "'['", "']'", "'|'", 
+                     "'^'", "'&'", "'<<'", "'>>'", "'+'", "'-'", "'/'", 
+                     "'%'", "'//'", "'~'", "'{'", "'}'", "'<'", "'>'", "'=='", 
+                     "'>='", "'<='", "'<>'", "'!='", "'@'", "'->'", "'+='", 
+                     "'-='", "'*='", "'@='", "'/='", "'%='", "'&='", "'|='", 
+                     "'^='", "'<<='", "'>>='", "'**='", "'//='", "':='", 
                      "'!'", "<INVALID>", "<INVALID>", "<INVALID>", "'_'" ]
 
-    symbolicNames = [ "<INVALID>", "INDENT", "DEDENT", "FSTRING_START_QUOTE",
-                      "FSTRING_START_SINGLE_QUOTE", "FSTRING_START_TRIPLE_QUOTE",
-                      "FSTRING_START_TRIPLE_SINGLE_QUOTE", "STRING", "NUMBER",
-                      "INTEGER", "PYTHON_START", "PYTHON_END", "AND", "AS",
-                      "ASSERT", "ASYNC", "AWAIT", "BREAK", "CASE", "CLASS",
-                      "CONTINUE", "DEF", "DEL", "ELIF", "ELSE", "EXCEPT",
-                      "FALSE", "FINALLY", "FOR", "FROM", "GLOBAL", "IF",
-                      "IMPORT", "IN", "INCLUDE", "IS", "LAMBDA", "MATCH",
-                      "NONE", "NONLOCAL", "NOT", "OR", "PASS", "RAISE",
-                      "RETURN", "TRUE", "TRY", "TYPE", "WHILE", "WHERE",
-                      "WITH", "YIELD", "FORALL", "EXISTS", "MAXIMIZING",
-                      "MINIMIZING", "ANY", "ALL", "LEN", "SETTING", "ALL_WITH_TYPE",
-                      "NODE_TYPES", "NAME", "STRING_LITERAL", "FSTRING_END_TRIPLE_QUOTE",
-                      "FSTRING_END_TRIPLE_SINGLE_QUOTE", "FSTRING_END_QUOTE",
-                      "FSTRING_END_SINGLE_QUOTE", "BYTES_LITERAL", "DECIMAL_INTEGER",
-                      "OCT_INTEGER", "HEX_INTEGER", "BIN_INTEGER", "FLOAT_NUMBER",
-                      "IMAG_NUMBER", "GRAMMAR_ASSIGN", "QUESTION", "BACKSLASH",
-                      "ELLIPSIS", "DOTDOT", "DOT", "STAR", "OPEN_PAREN",
-                      "CLOSE_PAREN", "COMMA", "COLON", "SEMI_COLON", "POWER",
-                      "ASSIGN", "OPEN_BRACK", "CLOSE_BRACK", "OR_OP", "XOR",
-                      "AND_OP", "LEFT_SHIFT", "RIGHT_SHIFT", "ADD", "MINUS",
-                      "DIV", "MOD", "IDIV", "NOT_OP", "OPEN_BRACE", "CLOSE_BRACE",
-                      "LESS_THAN", "GREATER_THAN", "EQUALS", "GT_EQ", "LT_EQ",
-                      "NOT_EQ_1", "NOT_EQ_2", "AT", "ARROW", "ADD_ASSIGN",
-                      "SUB_ASSIGN", "MULT_ASSIGN", "AT_ASSIGN", "DIV_ASSIGN",
-                      "MOD_ASSIGN", "AND_ASSIGN", "OR_ASSIGN", "XOR_ASSIGN",
-                      "LEFT_SHIFT_ASSIGN", "RIGHT_SHIFT_ASSIGN", "POWER_ASSIGN",
-                      "IDIV_ASSIGN", "EXPR_ASSIGN", "EXCL", "NEWLINE", "SKIP_",
+    symbolicNames = [ "<INVALID>", "INDENT", "DEDENT", "FSTRING_START_QUOTE", 
+                      "FSTRING_START_SINGLE_QUOTE", "FSTRING_START_TRIPLE_QUOTE", 
+                      "FSTRING_START_TRIPLE_SINGLE_QUOTE", "STRING", "NUMBER", 
+                      "INTEGER", "PYTHON_START", "PYTHON_END", "AND", "AS", 
+                      "ASSERT", "ASYNC", "AWAIT", "BREAK", "CASE", "CLASS", 
+                      "CONTINUE", "DEF", "DEL", "ELIF", "ELSE", "EXCEPT", 
+                      "FALSE", "FINALLY", "FOR", "FROM", "GLOBAL", "IF", 
+                      "IMPORT", "IN", "INCLUDE", "IS", "LAMBDA", "MATCH", 
+                      "NONE", "NONLOCAL", "NOT", "OR", "PASS", "RAISE", 
+                      "RETURN", "TRUE", "TRY", "TYPE", "WHILE", "WHERE", 
+                      "WITH", "YIELD", "FORALL", "EXISTS", "MAXIMIZING", 
+                      "MINIMIZING", "ANY", "ALL", "LEN", "SETTING", "ALL_WITH_TYPE", 
+                      "NODE_TYPES", "NAME", "STRING_LITERAL", "FSTRING_END_TRIPLE_QUOTE", 
+                      "FSTRING_END_TRIPLE_SINGLE_QUOTE", "FSTRING_END_QUOTE", 
+                      "FSTRING_END_SINGLE_QUOTE", "BYTES_LITERAL", "DECIMAL_INTEGER", 
+                      "OCT_INTEGER", "HEX_INTEGER", "BIN_INTEGER", "FLOAT_NUMBER", 
+                      "IMAG_NUMBER", "GRAMMAR_ASSIGN", "QUESTION", "BACKSLASH", 
+                      "ELLIPSIS", "DOTDOT", "DOT", "STAR", "OPEN_PAREN", 
+                      "CLOSE_PAREN", "COMMA", "COLON", "SEMI_COLON", "POWER", 
+                      "ASSIGN", "OPEN_BRACK", "CLOSE_BRACK", "OR_OP", "XOR", 
+                      "AND_OP", "LEFT_SHIFT", "RIGHT_SHIFT", "ADD", "MINUS", 
+                      "DIV", "MOD", "IDIV", "NOT_OP", "OPEN_BRACE", "CLOSE_BRACE", 
+                      "LESS_THAN", "GREATER_THAN", "EQUALS", "GT_EQ", "LT_EQ", 
+                      "NOT_EQ_1", "NOT_EQ_2", "AT", "ARROW", "ADD_ASSIGN", 
+                      "SUB_ASSIGN", "MULT_ASSIGN", "AT_ASSIGN", "DIV_ASSIGN", 
+                      "MOD_ASSIGN", "AND_ASSIGN", "OR_ASSIGN", "XOR_ASSIGN", 
+                      "LEFT_SHIFT_ASSIGN", "RIGHT_SHIFT_ASSIGN", "POWER_ASSIGN", 
+                      "IDIV_ASSIGN", "EXPR_ASSIGN", "EXCL", "NEWLINE", "SKIP_", 
                       "SPACES", "UNDERSCORE", "UNKNOWN_CHAR" ]
 
     RULE_fandango = 0
@@ -1784,75 +1784,75 @@ class FandangoParser ( Parser ):
     RULE_func_type_comment = 247
     RULE_identifier = 248
 
-    ruleNames =  [ "fandango", "program", "statement", "production", "alternative",
-                   "concatenation", "operator", "kleene", "plus", "option",
-                   "permutation", "repeat", "symbol", "nonterminal_right",
-                   "nonterminal", "generator_call", "char_set", "constraint",
-                   "implies", "quantifier", "quantifier_in_line", "formula_disjunction",
-                   "formula_conjunction", "formula_atom", "formula_comparison",
-                   "formula_comparison_operator", "expr", "selector_length",
-                   "star_selection_or_dot_selection", "star_selection",
-                   "dot_selection", "selection", "base_selection", "rs_pairs",
-                   "rs_pair", "rs_slices", "rs_slice", "python", "python_tag",
-                   "include", "grammar_setting", "grammar_setting_content",
-                   "grammar_selector", "grammar_rule", "grammar_setting_key",
-                   "grammar_setting_value", "python_file", "interactive",
-                   "eval", "func_type", "statements", "stmt", "statement_newline",
-                   "simple_stmts", "simple_stmt", "compound_stmt", "assignment",
-                   "annotated_rhs", "augassign", "return_stmt", "raise_stmt",
-                   "global_stmt", "nonlocal_stmt", "del_stmt", "yield_stmt",
-                   "assert_stmt", "import_stmt", "import_name", "import_from",
-                   "import_from_targets", "import_from_as_names", "import_from_as_name",
-                   "dotted_as_names", "dotted_as_name", "dotted_name", "block",
-                   "decorators", "class_def", "class_def_raw", "function_def",
-                   "function_def_raw", "params", "parameters", "slash_no_default",
-                   "slash_with_default", "star_etc", "kwds", "param_no_default",
-                   "param_no_default_star_annotation", "param_with_default",
-                   "param_maybe_default", "param", "param_star_annotation",
-                   "annotation", "star_annotation", "default", "if_stmt",
-                   "elif_stmt", "else_block", "while_stmt", "for_stmt",
-                   "with_stmt", "with_item", "try_stmt", "except_block",
-                   "except_star_block", "finally_block", "match_stmt", "subject_expr",
-                   "case_block", "guard", "patterns", "pattern", "as_pattern",
-                   "or_pattern", "closed_pattern", "literal_pattern", "literal_expr",
-                   "complex_number", "signed_number", "signed_real_number",
-                   "real_number", "imaginary_number", "capture_pattern",
-                   "pattern_capture_target", "wildcard_pattern", "value_pattern",
-                   "attr", "name_or_attr", "group_pattern", "sequence_pattern",
-                   "open_sequence_pattern", "maybe_sequence_pattern", "maybe_star_pattern",
-                   "star_pattern", "mapping_pattern", "items_pattern", "key_value_pattern",
-                   "double_star_pattern", "class_pattern", "positional_patterns",
-                   "keyword_patterns", "keyword_pattern", "type_alias",
-                   "type_params", "type_param_seq", "type_param", "type_param_bound",
-                   "expressions", "expression", "yield_expr", "star_expressions",
-                   "star_expression", "star_named_expressions", "star_named_expression",
-                   "assignment_expression", "named_expression", "disjunction",
-                   "conjunction", "inversion", "comparison", "compare_op_bitwise_or_pair",
-                   "eq_bitwise_or", "noteq_bitwise_or", "lte_bitwise_or",
-                   "lt_bitwise_or", "gte_bitwise_or", "gt_bitwise_or", "notin_bitwise_or",
-                   "in_bitwise_or", "isnot_bitwise_or", "is_bitwise_or",
-                   "bitwise_or", "bitwise_xor", "bitwise_and", "shift_expr",
-                   "sum", "term", "factor", "power", "await_primary", "primary",
-                   "slices", "slice", "atom", "group", "lambdef", "lambda_params",
-                   "lambda_parameters", "lambda_slash_no_default", "lambda_slash_with_default",
-                   "lambda_star_etc", "lambda_kwds", "lambda_param_no_default",
-                   "lambda_param_with_default", "lambda_param_maybe_default",
-                   "lambda_param", "fstring_middle_no_quote", "fstring_middle_no_single_quote",
-                   "fstring_middle_breaks_no_triple_quote", "fstring_middle_breaks_no_triple_single_quote",
-                   "fstring_any_no_quote", "fstring_any_no_single_quote",
-                   "fstring_middle", "fstring_any_breaks_no_triple_quote",
-                   "fstring_any_breaks_no_triple_single_quote", "fstring_any",
-                   "fstring_replacement_field", "fstring_conversion", "fstring_full_format_spec",
-                   "fstring_format_spec", "fstring", "string", "strings",
-                   "list", "tuple", "set", "dict", "double_starred_kvpairs",
-                   "double_starred_kvpair", "kvpair", "for_if_clauses",
-                   "for_if_clause", "listcomp", "setcomp", "genexp", "dictcomp",
-                   "arguments", "args", "arg", "kwargs", "starred_expression",
-                   "kwarg_or_starred", "kwarg_or_double_starred", "star_targets",
-                   "star_targets_list_seq", "star_targets_tuple_seq", "star_target",
-                   "target_with_star_atom", "star_atom", "single_target",
-                   "single_subscript_attribute_target", "t_primary", "del_targets",
-                   "del_target", "del_t_atom", "type_expressions", "func_type_comment",
+    ruleNames =  [ "fandango", "program", "statement", "production", "alternative", 
+                   "concatenation", "operator", "kleene", "plus", "option", 
+                   "permutation", "repeat", "symbol", "nonterminal_right", 
+                   "nonterminal", "generator_call", "char_set", "constraint", 
+                   "implies", "quantifier", "quantifier_in_line", "formula_disjunction", 
+                   "formula_conjunction", "formula_atom", "formula_comparison", 
+                   "formula_comparison_operator", "expr", "selector_length", 
+                   "star_selection_or_dot_selection", "star_selection", 
+                   "dot_selection", "selection", "base_selection", "rs_pairs", 
+                   "rs_pair", "rs_slices", "rs_slice", "python", "python_tag", 
+                   "include", "grammar_setting", "grammar_setting_content", 
+                   "grammar_selector", "grammar_rule", "grammar_setting_key", 
+                   "grammar_setting_value", "python_file", "interactive", 
+                   "eval", "func_type", "statements", "stmt", "statement_newline", 
+                   "simple_stmts", "simple_stmt", "compound_stmt", "assignment", 
+                   "annotated_rhs", "augassign", "return_stmt", "raise_stmt", 
+                   "global_stmt", "nonlocal_stmt", "del_stmt", "yield_stmt", 
+                   "assert_stmt", "import_stmt", "import_name", "import_from", 
+                   "import_from_targets", "import_from_as_names", "import_from_as_name", 
+                   "dotted_as_names", "dotted_as_name", "dotted_name", "block", 
+                   "decorators", "class_def", "class_def_raw", "function_def", 
+                   "function_def_raw", "params", "parameters", "slash_no_default", 
+                   "slash_with_default", "star_etc", "kwds", "param_no_default", 
+                   "param_no_default_star_annotation", "param_with_default", 
+                   "param_maybe_default", "param", "param_star_annotation", 
+                   "annotation", "star_annotation", "default", "if_stmt", 
+                   "elif_stmt", "else_block", "while_stmt", "for_stmt", 
+                   "with_stmt", "with_item", "try_stmt", "except_block", 
+                   "except_star_block", "finally_block", "match_stmt", "subject_expr", 
+                   "case_block", "guard", "patterns", "pattern", "as_pattern", 
+                   "or_pattern", "closed_pattern", "literal_pattern", "literal_expr", 
+                   "complex_number", "signed_number", "signed_real_number", 
+                   "real_number", "imaginary_number", "capture_pattern", 
+                   "pattern_capture_target", "wildcard_pattern", "value_pattern", 
+                   "attr", "name_or_attr", "group_pattern", "sequence_pattern", 
+                   "open_sequence_pattern", "maybe_sequence_pattern", "maybe_star_pattern", 
+                   "star_pattern", "mapping_pattern", "items_pattern", "key_value_pattern", 
+                   "double_star_pattern", "class_pattern", "positional_patterns", 
+                   "keyword_patterns", "keyword_pattern", "type_alias", 
+                   "type_params", "type_param_seq", "type_param", "type_param_bound", 
+                   "expressions", "expression", "yield_expr", "star_expressions", 
+                   "star_expression", "star_named_expressions", "star_named_expression", 
+                   "assignment_expression", "named_expression", "disjunction", 
+                   "conjunction", "inversion", "comparison", "compare_op_bitwise_or_pair", 
+                   "eq_bitwise_or", "noteq_bitwise_or", "lte_bitwise_or", 
+                   "lt_bitwise_or", "gte_bitwise_or", "gt_bitwise_or", "notin_bitwise_or", 
+                   "in_bitwise_or", "isnot_bitwise_or", "is_bitwise_or", 
+                   "bitwise_or", "bitwise_xor", "bitwise_and", "shift_expr", 
+                   "sum", "term", "factor", "power", "await_primary", "primary", 
+                   "slices", "slice", "atom", "group", "lambdef", "lambda_params", 
+                   "lambda_parameters", "lambda_slash_no_default", "lambda_slash_with_default", 
+                   "lambda_star_etc", "lambda_kwds", "lambda_param_no_default", 
+                   "lambda_param_with_default", "lambda_param_maybe_default", 
+                   "lambda_param", "fstring_middle_no_quote", "fstring_middle_no_single_quote", 
+                   "fstring_middle_breaks_no_triple_quote", "fstring_middle_breaks_no_triple_single_quote", 
+                   "fstring_any_no_quote", "fstring_any_no_single_quote", 
+                   "fstring_middle", "fstring_any_breaks_no_triple_quote", 
+                   "fstring_any_breaks_no_triple_single_quote", "fstring_any", 
+                   "fstring_replacement_field", "fstring_conversion", "fstring_full_format_spec", 
+                   "fstring_format_spec", "fstring", "string", "strings", 
+                   "list", "tuple", "set", "dict", "double_starred_kvpairs", 
+                   "double_starred_kvpair", "kvpair", "for_if_clauses", 
+                   "for_if_clause", "listcomp", "setcomp", "genexp", "dictcomp", 
+                   "arguments", "args", "arg", "kwargs", "starred_expression", 
+                   "kwarg_or_starred", "kwarg_or_double_starred", "star_targets", 
+                   "star_targets_list_seq", "star_targets_tuple_seq", "star_target", 
+                   "target_with_star_atom", "star_atom", "single_target", 
+                   "single_subscript_attribute_target", "t_primary", "del_targets", 
+                   "del_target", "del_t_atom", "type_expressions", "func_type_comment", 
                    "identifier" ]
 
     EOF = Token.EOF
@@ -2323,7 +2323,7 @@ class FandangoParser ( Parser ):
                     self.match(FandangoParser.SEMI_COLON)
                     pass
                 elif token in [128]:
-                    self.state = 541
+                    self.state = 541 
                     self._errHandler.sync(self)
                     _alt = 1
                     while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -2333,7 +2333,7 @@ class FandangoParser ( Parser ):
 
                         else:
                             raise NoViableAltException(self)
-                        self.state = 543
+                        self.state = 543 
                         self._errHandler.sync(self)
                         _alt = self._interp.adaptivePredict(self._input,6,self._ctx)
 
@@ -2393,7 +2393,7 @@ class FandangoParser ( Parser ):
                     self.match(FandangoParser.SEMI_COLON)
                     pass
                 elif token in [128]:
-                    self.state = 569
+                    self.state = 569 
                     self._errHandler.sync(self)
                     _alt = 1
                     while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -2403,7 +2403,7 @@ class FandangoParser ( Parser ):
 
                         else:
                             raise NoViableAltException(self)
-                        self.state = 571
+                        self.state = 571 
                         self._errHandler.sync(self)
                         _alt = self._interp.adaptivePredict(self._input,11,self._ctx)
 
@@ -2465,7 +2465,7 @@ class FandangoParser ( Parser ):
                     self.match(FandangoParser.SEMI_COLON)
                     pass
                 elif token in [128]:
-                    self.state = 598
+                    self.state = 598 
                     self._errHandler.sync(self)
                     _alt = 1
                     while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -2475,7 +2475,7 @@ class FandangoParser ( Parser ):
 
                         else:
                             raise NoViableAltException(self)
-                        self.state = 600
+                        self.state = 600 
                         self._errHandler.sync(self)
                         _alt = self._interp.adaptivePredict(self._input,16,self._ctx)
 
@@ -3398,7 +3398,7 @@ class FandangoParser ( Parser ):
                         self.match(FandangoParser.CLOSE_PAREN)
                         pass
 
-
+             
                 self.state = 727
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,32,self._ctx)
@@ -3595,7 +3595,7 @@ class FandangoParser ( Parser ):
                     self.match(FandangoParser.SEMI_COLON)
                     pass
                 elif token in [128]:
-                    self.state = 759
+                    self.state = 759 
                     self._errHandler.sync(self)
                     _alt = 1
                     while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -3605,7 +3605,7 @@ class FandangoParser ( Parser ):
 
                         else:
                             raise NoViableAltException(self)
-                        self.state = 761
+                        self.state = 761 
                         self._errHandler.sync(self)
                         _alt = self._interp.adaptivePredict(self._input,37,self._ctx)
 
@@ -3653,7 +3653,7 @@ class FandangoParser ( Parser ):
                     self.match(FandangoParser.SEMI_COLON)
                     pass
                 elif token in [128]:
-                    self.state = 782
+                    self.state = 782 
                     self._errHandler.sync(self)
                     _alt = 1
                     while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -3663,7 +3663,7 @@ class FandangoParser ( Parser ):
 
                         else:
                             raise NoViableAltException(self)
-                        self.state = 784
+                        self.state = 784 
                         self._errHandler.sync(self)
                         _alt = self._interp.adaptivePredict(self._input,41,self._ctx)
 
@@ -4013,7 +4013,7 @@ class FandangoParser ( Parser ):
                     self.match(FandangoParser.SEMI_COLON)
                     pass
                 elif token in [128]:
-                    self.state = 847
+                    self.state = 847 
                     self._errHandler.sync(self)
                     _alt = 1
                     while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -4023,7 +4023,7 @@ class FandangoParser ( Parser ):
 
                         else:
                             raise NoViableAltException(self)
-                        self.state = 849
+                        self.state = 849 
                         self._errHandler.sync(self)
                         _alt = self._interp.adaptivePredict(self._input,49,self._ctx)
 
@@ -4079,7 +4079,7 @@ class FandangoParser ( Parser ):
                     self.match(FandangoParser.SEMI_COLON)
                     pass
                 elif token in [128]:
-                    self.state = 869
+                    self.state = 869 
                     self._errHandler.sync(self)
                     _alt = 1
                     while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -4089,7 +4089,7 @@ class FandangoParser ( Parser ):
 
                         else:
                             raise NoViableAltException(self)
-                        self.state = 871
+                        self.state = 871 
                         self._errHandler.sync(self)
                         _alt = self._interp.adaptivePredict(self._input,52,self._ctx)
 
@@ -4145,7 +4145,7 @@ class FandangoParser ( Parser ):
                     self.match(FandangoParser.SEMI_COLON)
                     pass
                 elif token in [128]:
-                    self.state = 891
+                    self.state = 891 
                     self._errHandler.sync(self)
                     _alt = 1
                     while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -4155,7 +4155,7 @@ class FandangoParser ( Parser ):
 
                         else:
                             raise NoViableAltException(self)
-                        self.state = 893
+                        self.state = 893 
                         self._errHandler.sync(self)
                         _alt = self._interp.adaptivePredict(self._input,55,self._ctx)
 
@@ -4211,7 +4211,7 @@ class FandangoParser ( Parser ):
                     self.match(FandangoParser.SEMI_COLON)
                     pass
                 elif token in [128]:
-                    self.state = 913
+                    self.state = 913 
                     self._errHandler.sync(self)
                     _alt = 1
                     while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -4221,7 +4221,7 @@ class FandangoParser ( Parser ):
 
                         else:
                             raise NoViableAltException(self)
-                        self.state = 915
+                        self.state = 915 
                         self._errHandler.sync(self)
                         _alt = self._interp.adaptivePredict(self._input,58,self._ctx)
 
@@ -4273,7 +4273,7 @@ class FandangoParser ( Parser ):
                     self.match(FandangoParser.SEMI_COLON)
                     pass
                 elif token in [128]:
-                    self.state = 933
+                    self.state = 933 
                     self._errHandler.sync(self)
                     _alt = 1
                     while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -4283,7 +4283,7 @@ class FandangoParser ( Parser ):
 
                         else:
                             raise NoViableAltException(self)
-                        self.state = 935
+                        self.state = 935 
                         self._errHandler.sync(self)
                         _alt = self._interp.adaptivePredict(self._input,61,self._ctx)
 
@@ -4339,7 +4339,7 @@ class FandangoParser ( Parser ):
                     self.match(FandangoParser.SEMI_COLON)
                     pass
                 elif token in [128]:
-                    self.state = 955
+                    self.state = 955 
                     self._errHandler.sync(self)
                     _alt = 1
                     while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -4349,7 +4349,7 @@ class FandangoParser ( Parser ):
 
                         else:
                             raise NoViableAltException(self)
-                        self.state = 957
+                        self.state = 957 
                         self._errHandler.sync(self)
                         _alt = self._interp.adaptivePredict(self._input,64,self._ctx)
 
@@ -4405,7 +4405,7 @@ class FandangoParser ( Parser ):
                     self.match(FandangoParser.SEMI_COLON)
                     pass
                 elif token in [128]:
-                    self.state = 977
+                    self.state = 977 
                     self._errHandler.sync(self)
                     _alt = 1
                     while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -4415,7 +4415,7 @@ class FandangoParser ( Parser ):
 
                         else:
                             raise NoViableAltException(self)
-                        self.state = 979
+                        self.state = 979 
                         self._errHandler.sync(self)
                         _alt = self._interp.adaptivePredict(self._input,67,self._ctx)
 
@@ -4471,7 +4471,7 @@ class FandangoParser ( Parser ):
                     self.match(FandangoParser.SEMI_COLON)
                     pass
                 elif token in [128]:
-                    self.state = 999
+                    self.state = 999 
                     self._errHandler.sync(self)
                     _alt = 1
                     while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -4481,7 +4481,7 @@ class FandangoParser ( Parser ):
 
                         else:
                             raise NoViableAltException(self)
-                        self.state = 1001
+                        self.state = 1001 
                         self._errHandler.sync(self)
                         _alt = self._interp.adaptivePredict(self._input,70,self._ctx)
 
@@ -4507,7 +4507,7 @@ class FandangoParser ( Parser ):
                     self.match(FandangoParser.SEMI_COLON)
                     pass
                 elif token in [128]:
-                    self.state = 1009
+                    self.state = 1009 
                     self._errHandler.sync(self)
                     _alt = 1
                     while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -4517,7 +4517,7 @@ class FandangoParser ( Parser ):
 
                         else:
                             raise NoViableAltException(self)
-                        self.state = 1011
+                        self.state = 1011 
                         self._errHandler.sync(self)
                         _alt = self._interp.adaptivePredict(self._input,72,self._ctx)
 
@@ -5163,7 +5163,7 @@ class FandangoParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 1153
             self.bitwise_or(0)
-            self.state = 1157
+            self.state = 1157 
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             while True:
@@ -5171,7 +5171,7 @@ class FandangoParser ( Parser ):
                 self.formula_comparison_operator()
                 self.state = 1155
                 self.bitwise_or(0)
-                self.state = 1159
+                self.state = 1159 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 if not (((((_la - 104)) & ~0x3f) == 0 and ((1 << (_la - 104)) & 127) != 0)):
@@ -5621,7 +5621,7 @@ class FandangoParser ( Parser ):
                         self.selection()
                         pass
 
-
+             
                 self.state = 1208
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,93,self._ctx)
@@ -5842,7 +5842,7 @@ class FandangoParser ( Parser ):
                     self.state = 1230
                     self.match(FandangoParser.COMMA)
                     self.state = 1231
-                    self.rs_pair()
+                    self.rs_pair() 
                 self.state = 1236
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,96,self._ctx)
@@ -5976,7 +5976,7 @@ class FandangoParser ( Parser ):
                     self.state = 1247
                     self.match(FandangoParser.COMMA)
                     self.state = 1248
-                    self.rs_slice()
+                    self.rs_slice() 
                 self.state = 1253
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,99,self._ctx)
@@ -6413,7 +6413,7 @@ class FandangoParser ( Parser ):
             while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
                 if _alt==1:
                     self.state = 1316
-                    self.grammar_rule()
+                    self.grammar_rule() 
                 self.state = 1321
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,112,self._ctx)
@@ -6973,7 +6973,7 @@ class FandangoParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 1384
+            self.state = 1384 
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             while True:
@@ -6991,7 +6991,7 @@ class FandangoParser ( Parser ):
                 else:
                     raise NoViableAltException(self)
 
-                self.state = 1386
+                self.state = 1386 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & 5120027567020818936) != 0) or ((((_la - 78)) & ~0x3f) == 0 and ((1 << (_la - 78)) & 1125908589849113) != 0)):
@@ -7188,7 +7188,7 @@ class FandangoParser ( Parser ):
                     self.state = 1400
                     self.match(FandangoParser.SEMI_COLON)
                     self.state = 1401
-                    self.simple_stmt()
+                    self.simple_stmt() 
                 self.state = 1406
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,129,self._ctx)
@@ -7205,7 +7205,7 @@ class FandangoParser ( Parser ):
             self._errHandler.sync(self)
             la_ = self._interp.adaptivePredict(self._input,133,self._ctx)
             if la_ == 1:
-                self.state = 1411
+                self.state = 1411 
                 self._errHandler.sync(self)
                 _alt = 1
                 while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -7215,7 +7215,7 @@ class FandangoParser ( Parser ):
 
                     else:
                         raise NoViableAltException(self)
-                    self.state = 1413
+                    self.state = 1413 
                     self._errHandler.sync(self)
                     _alt = self._interp.adaptivePredict(self._input,131,self._ctx)
 
@@ -7677,7 +7677,7 @@ class FandangoParser ( Parser ):
 
             elif la_ == 3:
                 self.enterOuterAlt(localctx, 3)
-                self.state = 1473
+                self.state = 1473 
                 self._errHandler.sync(self)
                 _alt = 1
                 while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -7689,7 +7689,7 @@ class FandangoParser ( Parser ):
 
                     else:
                         raise NoViableAltException(self)
-                    self.state = 1475
+                    self.state = 1475 
                     self._errHandler.sync(self)
                     _alt = self._interp.adaptivePredict(self._input,139,self._ctx)
 
@@ -8472,7 +8472,7 @@ class FandangoParser ( Parser ):
                 self.enterOuterAlt(localctx, 2)
                 self.state = 1555
                 self.match(FandangoParser.FROM)
-                self.state = 1557
+                self.state = 1557 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 while True:
@@ -8483,7 +8483,7 @@ class FandangoParser ( Parser ):
                     else:
                         self._errHandler.reportMatch(self)
                         self.consume()
-                    self.state = 1559
+                    self.state = 1559 
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
                     if not (_la==78 or _la==80):
@@ -8636,7 +8636,7 @@ class FandangoParser ( Parser ):
                     self.state = 1577
                     self.match(FandangoParser.COMMA)
                     self.state = 1578
-                    self.import_from_as_name()
+                    self.import_from_as_name() 
                 self.state = 1583
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,156,self._ctx)
@@ -8885,7 +8885,7 @@ class FandangoParser ( Parser ):
                     self.state = 1606
                     self.match(FandangoParser.DOT)
                     self.state = 1607
-                    self.identifier()
+                    self.identifier() 
                 self.state = 1612
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,160,self._ctx)
@@ -9016,7 +9016,7 @@ class FandangoParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 1625
+            self.state = 1625 
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             while True:
@@ -9026,7 +9026,7 @@ class FandangoParser ( Parser ):
                 self.named_expression()
                 self.state = 1623
                 self.match(FandangoParser.NEWLINE)
-                self.state = 1627
+                self.state = 1627 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 if not (_la==111):
@@ -9479,7 +9479,7 @@ class FandangoParser ( Parser ):
                 while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
                     if _alt==1:
                         self.state = 1680
-                        self.param_no_default()
+                        self.param_no_default() 
                     self.state = 1685
                     self._errHandler.sync(self)
                     _alt = self._interp.adaptivePredict(self._input,173,self._ctx)
@@ -9530,7 +9530,7 @@ class FandangoParser ( Parser ):
 
             elif la_ == 3:
                 self.enterOuterAlt(localctx, 3)
-                self.state = 1706
+                self.state = 1706 
                 self._errHandler.sync(self)
                 _alt = 1
                 while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -9540,7 +9540,7 @@ class FandangoParser ( Parser ):
 
                     else:
                         raise NoViableAltException(self)
-                    self.state = 1708
+                    self.state = 1708 
                     self._errHandler.sync(self)
                     _alt = self._interp.adaptivePredict(self._input,178,self._ctx)
 
@@ -9566,13 +9566,13 @@ class FandangoParser ( Parser ):
 
             elif la_ == 4:
                 self.enterOuterAlt(localctx, 4)
-                self.state = 1720
+                self.state = 1720 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 while True:
                     self.state = 1719
                     self.param_with_default()
-                    self.state = 1722
+                    self.state = 1722 
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
                     if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & 5116089176692883456) != 0)):
@@ -9643,13 +9643,13 @@ class FandangoParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 1731
+            self.state = 1731 
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             while True:
                 self.state = 1730
                 self.param_no_default()
-                self.state = 1733
+                self.state = 1733 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & 5116089176692883456) != 0)):
@@ -9726,18 +9726,18 @@ class FandangoParser ( Parser ):
             while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
                 if _alt==1:
                     self.state = 1739
-                    self.param_no_default()
+                    self.param_no_default() 
                 self.state = 1744
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,186,self._ctx)
 
-            self.state = 1746
+            self.state = 1746 
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             while True:
                 self.state = 1745
                 self.param_with_default()
-                self.state = 1748
+                self.state = 1748 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & 5116089176692883456) != 0)):
@@ -9873,13 +9873,13 @@ class FandangoParser ( Parser ):
                 self.match(FandangoParser.STAR)
                 self.state = 1777
                 self.match(FandangoParser.COMMA)
-                self.state = 1779
+                self.state = 1779 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 while True:
                     self.state = 1778
                     self.param_maybe_default()
-                    self.state = 1781
+                    self.state = 1781 
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
                     if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & 5116089176692883456) != 0)):
@@ -10950,7 +10950,7 @@ class FandangoParser ( Parser ):
                         self.state = 1906
                         self.match(FandangoParser.COMMA)
                         self.state = 1907
-                        self.with_item()
+                        self.with_item() 
                     self.state = 1912
                     self._errHandler.sync(self)
                     _alt = self._interp.adaptivePredict(self._input,211,self._ctx)
@@ -11013,7 +11013,7 @@ class FandangoParser ( Parser ):
                         self.state = 1936
                         self.match(FandangoParser.COMMA)
                         self.state = 1937
-                        self.with_item()
+                        self.with_item() 
                     self.state = 1942
                     self._errHandler.sync(self)
                     _alt = self._interp.adaptivePredict(self._input,214,self._ctx)
@@ -11214,13 +11214,13 @@ class FandangoParser ( Parser ):
                 self.match(FandangoParser.COLON)
                 self.state = 1979
                 self.block()
-                self.state = 1981
+                self.state = 1981 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 while True:
                     self.state = 1980
                     self.except_block()
-                    self.state = 1983
+                    self.state = 1983 
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
                     if not (_la==25):
@@ -11252,13 +11252,13 @@ class FandangoParser ( Parser ):
                 self.match(FandangoParser.COLON)
                 self.state = 1993
                 self.block()
-                self.state = 1995
+                self.state = 1995 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 while True:
                     self.state = 1994
                     self.except_star_block()
-                    self.state = 1997
+                    self.state = 1997 
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
                     if not (_la==25):
@@ -11574,13 +11574,13 @@ class FandangoParser ( Parser ):
             self.match(FandangoParser.NEWLINE)
             self.state = 2039
             self.match(FandangoParser.INDENT)
-            self.state = 2041
+            self.state = 2041 
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             while True:
                 self.state = 2040
                 self.case_block()
-                self.state = 2043
+                self.state = 2043 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 if not (_la==18):
@@ -12850,7 +12850,7 @@ class FandangoParser ( Parser ):
                     self.state = 2152
                     self.match(FandangoParser.DOT)
                     self.state = 2153
-                    self.identifier()
+                    self.identifier() 
                 self.state = 2158
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,242,self._ctx)
@@ -13111,7 +13111,7 @@ class FandangoParser ( Parser ):
                     self.state = 2181
                     self.match(FandangoParser.COMMA)
                     self.state = 2182
-                    self.maybe_star_pattern()
+                    self.maybe_star_pattern() 
                 self.state = 2187
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,247,self._ctx)
@@ -13426,7 +13426,7 @@ class FandangoParser ( Parser ):
                     self.state = 2229
                     self.match(FandangoParser.COMMA)
                     self.state = 2230
-                    self.key_value_pattern()
+                    self.key_value_pattern() 
                 self.state = 2235
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,255,self._ctx)
@@ -13736,7 +13736,7 @@ class FandangoParser ( Parser ):
                     self.state = 2279
                     self.match(FandangoParser.COMMA)
                     self.state = 2280
-                    self.pattern()
+                    self.pattern() 
                 self.state = 2285
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,261,self._ctx)
@@ -13798,7 +13798,7 @@ class FandangoParser ( Parser ):
                     self.state = 2287
                     self.match(FandangoParser.COMMA)
                     self.state = 2288
-                    self.keyword_pattern()
+                    self.keyword_pattern() 
                 self.state = 2293
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,262,self._ctx)
@@ -14031,7 +14031,7 @@ class FandangoParser ( Parser ):
                     self.state = 2311
                     self.match(FandangoParser.COMMA)
                     self.state = 2312
-                    self.type_param()
+                    self.type_param() 
                 self.state = 2317
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,264,self._ctx)
@@ -14228,7 +14228,7 @@ class FandangoParser ( Parser ):
                     self.state = 2335
                     self.match(FandangoParser.COMMA)
                     self.state = 2336
-                    self.expression()
+                    self.expression() 
                 self.state = 2341
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,268,self._ctx)
@@ -14458,7 +14458,7 @@ class FandangoParser ( Parser ):
                     self.state = 2365
                     self.match(FandangoParser.COMMA)
                     self.state = 2366
-                    self.star_expression()
+                    self.star_expression() 
                 self.state = 2371
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,273,self._ctx)
@@ -14601,7 +14601,7 @@ class FandangoParser ( Parser ):
                     self.state = 2382
                     self.match(FandangoParser.COMMA)
                     self.state = 2383
-                    self.star_named_expression()
+                    self.star_named_expression() 
                 self.state = 2388
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,276,self._ctx)
@@ -15023,7 +15023,7 @@ class FandangoParser ( Parser ):
             while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
                 if _alt==1:
                     self.state = 2427
-                    self.compare_op_bitwise_or_pair()
+                    self.compare_op_bitwise_or_pair() 
                 self.state = 2432
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,283,self._ctx)
@@ -15710,7 +15710,7 @@ class FandangoParser ( Parser ):
                     self.state = 2484
                     self.match(FandangoParser.OR_OP)
                     self.state = 2485
-                    self.bitwise_xor(0)
+                    self.bitwise_xor(0) 
                 self.state = 2490
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,286,self._ctx)
@@ -15782,7 +15782,7 @@ class FandangoParser ( Parser ):
                     self.state = 2495
                     self.match(FandangoParser.XOR)
                     self.state = 2496
-                    self.bitwise_and(0)
+                    self.bitwise_and(0) 
                 self.state = 2501
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,287,self._ctx)
@@ -15854,7 +15854,7 @@ class FandangoParser ( Parser ):
                     self.state = 2506
                     self.match(FandangoParser.AND_OP)
                     self.state = 2507
-                    self.shift_expr(0)
+                    self.shift_expr(0) 
                 self.state = 2512
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,288,self._ctx)
@@ -15949,7 +15949,7 @@ class FandangoParser ( Parser ):
                         self.sum_(0)
                         pass
 
-
+             
                 self.state = 2526
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,290,self._ctx)
@@ -16044,7 +16044,7 @@ class FandangoParser ( Parser ):
                         self.term(0)
                         pass
 
-
+             
                 self.state = 2540
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,292,self._ctx)
@@ -16187,7 +16187,7 @@ class FandangoParser ( Parser ):
                         self.factor()
                         pass
 
-
+             
                 self.state = 2563
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,294,self._ctx)
@@ -16546,7 +16546,7 @@ class FandangoParser ( Parser ):
                         self.match(FandangoParser.CLOSE_BRACK)
                         pass
 
-
+             
                 self.state = 2608
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,300,self._ctx)
@@ -16640,7 +16640,7 @@ class FandangoParser ( Parser ):
                         self.starred_expression()
                         pass
 
-
+             
                 self.state = 2622
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,303,self._ctx)
@@ -17211,7 +17211,7 @@ class FandangoParser ( Parser ):
                 while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
                     if _alt==1:
                         self.state = 2684
-                        self.lambda_param_no_default()
+                        self.lambda_param_no_default() 
                     self.state = 2689
                     self._errHandler.sync(self)
                     _alt = self._interp.adaptivePredict(self._input,316,self._ctx)
@@ -17262,7 +17262,7 @@ class FandangoParser ( Parser ):
 
             elif la_ == 3:
                 self.enterOuterAlt(localctx, 3)
-                self.state = 2710
+                self.state = 2710 
                 self._errHandler.sync(self)
                 _alt = 1
                 while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -17272,7 +17272,7 @@ class FandangoParser ( Parser ):
 
                     else:
                         raise NoViableAltException(self)
-                    self.state = 2712
+                    self.state = 2712 
                     self._errHandler.sync(self)
                     _alt = self._interp.adaptivePredict(self._input,321,self._ctx)
 
@@ -17298,13 +17298,13 @@ class FandangoParser ( Parser ):
 
             elif la_ == 4:
                 self.enterOuterAlt(localctx, 4)
-                self.state = 2724
+                self.state = 2724 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 while True:
                     self.state = 2723
                     self.lambda_param_with_default()
-                    self.state = 2726
+                    self.state = 2726 
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
                     if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & 5116089176692883456) != 0)):
@@ -17375,13 +17375,13 @@ class FandangoParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 2735
+            self.state = 2735 
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             while True:
                 self.state = 2734
                 self.lambda_param_no_default()
-                self.state = 2737
+                self.state = 2737 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & 5116089176692883456) != 0)):
@@ -17458,18 +17458,18 @@ class FandangoParser ( Parser ):
             while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
                 if _alt==1:
                     self.state = 2743
-                    self.lambda_param_no_default()
+                    self.lambda_param_no_default() 
                 self.state = 2748
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,329,self._ctx)
 
-            self.state = 2750
+            self.state = 2750 
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             while True:
                 self.state = 2749
                 self.lambda_param_with_default()
-                self.state = 2752
+                self.state = 2752 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & 5116089176692883456) != 0)):
@@ -17575,13 +17575,13 @@ class FandangoParser ( Parser ):
                 self.match(FandangoParser.STAR)
                 self.state = 2770
                 self.match(FandangoParser.COMMA)
-                self.state = 2772
+                self.state = 2772 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 while True:
                     self.state = 2771
                     self.lambda_param_maybe_default()
-                    self.state = 2774
+                    self.state = 2774 
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
                     if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & 5116089176692883456) != 0)):
@@ -19069,7 +19069,7 @@ class FandangoParser ( Parser ):
         self.enterRule(localctx, 412, self.RULE_fstring_any)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 2950
+            self.state = 2950 
             self._errHandler.sync(self)
             _alt = 1
             while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -19503,7 +19503,7 @@ class FandangoParser ( Parser ):
 
                 else:
                     raise NoViableAltException(self)
-                self.state = 2952
+                self.state = 2952 
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,351,self._ctx)
 
@@ -19706,7 +19706,7 @@ class FandangoParser ( Parser ):
             while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
                 if _alt==1:
                     self.state = 2974
-                    self.fstring_format_spec()
+                    self.fstring_format_spec() 
                 self.state = 2979
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,356,self._ctx)
@@ -20015,7 +20015,7 @@ class FandangoParser ( Parser ):
         self.enterRule(localctx, 426, self.RULE_strings)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 3022
+            self.state = 3022 
             self._errHandler.sync(self)
             _alt = 1
             while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -20037,7 +20037,7 @@ class FandangoParser ( Parser ):
 
                 else:
                     raise NoViableAltException(self)
-                self.state = 3024
+                self.state = 3024 
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,364,self._ctx)
 
@@ -20332,7 +20332,7 @@ class FandangoParser ( Parser ):
                     self.state = 3052
                     self.match(FandangoParser.COMMA)
                     self.state = 3053
-                    self.double_starred_kvpair()
+                    self.double_starred_kvpair() 
                 self.state = 3058
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,368,self._ctx)
@@ -20499,13 +20499,13 @@ class FandangoParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 3072
+            self.state = 3072 
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             while True:
                 self.state = 3071
                 self.for_if_clause()
-                self.state = 3074
+                self.state = 3074 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 if not (_la==15 or _la==28):
@@ -20957,7 +20957,7 @@ class FandangoParser ( Parser ):
                         self.state = 3118
                         self.match(FandangoParser.COMMA)
                         self.state = 3119
-                        self.arg()
+                        self.arg() 
                     self.state = 3124
                     self._errHandler.sync(self)
                     _alt = self._interp.adaptivePredict(self._input,376,self._ctx)
@@ -21126,7 +21126,7 @@ class FandangoParser ( Parser ):
                         self.state = 3139
                         self.match(FandangoParser.COMMA)
                         self.state = 3140
-                        self.kwarg_or_starred()
+                        self.kwarg_or_starred() 
                     self.state = 3145
                     self._errHandler.sync(self)
                     _alt = self._interp.adaptivePredict(self._input,380,self._ctx)
@@ -21143,7 +21143,7 @@ class FandangoParser ( Parser ):
                         self.state = 3148
                         self.match(FandangoParser.COMMA)
                         self.state = 3149
-                        self.kwarg_or_double_starred()
+                        self.kwarg_or_double_starred() 
                     self.state = 3154
                     self._errHandler.sync(self)
                     _alt = self._interp.adaptivePredict(self._input,381,self._ctx)
@@ -21162,7 +21162,7 @@ class FandangoParser ( Parser ):
                         self.state = 3156
                         self.match(FandangoParser.COMMA)
                         self.state = 3157
-                        self.kwarg_or_starred()
+                        self.kwarg_or_starred() 
                     self.state = 3162
                     self._errHandler.sync(self)
                     _alt = self._interp.adaptivePredict(self._input,382,self._ctx)
@@ -21181,7 +21181,7 @@ class FandangoParser ( Parser ):
                         self.state = 3164
                         self.match(FandangoParser.COMMA)
                         self.state = 3165
-                        self.kwarg_or_double_starred()
+                        self.kwarg_or_double_starred() 
                     self.state = 3170
                     self._errHandler.sync(self)
                     _alt = self._interp.adaptivePredict(self._input,383,self._ctx)
@@ -21429,7 +21429,7 @@ class FandangoParser ( Parser ):
                     self.state = 3192
                     self.match(FandangoParser.COMMA)
                     self.state = 3193
-                    self.star_target()
+                    self.star_target() 
                 self.state = 3198
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,387,self._ctx)
@@ -21500,7 +21500,7 @@ class FandangoParser ( Parser ):
                     self.state = 3203
                     self.match(FandangoParser.COMMA)
                     self.state = 3204
-                    self.star_target()
+                    self.star_target() 
                 self.state = 3209
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,389,self._ctx)
@@ -21567,7 +21567,7 @@ class FandangoParser ( Parser ):
                 self.enterOuterAlt(localctx, 1)
                 self.state = 3213
                 self.star_target()
-                self.state = 3216
+                self.state = 3216 
                 self._errHandler.sync(self)
                 _alt = 1
                 while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -21579,7 +21579,7 @@ class FandangoParser ( Parser ):
 
                     else:
                         raise NoViableAltException(self)
-                    self.state = 3218
+                    self.state = 3218 
                     self._errHandler.sync(self)
                     _alt = self._interp.adaptivePredict(self._input,391,self._ctx)
 
@@ -22175,7 +22175,7 @@ class FandangoParser ( Parser ):
                         self.match(FandangoParser.CLOSE_PAREN)
                         pass
 
-
+             
                 self.state = 3304
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,403,self._ctx)
@@ -22238,7 +22238,7 @@ class FandangoParser ( Parser ):
                     self.state = 3306
                     self.match(FandangoParser.COMMA)
                     self.state = 3307
-                    self.del_target()
+                    self.del_target() 
                 self.state = 3312
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,404,self._ctx)
@@ -22504,7 +22504,7 @@ class FandangoParser ( Parser ):
                         self.state = 3342
                         self.match(FandangoParser.COMMA)
                         self.state = 3343
-                        self.expression()
+                        self.expression() 
                     self.state = 3348
                     self._errHandler.sync(self)
                     _alt = self._interp.adaptivePredict(self._input,410,self._ctx)
@@ -22535,7 +22535,7 @@ class FandangoParser ( Parser ):
                         self.state = 3357
                         self.match(FandangoParser.COMMA)
                         self.state = 3358
-                        self.expression()
+                        self.expression() 
                     self.state = 3363
                     self._errHandler.sync(self)
                     _alt = self._interp.adaptivePredict(self._input,411,self._ctx)
@@ -22560,7 +22560,7 @@ class FandangoParser ( Parser ):
                         self.state = 3369
                         self.match(FandangoParser.COMMA)
                         self.state = 3370
-                        self.expression()
+                        self.expression() 
                     self.state = 3375
                     self._errHandler.sync(self)
                     _alt = self._interp.adaptivePredict(self._input,412,self._ctx)
@@ -22749,126 +22749,126 @@ class FandangoParser ( Parser ):
     def generator_call_sempred(self, localctx:Generator_callContext, predIndex:int):
             if predIndex == 0:
                 return self.precpred(self._ctx, 4)
-
+         
 
             if predIndex == 1:
                 return self.precpred(self._ctx, 3)
-
+         
 
             if predIndex == 2:
                 return self.precpred(self._ctx, 2)
-
+         
 
             if predIndex == 3:
                 return self.precpred(self._ctx, 1)
-
+         
 
     def dot_selection_sempred(self, localctx:Dot_selectionContext, predIndex:int):
             if predIndex == 4:
                 return self.precpred(self._ctx, 2)
-
+         
 
             if predIndex == 5:
                 return self.precpred(self._ctx, 1)
-
+         
 
     def dotted_name_sempred(self, localctx:Dotted_nameContext, predIndex:int):
             if predIndex == 6:
                 return self.precpred(self._ctx, 2)
-
+         
 
     def name_or_attr_sempred(self, localctx:Name_or_attrContext, predIndex:int):
             if predIndex == 7:
                 return self.precpred(self._ctx, 2)
-
+         
 
     def bitwise_or_sempred(self, localctx:Bitwise_orContext, predIndex:int):
             if predIndex == 8:
                 return self.precpred(self._ctx, 2)
-
+         
 
     def bitwise_xor_sempred(self, localctx:Bitwise_xorContext, predIndex:int):
             if predIndex == 9:
                 return self.precpred(self._ctx, 2)
-
+         
 
     def bitwise_and_sempred(self, localctx:Bitwise_andContext, predIndex:int):
             if predIndex == 10:
                 return self.precpred(self._ctx, 2)
-
+         
 
     def shift_expr_sempred(self, localctx:Shift_exprContext, predIndex:int):
             if predIndex == 11:
                 return self.precpred(self._ctx, 3)
-
+         
 
             if predIndex == 12:
                 return self.precpred(self._ctx, 2)
-
+         
 
     def sum_sempred(self, localctx:SumContext, predIndex:int):
             if predIndex == 13:
                 return self.precpred(self._ctx, 3)
-
+         
 
             if predIndex == 14:
                 return self.precpred(self._ctx, 2)
-
+         
 
     def term_sempred(self, localctx:TermContext, predIndex:int):
             if predIndex == 15:
                 return self.precpred(self._ctx, 6)
-
+         
 
             if predIndex == 16:
                 return self.precpred(self._ctx, 5)
-
+         
 
             if predIndex == 17:
                 return self.precpred(self._ctx, 4)
-
+         
 
             if predIndex == 18:
                 return self.precpred(self._ctx, 3)
-
+         
 
             if predIndex == 19:
                 return self.precpred(self._ctx, 2)
-
+         
 
     def primary_sempred(self, localctx:PrimaryContext, predIndex:int):
             if predIndex == 20:
                 return self.precpred(self._ctx, 5)
-
+         
 
             if predIndex == 21:
                 return self.precpred(self._ctx, 4)
-
+         
 
             if predIndex == 22:
                 return self.precpred(self._ctx, 3)
-
+         
 
             if predIndex == 23:
                 return self.precpred(self._ctx, 2)
-
+         
 
     def t_primary_sempred(self, localctx:T_primaryContext, predIndex:int):
             if predIndex == 24:
                 return self.precpred(self._ctx, 5)
-
+         
 
             if predIndex == 25:
                 return self.precpred(self._ctx, 4)
-
+         
 
             if predIndex == 26:
                 return self.precpred(self._ctx, 3)
-
+         
 
             if predIndex == 27:
                 return self.precpred(self._ctx, 2)
-
+         
 
 
 
