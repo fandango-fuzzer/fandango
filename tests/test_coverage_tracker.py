@@ -36,27 +36,32 @@ def make_tracker(selector, history):
 
 
 def bruteforce_uncovered(selector, trees):
-    return set(
-        selector.grammar.get_uncovered_k_paths(
-            trees,
-            selector._coverage_tracker._diversity_k,
-            selector.start_symbol,
-            coverage_goal=GOAL,
-            input_parties=selector._input_parties(),
-        )
+    tracker = selector._coverage_tracker
+    all_paths = tracker.all_k_paths(
+        selector.start_symbol,
+        coverage_goal=GOAL,
+        input_parties=selector._input_parties(),
+    )
+    return all_paths - tracker._covered(
+        trees, coverage_goal=GOAL, input_parties=selector._input_parties()
     )
 
 
 def bruteforce_scores(selector, trees):
-    messages_by_nt = selector._model.group_messages_by_nt(trees)
+    messages_by_nt: dict[NonTerminal, list[DerivationTree]] = {}
+    for tree in trees:
+        for symbol, messages in CoverageTracker._messages_grouped_by(
+            tree, lambda packet_type: packet_type.symbol
+        ).items():
+            messages_by_nt.setdefault(symbol, []).extend(messages)
     scores = {}
-    for symbol in selector._model.state_grammar_symbols:
+    for symbol in {message.symbol for message in selector._model.protocol_msg_symbols}:
         if symbol not in messages_by_nt:
             scores[symbol] = 0.0
         else:
-            scores[symbol] = selector.grammar.compute_kpath_coverage(
-                messages_by_nt[symbol], selector._coverage_tracker._diversity_k, symbol
-            )
+            all_paths = selector._coverage_tracker.all_k_paths(symbol)
+            covered = selector._coverage_tracker._covered(messages_by_nt[symbol])
+            scores[symbol] = len(covered) / len(all_paths) if all_paths else 1.0
     return list(sorted(scores.items(), key=lambda x: (x[1], x[0].name())))
 
 
@@ -118,5 +123,5 @@ def test_reset_clears_basis(grammar_file):
     tracker = make_tracker(selector, DerivationTree(NonTerminal("<start>")))
     tracker.add_completed_tree(tree)
     tracker.reset()
-    assert tracker._whole_covered == set()
-    assert tracker._message_covered == {}
+    assert tracker._goal_coverage._covered_by_finished_runs == {}
+    assert tracker._message_coverage._covered_by_finished_runs == {}

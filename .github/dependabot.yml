@@ -8,11 +8,9 @@ updates:
     schedule:
       interval: weekly
     groups:
-      minor-updates:
+      minor-and-patch-updates:
         update-types:
           - "minor"
-      patch-updates:
-        update-types:
           - "patch"
     patterns:
       - "*"

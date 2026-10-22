@@ -37,6 +37,7 @@ class SA_FandangoTranslator : public FandangoParserBaseVisitor {
     PyObject *Formula_conjunctionContext_cls = NULL;
     PyObject *Formula_atomContext_cls = NULL;
     PyObject *Formula_comparisonContext_cls = NULL;
+    PyObject *Formula_comparison_operatorContext_cls = NULL;
     PyObject *ExprContext_cls = NULL;
     PyObject *Selector_lengthContext_cls = NULL;
     PyObject *Star_selection_or_dot_selectionContext_cls = NULL;
@@ -313,6 +314,8 @@ class SA_FandangoTranslator : public FandangoParserBaseVisitor {
     antlrcpp::Any visitFormula_atom(FandangoParser::Formula_atomContext *ctx);
 
     antlrcpp::Any visitFormula_comparison(FandangoParser::Formula_comparisonContext *ctx);
+
+    antlrcpp::Any visitFormula_comparison_operator(FandangoParser::Formula_comparison_operatorContext *ctx);
 
     antlrcpp::Any visitExpr(FandangoParser::ExprContext *ctx);
 

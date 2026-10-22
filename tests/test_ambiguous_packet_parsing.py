@@ -17,7 +17,7 @@ import unittest
 
 from fandango.api import Fandango
 from fandango.io import FandangoIO
-from fandango.io.navigation.graph.packetforecaster import PacketForecaster
+from fandango.io.navigation.forecasting.packetforecaster import PacketForecaster
 from fandango.io.packetparser import parse_next_remote_packet
 from fandango.language.grammar import FuzzingMode, ParsingMode
 from fandango.language.symbols import NonTerminal
@@ -63,7 +63,7 @@ class TestParseNextRemotePacketAmbiguity(unittest.TestCase):
         io = FandangoIO()
         io.add_receive("Extern", "Fuzzer", "response")
 
-        results = list(parse_next_remote_packet(grammar, forecast, io))
+        results = list(parse_next_remote_packet(grammar, forecast, io, history_tree))
 
         yielded_symbols = {pair[1].symbol for pair in results}
         self.assertEqual(
@@ -92,7 +92,7 @@ class TestParseNextRemotePacketAmbiguity(unittest.TestCase):
         io = FandangoIO.instance()
         io.add_receive("Extern", "Fuzzer", "response")
 
-        results = list(parse_next_remote_packet(grammar, forecast, io))
+        results = list(parse_next_remote_packet(grammar, forecast, io, history_tree))
 
         self.assertEqual(len(results), 2, "Expected two parse candidates")
 
@@ -121,7 +121,7 @@ class TestConstraintDisambiguation(unittest.TestCase):
 
         self.assertEqual(len(result_list), 1)
         result = result_list[0]
-        messages = result.protocol_msgs()
+        messages = list(result.protocol_msgs())
         self.assertEqual(len(messages), 3)
 
         # First message: Fuzzer sends the query

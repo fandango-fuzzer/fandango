@@ -1,61 +1,109 @@
-from typing import Optional
+import time
+from typing import Iterator, Optional
 
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
-from fandango.language.grammar.grammar import Grammar, KPath
+from fandango.io.navigation.selection.coverage_tracker import (
+    CoverageTracker,
+    KPathCounts,
+)
+from fandango.io.navigation.selection.violation_profiler.violation_profiler import (
+    ViolationProfiler,
+)
+from fandango.language.grammar.grammar import KPath
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 
 
 class PacketCoverageFilter:
-    def __init__(self, diversity_k: int, grammar: Grammar):
-        self._diversity_k = diversity_k
-        self._grammar = grammar
+    # Valid candidates held back for one message before searching on is not worth the time
+    HELD_BACK_PER_MESSAGE = 10
+    # Seconds of searching for one message after which holding back is not worth the time either
+    HOLD_BACK_SECONDS = 2.5
+    # Valid candidates of one packet type held back in a row before its uncovered k-paths count as unreachable
+    HELD_BACK_UNTIL_UNREACHABLE = 100
+
+    def __init__(
+        self,
+        coverage_tracker: CoverageTracker,
+        violation_profile: Optional[ViolationProfiler] = None,
+    ):
+        self._coverage_tracker = coverage_tracker
+        self._violation_profile = violation_profile
+        self._message_started_at = time.monotonic()
+        self._held_back_count = 0
+        self._held_back_in_a_row: dict[PacketNonTerminal, int] = {}
         self._submitted_solutions: set[int] = set()
-        self.hold_back_solutions: set[DerivationTree] = set()
+        self.hold_back_solutions_by_msg_hash: dict[int, DerivationTree] = {}
         self._solution_set: set[int] = set()
-        self._past_msgs: set[DerivationTree] = set()
-        self._current_msgs: set[DerivationTree] = set()
+        self._held_back_packet_types: set[PacketNonTerminal] = set()
+        self._unreachable_k_paths: dict[tuple[PacketNonTerminal, bool], set[KPath]] = {}
 
     def add_completed_tree(self, tree: DerivationTree) -> None:
         """Fold a finished run's messages into the past-message set."""
         for record in tree.protocol_msgs():
-            self._past_msgs.add(record.msg)
             self._submitted_solutions.add(
                 hash((record.sender, record.recipient, record.msg))
             )
 
     def set_current_tree(self, current_tree: DerivationTree) -> None:
         """Register the in-progress tree's messages for the next generation."""
-        self.hold_back_solutions.clear()
+        self.hold_back_solutions_by_msg_hash.clear()
         self._solution_set.clear()
-        self._current_msgs = set()
+        self._held_back_packet_types.clear()
+        self._held_back_count = 0
+        self._message_started_at = time.monotonic()
         for record in current_tree.protocol_msgs():
-            self._current_msgs.add(record.msg)
             self._submitted_solutions.add(
                 hash((record.sender, record.recipient, record.msg))
             )
 
     def reset(self) -> None:
         self._submitted_solutions.clear()
-        self.hold_back_solutions.clear()
+        self.hold_back_solutions_by_msg_hash.clear()
         self._solution_set.clear()
-        self._past_msgs.clear()
-        self._current_msgs.clear()
+        self._held_back_packet_types.clear()
+        self._unreachable_k_paths.clear()
+        self._held_back_count = 0
+        self._held_back_in_a_row.clear()
+        self._message_started_at = time.monotonic()
 
-    def get_past_msgs(
-        self, packet_type: Optional[PacketNonTerminal] = None
-    ) -> set[DerivationTree]:
-        msg_trees = self._past_msgs | self._current_msgs
-        if packet_type is None:
-            return msg_trees
-        return {
-            msg
-            for msg in msg_trees
-            if isinstance(msg.symbol, NonTerminal)
-            and PacketNonTerminal(msg.sender, msg.recipient, msg.symbol) == packet_type
-        }
+    def held_back_enough(self) -> bool:
+        """
+        Whether the current message has held back so many valid candidates, or searched so long, that a held-back
+        one should be sent.
+        """
+        return (
+            self._held_back_count >= self.HELD_BACK_PER_MESSAGE
+            or self._hold_back_time_is_up()
+        ) and len(self.hold_back_solutions_by_msg_hash) > 0
 
-    def _is_path_start_with(self, state_path: KPath, path: KPath) -> int:
+    def _hold_back_time_is_up(self) -> bool:
+        return time.monotonic() - self._message_started_at >= self.HOLD_BACK_SECONDS
+
+    def mark_uncovered_k_paths_unreachable(self) -> None:
+        for packet_type in self._held_back_packet_types:
+            self._mark_unreachable(packet_type)
+
+    def _mark_unreachable(self, packet_type: PacketNonTerminal) -> None:
+        for overlap_to_root in (False, True):
+            self._unreachable_k_paths.setdefault(
+                (packet_type, overlap_to_root), set()
+            ).update(
+                self._reachable_k_paths(packet_type, overlap_to_root)
+                - self._coverage_tracker.covered_packet_k_paths(
+                    packet_type, overlap_to_root
+                )
+            )
+
+    def _reachable_k_paths(
+        self, packet_type: PacketNonTerminal, overlap_to_root: bool
+    ) -> set[KPath]:
+        return self._coverage_tracker.all_k_paths(
+            packet_type.symbol, overlap_to_root=overlap_to_root
+        ) - self._unreachable_k_paths.get((packet_type, overlap_to_root), set())
+
+    @staticmethod
+    def _is_path_start_with(state_path: KPath, path: KPath) -> int:
         n = len(state_path)
         m = len(path)
         max_overlap = min(n, m)
@@ -65,59 +113,73 @@ class PacketCoverageFilter:
         return 0
 
     def filter(self, individual: DerivationTree) -> Optional[DerivationTree]:
-        if len(individual.protocol_msgs()) != 0:
-            msg = individual.protocol_msgs()[-1].msg
-            symbol = msg.symbol
-            assert isinstance(symbol, NonTerminal)
-            msg_key = PacketNonTerminal(msg.sender, msg.recipient, symbol)
-            msg_hash = hash(msg)
-        else:
-            msg = None
-            symbol = None
-            msg_key = None
-            msg_hash = None
-
-        if msg is None:
+        last_record = next(individual.protocol_msgs(reverse=True), None)
+        if last_record is None:
             return individual
-
-        assert msg_hash is not None and msg_key is not None
-        state_path_tree = msg.get_path()
-        if len(state_path_tree) > self._diversity_k:
-            state_path_tree = state_path_tree[-self._diversity_k :]
-        state_path = tuple(map(lambda x: x.symbol, state_path_tree))
+        msg = last_record.msg
+        symbol = msg.symbol
         assert isinstance(symbol, NonTerminal)
-        uncovered_paths = self._grammar.get_uncovered_k_paths(
-            list(self.get_past_msgs(msg_key)),
-            self._diversity_k,
-            symbol,
-            overlap_to_root=True,
-        )
+        packet_type = PacketNonTerminal(msg.sender, msg.recipient, symbol)
+        profile = self._violation_profile
+        if profile is not None and profile.should_withhold(msg):
+            return None
+        if self._hold_back_time_is_up() and not self.hold_back_solutions_by_msg_hash:
+            # Searched long enough without a candidate to hold back: the first valid one is sent
+            return individual
+        msg_hash = hash(msg)
+
+        state_path_tree = msg.get_path()
+        if len(state_path_tree) > self._coverage_tracker.diversity_k:
+            state_path_tree = state_path_tree[-self._coverage_tracker.diversity_k :]
+        state_path = tuple(map(lambda x: x.symbol, state_path_tree))
+        tracker = self._coverage_tracker
+        uncovered_paths = self._reachable_k_paths(
+            packet_type, overlap_to_root=True
+        ) - tracker.covered_packet_k_paths(packet_type, overlap_to_root=True)
 
         overlap_to_root = any(
-            0 < self._is_path_start_with(state_path, path) < self._diversity_k
+            0
+            < self._is_path_start_with(state_path, path)
+            < self._coverage_tracker.diversity_k
             for path in uncovered_paths
         )
 
-        old_coverage = self._grammar.compute_kpath_coverage(
-            list(self.get_past_msgs(msg_key)),
-            self._diversity_k,
-            symbol,
-            overlap_to_root=overlap_to_root,
-        )
-        new_coverage = self._grammar.compute_kpath_coverage(
-            list(self.get_past_msgs(msg_key)) + [msg],
-            self._diversity_k,
-            symbol,
-            overlap_to_root=overlap_to_root,
-        )
-        if old_coverage < new_coverage or new_coverage == 1.0:
+        all_paths = tracker.all_k_paths(symbol, overlap_to_root=overlap_to_root)
+        covered_paths = tracker.covered_packet_k_paths(packet_type, overlap_to_root)
+        covered_with_msg = covered_paths | tracker.k_paths_of(msg, overlap_to_root)
+        old_coverage = KPathCounts(len(covered_paths), len(all_paths)).covered_share()
+        new_coverage = KPathCounts(
+            len(covered_with_msg), len(all_paths)
+        ).covered_share()
+        if (
+            old_coverage < new_coverage
+            or self._reachable_k_paths(packet_type, overlap_to_root) <= covered_with_msg
+        ):
             if new_coverage < 1.0:
                 self._solution_set.add(msg_hash)
+            if old_coverage < new_coverage:
+                self._held_back_in_a_row.pop(packet_type, None)
             return individual
-        elif (
+        self._held_back_packet_types.add(packet_type)
+        self._held_back_count += 1
+        self._held_back_in_a_row[packet_type] = (
+            self._held_back_in_a_row.get(packet_type, 0) + 1
+        )
+        if self._held_back_in_a_row[packet_type] >= self.HELD_BACK_UNTIL_UNREACHABLE:
+            self._mark_unreachable(packet_type)
+            del self._held_back_in_a_row[packet_type]
+        if (
             msg_hash not in self._submitted_solutions
             and msg_hash not in self._solution_set
-            and msg_hash not in self.hold_back_solutions
+            and msg_hash not in self.hold_back_solutions_by_msg_hash
         ):
-            self.hold_back_solutions.add(individual)
+            self.hold_back_solutions_by_msg_hash[msg_hash] = individual
         return None
+
+    def until_held_back_enough(
+        self, candidates: Iterator[DerivationTree]
+    ) -> Iterator[DerivationTree]:
+        for candidate in candidates:
+            yield candidate
+            if self.held_back_enough():
+                return

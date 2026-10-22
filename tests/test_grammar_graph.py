@@ -1,18 +1,30 @@
 import unittest
 from typing import TypeGuard
+from unittest import mock
 
 from fandango.api import Fandango
-from fandango.io.navigation.graph.grammarnavigator import GrammarNavigator
+from fandango.errors import FandangoError
+from fandango.io.navigation.graph.grammar_navigator import GrammarNavigator
+from fandango.io.navigation.graph.grammar_navigator.grammar_graph_converter import (
+    EagerGrammarGraphNode,
+    GrammarGraphNode,
+)
+from fandango.io.navigation.graph.grammar_navigator.rule_costs import RuleCosts
+from fandango.io.navigation.graph.grammar_navigator.search_targets import (
+    KPathTarget,
+    RunEndTarget,
+)
 from fandango.io.navigation.graph.packetnavigator import PacketNavigator
 from fandango.io.navigation.graph.reachability_checker import ReachabilityChecker
 from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConverter
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
+from fandango.io.navigation.route import PlannedPacket
+from fandango.io.navigation.selection.packet_guider import PacketGuider
+from fandango.io.navigation.selection.protocol_model import ProtocolModel
+from fandango.io.navigation.selection.target_selector import TargetSelector
 from fandango.language import DerivationTree, NonTerminal
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.grammar import Grammar, KPath
-from fandango.language.grammar.node_visitors.grammar_graph_converter import (
-    GrammarGraphNode,
-)
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.parse.parse import parse
 from tests.utils import DOCS_ROOT, EVALUATION_ROOT, RESOURCES_ROOT
@@ -63,7 +75,8 @@ class TestGrammarGraph(unittest.TestCase):
             )
 
         path = navigator.astar_tree(
-            tree=tree_to_continue, destination_k_path=(NonTerminal("<paff>"),)
+            controlflow_tree=tree_to_continue,
+            destination_k_path=(NonTerminal("<paff>"),),
         )
 
         path_iter: list[GrammarGraphNode | None] = path or []
@@ -75,6 +88,113 @@ class TestGrammarGraph(unittest.TestCase):
         path_list = [n.node.to_symbol() for n in path_filtered]
         self.assertEqual(path_list, [NonTerminal("<puff>"), NonTerminal("<paff>")])
 
+    def test_k_path_repeating_a_state_is_found(self):
+        grammar = self.get_grammar(RESOURCES_ROOT / "navigation_io.fan")
+        navigator = GrammarNavigator(grammar)
+        path = navigator.astar_tree(
+            destination_k_path=(
+                NonTerminal("<start>"),
+                NonTerminal("<test>"),
+                NonTerminal("<start>"),
+                NonTerminal("<test>"),
+                NonTerminal("<start>"),
+            )
+        )
+        assert path is not None
+        messages = [
+            node.node.to_symbol()
+            for node in path
+            if node is not None
+            and isinstance(node.node, NonTerminalNode)
+            and node.node.sender is not None
+        ]
+        self.assertEqual(
+            messages,
+            [
+                NonTerminal("<A>"),
+                NonTerminal("<D>"),
+                NonTerminal("<E>"),
+                NonTerminal("<A>"),
+                NonTerminal("<D>"),
+                NonTerminal("<E>"),
+            ],
+        )
+
+    def test_k_path_matched_deeper_than_the_lookback_is_aimed_at(self):
+        grammar = self.get_grammar(RESOURCES_ROOT / "deep_k_path.fan")
+        navigator = PacketNavigator(grammar)
+        navigator.set_message_cost(1)
+        guide = navigator.astar_tree_including_k_paths(
+            tree=DerivationTree(NonTerminal("<start>")),
+            destination_k_path=(NonTerminal("<a>"), NonTerminal("<b>")),
+        )
+        assert guide is not None
+        sent = [
+            step.packet.symbol
+            for step in guide.route
+            if isinstance(step, PlannedPacket)
+        ]
+        self.assertEqual(sent, [NonTerminal("<p>")])
+
+    def test_rule_whose_exits_are_all_blocked_is_still_aimed_at(self):
+        # With <quit> blocked, <greeted> recurses forever, but a path can still enter it
+        grammar = self.get_grammar(RESOURCES_ROOT / "violation_profile.fan")
+        navigator = PacketNavigator(grammar)
+        (quit_step,) = (
+            step
+            for step in navigator._rule_steps().values()
+            if step.parent == NonTerminal("<greeted>")
+            and step.packet == NonTerminal("<_packet_quit>")
+        )
+        navigator = navigator.with_blocked_steps(frozenset({quit_step}))
+        navigator.set_message_cost(1)
+        tree = grammar.parse(
+            "hello\n", mode=ParsingMode.INCOMPLETE, include_controlflow=True
+        )
+        assert tree is not None
+        guide = navigator.astar_tree_including_k_paths(
+            tree=tree, destination_k_path=(NonTerminal("<greeted>"),)
+        )
+        assert guide is not None
+        self.assertNotIn(None, guide.route)
+
+    def test_nodes_whose_matches_differ_only_far_up_the_chain_are_kept_apart(self):
+        grammar = self.get_grammar(RESOURCES_ROOT / "tail_recursive_k_path.fan")
+        navigator = PacketNavigator(grammar)
+        k_path = (
+            NonTerminal("<S>"),
+            NonTerminal("<S>"),
+            NonTerminal("<P>"),
+            NonTerminal("<_packet_q>"),
+        )
+        target = KPathTarget(k_path, navigator._costs)
+        p_by_depth: dict[int, GrammarGraphNode] = {}
+        unvisited = [navigator.graph.start]
+        while len(p_by_depth) < 2:
+            node = unvisited.pop(0)
+            chain = node.chain()
+            if chain[-1] == NonTerminal("<_packet_p>"):
+                p_by_depth.setdefault(chain.count(NonTerminal("<S>")), node)
+            unvisited.extend(node.reaches)
+        shallow, deep = p_by_depth[1], p_by_depth[2]
+        self.assertFalse(target.can_complete(shallow))
+        self.assertTrue(target.can_complete(deep))
+        self.assertNotEqual(target.state(shallow), target.state(deep))
+
+    def test_the_end_of_the_run_is_never_pruned_whatever_the_costs(self):
+        costs = mock.create_autospec(RuleCosts, instance=True)
+        costs.cost_from.return_value = RuleCosts.UNREACHABLE
+        end = EagerGrammarGraphNode(NonTerminalNode(NonTerminal("<quit>"), []), [])
+        self.assertTrue(RunEndTarget(costs).can_complete(end))
+
+    def test_unreachable_k_path_from_start_raises(self):
+        grammar = self.get_grammar(RESOURCES_ROOT / "minimal_io.fan")
+        navigator = GrammarNavigator(grammar)
+        with self.assertRaises(FandangoError):
+            navigator.astar_tree(
+                destination_k_path=(NonTerminal("<start>"), NonTerminal("<start>"))
+            )
+
     def test_packet_navigator(self):
         grammar = self.get_grammar(DOCS_ROOT / "smtp-extended.fan")
         navigator = PacketNavigator(grammar, NonTerminal("<start>"))
@@ -83,12 +203,15 @@ class TestGrammarGraph(unittest.TestCase):
             mode=ParsingMode.INCOMPLETE,
             include_controlflow=True,
         )
-        packet_tree, _ = next(navigator.get_controlflow_tree(tree=tree_to_continue))
-        path = navigator.astar_tree_symbols(
-            tree=packet_tree, destination_k_path=(NonTerminal("<end_data>"),)
+        guide_path = navigator.astar_tree_including_k_paths(
+            tree=tree_to_continue, destination_k_path=(NonTerminal("<end_data>"),)
         )
+        assert guide_path is not None
         self.assertEqual(
-            path,
+            [
+                symbol.packet if isinstance(symbol, PlannedPacket) else symbol
+                for symbol in guide_path.route
+            ],
             [
                 PacketNonTerminal("StdOut", None, NonTerminal("<hello>")),
                 NonTerminal("<mail_from>"),
@@ -111,12 +234,11 @@ class TestGrammarGraph(unittest.TestCase):
             mode=ParsingMode.INCOMPLETE,
             include_controlflow=True,
         )
-        packet_tree, _ = next(navigator.get_controlflow_tree(tree=tree_to_continue))
-        path = navigator.astar_tree_symbols(
-            tree=packet_tree, destination_k_path=(NonTerminal("<helo>"),)
+        guide_path = navigator.astar_tree_including_k_paths(
+            tree=tree_to_continue, destination_k_path=(NonTerminal("<helo>"),)
         )
-        assert path is not None
-        if None not in path:
+        assert guide_path is not None
+        if None not in guide_path.route:
             self.assertFalse("Expected symbol to be not reachable")
 
     def test_packet_navigator_symbol_not_extensible(self):
@@ -261,7 +383,34 @@ class Server(FandangoParty):
         self.assertTrue(result.completable_by_extension)
 
         navigator = PacketNavigator(grammar, NonTerminal("<start>"))
-        path = navigator.astar_tree_symbols(
-            tree=hist_tree, destination_k_path=dest_k_path
+        path = navigator.astar_tree(
+            controlflow_tree=hist_tree, destination_k_path=dest_k_path
         )
         self.assertIsNotNone(path)
+
+
+class TestTargetSelector(unittest.TestCase):
+    def test_cross_reference_msgs(self):
+        with open(RESOURCES_ROOT / "cross_reference_protocol_msg.fan") as f:
+            grammar, constraints = parse(
+                [f],
+                use_stdlib=False,
+            )
+        assert grammar is not None
+        start_symbol = NonTerminal("<start>")
+        nt_msg_a = NonTerminal("<msg_a>")
+        nt_msg_b = NonTerminal("<msg_b>")
+        a_follows_b = tuple([nt_msg_a, nt_msg_b])
+        b_follows_a = tuple([nt_msg_b, nt_msg_a])
+        pm = ProtocolModel(grammar, start_symbol)
+        ts = TargetSelector(pm)
+        all_paths = list(
+            grammar.generate_all_k_paths(
+                k=5, non_terminal=start_symbol, input_parties={"Party"}
+            )
+        )
+        for _ in range(10):
+            target = ts.select(all_paths, [], lambda path: True)
+            assert target is not None
+            self.assertFalse(PacketGuider._tuple_contains(a_follows_b, target))
+            self.assertFalse(PacketGuider._tuple_contains(b_follows_a, target))

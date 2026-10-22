@@ -8,8 +8,14 @@ import tempfile
 from io import UnsupportedOperation
 from typing import IO, Any
 
+from fandango.errors import FandangoError
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER, clear_visualization
+
+
+def filename_extension(args: argparse.Namespace) -> str:
+    """The extension for generated file names: `-x`, else what `-F` found, else `.txt`."""
+    return getattr(args, "filename_extension", None) or ".txt"
 
 
 def output(
@@ -71,6 +77,16 @@ def open_file(
     return open(filename, mode)
 
 
+# The encoding stdout writes text in
+TEXT_ENCODING = getattr(sys.stdout, "encoding", "utf-8")
+
+# The stream we have set up to encode and translate what we print, and how; we
+# track this ourselves, as a stream does not tell us how it translates newlines.
+# Recording the stream, too, keeps us from trusting the setup of an earlier
+# sys.stdout, which main() may since have replaced
+_stdout_mode: tuple[IO[Any], str, str | None] = (sys.stdout, TEXT_ENCODING, None)
+
+
 def output_population(
     population: list[DerivationTree],
     args: argparse.Namespace,
@@ -94,7 +110,7 @@ def output_solution_to_directory(
     LOGGER.debug(f"Storing solution in directory {args.directory!r}")
     os.makedirs(args.directory, exist_ok=True)
 
-    basename = f"fandango-{solution_index:04d}{args.filename_extension}"
+    basename = f"fandango-{solution_index:04d}{filename_extension(args)}"
     filename = os.path.join(args.directory, basename)
     with open_file(filename, file_mode, mode="w") as fd:
         fd.write(output(solution, args, file_mode))
@@ -130,7 +146,7 @@ def output_solution_with_test_command(
 
     if args.input_method == "filename":
         prefix = "fandango-"
-        suffix = args.filename_extension
+        suffix = filename_extension(args)
         mode = "wb" if file_mode == "binary" else "w"
 
         # The return type is private, so we need to use Any
@@ -179,12 +195,39 @@ def output_solution_to_stdout(
     args: argparse.Namespace,
     file_mode: str,
 ) -> None:
+    global _stdout_mode
+
     LOGGER.debug("Printing solution on stdout")
     out = output(solution, args, file_mode)
-    if not isinstance(out, str):
-        out = out.decode("iso8859-1")
+    separator = args.separator
+    # Not every stdout can be re-encoded: a StringIO has no encoding at all,
+    # and a codecs stream has one, but no reconfigure()
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+
+    if isinstance(out, str):
+        # Text follows the platform conventions, newlines included
+        encoding, newline = TEXT_ENCODING, None
+    else:
+        # Decode the bytes and have stdout encode them right back; iso8859-1
+        # maps every byte to the character of the same value, whereas UTF-8
+        # (or whatever the locale asks for) would mangle everything above \x7f.
+        # newline='' keeps Windows from writing each \n byte as \r\n
+        encoding, newline = "iso8859-1", ""
+        out = out.decode(encoding)
+        separator = separator.encode("utf-8").decode(encoding)
+        if reconfigure is None:
+            raise FandangoError(
+                f"Cannot write binary output: stdout is a"
+                f" {type(sys.stdout).__name__}, which cannot encode as {encoding}"
+            )
+
+    if reconfigure is not None and _stdout_mode != (sys.stdout, encoding, newline):
+        LOGGER.debug(f"Setting stdout encoding to {encoding!r}")
+        reconfigure(encoding=encoding, newline=newline)
+        _stdout_mode = (sys.stdout, encoding, newline)
+
     print(out, end="")
-    print(args.separator, end="")
+    print(separator, end="")
 
 
 def output_solution(

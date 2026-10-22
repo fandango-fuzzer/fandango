@@ -1,5 +1,6 @@
 #!/usr/bin/env pytest
 import asyncio
+import io
 import json
 import os
 import re
@@ -11,44 +12,45 @@ import unittest
 from unittest.mock import patch
 
 from fandango import DISTRIBUTION_NAME
-from fandango.cli import get_parser
+from fandango.cli import get_parser, main
 from fandango.cli.upgrade import (
     Version,
     check_for_fandango_update,
     check_package_for_update,
     version,
 )
+from fandango.errors import FandangoError
 
 from .utils import DOCS_ROOT, IS_BEARTYPE_ACTIVE, RESOURCES_ROOT, run_command
 
 # beartype somehow scrambles the fixed rng
 if IS_BEARTYPE_ACTIVE:
     expected_with_random_seed = [
-        "6040162449562186",
-        "697",
-        "1743392096838",
-        "59467847818672",
-        "259",
-        "0248279116786637507",
-        "18596",
-        "689148906703684",
-        "4603385988582849169",
-        "1060384046722",
+        "9300226346851476",
+        "19",
+        "370100",
+        "598638602572139",
+        "665907123474551",
+        "81539875",
+        "2633",
+        "450196866517896898",
+        "278",
+        "5925267533427035916",
     ]
 
 
 else:
     expected_with_random_seed = [
-        "35716",
-        "4",
-        "9768",
-        "30",
-        "5658",
-        "5",
-        "9",
-        "649",
-        "20",
-        "41",
+        "647605596019",
+        "013",
+        "9000722283224369",
+        "924177",
+        "845644098",
+        "6",
+        "8493419623",
+        "113702829",
+        "890657060590074168",
+        "61583101326027749866",
     ]
 
 
@@ -180,6 +182,38 @@ class TestCLI(unittest.TestCase):
         self.assertEqual("", err, err)
         self.assertEqual(expected_output, out, out)
         self.assertEqual(0, code, code)
+
+    def test_output_bytes_on_stdout(self):
+        # Bytes must reach stdout as they are, so that piping the output
+        # into another command (say, `fandango parse`) preserves them
+        command = [
+            "fandango",
+            "fuzz",
+            "-f",
+            str(RESOURCES_ROOT / "high_bytes.fan"),
+            "-n",
+            "1",
+            "--separator",
+            "",
+            "--no-cache",
+        ]
+        proc = subprocess.run(command, capture_output=True)
+        self.assertEqual(b"", proc.stderr, proc.stderr)
+        # Strings are written in UTF-8 (the .fan file is read as UTF-8, too,
+        # whatever the locale is); bytes as is, with no newline translation
+        expected = b"\xff\x00\x80\xd7\n" + "ü".encode()
+        self.assertEqual(expected, proc.stdout, proc.stdout)
+        self.assertEqual(0, proc.returncode, proc.returncode)
+
+    def test_output_bytes_on_stdout_that_cannot_encode_them(self):
+        # Rather than write mangled bytes, we refuse to write them at all
+        out = io.StringIO()  # a stream that cannot be re-encoded
+        command = ["fuzz", "-f", str(RESOURCES_ROOT / "high_bytes.fan"), "-n", "1"]
+        with patch("sys.stdout", out), self.assertRaises(FandangoError) as ctx:
+            main(*command, stdout=None)
+
+        self.assertIn("Cannot write binary output", str(ctx.exception))
+        self.assertEqual("", out.getvalue(), out.getvalue())
 
     def test_infinite_mode(self):
         command = [

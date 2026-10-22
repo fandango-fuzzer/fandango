@@ -1,6 +1,6 @@
 from fandango.api import Fandango
-from fandango.io.navigation.graph.packetforecaster import (
-    ForecastingResult,
+from fandango.io.navigation.forecasting.forecasting_result import ForecastingResult
+from fandango.io.navigation.forecasting.packetforecaster import (
     PacketForecaster,
 )
 from fandango.language.grammar import ParsingMode
@@ -104,3 +104,22 @@ def test_forecast_8():
     prediction: ForecastingResult = forecaster.predict(tree)
     expected: dict[str, list[str]] = {}
     assert_prediction(prediction, expected)
+
+
+def test_forecast_left_recursion():
+    spec = """
+<start> ::= <list> <StdOut:e>
+<list> ::= <list> <StdOut:c> | <StdOut:d>
+<c> ::= 'c'
+<d> ::= 'd'
+<e> ::= 'e'
+"""
+    grammar = Fandango(spec, use_stdlib=False, use_cache=False).grammar
+    forecaster = PacketForecaster(grammar)
+    prediction = forecaster.predict(DerivationTree(NonTerminal("<start>")))
+    assert_prediction(prediction, {"StdOut": ["<d>"]})
+    for history in ("d", "dc"):
+        tree = grammar.parse(history, mode=ParsingMode.INCOMPLETE)
+        assert tree is not None
+        prediction = forecaster.predict(tree)
+        assert_prediction(prediction, {"StdOut": ["<c>", "<e>"]})

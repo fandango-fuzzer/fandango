@@ -14,24 +14,32 @@ from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.logger import LOGGER
 
+# The C++ extension installs as top-level `sa_fandango_cpp_parser` (see
+# CMakeLists.txt), where the relative import generated in sa_fandango can't find it
+try:
+    import sa_fandango_cpp_parser  # type: ignore[import-not-found]
+
+    sa_fandango.sa_fandango_cpp_parser = sa_fandango_cpp_parser  # type: ignore[attr-defined]
+    CPP_PARSER_AVAILABLE = True
+except ImportError:
+    CPP_PARSER_AVAILABLE = False
+
 
 def parse_tree(filename: str, fan_contents: str) -> ParseTree:
     error_listener: SpeedyAntlrErrorListener | PythonAntlrErrorListener
     if fandango.Fandango.parser != "legacy":
         if fandango.Fandango.parser == "cpp":
-            sa_fandango.USE_CPP_IMPLEMENTATION = True
-            try:
-                import sa_fandango_cpp_parser  # type: ignore[import-not-found] # noqa: F401
-            except ImportError as err:
+            if not CPP_PARSER_AVAILABLE:
                 raise ImportError(
                     "Requested C++ parser not available. "
                     "Check your installation "
                     "or use '--parser=python'"
-                ) from err
+                )
+            sa_fandango.USE_CPP_IMPLEMENTATION = True
         elif fandango.Fandango.parser == "python":
             sa_fandango.USE_CPP_IMPLEMENTATION = False
         elif fandango.Fandango.parser == "auto":
-            pass  # let sa_fandango decide
+            sa_fandango.USE_CPP_IMPLEMENTATION = CPP_PARSER_AVAILABLE
 
         if sa_fandango.USE_CPP_IMPLEMENTATION:
             LOGGER.debug(f"{filename}: setting up C++ .fan parser")

@@ -115,6 +115,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitFormula_comparison_operator(FandangoParser::Formula_comparison_operatorContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitExpr(FandangoParser::ExprContext *ctx) override {
     return visitChildren(ctx);
   }

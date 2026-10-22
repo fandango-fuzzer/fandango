@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import abc
+from collections.abc import Generator
 from typing import Optional
 
 from fandango.errors import FandangoError
-from fandango.language import DerivationTree, NonTerminal, Terminal
+from fandango.io.navigation.nested_steps import run_nested_steps
+from fandango.language import DerivationTree, NonTerminal, Symbol
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
@@ -25,13 +27,31 @@ class GrammarGraphNode(abc.ABC):
         self.node = node
         self.parent = None
 
-    def consumes(self) -> Optional[Terminal]:
-        if isinstance(self.node, TerminalNode):
-            return self.node.symbol
-        return None
+    def chain_symbol(self) -> Optional[Symbol]:
+        """Returns the symbol that this node adds to its chain. Control-flow nodes add none."""
+        return None if self.node.is_controlflow else self.node.to_symbol()
 
-    def is_lazy(self) -> bool:
-        return False
+    def chain(self) -> tuple[Symbol, ...]:
+        """Returns the chain of this node: the symbols from the start symbol down to it."""
+        symbols = []
+        current: Optional[GrammarGraphNode] = self
+        while current is not None:
+            symbol = current.chain_symbol()
+            if symbol is not None:
+                symbols.append(symbol)
+            current = current.parent
+        return tuple(reversed(symbols))
+
+    def enclosing_rule_instance(self) -> Optional["GrammarGraphNode"]:
+        """Returns the rule instance this node lies in, or None if it lies in a repetition."""
+        current = self.parent
+        while current is not None and not isinstance(current, LazyGrammarGraphNode):
+            if isinstance(current.node, Repetition):
+                return None
+            if current.parent is None:
+                return current
+            current = current.parent
+        return current
 
     @abc.abstractmethod
     def add_egress(self, node: "GrammarGraphNode") -> None:
@@ -52,17 +72,23 @@ class GrammarGraphNode(abc.ABC):
             return False
         return self.node.min == 0
 
-    def walk(self, tree_node: DerivationTree) -> "GrammarGraphNode":
-        if issubclass(
-            self.node.__class__,
-            (NonTerminalNode, Concatenation, Repetition, Alternative),
+    def walk(self, tree_node: DerivationTree) -> GrammarGraphNode:
+        return run_nested_steps(
+            self._walk_steps(tree_node),
+            lambda graph_node_and_tree: graph_node_and_tree[0]._walk_steps(
+                graph_node_and_tree[1]
+            ),
+        )
+
+    def _walk_steps(
+        self, tree_node: DerivationTree
+    ) -> Generator[
+        tuple[GrammarGraphNode, DerivationTree], GrammarGraphNode, GrammarGraphNode
+    ]:
+        if isinstance(
+            self.node, (NonTerminalNode, Concatenation, Repetition, Alternative)
         ):
-            if isinstance(self.node, NonTerminalNode):
-                symbol = self.node.symbol
-            else:
-                assert hasattr(self.node, "id")
-                node_id = self.node.id
-                symbol = NonTerminal(f"<__{node_id}>")
+            symbol = self.node.to_symbol()
             if tree_node.symbol != symbol:
                 raise GrammarWalkError(
                     f"Grammar graph node {symbol.value()} doesn't match tree node {tree_node.symbol.value()}."
@@ -84,7 +110,7 @@ class GrammarGraphNode(abc.ABC):
             found_node = False
             for current_graph_node in walked_node.reaches:
                 try:
-                    next_walked_node = current_graph_node.walk(child)
+                    next_walked_node = yield current_graph_node, child
                 except GrammarWalkError:
                     next_walked_node = None
                 if next_walked_node is not None:
@@ -113,18 +139,16 @@ class LazyGrammarGraphNode(GrammarGraphNode):
     def __init__(self, node: NonTerminalNode, grammar_rules: dict[NonTerminal, Node]):
         super().__init__(node)
         self.grammar_rules = grammar_rules
-        self._pre_load_reaches: list[GrammarGraphNode] = list()
+        # The nodes that follow this rule instance once its rule ends
+        self.following_nodes: list[GrammarGraphNode] = []
         self._loaded_reaches: Optional[list[GrammarGraphNode]] = None
-
-    def is_lazy(self) -> bool:
-        return True
+        # The nodes that end the rule, once it is loaded
+        self._end_nodes: list[GrammarGraphNode] = []
 
     def add_egress(self, node: GrammarGraphNode) -> None:
-        if self._loaded_reaches is None:
-            self._pre_load_reaches.append(node)
-        else:
-            for end_node in self._loaded_reaches:
-                end_node.add_egress(node)
+        self.following_nodes.append(node)
+        for end_node in self._end_nodes:
+            end_node.add_egress(node)
 
     @property
     def reaches(self) -> list["GrammarGraphNode"]:
@@ -138,9 +162,10 @@ class LazyGrammarGraphNode(GrammarGraphNode):
         )
         graph_converter.current_parent.pop()
         self._loaded_reaches = [start_node]
+        self._end_nodes = end_nodes
         for end_node in end_nodes:
-            for chain_end in self._pre_load_reaches:
-                end_node.add_egress(chain_end)
+            for following in self.following_nodes:
+                end_node.add_egress(following)
 
         return self._loaded_reaches
 
@@ -148,7 +173,6 @@ class LazyGrammarGraphNode(GrammarGraphNode):
 class GrammarGraph:
     def __init__(self, start: GrammarGraphNode):
         self.start = start
-        self.id_to_state: dict[str, GrammarGraphNode] = {}
 
     def walk(self, tree_root: DerivationTree) -> GrammarGraphNode:
         return self.start.walk(tree_root)

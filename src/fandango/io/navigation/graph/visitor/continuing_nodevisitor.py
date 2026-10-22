@@ -1,13 +1,20 @@
+from collections.abc import Generator
 from typing import Optional
 
+from fandango.errors import FandangoValueError
+from fandango.io.navigation.nested_steps import run_nested_steps
 from fandango.language import Grammar, NonTerminal
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
+from fandango.language.grammar.nodes.char_set import CharSet
 from fandango.language.grammar.nodes.concatenation import Concatenation
+from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
-from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
+from fandango.language.grammar.nodes.repetition import Repetition
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.tree import DerivationTree
+
+VisitSteps = Generator[Node, bool, bool]
 
 
 class GrammarKeyError(KeyError):
@@ -47,6 +54,22 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
         self.current_path.pop()
         self.current_path_collapsed.pop()
 
+    def visit(self, node: Node) -> bool:
+        return run_nested_steps(self._visit_steps(node), self._visit_steps)
+
+    def _visit_steps(self, node: Node) -> VisitSteps:
+        if isinstance(node, NonTerminalNode):
+            return self._non_terminal_steps(node)
+        if isinstance(node, Concatenation):
+            return self._concatenation_steps(node)
+        if isinstance(node, Alternative):
+            return self._alternative_steps(node)
+        if isinstance(node, Repetition):
+            return self._repetition_steps(node)
+        if isinstance(node, (TerminalNode, CharSet)):
+            return self._leaf_steps(node)
+        raise FandangoValueError(f"No visit steps for {type(node).__name__}")
+
     def on_enter_controlflow(self, expected_nt: str) -> None:
         tree = self.current_tree[-1]
         cf_nt = (NonTerminal(expected_nt), True)
@@ -67,7 +90,7 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
         self.current_tree.pop()
         self.current_path.pop()
 
-    def visitNonTerminalNode(self, node: NonTerminalNode) -> bool:
+    def _non_terminal_steps(self, node: NonTerminalNode) -> VisitSteps:
         tree = self.current_tree[-1]
         if tree is not None:
             if tree[0].symbol != node.symbol:
@@ -83,7 +106,10 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
             )
             if not enter_non_terminal:
                 return continue_exploring
-            result = self.visit(self.grammar.rules[node.symbol])
+            # A third visit while exploring repeats a cycle without a packet.
+            if tree is None and self.current_path.count((node.symbol, True)) > 2:
+                return False
+            result = yield self.grammar.rules[node.symbol]
             return result
         finally:
             self.current_path.pop()
@@ -102,7 +128,12 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
         tree = self.current_tree[-1]
         return self.onTerminalNodeVisit(node, tree is None)
 
-    def visitConcatenation(self, node: Concatenation) -> bool:
+    def _leaf_steps(self, node: TerminalNode | CharSet) -> VisitSteps:
+        yield from ()
+        continue_exploring: bool = node.accept(self)
+        return continue_exploring
+
+    def _concatenation_steps(self, node: Concatenation) -> VisitSteps:
         self.on_enter_controlflow(f"<__{node.id}>")
         tree = self.current_tree[-1]
         child_idx = 0 if tree is None else (len(tree) - 1)
@@ -114,36 +145,43 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
                     raise GrammarKeyError(
                         "Tree contains more children, then concatination node"
                     )
-                continue_exploring = self.visit(node.nodes[child_idx])
+                continue_exploring = yield node.nodes[child_idx]
                 child_idx += 1
             finally:
                 self.current_tree.pop()
         while continue_exploring and child_idx < len(node.children()):
             next_child = node.children()[child_idx]
             self.current_tree.append(None)
-            continue_exploring = self.visit(next_child)
+            continue_exploring = yield next_child
             self.current_tree.pop()
             child_idx += 1
         self.on_leave_controlflow()
         return continue_exploring
 
-    def visitAlternative(self, node: Alternative) -> bool:
+    def _alternative_steps(self, node: Alternative) -> VisitSteps:
         self.on_enter_controlflow(f"<__{node.id}>")
         tree = self.current_tree[-1]
 
         if tree is not None:
             continue_exploring = True
             self.current_tree.append([tree[0]])
-            fallback_tree = list(self.current_tree)
-            fallback_path = list(self.current_path)
+            tree_depth = len(self.current_tree)
+            path_depth = len(self.current_path)
+            collapsed_path_depth = len(self.current_path_collapsed)
             found = False
             for alt in node.alternatives:
+                if (
+                    not isinstance(alt, TerminalNode)
+                    and alt.to_symbol() != tree[0].symbol
+                ):
+                    continue
                 try:
-                    continue_exploring = self.visit(alt)
+                    continue_exploring = yield alt
                     found = True
                 except GrammarKeyError:
-                    self.current_tree = fallback_tree
-                    self.current_path = fallback_path
+                    del self.current_tree[tree_depth:]
+                    del self.current_path[path_depth:]
+                    del self.current_path_collapsed[collapsed_path_depth:]
             self.current_tree.pop()
             self.on_leave_controlflow()
             if not found:
@@ -153,66 +191,53 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
             continue_exploring = False
             self.current_tree.append(None)
             for alt in node.alternatives:
-                continue_exploring |= self.visit(alt)
+                continue_exploring |= yield alt
             self.current_tree.pop()
             self.on_leave_controlflow()
             return continue_exploring
 
-    def visitRepetition(self, node: Repetition) -> bool:
+    def _repetition_steps(self, node: Repetition) -> VisitSteps:
         self.on_enter_controlflow(f"<__{node.id}>")
-        ret = self.visitRepetitionType(node)
+        ret = yield from self._repetition_type_steps(node)
         self.on_leave_controlflow()
         return ret
 
-    def visitRepetitionType(self, node: Repetition) -> bool:
+    def _repetition_type_steps(self, node: Repetition) -> VisitSteps:
         tree = self.current_tree[-1]
         last_complete = True
         tree_len = 0
         if tree is not None and len(tree) != 0:
             tree_len = len(tree)
             self.current_tree.append([tree[-1]])
-            last_complete = self.visit(node.node)
+            last_complete = yield node.node
             self.current_tree.pop()
 
         rep_min = node.min
         rep_max = node.max
         if node.bounds_constraint:
-            prefix_tree = None
-            for tree_list in self.current_tree[::-1]:
-                if tree_list is None or len(tree_list) != 0:
-                    continue
-                prefix_tree = tree_list[-1].prefix()
-                prefix_tree = self.grammar.collapse(prefix_tree.get_root())
-                break
-            assert prefix_tree is not None
-            rep_min, _ = node.bounds_constraint.min(prefix_tree)
-            rep_max, _ = node.bounds_constraint.max(prefix_tree)
+            context_end: Optional[DerivationTree]
+            if tree:
+                context_end = tree[0]
+            else:
+                context_end = next(
+                    (
+                        tree_list[-1]
+                        for tree_list in reversed(self.current_tree)
+                        if tree_list
+                    ),
+                    None,
+                )
+            context_includes_end = not tree
+            rep_min, _ = node.bounds_constraint.min(context_end, context_includes_end)
+            rep_max, _ = node.bounds_constraint.max(context_end, context_includes_end)
         if not last_complete:
             return False
         if tree_len < rep_max:
             self.current_tree.append(None)
-            can_continue = self.visit(node.node)
+            can_continue = yield node.node
             self.current_tree.pop()
             if can_continue:
                 return True
         if tree_len >= rep_min:
             return True
         return False
-
-    def visitStar(self, node: Star) -> bool:
-        self.on_enter_controlflow(f"<__{node.id}>")
-        ret = self.visitRepetitionType(node)
-        self.on_leave_controlflow()
-        return ret
-
-    def visitPlus(self, node: Plus) -> bool:
-        self.on_enter_controlflow(f"<__{node.id}>")
-        ret = self.visitRepetitionType(node)
-        self.on_leave_controlflow()
-        return ret
-
-    def visitOption(self, node: Option) -> bool:
-        self.on_enter_controlflow(f"<__{node.id}>")
-        ret = self.visitRepetitionType(node)
-        self.on_leave_controlflow()
-        return ret

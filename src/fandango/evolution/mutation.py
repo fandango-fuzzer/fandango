@@ -4,8 +4,10 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable, Generator
 
 from fandango.constraints.failing_tree import FailingTree, Suggestion
+from fandango.errors import FandangoGeneratorError
 from fandango.language import DerivationTree, Grammar
 from fandango.language.symbols import NonTerminal
+from fandango.logger import LOGGER
 
 
 class MutationOperator(ABC):
@@ -76,18 +78,23 @@ class SimpleMutation(MutationOperator):
         node_to_mutate = random.choice(subtrees)
         assert isinstance(node_to_mutate.symbol, NonTerminal)
 
-        # Get a truncated tree that contains all nodes left from the selected node.
-        ctx_tree = node_to_mutate.split_end()
-        if ctx_tree.parent is not None:
-            prefix_node = ctx_tree.parent
-            prefix_node.set_children(ctx_tree.children[:-1])
-        else:
-            prefix_node = None
-        new_subtree = grammar.fuzz(
-            node_to_mutate.symbol,
-            prefix_node=prefix_node,
-            max_nodes=node_to_mutate.size() + (max_nodes - individual.size()),
-        )
+        max_subtree_nodes = node_to_mutate.size() + (max_nodes - individual.size())
+        # Truncate the tree to all nodes left from the selected node while fuzzing.
+        with node_to_mutate.split_end_context() as ctx_tree:
+            if ctx_tree.parent is not None:
+                prefix_node = ctx_tree.parent
+                prefix_node.remove_child(index=-1)
+            else:
+                prefix_node = None
+            try:
+                new_subtree = grammar.fuzz(
+                    node_to_mutate.symbol,
+                    prefix_node=prefix_node,
+                    max_nodes=max_subtree_nodes,
+                )
+            except FandangoGeneratorError as error:
+                LOGGER.warning(f"Discarding a derivation: {error}")
+                return individual
         new_subtree.sender = node_to_mutate.sender
         new_subtree.recipient = node_to_mutate.recipient
         mutated = individual.replace(grammar, node_to_mutate, new_subtree)

@@ -1,0 +1,263 @@
+import enum
+from typing import NamedTuple, Optional
+
+from fandango.constraints.base import GeneticBase
+from fandango.constraints.comparison import ComparisonConstraint
+from fandango.constraints.constraint import Constraint
+from fandango.constraints.constraint_visitor import ConstraintVisitor
+from fandango.constraints.exists import ExistsConstraint
+from fandango.constraints.expression import ExpressionConstraint
+from fandango.constraints.forall import ForallConstraint
+from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
+from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar.nodes.node import Node
+from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.grammar.nodes.repetition import Repetition
+from fandango.language.search import AnnotatedSearch, NonTerminalSearch, RuleSearch
+from fandango.language.symbols import NonTerminal
+
+
+class ConstraintScope(enum.Enum):
+    INSIDE = enum.auto()
+    CROSSING = enum.auto()
+    UNRELATED = enum.auto()
+
+
+class ScopedTargets(NamedTuple):
+    search_scope: frozenset[NonTerminal]
+    targets: frozenset[NonTerminal]
+
+
+class AccessPoints(NamedTuple):
+    targets: frozenset[NonTerminal]
+    bases: frozenset[NonTerminal]
+    scoped_targets: frozenset[ScopedTargets]
+
+
+class _AccessPointCollector(ConstraintVisitor):
+    def __init__(
+        self,
+        repetition_owners: dict[str, NonTerminal],
+        bound: Optional[NonTerminal] = None,
+    ):
+        super().__init__()
+        self._repetition_owners = repetition_owners
+        self._bound = bound
+        self.targets: Optional[set[NonTerminal]] = set()
+        self.bases: set[NonTerminal] = set()
+        self.targets_through_bound: set[NonTerminal] = set()
+        self.scoped_targets: set[ScopedTargets] = set()
+
+    def do_continue(self, constraint: Constraint) -> bool:
+        return not isinstance(constraint, (ForallConstraint, ExistsConstraint))
+
+    def visit_expression_constraint(self, constraint: ExpressionConstraint) -> None:
+        self._add_access_points_of(constraint)
+
+    def visit_comparison_constraint(self, constraint: ComparisonConstraint) -> None:
+        self._add_access_points_of(constraint)
+
+    def visit_forall_constraint(self, constraint: ForallConstraint) -> None:
+        self._visit_quantifier(
+            constraint.bound, constraint.search, constraint.statement
+        )
+
+    def visit_exists_constraint(self, constraint: ExistsConstraint) -> None:
+        self._visit_quantifier(
+            constraint.bound, constraint.search, constraint.statement
+        )
+
+    def visit_conjunction_constraint(self, constraint: GeneticBase) -> None:
+        pass
+
+    def visit_disjunction_constraint(self, constraint: GeneticBase) -> None:
+        pass
+
+    def visit_implication_constraint(self, constraint: GeneticBase) -> None:
+        pass
+
+    def visit_repetition_bounds_constraint(
+        self, constraint: RepetitionBoundsConstraint
+    ) -> None:
+        owner = self._repetition_owners.get(constraint.repetition_id)
+        if owner is None:
+            self.targets = None
+            return
+        self._add_targets([owner])
+        for search in (constraint.search_min, constraint.search_max):
+            if search is not None:
+                self._add_access_points_of(search)
+
+    def _visit_quantifier(
+        self,
+        bound: NonTerminal | str,
+        search: NonTerminalSearch,
+        statement: Constraint,
+    ) -> None:
+        self._add_access_points_of(search)
+        inner = _AccessPointCollector(
+            self._repetition_owners,
+            bound if isinstance(bound, NonTerminal) else None,
+        )
+        inner.visit(statement)
+        if inner.targets is None:
+            self.targets = None
+            return
+        if isinstance(bound, NonTerminal):
+            inner.targets.discard(bound)
+            inner.bases.discard(bound)
+        self._add_targets(inner.targets)
+        self.bases.update(inner.bases)
+        self.scoped_targets.update(inner.scoped_targets)
+        if inner.targets_through_bound:
+            self.scoped_targets.add(
+                ScopedTargets(
+                    frozenset(search.get_access_points(include_base=False)),
+                    frozenset(inner.targets_through_bound),
+                )
+            )
+
+    def _add_access_points_of(self, source: GeneticBase | NonTerminalSearch) -> None:
+        searches = (
+            list(source.searches.values())
+            if isinstance(source, GeneticBase)
+            else [source]
+        )
+        for search in searches:
+            targets = search.get_access_points(include_base=False)
+            with_bases = search.get_access_points(include_base=True)
+            if self._bound is not None and search.get_root_symbol() == self._bound:
+                self.targets_through_bound.update(set(with_bases) - {self._bound})
+                continue
+            self._add_targets(targets)
+            self.bases.update(set(with_bases) - set(targets))
+
+    def _add_targets(self, targets: list[NonTerminal] | set[NonTerminal]) -> None:
+        if self.targets is not None:
+            self.targets.update(targets)
+
+
+class ConstraintScopeAnalyzer:
+    def __init__(self, grammar: Grammar):
+        self._children: dict[NonTerminal, set[NonTerminal]] = {}
+        self._repetition_owners: dict[str, NonTerminal] = {}
+        for symbol, body in grammar.rules.items():
+            children: set[NonTerminal] = set()
+            pending: list[Node] = [body]
+            while pending:
+                node = pending.pop()
+                if isinstance(node, NonTerminalNode):
+                    children.add(node.symbol)
+                    continue
+                if isinstance(node, Repetition):
+                    self._repetition_owners[node.id] = symbol
+                pending.extend(node.children())
+            if symbol in grammar.generators:
+                children |= grammar.generator_dependencies(symbol)
+            self._children[symbol] = children
+        self._parents: dict[NonTerminal, set[NonTerminal]] = {}
+        for symbol, children in self._children.items():
+            for child in children:
+                self._parents.setdefault(child, set()).add(symbol)
+        self._access_points: dict[Constraint, Optional[AccessPoints]] = {}
+        self._per_instance_search_scopes: dict[Constraint, Optional[NonTerminal]] = {}
+        self._inside_and_above: dict[
+            NonTerminal, tuple[set[NonTerminal], set[NonTerminal]]
+        ] = {}
+
+    def analyse_scope(
+        self, non_terminal: NonTerminal, constraint: Constraint
+    ) -> ConstraintScope:
+        """Checks if the constraint depends only on children of the current tree (INSIDE), is completely
+        unrelated (UNRELATED) to the tree, or depends on this and other trees (CROSSING)."""
+        collected = self._access_points_of(constraint)
+        if collected is None:
+            return ConstraintScope.CROSSING
+        symbols_going_down, symbols_going_up = self._inside_and_above_of(non_terminal)
+        # An anchor is a base that sits above the nonterminal in the grammar
+        anchors = (collected.bases & symbols_going_up) - symbols_going_down
+        access_points = collected.targets | (collected.bases - anchors)
+        for scoped in collected.scoped_targets:
+            # Instances of an unrelated symbol neither contain the nonterminal nor lie inside it
+            if not scoped.search_scope or scoped.search_scope & (
+                symbols_going_down | symbols_going_up
+            ):
+                access_points |= scoped.targets
+
+        if not access_points or access_points.intersection(symbols_going_up):
+            return ConstraintScope.CROSSING
+        if access_points <= symbols_going_down:
+            return ConstraintScope.CROSSING if anchors else ConstraintScope.INSIDE
+        if access_points.intersection(symbols_going_down):
+            return ConstraintScope.CROSSING
+        return ConstraintScope.UNRELATED
+
+    def per_instance_search_scope(
+        self, constraint: Constraint
+    ) -> Optional[NonTerminal]:
+        """For `forall <x> in <S>: ...` whose statement reads the tree only through <x>, returns <S>; otherwise
+        None. That means if this function returns <S>, the constraint can be evaluated without requiring the context around <S>.
+        If None is returned the context is needed."""
+        if constraint not in self._per_instance_search_scopes:
+            self._per_instance_search_scopes[constraint] = (
+                self._find_per_instance_search_scope(constraint)
+            )
+        return self._per_instance_search_scopes[constraint]
+
+    def _find_per_instance_search_scope(
+        self, constraint: Constraint
+    ) -> Optional[NonTerminal]:
+        if not isinstance(constraint, ForallConstraint) or not isinstance(
+            constraint.bound, NonTerminal
+        ):
+            return None
+        search = constraint.search
+        while isinstance(search, AnnotatedSearch):
+            search = search.inner
+        if not isinstance(search, RuleSearch):
+            return None
+        statement = _AccessPointCollector(self._repetition_owners, constraint.bound)
+        statement.visit(constraint.statement)
+        if statement.targets is None or statement.targets or statement.bases:
+            return None
+        return search.symbol
+
+    def _access_points_of(self, constraint: Constraint) -> Optional[AccessPoints]:
+        if constraint not in self._access_points:
+            collector = _AccessPointCollector(self._repetition_owners)
+            collector.visit(constraint)
+            self._access_points[constraint] = (
+                None
+                if collector.targets is None
+                else AccessPoints(
+                    frozenset(collector.targets),
+                    frozenset(collector.bases - collector.targets),
+                    frozenset(collector.scoped_targets),
+                )
+            )
+        return self._access_points[constraint]
+
+    def _inside_and_above_of(
+        self, non_terminal: NonTerminal
+    ) -> tuple[set[NonTerminal], set[NonTerminal]]:
+        if non_terminal not in self._inside_and_above:
+            self._inside_and_above[non_terminal] = (
+                # (Other) NonTerminals non_terminal reaches (going down)
+                self._reachable(non_terminal, self._children),
+                # (Other) NonTerminals that reach non_terminal (going up)
+                self._reachable(non_terminal, self._parents) - {non_terminal},
+            )
+        return self._inside_and_above[non_terminal]
+
+    @staticmethod
+    def _reachable(
+        non_terminal: NonTerminal, edges: dict[NonTerminal, set[NonTerminal]]
+    ) -> set[NonTerminal]:
+        reachable = {non_terminal}
+        pending = [non_terminal]
+        while pending:
+            for neighbor in edges.get(pending.pop(), ()):
+                if neighbor not in reachable:
+                    reachable.add(neighbor)
+                    pending.append(neighbor)
+        return reachable

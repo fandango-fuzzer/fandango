@@ -69,6 +69,8 @@ public:
 
     virtual std::any visitFormula_comparison(FandangoParser::Formula_comparisonContext *context) = 0;
 
+    virtual std::any visitFormula_comparison_operator(FandangoParser::Formula_comparison_operatorContext *context) = 0;
+
     virtual std::any visitExpr(FandangoParser::ExprContext *context) = 0;
 
     virtual std::any visitSelector_length(FandangoParser::Selector_lengthContext *context) = 0;

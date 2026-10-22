@@ -62,17 +62,17 @@ class NonTerminalNode(Node):
             parameters = dummy_current_tree.children
             for p in parameters:
                 p._parent = None
-            generated = grammar.generate(self.symbol, parameters)
+            parent.remove_child(index=-1)
+            generated = grammar.generate(self.symbol, parameters, hookin_parent=parent)
             # Prevent children from being overwritten without executing generator
             for child in generated.children:
                 child.set_all_read_only(True)
 
             generated.sender = self.sender
             generated.recipient = self.recipient
-            parent.set_children(parent.children[:-1])
             parent.add_child(generated)
             return
-        parent.set_children(parent.children[:-1])
+        parent.remove_child(index=-1)
 
         assign_sender = None
         assign_recipient = None
@@ -107,10 +107,15 @@ class NonTerminalNode(Node):
             return self.symbol.format_as_spec()
 
     def __eq__(self, other: object) -> bool:
-        return isinstance(other, NonTerminalNode) and self.symbol == other.symbol
+        return (
+            isinstance(other, NonTerminalNode)
+            and self.symbol == other.symbol
+            and self.sender == other.sender
+            and self.recipient == other.recipient
+        )
 
     def __hash__(self) -> int:
-        return hash(self.symbol)
+        return hash((self.symbol, self.sender, self.recipient))
 
     def msg_parties(
         self,

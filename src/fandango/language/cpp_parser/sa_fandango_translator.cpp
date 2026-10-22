@@ -36,6 +36,7 @@ SA_FandangoTranslator::~SA_FandangoTranslator() {
     Py_XDECREF(Formula_conjunctionContext_cls);
     Py_XDECREF(Formula_atomContext_cls);
     Py_XDECREF(Formula_comparisonContext_cls);
+    Py_XDECREF(Formula_comparison_operatorContext_cls);
     Py_XDECREF(ExprContext_cls);
     Py_XDECREF(Selector_lengthContext_cls);
     Py_XDECREF(Star_selection_or_dot_selectionContext_cls);
@@ -409,6 +410,12 @@ antlrcpp::Any SA_FandangoTranslator::visitFormula_atom(FandangoParser::Formula_a
 antlrcpp::Any SA_FandangoTranslator::visitFormula_comparison(FandangoParser::Formula_comparisonContext *ctx){
     if(!Formula_comparisonContext_cls) Formula_comparisonContext_cls = PyObject_GetAttrString(translator->parser_cls, "Formula_comparisonContext");
     PyObject *py_ctx = translator->convert_ctx(this, ctx, Formula_comparisonContext_cls);
+    return py_ctx;
+}
+
+antlrcpp::Any SA_FandangoTranslator::visitFormula_comparison_operator(FandangoParser::Formula_comparison_operatorContext *ctx){
+    if(!Formula_comparison_operatorContext_cls) Formula_comparison_operatorContext_cls = PyObject_GetAttrString(translator->parser_cls, "Formula_comparison_operatorContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, Formula_comparison_operatorContext_cls);
     return py_ctx;
 }
 

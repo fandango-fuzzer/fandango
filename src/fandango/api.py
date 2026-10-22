@@ -244,15 +244,19 @@ class Fandango(FandangoBase):
         *,
         extra_constraints: Optional[list[str] | list[Constraint | SoftValue]] = None,
         skip_base_constraints: bool = False,
+        mode: Optional[FuzzingMode] = None,
         **settings: Any,
     ) -> None:
         """
         Initialize a Fandango population.
         :param extra_constraints: Additional constraints to apply
+        :param mode: Fuzzing mode to initialize for; default: the mode of the last call
         :param settings: Additional settings for the evolution algorithm
         :return: A list of derivation trees
         """
         LOGGER.info("---------- Initializing base population ----------")
+        if mode is not None:
+            self._last_fuzzing_mode = mode
 
         start_symbol = settings.pop("start_symbol", self._start_symbol)
         if settings.pop("warnings_are_errors", False):
@@ -305,8 +309,7 @@ class Fandango(FandangoBase):
         :return: A generator for solutions to the language
         """
         if self.fandango is None or mode != self._last_fuzzing_mode:
-            self._last_fuzzing_mode = mode
-            self.init_population()
+            self.init_population(mode=mode)
             assert self.fandango is not None
 
         LOGGER.info(
@@ -442,7 +445,7 @@ class Fandango(FandangoBase):
         solution_i = 0
         solutions = []
 
-        self.init_population(extra_constraints=extra_constraints, **settings)
+        self.init_population(extra_constraints=extra_constraints, mode=mode, **settings)
         raw_generator = self.generate_solutions(max_generations, mode)
 
         # limit the generator to desired_solutions — no limit if desired_solutions is None

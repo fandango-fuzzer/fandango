@@ -53,6 +53,7 @@ parts:
     chapters:
     - file: Hatching
     - file: Style
+    - file: Fanbase
     # - file: Organizing Specs
   - caption: Fandango Reference
     chapters:

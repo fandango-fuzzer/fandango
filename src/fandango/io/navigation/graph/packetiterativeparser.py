@@ -1,8 +1,12 @@
+from collections.abc import Iterator
 from copy import deepcopy
 from typing import Optional
 
 from fandango.errors import FandangoValueError
+from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConverter
+from fandango.io.packet_evolution.packet_mounter import MessageHolder
 from fandango.language import NonTerminal
+from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.parser.column import Column
 from fandango.language.grammar.parser.iterative_parser import IterativeParser
@@ -14,7 +18,40 @@ class PacketIterativeParser(IterativeParser):
     def __init__(self, grammar_rules: dict[NonTerminal, Node]):
         super().__init__(grammar_rules)
         self.reference_tree: Optional[DerivationTree] = None
-        self.detailed_tree: Optional[DerivationTree] = None
+        self._consumed_history: Optional[str] = None
+
+    def parse_history(self, history: str) -> None:
+        if (
+            self._consumed_history is None
+            or not history.startswith(self._consumed_history)
+            or len(self._context_rules) != 0
+        ):
+            self.new_parse(NonTerminal("<start>"), ParsingMode.INCOMPLETE)
+            self._consumed_history = ""
+        continuation = history[len(self._consumed_history) :]
+        if continuation != "":
+            self.consume(continuation)
+        self._consumed_history = history
+
+    def controlflow_trees(
+        self, history_tree: DerivationTree
+    ) -> Iterator[tuple[DerivationTree, bool]]:
+        """
+        Parses the messages of history_tree at once and returns the control-flow trees matching them as they are
+        built, each with whether it is complete.
+        """
+        messages = list(history_tree.protocol_msgs())
+        self.reference_tree = history_tree
+        self.parse_history(
+            "".join(message.msg.nonterminal.name() for message in messages)
+        )
+        return (
+            (controlflow_tree, is_complete)
+            for controlflow_tree, is_complete in self.tree_at(
+                self.consumed_length(), incomplete=True
+            )
+            if StateGrammarConverter.matches_history(controlflow_tree, messages)
+        )
 
     def construct_incomplete_tree(
         self, state: ParseState, table: list[Column]
@@ -25,20 +62,14 @@ class PacketIterativeParser(IterativeParser):
             raise FandangoValueError(
                 "Reference tree must be set before constructing the incomplete tree!"
             )
-        for i_msg, r_msg in zip(
-            i_cpy.protocol_msgs(),
-            self.reference_tree.protocol_msgs(),
-            strict=False,
-        ):
-            i_msg.msg.set_children(r_msg.msg.children)
-            i_msg.msg.sources = r_msg.msg.sources
-            symbol = r_msg.msg.symbol
-            if isinstance(symbol, NonTerminal):
-                # TODO: Is this just to create a new string?
-                i_msg.msg.symbol = NonTerminal("<" + symbol.name()[1:])
-            else:
-                raise FandangoValueError("NonTerminal symbol must be a string!")
+        with MessageHolder(
+            self.reference_tree
+        ).hold_messages_context() as session_messages:
+            session_messages.hang_messages_into(i_cpy)
         return i_cpy
+
+    def __repr__(self) -> str:
+        return f"PacketIterativeParser(consumed_history={self._consumed_history!r})"
 
 
 class NavigatorPacketIterativeParser(PacketIterativeParser):

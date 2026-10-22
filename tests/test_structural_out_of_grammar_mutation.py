@@ -12,6 +12,7 @@ from fandango.language.parse.parse import parse
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.symbols.terminal import Terminal
 from fandango.language.tree import DerivationTree
+from fandango.logger import LOGGER
 
 REPETITIONS = 1000
 
@@ -163,7 +164,7 @@ setting all_with_type(TerminalNode) max_out_of_regex_tries = 0
     assert grammar is not None
 
     for _ in range(REPETITIONS):
-        caplog.set_level(logging.WARNING)
+        caplog.set_level(logging.WARNING, logger=LOGGER.name)
         caplog.clear()
         tree = grammar.fuzz()
         assert tree is not None
@@ -193,7 +194,7 @@ setting all_with_type(TerminalNode) max_out_of_regex_tries = 100
     assert grammar is not None
 
     for _ in range(REPETITIONS):
-        caplog.set_level(logging.WARNING)
+        caplog.set_level(logging.WARNING, logger=LOGGER.name)
         caplog.clear()
         tree = grammar.fuzz()
         assert tree is not None
