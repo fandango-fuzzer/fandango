@@ -725,7 +725,7 @@ class TestPredictingByTheNextCharacter(unittest.TestCase):
     """`predict` only takes the alternatives that can begin with the next character."""
 
     def test_characters_beyond_latin_1_are_predicted(self):
-        with open(RESOURCES_ROOT / "beyond_latin_1.fan") as file:
+        with open(RESOURCES_ROOT / "beyond_latin_1.fan", encoding="utf-8") as file:
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
         assert grammar is not None
         parser = IterativeParser(grammar.rules)
