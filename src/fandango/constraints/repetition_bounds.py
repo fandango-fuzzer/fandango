@@ -16,7 +16,7 @@ from fandango.errors import FandangoGeneratorError, FandangoValueError
 from fandango.language.grammar import nodes
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.nodes.repetition import Repetition
-from fandango.language.search import NonTerminalSearch
+from fandango.language.search import NonTerminalSearch, RuleSearch
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree, index_by_reference
 from fandango.logger import LOGGER
@@ -350,10 +350,16 @@ class RepetitionBoundsConstraint(Constraint):
                 context = ctx_tree.parent
                 if context is not None:
                     context.remove_child(index=-1)
-            # The innermost subtree with a target holds the last one, as nothing follows the end
+            if context is not None and not isinstance(search, RuleSearch):
+                context = context.get_root()
+            # Climbs from the end and cuts off each subtree searched without a target,
+            # so the first target found is the last one before the end
             while context is not None and not nodes:
                 nodes = [container.evaluate() for container in search.find(context)]
-                context = context.parent
+                parent = context.parent
+                if parent is not None:
+                    parent.remove_child(index=-1)
+                context = parent
 
         if len(nodes) == 0:
             raise FandangoValueError(
