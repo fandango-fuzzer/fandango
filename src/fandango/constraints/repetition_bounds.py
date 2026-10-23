@@ -350,11 +350,10 @@ class RepetitionBoundsConstraint(Constraint):
                 context = ctx_tree.parent
                 if context is not None:
                     context.remove_child(index=-1)
-            if context is not None:
-                nodes = [
-                    container.evaluate()
-                    for container in search.find(context.get_root())
-                ]
+            # The innermost subtree with a target holds the last one, as nothing follows the end
+            while context is not None and not nodes:
+                nodes = [container.evaluate() for container in search.find(context)]
+                context = context.parent
 
         if len(nodes) == 0:
             raise FandangoValueError(
