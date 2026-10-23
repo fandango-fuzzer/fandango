@@ -1062,7 +1062,10 @@ public:
     PythonContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     Compound_stmtContext *compound_stmt();
-    Simple_stmtContext *simple_stmt();
+    std::vector<Simple_stmtContext *> simple_stmt();
+    Simple_stmtContext* simple_stmt(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> SEMI_COLON();
+    antlr4::tree::TerminalNode* SEMI_COLON(size_t i);
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -4677,6 +4680,9 @@ public:
     antlr4::tree::TerminalNode *ANY();
     antlr4::tree::TerminalNode *ALL();
     antlr4::tree::TerminalNode *LEN();
+    antlr4::tree::TerminalNode *MATCH();
+    antlr4::tree::TerminalNode *CASE();
+    antlr4::tree::TerminalNode *TYPE();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;

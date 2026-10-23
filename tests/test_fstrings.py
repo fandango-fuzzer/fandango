@@ -33,6 +33,11 @@ from fandango.language.tree import DerivationTree
         "f'''\ntest\n{x}\n'''",
         "f'''\ntest\n{x} {y}\n'''",
         """f"{x}" 'test0' "test1" f'{y}' 'test2'""",
+        "f\"{x['a']}\"",
+        "f'{x[\"a\"]}'",
+        'f"{x["a"]}"',
+        "f'{{x}}'",
+        "f\"{len('a')}\"",
     ],
 )
 def test_fstrings(expression):

@@ -39,8 +39,9 @@ class FandangoGeneratorError(FandangoParseError):
 class FandangoSyntaxError(FandangoError, SyntaxError):
     """Error during parsing a Fandango spec"""
 
-    def __init__(self, message: str):
-        super().__init__(message)
+    def __init__(self, message: str):  # noqa: B042 # SyntaxError prints its own message field
+        FandangoError.__init__(self, message)
+        SyntaxError.__init__(self, message)
 
 
 class FandangoValueError(FandangoError, ValueError):
