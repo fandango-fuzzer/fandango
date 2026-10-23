@@ -1,4 +1,4 @@
-from collections.abc import Generator, Iterable
+from collections.abc import Generator, Iterable, Sequence
 from copy import deepcopy
 from typing import Any, Optional
 
@@ -29,11 +29,6 @@ class IterativeParser:
     ):
         self.implicit_start = NonTerminal("<*start*>")
         self._compiler = GrammarCompiler(grammar_rules)
-        self.grammar_rules = self._compiler.grammar_rules
-        self._rules = self._compiler._rules
-        self._implicit_rules = self._compiler._implicit_rules
-        self._context_rules = self._compiler._context_rules
-        self._tmp_rules = self._compiler._tmp_rules
         self._max_position = -1
         self._column_index = 0
         self._table: list[Column] = []
@@ -42,8 +37,10 @@ class IterativeParser:
         self._first_consume = True
         self._hookin_parent: Optional[DerivationTree] = None
         self._columns_per_byte = 8
-        self._forest = ForestBuilder(self._rules, self._compiler._nodes)
+        self._forest = ForestBuilder(self._compiler._rules, self._compiler._nodes)
         self._consumed_length = 0
+        # The character beginning at the column being parsed, if known and below 256
+        self._lookahead: Optional[int] = None
         # saves starting states per index of the given input for complete and incomplete parses.
         self._completed: dict[int, dict[ParseState, ParseState]] = {}
         # for incomplete parsed we only store positions of other states that are also in _completed or that
@@ -84,23 +81,23 @@ class IterativeParser:
             # exception: their expansion depends on the tree parsed so far.
             for completion in column.empty_completions.get(symbol, ()):
                 self.complete(completion, table, column_index, late_waiters=(state,))
-            if symbol not in self._context_rules:
+            if self._compiler.context_rule(symbol) is None:
                 return
         else:
             column.predicted.add(symbol)
 
-        for rules in (self._rules, self._implicit_rules, self._tmp_rules):
-            alternatives = rules.get(symbol)
-            if alternatives is not None:
-                table[column_index].update(
-                    {
-                        ParseState(symbol, column_index, alternative)
-                        for alternative in alternatives
-                    }
-                )
-                return
-        if symbol in self._context_rules:
-            node, rule_symbol = self._context_rules[symbol]
+        alternatives = self._compiler.rule_alternatives(symbol, self._lookahead)
+        if alternatives is not None:
+            table[column_index].update(
+                {
+                    ParseState(symbol, column_index, alternative)
+                    for alternative in alternatives
+                }
+            )
+            return
+        context_rule = self._compiler.context_rule(symbol)
+        if context_rule is not None:
+            node, rule_symbol = context_rule
             self.predict_ctx_rule(
                 state, table, column_index, node, rule_symbol, hookin_parent
             )
@@ -494,15 +491,25 @@ class IterativeParser:
 
     def new_parse(
         self,
-        start: str | NonTerminal = "<start>",
+        start: str | NonTerminal | Sequence[NonTerminal] = "<start>",
         mode: ParsingMode = ParsingMode.COMPLETE,
         hookin_parent: Optional[DerivationTree] = None,
         starter_bit: int = -1,
     ) -> None:
+        """With several start symbols, parses the input as each of them at once."""
         if isinstance(start, str):
             start = NonTerminal(start)
-        self._start = start
-        self._columns_per_byte = self._compiler.columns_per_byte_for(start)
+        starts = [start] if isinstance(start, NonTerminal) else list(start)
+        self._compiler._clear_tmp()
+        if len(starts) == 1:
+            (self._start,) = starts
+        else:
+            any_start, _ = self._compiler.set_tmp_rule(
+                [[(s, frozenset())] for s in starts]
+            )
+            assert isinstance(any_start, NonTerminal)
+            self._start = any_start
+        self._columns_per_byte = max(map(self._compiler.columns_per_byte_for, starts))
         self._column_index = (7 - starter_bit) % 8 if self._columns_per_byte == 8 else 0
         self._table = []
         self._table.append(Column())
@@ -514,7 +521,6 @@ class IterativeParser:
         self._incomplete = {}
         self._parsing_mode = mode
         self._hookin_parent = hookin_parent
-        self._compiler._clear_tmp()
 
     def consume(self, char: str | bytes | int) -> None:
         """
@@ -550,6 +556,12 @@ class IterativeParser:
             # (or some bits of the last character)
             at_end = word_index >= len(word)
             offset = consumed + word_index
+            self._lookahead = None
+            if not at_end and column_index % columns_per_byte == 0:
+                char = word[word_index]
+                code_point = char if isinstance(char, int) else ord(char)
+                if code_point < 256:
+                    self._lookahead = code_point
             for state in table[column_index]:
                 if state.is_finished:
                     # A parse counts at whole bytes, and at the end of the
@@ -628,10 +640,15 @@ class IterativeParser:
         return list(self._completed)
 
     def tree_at(
-        self, offset: int, *, incomplete: bool = False
+        self,
+        offset: int,
+        *,
+        incomplete: bool = False,
+        start: Optional[NonTerminal] = None,
     ) -> Generator[tuple[DerivationTree, bool], None, None]:
         """
-        Every parse parsable with `offset` given bytes, as `(tree, is_complete)`.
+        Every parse parsable with `offset` given bytes, as `(tree, is_complete)`;
+        with `start`, only the parses as `start`, one of several start symbols.
         """
         flagged = [(state, True) for state in self._completed.get(offset, {}).values()]
         if incomplete:
@@ -641,6 +658,8 @@ class IterativeParser:
         seen_hashes_and_flags: set[tuple[int, bool]] = set()
         for state, flag in flagged:
             for tree in self._forest.derivations_of(state):
+                if start is not None and tree.symbol != start:
+                    continue
                 hash_and_flag = (hash(tree), flag)
                 if hash_and_flag in seen_hashes_and_flags:
                     continue

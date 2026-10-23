@@ -34,6 +34,7 @@ from fandango.io.packet_evolution.packet_mounter import MessageHolder, PacketMou
 from fandango.io.packetparser import parse_next_remote_packet
 from fandango.io.violation import FandangoRemoteViolation, RemoteViolationType
 from fandango.language.grammar import FuzzingMode
+from fandango.language.grammar.parser.iterative_parser import IterativeParser
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER, log_guidance_hint, log_message_transfer
@@ -62,6 +63,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             packet_mounter=self._packet_mounter,
             grammar=self.grammar,
             start_symbol=str(self._start_symbol),
+            max_consecutive_duplicates=5,
         )
         self._packet_algorithm.population_manager = self._population_manager
         old_evaluator = self._packet_algorithm.evaluator
@@ -85,6 +87,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         )
         self._protocol_tree: DerivationTree = DerivationTree(self._start_symbol)
         self._remote_response_timeout = remote_response_timeout
+        self._packet_parsers: list[IterativeParser] = []
         self._io_instance: FandangoIO = FandangoIO.instance()
         self._violation_profiler = ViolationProfiler(
             k_paths_of=lambda message: (
@@ -197,7 +200,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         timeout = self._remote_response_timeout
         for packet in self._packet_selector.next_packets:
             if packet.node.sender == "TimerEvent":
-                timeout = -1
+                timeout = -1.0
         if not self._io_instance.wait_until(self._io_instance.received_msg, timeout):
             raise self._gen_timeout_violation()
 
@@ -212,6 +215,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             self._packet_selector.forecasting_result,
             self._io_instance,
             self._protocol_tree,
+            parsers=self._packet_parsers,
         ):
             packet_sender = packet_tree.sender
             packet_recipient = packet_tree.recipient
@@ -427,7 +431,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     self._configure_fuzzable_packets()
                     self._packet_coverage_filter.set_current_tree(self._protocol_tree)
                     new_packet = self._generate_packet(max_generations=max_generations)
-                    if self._io_instance.received_msg():
+                    if self._packet_selector.has_message_to_handle():
                         continue
                 if new_packet is None:
                     log_guidance_hint(
@@ -470,6 +474,19 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 self._protocol_tree = packet_mounter.commit(new_packet)
                 self._packet_selector.observe_message(self._protocol_tree)
             else:
+                if (
+                    self._packet_selector.may_go_on_without_awaited_packet()
+                    and not self._io_instance.wait_until(
+                        self._io_instance.received_msg, self._remote_response_timeout
+                    )
+                ):
+                    # Silence was allowed.
+                    log_guidance_hint(
+                        f"Planned packet did not arrive within {self._remote_response_timeout}s. "
+                        "Continuing on without it."
+                    )
+                    self._packet_selector.observe_silence()
+                    continue
                 try:
                     with packet_mounter.history_context(self._protocol_tree):
                         remote_packet = self._handle_remote_response()
@@ -494,7 +511,12 @@ class ProtocolAlgorithm(GeneticAlgorithm):
 
     def _configure_fuzzable_packets(self) -> None:
         self._clear_constraint_caches()
-        self._population_manager.fuzzable_packets = self._packet_selector.next_packets
+        # The next packets may include a timer's expiry, which Fandango only receives
+        self._population_manager.fuzzable_packets = [
+            packet
+            for packet in self._packet_selector.next_packets
+            if self._io_instance.parties[packet.node.sender].is_fuzzer_controlled()
+        ]
         self._population_manager.fallback_packets = []
         for sender in self._packet_selector.next_fuzzer_parties():
             self._population_manager.fallback_packets.extend(

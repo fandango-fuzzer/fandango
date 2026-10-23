@@ -13,6 +13,7 @@ FandangoLexerBase::FandangoLexerBase(antlr4::CharStream *input)
     opened = 0;
     inPython = 0;
     isFstring = false;
+    fstringOpened = 0;
     inPermutation = false;
     skipLexer = 0;
 
@@ -25,6 +26,7 @@ void FandangoLexerBase::reset() {
     opened = 0;
     inPython = 0;
     isFstring = false;
+    fstringOpened = 0;
     inPermutation = false;
     skipLexer = 0;
 
@@ -151,8 +153,10 @@ void FandangoLexerBase::_python_end() {
     inPython = 0;
 }
 
+// In an f-string, strings are tokens only inside its replacement fields
 void FandangoLexerBase::_fstring_start() {
     isFstring = true;
+    fstringOpened = opened;
 }
 
 void FandangoLexerBase::_fstring_end() {
@@ -160,7 +164,7 @@ void FandangoLexerBase::_fstring_end() {
 }
 
 bool FandangoLexerBase::_is_not_fstring() {
-    return !isFstring;
+    return !isFstring || opened > fstringOpened;
 }
 
 void FandangoLexerBase::_permutation_start() {

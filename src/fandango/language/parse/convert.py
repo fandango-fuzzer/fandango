@@ -1879,7 +1879,15 @@ class PythonProcessor(FandangoParserVisitor):
         self.search_processor = SearchProcessor(Grammar.dummy())
 
     def get_code(self, stmts: list[FandangoParser.PythonContext]) -> ast.Module:
-        return ast.Module(body=[self.visit(stmt) for stmt in stmts], type_ignores=[])
+        return ast.Module(
+            body=[tree for stmt in stmts for tree in self.visitPython(stmt)],
+            type_ignores=[],
+        )
+
+    def visitPython(self, ctx: FandangoParser.PythonContext):
+        if ctx.compound_stmt():
+            return [self.visitCompound_stmt(ctx.compound_stmt())]
+        return [self.visitSimple_stmt(stmt) for stmt in ctx.simple_stmt()]
 
     def get_expression(self, expression):
         if expression:

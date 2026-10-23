@@ -172,7 +172,7 @@ stdlib += numbers
 
 
 timers = make_rule("timer_number", ["r'[0-9]+'"])
-timers += make_rule("timer_timeout", ["<timer_number>"])
+timers += make_rule("timer_timeout", ["<timer_number> ('.' <timer_number>)?"])
 timers += make_rule("timer_id", ["<timer_number>"])
 timers += make_rule("timer_expired", ["'expired: ' <timer_id> '\\n'"])
 timers += make_rule("timer_cancel", ["'cancel: ' <timer_id> '\\n'"])

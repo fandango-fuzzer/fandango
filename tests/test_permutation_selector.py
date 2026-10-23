@@ -143,9 +143,9 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
         return PacketGuider(model, forecast, max_messages_per_tree=200)
 
     def _select(self, guide: PacketGuider) -> None:
-        # a non-empty uncovered list keeps the guide off the "guide to end" path
+        # a non-empty uncovered set keeps the guide off the "guide to end" path
         guide.select_next_packet(
-            self.history, lambda: [(NonTerminal("<msg_c>"),)], lambda: []
+            self.history, lambda: {(NonTerminal("<msg_c>"),)}, lambda: []
         )
 
     def _receive(self, guide: PacketGuider, text: str) -> None:

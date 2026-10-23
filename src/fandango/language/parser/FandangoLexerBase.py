@@ -23,6 +23,7 @@ class FandangoLexerBase(Lexer):
         self.opened = 0
         self.in_python = 0
         self.in_fstring = False
+        self.fstring_opened = 0
         self.in_filepath = 0
         self.in_permutation = False
 
@@ -36,6 +37,7 @@ class FandangoLexerBase(Lexer):
         self.opened = 0
         self.in_python = 0
         self.in_fstring = False
+        self.fstring_opened = 0
         self.in_filepath = 0
         self.in_permutation = False
         super().reset()  # type: ignore[no-untyped-call] # antlr4 doesn't provide types
@@ -112,15 +114,16 @@ class FandangoLexerBase(Lexer):
     def python_end(self) -> None:
         self.in_python = 0
 
-    # while f-string do not consider the string token
+    # in an f-string, strings are tokens only inside its replacement fields
     def fstring_start(self) -> None:
         self.in_fstring = True
+        self.fstring_opened = self.opened
 
     def fstring_end(self) -> None:
         self.in_fstring = False
 
     def is_not_fstring(self) -> bool:
-        return not self.in_fstring
+        return not self.in_fstring or self.opened > self.fstring_opened
 
     def permutation_start(self) -> None:
         self.in_permutation = True

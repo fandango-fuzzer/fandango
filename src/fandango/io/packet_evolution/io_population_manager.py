@@ -16,8 +16,9 @@ class IoPopulationManager(PopulationManager):
         packet_mounter: PacketMounter,
         grammar: Grammar,
         start_symbol: str,
+        max_consecutive_duplicates: Optional[int] = None,
     ):
-        super().__init__(grammar, start_symbol)
+        super().__init__(grammar, start_symbol, max_consecutive_duplicates)
         self._prev_packet_idx = 0
         self.fuzzable_packets: list[ForecastingPacket] = []
         self.fallback_packets: list[ForecastingPacket] = []

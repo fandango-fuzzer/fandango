@@ -36,6 +36,7 @@ private:
     int opened = 0;
     int inPython = 0;
     bool isFstring = false;
+    int fstringOpened = 0;
     bool inPermutation = false;
     int skipLexer = 0;
 

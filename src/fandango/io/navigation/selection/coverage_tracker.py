@@ -167,15 +167,13 @@ class CoverageTracker:
         self._goal_coverage.reset()
         self._coverage_scores = None
 
-    def uncovered_paths(self) -> list[KPath]:
+    def uncovered_paths(self) -> set[KPath]:
         all_paths = self.all_k_paths(
             self._start_symbol,
             coverage_goal=self._coverage_goal,
             input_parties=self._input_parties(),
         )
-        return list(
-            all_paths.difference(self._goal_coverage.covered(self._start_symbol))
-        )
+        return all_paths.difference(self._goal_coverage.covered(self._start_symbol))
 
     def coverage_scores(self) -> list[tuple[NonTerminal, float]]:
         if self._coverage_scores is None:
