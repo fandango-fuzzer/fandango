@@ -511,7 +511,12 @@ class ProtocolAlgorithm(GeneticAlgorithm):
 
     def _configure_fuzzable_packets(self) -> None:
         self._clear_constraint_caches()
-        self._population_manager.fuzzable_packets = self._packet_selector.next_packets
+        # The next packets may include a timer's expiry, which Fandango only receives
+        self._population_manager.fuzzable_packets = [
+            packet
+            for packet in self._packet_selector.next_packets
+            if self._io_instance.parties[packet.node.sender].is_fuzzer_controlled()
+        ]
         self._population_manager.fallback_packets = []
         for sender in self._packet_selector.next_fuzzer_parties():
             self._population_manager.fallback_packets.extend(
