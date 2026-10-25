@@ -515,7 +515,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._population_manager.fuzzable_packets = [
             packet
             for packet in self._packet_selector.next_packets
-            if self._io_instance.parties[packet.node.sender].is_fuzzer_controlled()
+            if packet.node.sender is not None
+            and self._io_instance.parties[packet.node.sender].is_fuzzer_controlled()
         ]
         self._population_manager.fallback_packets = []
         for sender in self._packet_selector.next_fuzzer_parties():
