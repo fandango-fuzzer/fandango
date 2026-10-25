@@ -725,10 +725,15 @@ class Out(FandangoParty):
         threading.Thread(target=self._listen_loop, daemon=True).start()
 
     def _listen_loop(self) -> None:
-        while True:
-            if self.stdout is not None:
+        while self.stdout is not None:
+            try:
                 line = self.stdout.read(1)
-                self.receive(line, self.party_name)
+            except OSError:
+                # The pseudo-terminal fails with EIO once the process has closed its end
+                break
+            if not line:
+                break
+            self.receive(line, self.party_name)
 
 
 class In(FandangoParty):
