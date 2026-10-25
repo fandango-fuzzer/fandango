@@ -242,13 +242,13 @@ def _get_algorithm_parser() -> argparse.ArgumentParser:
     algorithm_group.add_argument(
         "--max-node-rate",
         type=float,
-        help="Rate at which the maximal number of nodes in a tree is increased.",
+        help="Rate at which the number of nodes a tree may have on top of those it needs at least is increased.",
         default=None,
     )
     algorithm_group.add_argument(
         "--max-nodes",
         type=int,
-        help="Maximal value, the number of nodes in a tree can be increased to.",
+        help="Maximal number of nodes a tree may have on top of those it needs at least.",
         default=None,
     )
     algorithm_group.add_argument(

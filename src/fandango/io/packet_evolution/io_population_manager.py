@@ -40,7 +40,11 @@ class IoPopulationManager(PopulationManager):
         current_pck = random.choice(packet_selection)
         mounting_option = random.choice(list(current_pck.paths))
         mount_point = self.packet_mounter.mount_point(mounting_option)
-        current_pck.node.fuzz(mount_point, self._grammar, max_nodes)
+        current_pck.node.fuzz(
+            mount_point,
+            self._grammar,
+            self._grammar.node_limit(current_pck.node.symbol, max_nodes),
+        )
         fuzzed_packet = mount_point.children[-1]
         self.packet_mounter.attach(fuzzed_packet, mounting_option)
 
