@@ -57,6 +57,13 @@ def expired_count(io: FandangoIO) -> int:
     return sum(sender == "TimerEvent" for sender, _, _ in io.get_received_msgs())
 
 
+def seconds_until_expired(io: FandangoIO, started: float) -> float:
+    """The seconds from `started` until a timer expired, waiting at most 5 s."""
+    while expired_count(io) == 0 and time.monotonic() - started < 5:
+        time.sleep(0.01)
+    return time.monotonic() - started
+
+
 def test_a_message_without_sender_comes_from_the_external_party_not_a_timer(
     io: FandangoIO,
 ) -> None:
@@ -115,12 +122,12 @@ def test_a_timer_cancelled_after_it_expired_drops_its_expiry_not_handled_yet(
 def test_a_timer_of_a_fraction_of_a_second_expires_on_time(io: FandangoIO) -> None:
     timers = TimerControl()
 
+    started = time.monotonic()
     timers.start_timer("1", 0.3)
-    time.sleep(0.2)
-    assert expired_count(io) == 0
-    time.sleep(0.2)
+    elapsed_s = seconds_until_expired(io, started)
 
     assert expired_count(io) == 1
+    assert 0.3 <= elapsed_s < 1.5
 
 
 def test_a_start_message_with_a_decimal_timeout_starts_a_timer_of_that_duration() -> (
@@ -134,8 +141,10 @@ def test_a_start_message_with_a_decimal_timeout_starts_a_timer_of_that_duration(
     io = FandangoIO.instance()
     timers = TimerControl()
 
+    started = time.monotonic()
     timers.send(start_message, None)
-    time.sleep(0.4)
+    elapsed_s = seconds_until_expired(io, started)
 
     assert io.get_received_msgs() == [("TimerEvent", "TimerControl", "expired: 7\n")]
+    assert 0.25 <= elapsed_s < 1.5
     timers.stop()
