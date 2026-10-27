@@ -585,9 +585,10 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
 
     def msg_parties(self, *, include_recipients: bool = True) -> set[str]:
         parties: set[str] = set()
+        seen_nts: set[tuple[Optional[str], Optional[str], Symbol]] = set()
         for rule in self.rules.values():
             parties |= rule.msg_parties(
-                grammar=self, include_recipients=include_recipients
+                grammar=self, seen_nts=seen_nts, include_recipients=include_recipients
             )
         return parties
 
