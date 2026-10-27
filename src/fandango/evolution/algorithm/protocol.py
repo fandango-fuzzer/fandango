@@ -36,6 +36,7 @@ from fandango.io.violation import FandangoRemoteViolation, RemoteViolationType
 from fandango.language.grammar import FuzzingMode
 from fandango.language.grammar.parser.iterative_parser import IterativeParser
 from fandango.language.symbols.non_terminal import NonTerminal
+from fandango.language.symbols.symbol import Symbol
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER, log_guidance_hint, log_message_transfer
 
@@ -136,6 +137,11 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         if self.coverage_goal == CoverageGoal.RANDOM:
             return None
         return self._packet_selector.coverage_tracker.k_path_counts()
+
+    def k_path_counts_by_symbol(self) -> Optional[dict[Symbol, KPathCounts]]:
+        if self.coverage_goal == CoverageGoal.RANDOM:
+            return None
+        return self._packet_selector.coverage_tracker.k_path_counts_by_symbol()
 
     @property
     def max_messages_per_tree(self) -> int:
