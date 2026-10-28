@@ -1,3 +1,4 @@
+import logging
 import random
 from collections.abc import Generator
 from typing import Optional
@@ -203,12 +204,15 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         )
 
     def _handle_remote_response(self) -> DerivationTree:
-        timeout = self._remote_response_timeout
-        for packet in self._packet_selector.next_packets:
-            if packet.node.sender == "TimerEvent":
-                timeout = -1.0
-        if not self._io_instance.wait_until(self._io_instance.received_msg, timeout):
-            raise self._gen_timeout_violation()
+        if not self._io_instance.received_msg():
+            timeout = self._remote_response_timeout
+            for packet in self._packet_selector.next_packets:
+                if packet.node.sender == "TimerEvent":
+                    timeout = -1.0
+            if not self._io_instance.wait_until(
+                self._io_instance.received_msg, timeout
+            ):
+                raise self._gen_timeout_violation()
 
         packet_mounter = self._packet_mounter
         packet_sender = None
@@ -405,7 +409,9 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 and iteration % self.CLEAR_CONSTRAINT_CACHE_INTERVAL == 0
             ):
                 self._clear_constraint_caches()
-            if self.coverage_goal != CoverageGoal.RANDOM:
+            if self.coverage_goal != CoverageGoal.RANDOM and LOGGER.isEnabledFor(
+                logging.INFO
+            ):
                 LOGGER.info(
                     f"Current coverage: {self._packet_selector.coverage_percent() * 100:.2f}%"
                 )
@@ -425,12 +431,18 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 self._start_new_run()
                 continue
 
-            if self._packet_selector.is_run_abandoned():
+            # A received message is handled before the next plan, which it changes
+            external_message_waits = self._packet_selector.has_external_message()
+
+            if not external_message_waits and self._packet_selector.is_run_abandoned():
                 self._signal_session_end_to_components(self._protocol_tree)
                 self._start_new_run()
                 continue
 
-            if self._packet_selector.should_generate_next_packet():
+            if (
+                not external_message_waits
+                and self._packet_selector.should_generate_next_packet()
+            ):
                 self._packet_algorithm.reset()
                 new_packet: Optional[DerivationTree] = None
                 with packet_mounter.history_context(self._protocol_tree):
@@ -481,7 +493,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 self._packet_selector.observe_message(self._protocol_tree)
             else:
                 if (
-                    self._packet_selector.may_go_on_without_awaited_packet()
+                    not external_message_waits
+                    and self._packet_selector.may_go_on_without_awaited_packet()
                     and not self._io_instance.wait_until(
                         self._io_instance.received_msg, self._remote_response_timeout
                     )

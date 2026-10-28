@@ -200,6 +200,12 @@ class PacketSelector:
         self._guider.observe_silence()
         self._next_packets = None
 
+    def has_external_message(self) -> bool:
+        """Whether a received message of a party other than the timers waits to be handled."""
+        return any(
+            sender != "TimerEvent" for sender in self.io_instance.get_received_parties()
+        )
+
     def has_message_to_handle(self) -> bool:
         """
         Whether a received message waits to be handled. A timer's expiry waits only
