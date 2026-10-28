@@ -228,7 +228,7 @@ class IterativeParser:
         next_state = state.next()
         tree = ParserDerivationTree(Terminal(bit))
         next_state.set_edge(state, tree)
-        table[column_index + 1].add(next_state)
+        self._column_at(table, column_index + 1).add(next_state)
         self._max_position = max(self._max_position, word_index)
 
         return True
@@ -282,13 +282,21 @@ class IterativeParser:
             state.predecessor() if state.is_terminal_partial_match else state,
             ParserDerivationTree(Terminal(check_word[:match_length])),
         )
-        table[
+        self._column_at(
+            table,
             column_index
-            + ((match_length - state.partial_matched_length) * columns_per_byte)
-        ].add(next_state)
+            + ((match_length - state.partial_matched_length) * columns_per_byte),
+        ).add(next_state)
         self._max_position = max(self._max_position, word_index + match_length)
 
         return True
+
+    @staticmethod
+    def _column_at(table: list[Column], column_index: int) -> Column:
+        """`table[column_index]`, adding empty columns up to it first."""
+        while len(table) <= column_index:
+            table.append(Column())
+        return table[column_index]
 
     @staticmethod
     def _continued_word(
@@ -356,10 +364,11 @@ class IterativeParser:
             next_state.partial_matched_length = 0
             tree = ParserDerivationTree(Terminal(check_word[:length]))
             next_state.set_edge(predecessor, tree)
-            table[
+            self._column_at(
+                table,
                 column_index
-                + ((length - state.partial_matched_length) * columns_per_byte)
-            ].add(next_state)
+                + ((length - state.partial_matched_length) * columns_per_byte),
+            ).add(next_state)
             self._max_position = max(self._max_position, word_index + length)
         if can_continue:
             # The input ends inside the regex; keep it open for the next chunk.
@@ -367,10 +376,11 @@ class IterativeParser:
             next_state.partial_matched_length = len(check_word)
             tree = ParserDerivationTree(Terminal(check_word))
             next_state.set_edge(predecessor, tree)
-            table[
+            self._column_at(
+                table,
                 column_index
-                + ((len(check_word) - state.partial_matched_length) * columns_per_byte)
-            ].add(next_state)
+                + ((len(check_word) - state.partial_matched_length) * columns_per_byte),
+            ).add(next_state)
 
         return can_continue or bool(lengths)
 
@@ -534,21 +544,30 @@ class IterativeParser:
 
         consumed = self._consumed_length
         self._consumed_length = consumed + len(word)
+        if not self._first_consume and len(self._table[self._column_index]) == 0:
+            # No parse state is left, so the input cannot be parsed further
+            return
         table = list(self._table)
         columns_per_byte = self._columns_per_byte
-        table.extend([Column() for _ in range(len(char) * columns_per_byte)])
+        # Columns are added as parse states reach them, up to this end
+        end = len(table) + len(word) * columns_per_byte
         # Add the start state at the first consume
         if self._first_consume:
-            table[self._column_index].add(
+            self._column_at(table, self._column_index).add(
                 ParseState(self.implicit_start, 0, ((self._start, frozenset()),))
             )
             self._first_consume = False
         column_index = self._column_index
         word_index = 0
 
-        while column_index < len(table):
+        while column_index < end:
+            if column_index >= len(table):
+                # No state reaches this column or any after it
+                self._table = table + [Column()]
+                self._column_index = len(table)
+                return
             bit_position = 7 - (column_index % 8)
-            if column_index == len(table) - 1:
+            if column_index == end - 1:
                 self._table = list(table)
                 self._table[-1] = deepcopy(table[-1])
                 self._column_index = column_index
