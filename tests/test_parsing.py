@@ -520,6 +520,17 @@ class TestCanContinueParsing(unittest.TestCase):
         self.iter_parser.new_parse()
         self.iter_parser.consume(b"rgbd;")
 
+    def test_input_after_parse_end_adds_no_columns(self):
+        self.iter_parser.new_parse()
+        self.iter_parser.consume(b"rgbd;")
+        table_length = len(self.iter_parser._table)
+        self.iter_parser.consume(b"x" * 10_000)
+        self.iter_parser.consume(b"y")
+        self.assertFalse(self.iter_parser.can_continue())
+        self.assertEqual([5], self.iter_parser.parsed_positions())
+        self.assertLessEqual(len(self.iter_parser._table), table_length + 1)
+        self.assertEqual(10_006, self.iter_parser.consumed_length())
+
 
 class TestIncrementalParsing(unittest.TestCase):
     REPEATING = "<start> ::= 'a'+\n"
