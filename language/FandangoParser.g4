@@ -205,7 +205,7 @@ rs_slice
 
 python
     : compound_stmt
-    | simple_stmt
+    | simple_stmt (';' simple_stmt)* ';'?
     // PYTHON_START (python_tag | NEWLINE)* PYTHON_END
     ;
 
@@ -1303,7 +1303,7 @@ list
     ;
 
 tuple
-    : '(' (star_named_expression ',' (star_named_expressions))? ')'
+    : '(' (star_named_expression ',' star_named_expressions?)? ')'
     ;
 
 set
@@ -1495,6 +1495,10 @@ identifier
     | ANY
     | ALL
     | LEN
+    // soft keywords, which Python allows as names
+    | MATCH
+    | CASE
+    | TYPE
     ;
 
 // ========================= END OF THE GRAMMAR ===========================

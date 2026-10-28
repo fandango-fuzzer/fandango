@@ -27,15 +27,15 @@ from .utils import DOCS_ROOT, IS_BEARTYPE_ACTIVE, RESOURCES_ROOT, run_command
 if IS_BEARTYPE_ACTIVE:
     expected_with_random_seed = [
         "9300226346851476",
-        "19",
-        "370100",
-        "598638602572139",
-        "665907123474551",
-        "81539875",
-        "2633",
-        "450196866517896898",
-        "278",
-        "5925267533427035916",
+        "1902296417352606748",
+        "7",
+        "628",
+        "1365967990811",
+        "89037317705367",
+        "2893585743177290",
+        "684507592588",
+        "5901939819221875",
+        "8430",
     ]
 
 
@@ -349,7 +349,8 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
         self.assertEqual(expected, err, err)
 
     def test_max_nodes_unsat(self):
-        max_nodes = 61  # there is a off by one error in two places (this should really be 59), but for now this is just how it is
+        # The budget comes on top of the nodes <start> needs at least; one node is too few for a second digit
+        max_nodes = 1
         # Tree(<start>, 1
         #   Tree(<text>, 2
         #     Tree('a'), 3

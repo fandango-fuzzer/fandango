@@ -23,7 +23,6 @@ from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
-from fandango.language.grammar.parser.iterative_parser import IterativeParser
 from fandango.language.grammar.parser.parser import Parser
 from fandango.language.symbols import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree, TreeTuple, index_by_reference
@@ -247,6 +246,10 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
     def collapse(self, tree: Optional[DerivationTree]) -> Optional[DerivationTree]:
         return self._parser.collapse(tree)
 
+    def node_limit(self, symbol: str | NonTerminal, max_nodes: int) -> int:
+        """The most nodes a tree of `symbol` may have: `max_nodes` on top of the nodes it needs at least."""
+        return max_nodes + int(self[symbol].distance_to_completion)
+
     def fuzz(
         self,
         start: str | NonTerminal = "<start>",
@@ -372,9 +375,6 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         return self._parser.parse_multiple(
             word, start, mode=mode, include_controlflow=include_controlflow
         )
-
-    def iterative_parser(self, start: NonTerminal) -> IterativeParser:
-        return self._parser.iterative_parser(start)
 
     def max_position(self) -> int:
         """Return the maximum position reached during last parsing."""
@@ -585,9 +585,10 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
 
     def msg_parties(self, *, include_recipients: bool = True) -> set[str]:
         parties: set[str] = set()
+        seen_nts: set[tuple[Optional[str], Optional[str], Symbol]] = set()
         for rule in self.rules.values():
             parties |= rule.msg_parties(
-                grammar=self, include_recipients=include_recipients
+                grammar=self, seen_nts=seen_nts, include_recipients=include_recipients
             )
         return parties
 

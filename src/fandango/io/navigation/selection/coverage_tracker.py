@@ -6,7 +6,7 @@ from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.language.grammar.grammar import Grammar, KPath
-from fandango.language.symbols import NonTerminal
+from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree
 
 Group = TypeVar("Group", bound=Hashable)
@@ -167,15 +167,13 @@ class CoverageTracker:
         self._goal_coverage.reset()
         self._coverage_scores = None
 
-    def uncovered_paths(self) -> list[KPath]:
+    def uncovered_paths(self) -> set[KPath]:
         all_paths = self.all_k_paths(
             self._start_symbol,
             coverage_goal=self._coverage_goal,
             input_parties=self._input_parties(),
         )
-        return list(
-            all_paths.difference(self._goal_coverage.covered(self._start_symbol))
-        )
+        return all_paths.difference(self._goal_coverage.covered(self._start_symbol))
 
     def coverage_scores(self) -> list[tuple[NonTerminal, float]]:
         if self._coverage_scores is None:
@@ -195,6 +193,27 @@ class CoverageTracker:
 
     def coverage_percent(self) -> float:
         return self.k_path_counts().covered_share()
+
+    def k_path_counts_by_symbol(self) -> dict[Symbol, KPathCounts]:
+        """Per symbol, the available k-paths that pass through it and how many of them are covered."""
+        available_paths = self.all_k_paths(
+            self._start_symbol,
+            coverage_goal=self._coverage_goal,
+            input_parties=self._input_parties(),
+        )
+        covered_paths = available_paths & self._goal_coverage.covered(
+            self._start_symbol
+        )
+        counts: dict[Symbol, list[int]] = {}
+        for path in available_paths:
+            for symbol in set(path):
+                symbol_counts = counts.setdefault(symbol, [0, 0])
+                symbol_counts[0] += path in covered_paths
+                symbol_counts[1] += 1
+        return {
+            symbol: KPathCounts(covered, available)
+            for symbol, (covered, available) in counts.items()
+        }
 
     def covered_packet_k_paths(
         self, packet_type: PacketNonTerminal, overlap_to_root: bool

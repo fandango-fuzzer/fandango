@@ -24,7 +24,7 @@ class PacketIterativeParser(IterativeParser):
         if (
             self._consumed_history is None
             or not history.startswith(self._consumed_history)
-            or len(self._context_rules) != 0
+            or self._compiler.has_context_rules()
         ):
             self.new_parse(NonTerminal("<start>"), ParsingMode.INCOMPLETE)
             self._consumed_history = ""
