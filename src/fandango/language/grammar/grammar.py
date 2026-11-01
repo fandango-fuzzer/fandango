@@ -57,6 +57,10 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         self._tree_k_path_cache: LRUCache[int, tuple[set[KPath], set[KPath]]] = (
             LRUCache(maxsize=cache_size())
         )
+        # The k-paths from <start> by each symbol they contain, with the k they reach up to
+        self._k_paths_by_symbol: LRUCache[
+            CoverageGoal, tuple[int, dict[Symbol, list[KPath]]]
+        ] = LRUCache(maxsize=cache_size())
 
     @property
     def grammar_settings(self) -> Sequence[HasSettings]:
@@ -726,13 +730,19 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                 symbol_work_k.add(tuple(node.to_symbol() for node in path))
 
         if overlap_to_root:
-            all_k_paths = self.generate_all_k_paths(
-                k=k, coverage_goal=coverage_goal, input_parties=input_parties
-            )
-            for k_path in all_k_paths:
-                if non_terminal in k_path:
-                    for idx in range(len(k_path) - 1, k):
-                        symbol_work[idx].add(k_path)
+            indexed = self._k_paths_by_symbol.get(coverage_goal)
+            if indexed is None or indexed[0] < k:
+                k_paths_by_symbol: dict[Symbol, list[KPath]] = {}
+                for k_path in self.generate_all_k_paths(
+                    k=k, coverage_goal=coverage_goal, input_parties=input_parties
+                ):
+                    for symbol in set(k_path):
+                        k_paths_by_symbol.setdefault(symbol, []).append(k_path)
+                indexed = (k, k_paths_by_symbol)
+                self._k_paths_by_symbol[coverage_goal] = indexed
+            for k_path in indexed[1].get(non_terminal, []):
+                for idx in range(len(k_path) - 1, k):
+                    symbol_work[idx].add(k_path)
 
         self._k_path_cache[cache_key] = symbol_work
 
