@@ -10,6 +10,7 @@ from fandango.constraints.failing_tree import (
     ApplyAllSuggestions,
     FailingTree,
     NopSuggestion,
+    PrioritizedSuggestion,
     Suggestion,
 )
 from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
@@ -265,7 +266,8 @@ class Evaluator:
                 self.evaluate_repetition_bounds_constraints(individual)
             )
             rep_suggestion.rec_set_allow_repetition_full_delete(fully_solved_so_far)
-            suggestion = ApplyAllSuggestions([suggestion, rep_suggestion])
+            # A repair of the bounds that would swallow a repair of a hard constraint waits for the next round
+            suggestion = PrioritizedSuggestion(suggestion, rep_suggestion)
             failing_trees.extend(rep_failing_trees)
 
             fully_solved_so_far = fully_solved_so_far and rep_fitness == 1.0
