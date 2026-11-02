@@ -153,12 +153,12 @@ class PopulationManager:
     ) -> Generator[DerivationTree, None, tuple[DerivationTree, int]]:
         """
         Applies suggestions as long as each round increases the fitness and yields no solution.
-        Cap max rounds at ceil(log2(n)) rounds, n being the number of initially failing constraints.
+        Cap max rounds at ceil(log2(n)) + 1 rounds, n being the number of initially failing constraints
         """
         fixes_made = 0
         fitness = 0.0
         failing_constraint_count = len({tree.cause for tree in failing_trees})
-        max_fix_rounds = math.ceil(math.log2(max(failing_constraint_count, 2)))
+        max_fix_rounds = math.ceil(math.log2(max(failing_constraint_count, 2))) + 1
         for _ in range(max_fix_rounds if failing_trees else 0):
             fixed, round_fixes_made = self._apply_suggestion(individual, suggestion)
             if round_fixes_made == 0:
