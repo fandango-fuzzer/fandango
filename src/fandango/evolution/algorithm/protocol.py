@@ -276,7 +276,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         raise FandangoParseError("Remote response does not match constraints")
 
     def _filter_by_coverage(self, packet: DerivationTree) -> Optional[DerivationTree]:
-        if packet is self._population_manager.attached_leap_packet:
+        if packet is self._population_manager.leap_packet_in_population:
             # It passed the coverage filter when it was generated
             return packet
         with self._packet_mounter.mounted_context(packet) as mounted_packet:
