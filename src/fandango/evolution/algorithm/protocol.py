@@ -276,6 +276,9 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         raise FandangoParseError("Remote response does not match constraints")
 
     def _filter_by_coverage(self, packet: DerivationTree) -> Optional[DerivationTree]:
+        if packet is self._population_manager.attached_leap_packet:
+            # It passed the coverage filter when it was generated
+            return packet
         with self._packet_mounter.mounted_context(packet) as mounted_packet:
             if self._packet_coverage_filter.filter(mounted_packet) is None:
                 return None
@@ -391,6 +394,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         log_guidance_hint("Starting new protocol run.")
         self._io_instance.reset_parties()
         self._protocol_tree = DerivationTree(self._start_symbol, [])
+        self._population_manager.leap_packet = None
 
     def _clear_constraint_caches(self) -> None:
         self._packet_algorithm.evaluator.clear_constraint_caches()
@@ -450,6 +454,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     self._packet_coverage_filter.set_current_tree(self._protocol_tree)
                     new_packet = self._generate_packet(max_generations=max_generations)
                     if self._packet_selector.has_message_to_handle():
+                        self._population_manager.leap_packet = new_packet
                         continue
                 if new_packet is None:
                     log_guidance_hint(
