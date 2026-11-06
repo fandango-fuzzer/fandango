@@ -224,7 +224,12 @@ class PacketGuider:
                 self._confirm_covered_path(self._guide_target)
             return
         self._deviated_from_guide = True
-        if deviation.refused is not None:
+        awaited = self.awaited_external_packet()
+        if sender == "TimerEvent" and awaited is not None:
+            # The timer expired instead of the awaited packet
+            assert awaited.packet.sender is not None
+            self._count_refusal_on_route(awaited.step, awaited.packet.sender)
+        elif deviation.refused is not None:
             self._count_refusal_on_route(deviation.refused, sender)
 
     def _count_refusal_on_route(self, step: Step, party: str) -> None:
