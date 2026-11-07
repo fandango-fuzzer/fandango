@@ -58,7 +58,8 @@ class Terminal(Symbol):
         Converts word and tree value such that they have the same type (string or bytes).
         """
         if isinstance(word, bytes):
-            if self._value.is_type(TreeValueType.BYTES):
+            # A string literal is sent encoded as STRING_TO_BYTES_ENCODING, so bytes are matched in that encoding
+            if self._value.is_type(TreeValueType.BYTES) or not self.is_regex:
                 return self._value.to_bytes(), word
             word = word.decode(BYTES_TO_STRING_ENCODING)
         return self._value.to_string(), word

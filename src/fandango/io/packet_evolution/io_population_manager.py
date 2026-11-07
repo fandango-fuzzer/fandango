@@ -16,19 +16,47 @@ class IoPopulationManager(PopulationManager):
         packet_mounter: PacketMounter,
         grammar: Grammar,
         start_symbol: str,
+        max_consecutive_duplicates: Optional[int] = None,
     ):
-        super().__init__(grammar, start_symbol)
+        super().__init__(grammar, start_symbol, max_consecutive_duplicates)
         self._prev_packet_idx = 0
         self.fuzzable_packets: list[ForecastingPacket] = []
         self.fallback_packets: list[ForecastingPacket] = []
         self.allow_fallback_packets = False
         self.packet_mounter = packet_mounter
+        self.leap_packet: Optional[DerivationTree] = None
+        self.leap_packet_in_population: Optional[DerivationTree] = None
 
     def individual_hash(self, individual: DerivationTree) -> int:
         mount_point = individual.parent
         return hash((mount_point and mount_point.get_root(), individual))
 
+    def _attach_leap_packet(self) -> Optional[DerivationTree]:
+        """
+        Attaches the leap packet if a compatible forecast entry exists.
+        """
+        leap_packet = self.leap_packet
+        self.leap_packet = None
+        if leap_packet is None:
+            return None
+        self.leap_packet_in_population = None
+        for packet in self.fuzzable_packets:
+            if (packet.node.symbol, packet.node.sender, packet.node.recipient) == (
+                leap_packet.symbol,
+                leap_packet.sender,
+                leap_packet.recipient,
+            ):
+                self.packet_mounter.attach(
+                    leap_packet, random.choice(list(packet.paths))
+                )
+                self.leap_packet_in_population = leap_packet
+                return leap_packet
+        return None
+
     def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
+        leap_packet = self._attach_leap_packet()
+        if leap_packet is not None:
+            return leap_packet
         packet_selection = list(self.fuzzable_packets)
         if self.allow_fallback_packets:
             packet_selection.extend(self.fallback_packets)
@@ -39,7 +67,11 @@ class IoPopulationManager(PopulationManager):
         current_pck = random.choice(packet_selection)
         mounting_option = random.choice(list(current_pck.paths))
         mount_point = self.packet_mounter.mount_point(mounting_option)
-        current_pck.node.fuzz(mount_point, self._grammar, max_nodes)
+        current_pck.node.fuzz(
+            mount_point,
+            self._grammar,
+            self._grammar.node_limit(current_pck.node.symbol, max_nodes),
+        )
         fuzzed_packet = mount_point.children[-1]
         self.packet_mounter.attach(fuzzed_packet, mounting_option)
 

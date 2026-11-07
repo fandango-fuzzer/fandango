@@ -25,10 +25,13 @@ class MountingMutation(MutationOperator):
                 DerivationTree, None, tuple[float, list[FailingTree], Suggestion]
             ],
         ],
+        max_nodes: int = 50,
     ) -> Generator[DerivationTree, None, DerivationTree]:
         with self._packet_mounter.mounted_context(individual) as mounted_packet:
             solutions, mutated = GeneratorWithReturn(
-                self._mutation_operator.mutate(mounted_packet, grammar, evaluate_func)
+                self._mutation_operator.mutate(
+                    mounted_packet, grammar, evaluate_func, max_nodes
+                )
             ).collect()
             mutated = self._packet_mounter.original(mutated)
         yield from solutions

@@ -35,6 +35,15 @@ class MountingPath:
             (nt, new_node) for nt, new_node in path if not Step.is_control_flow(nt)
         )
 
+    def hookin_path(self, include_controlflow: bool = False) -> tuple[NonTerminal, ...]:
+        path = self.path
+        if include_controlflow:
+            path = self.controlflow_path
+        return tuple(nt for nt, is_new in path if not is_new)
+
+    def hookin_parent(self) -> DerivationTree:
+        return self.tree.get_last_by_path(list(self.hookin_path()))
+
     def __hash__(self) -> int:
         return hash((hash(self.tree), hash(self.path)))
 
@@ -68,6 +77,17 @@ class ForecastingNonTerminals:
 
     def __getitem__(self, item: NonTerminal) -> ForecastingPacket:
         return self.nt_to_packet[item]
+
+    def by_mounting_point(self) -> list[tuple[MountingPath, list[NonTerminal]]]:
+        points: dict[
+            tuple[DerivationTree, tuple[NonTerminal, ...]],
+            tuple[MountingPath, list[NonTerminal]],
+        ] = {}
+        for non_terminal, packet in self.nt_to_packet.items():
+            path = next(iter(packet.paths))
+            point = (path.tree, path.hookin_path())
+            points.setdefault(point, (path, []))[1].append(non_terminal)
+        return list(points.values())
 
     def add_packet(self, packet: ForecastingPacket) -> None:
         """

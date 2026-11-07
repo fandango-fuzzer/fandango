@@ -262,6 +262,12 @@ def test_conversion_with_replacement(expression, value, expected):
         ("f = lambda a, b=1: a + b\nx = f(0)", 1, False),
         ("f = lambda a, *, b=1: a + b\nx = f(0)", 1, False),
         ("f = lambda a, /, b=1, *rest, c=0, **options: b + c\nx = f(0)", 1, False),
+        ("x = (1,)", (1,), False),
+        ("y = 1; x = y", 1, False),
+        ("y = 0; x = 1;", 1, False),
+        ("match = 1\ntype = 1\ncase = -1\nx = match + type + case", 1, False),
+        ("import re\nx = len(re.match('a', 'a').group(0))", 1, False),
+        ("d = {'a': 1}\nx = f\"{d['a']}\"", "1", False),
     ],
 )
 def test_conversion_statement(stmt, value, is_global):

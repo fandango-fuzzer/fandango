@@ -22,6 +22,7 @@ class MutationOperator(ABC):
                 DerivationTree, None, tuple[float, list[FailingTree], Suggestion]
             ],
         ],
+        max_nodes: int = 50,
     ) -> Generator[DerivationTree, None, DerivationTree]:
         """
         Abstract method to perform mutation on an individual.
@@ -29,6 +30,7 @@ class MutationOperator(ABC):
         :param individual: The individual (DerivationTree) to mutate.
         :param grammar: The Grammar used to generate new subtrees.
         :param evaluate_func: A function that, given an individual, returns a tuple (fitness, failing_trees).
+        :param max_nodes: The number of nodes the mutated individual may have on top of those it needs at least.
         :return: A new (mutated) DerivationTree.
         """
         pass
@@ -78,7 +80,9 @@ class SimpleMutation(MutationOperator):
         node_to_mutate = random.choice(subtrees)
         assert isinstance(node_to_mutate.symbol, NonTerminal)
 
-        max_subtree_nodes = node_to_mutate.size() + (max_nodes - individual.size())
+        max_subtree_nodes = node_to_mutate.size() + (
+            grammar.node_limit(individual.nonterminal, max_nodes) - individual.size()
+        )
         # Truncate the tree to all nodes left from the selected node while fuzzing.
         with node_to_mutate.split_end_context() as ctx_tree:
             if ctx_tree.parent is not None:

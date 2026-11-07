@@ -23,7 +23,6 @@ from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
-from fandango.language.grammar.parser.iterative_parser import IterativeParser
 from fandango.language.grammar.parser.parser import Parser
 from fandango.language.symbols import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree, TreeTuple, index_by_reference
@@ -58,6 +57,10 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         self._tree_k_path_cache: LRUCache[int, tuple[set[KPath], set[KPath]]] = (
             LRUCache(maxsize=cache_size())
         )
+        # The k-paths from <start> by each symbol they contain, with the k they reach up to
+        self._k_paths_by_symbol: LRUCache[
+            CoverageGoal, tuple[int, dict[Symbol, list[KPath]]]
+        ] = LRUCache(maxsize=cache_size())
 
     @property
     def grammar_settings(self) -> Sequence[HasSettings]:
@@ -247,6 +250,10 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
     def collapse(self, tree: Optional[DerivationTree]) -> Optional[DerivationTree]:
         return self._parser.collapse(tree)
 
+    def node_limit(self, symbol: str | NonTerminal, max_nodes: int) -> int:
+        """The most nodes a tree of `symbol` may have: `max_nodes` on top of the nodes it needs at least."""
+        return max_nodes + int(self[symbol].distance_to_completion)
+
     def fuzz(
         self,
         start: str | NonTerminal = "<start>",
@@ -372,9 +379,6 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         return self._parser.parse_multiple(
             word, start, mode=mode, include_controlflow=include_controlflow
         )
-
-    def iterative_parser(self, start: NonTerminal) -> IterativeParser:
-        return self._parser.iterative_parser(start)
 
     def max_position(self) -> int:
         """Return the maximum position reached during last parsing."""
@@ -585,9 +589,10 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
 
     def msg_parties(self, *, include_recipients: bool = True) -> set[str]:
         parties: set[str] = set()
+        seen_nts: set[tuple[Optional[str], Optional[str], Symbol]] = set()
         for rule in self.rules.values():
             parties |= rule.msg_parties(
-                grammar=self, include_recipients=include_recipients
+                grammar=self, seen_nts=seen_nts, include_recipients=include_recipients
             )
         return parties
 
@@ -725,13 +730,19 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                 symbol_work_k.add(tuple(node.to_symbol() for node in path))
 
         if overlap_to_root:
-            all_k_paths = self.generate_all_k_paths(
-                k=k, coverage_goal=coverage_goal, input_parties=input_parties
-            )
-            for k_path in all_k_paths:
-                if non_terminal in k_path:
-                    for idx in range(len(k_path) - 1, k):
-                        symbol_work[idx].add(k_path)
+            indexed = self._k_paths_by_symbol.get(coverage_goal)
+            if indexed is None or indexed[0] < k:
+                k_paths_by_symbol: dict[Symbol, list[KPath]] = {}
+                for k_path in self.generate_all_k_paths(
+                    k=k, coverage_goal=coverage_goal, input_parties=input_parties
+                ):
+                    for symbol in set(k_path):
+                        k_paths_by_symbol.setdefault(symbol, []).append(k_path)
+                indexed = (k, k_paths_by_symbol)
+                self._k_paths_by_symbol[coverage_goal] = indexed
+            for k_path in indexed[1].get(non_terminal, []):
+                for idx in range(len(k_path) - 1, k):
+                    symbol_work[idx].add(k_path)
 
         self._k_path_cache[cache_key] = symbol_work
 

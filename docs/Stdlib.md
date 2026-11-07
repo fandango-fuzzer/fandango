@@ -136,6 +136,15 @@ Note that these symbols only specify the _length_; they do not cover signs, endi
 print(stdlib.numbers)
 ```
 
+## Timers
+
+These symbols are the messages to start, cancel, and expire [timers](sec:timers) in protocol specs.
+
+```{code-cell}
+:tags: ["remove-input"]
+print(stdlib.timers)
+```
+
 ## Fandango Dancer
 
 The `<fandango-dancer>` symbol is used to test UTF-8 compatibility.
