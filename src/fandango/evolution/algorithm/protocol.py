@@ -332,7 +332,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                         ),
                     )
                 )
-            except StopIteration:
+            except (StopIteration, FandangoFailedError):
                 pass
 
         hold_back_solutions = (
@@ -351,7 +351,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             return next(
                 self._packet_algorithm.generate(max_generations=overall_max_generations)
             )
-        except StopIteration:
+        except (StopIteration, FandangoFailedError):
             all_allowed_packets = (
                 self._population_manager.fuzzable_packets
                 + self._population_manager.fallback_packets
