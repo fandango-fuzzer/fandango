@@ -89,6 +89,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         )
         self._protocol_tree: DerivationTree = DerivationTree(self._start_symbol)
         self._remote_response_timeout = remote_response_timeout
+        self._planned_packet_timeout: Optional[float] = None
         self._packet_parsers: list[IterativeParser] = []
         self._io_instance: FandangoIO = FandangoIO.instance()
         self._violation_profiler = ViolationProfiler(
@@ -160,6 +161,16 @@ class ProtocolAlgorithm(GeneticAlgorithm):
     @remote_response_timeout.setter
     def remote_response_timeout(self, seconds: float) -> None:
         self._remote_response_timeout = seconds
+
+    @property
+    def planned_packet_timeout(self) -> float:
+        if self._planned_packet_timeout is None:
+            return self._remote_response_timeout
+        return self._planned_packet_timeout
+
+    @planned_packet_timeout.setter
+    def planned_packet_timeout(self, seconds: Optional[float]) -> None:
+        self._planned_packet_timeout = seconds
 
     def _gen_timeout_violation(self) -> FandangoRemoteViolation:
         external_parties = self._packet_selector.next_external_parties()
@@ -501,12 +512,12 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     not external_message_waits
                     and self._packet_selector.may_go_on_without_awaited_packet()
                     and not self._io_instance.wait_until(
-                        self._io_instance.received_msg, self._remote_response_timeout
+                        self._io_instance.received_msg, self.planned_packet_timeout
                     )
                 ):
                     # Silence was allowed.
                     log_guidance_hint(
-                        f"Planned packet did not arrive within {self._remote_response_timeout}s. "
+                        f"Planned packet did not arrive within {self.planned_packet_timeout}s. "
                         "Continuing on without it."
                     )
                     self._packet_selector.observe_silence()
