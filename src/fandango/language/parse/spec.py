@@ -23,6 +23,7 @@ from fandango.language.parse.convert import (
     GrammarProcessor,
     PythonProcessor,
 )
+from fandango.language.parse.parse_tree import parse_tree
 from fandango.language.parse.splitter import FandangoSplitter
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.logger import LOGGER, print_exception
@@ -78,7 +79,20 @@ class FandangoSpec:
         self.global_vars = pyenv_globals
 
         LOGGER.debug(f"{filename}: running code")
+        self._generated: list[str] = []
+        self.global_vars["fan"] = self._generated.append
         self.run_code(filename=filename)
+
+        LOGGER.debug(f"{filename}: expanding generated content")
+        productions_ctx, constraints_ctx, grammar_settings_ctx = (
+            self._expand_generated(
+                filename,
+                list(productions_ctx),
+                list(constraints_ctx),
+                list(grammar_settings_ctx),
+                used_symbols,
+            )
+        )
 
         LOGGER.debug(f"{filename}: extracting grammar")
         grammar_processor = GrammarProcessor(
@@ -122,6 +136,33 @@ class FandangoSpec:
             }
         )
         exec(self.code_text, self.global_vars)
+
+    def _expand_generated(
+        self,
+        filename: str,
+        productions: list[FandangoParser.ProductionContext],
+        constraints: list[FandangoParser.ConstraintContext],
+        grammar_settings: list[FandangoParser.Grammar_setting_contentContext],
+        used_symbols: set[str],
+    ) -> tuple[
+        list[FandangoParser.ProductionContext],
+        list[FandangoParser.ConstraintContext],
+        list[FandangoParser.Grammar_setting_contentContext],
+    ]:
+        """Parse the .fan text passed to `fan()` and append its contents."""
+        n = 0
+        while self._generated:
+            name = f"{filename}<generated #{n}>"
+            n += 1
+            splitter = FandangoSplitter(filename=name, used_symbols=used_symbols)
+            splitter.visit(parse_tree(name, self._generated.pop(0)))
+            code_tree = PythonProcessor().get_code(splitter.python_code)
+            ast.fix_missing_locations(code_tree)
+            exec(ast.unparse(code_tree), self.global_vars)
+            productions += splitter.productions
+            constraints += splitter.constraints
+            grammar_settings += splitter.grammar_settings
+        return productions, constraints, grammar_settings
 
     def __repr__(self) -> str:
         s = self.code_text
