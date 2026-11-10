@@ -1,6 +1,6 @@
 <start> ::= <Out:telnet_intro> <smtp>
 <telnet_intro> ::= \
-    (r"Trying.*" "\n")+ \
+    r"Trying.*" "\n" \
     r"Connected.*" "\n" \
     r"Escape.*" "\n"
 
