@@ -22,7 +22,7 @@ class MutationOperator(ABC):
                 DerivationTree, None, tuple[float, list[FailingTree], Suggestion]
             ],
         ],
-        max_nodes: int = 50,
+        max_nodes: int,
     ) -> Generator[DerivationTree, None, DerivationTree]:
         """
         Abstract method to perform mutation on an individual.
@@ -47,7 +47,7 @@ class SimpleMutation(MutationOperator):
                 DerivationTree, None, tuple[float, list[FailingTree], Suggestion]
             ],
         ],
-        max_nodes: int = 50,
+        max_nodes: int,
     ) -> Generator[DerivationTree, None, DerivationTree]:
         """
         Default mutation operator: evaluates the individual, selects a failing subtree

@@ -286,6 +286,7 @@ class GeneticTest(unittest.TestCase):
                 children[0],
                 self.fandango.grammar,
                 self.fandango.evaluator.evaluate_individual,
+                max_nodes=50,
             )
         )
         _ = list(gen1)  # force generator evaluation
@@ -296,6 +297,7 @@ class GeneticTest(unittest.TestCase):
                 children[1],
                 self.fandango.grammar,
                 self.fandango.evaluator.evaluate_individual,
+                max_nodes=50,
             )
         )
         _ = list(gen2)  # force generator evaluation
