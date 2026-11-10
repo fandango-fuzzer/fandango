@@ -48,7 +48,6 @@ def fail_on_party_in_generator(grammar: Grammar) -> None:
             raise ValueError(
                 f"{found_node} contains a party or recipient and is generated using the generator on {nt}. This is not allowed!"
             )
-
     for nt in grammar.generators.keys():
         dependencies: set[NonTerminal] = grammar.generator_dependencies(nt)
         for dep_nt in dependencies:
