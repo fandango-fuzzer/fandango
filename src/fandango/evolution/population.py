@@ -17,6 +17,13 @@ class PopulationManager:
         start_symbol: str,
         max_consecutive_duplicates: Optional[int] = None,
     ):
+        """
+        :param grammar: Grammar used to generate a DerivationTree instances.
+        :param start_symbol: The starting symbol from which the grammar is expanded into a DerivationTree.
+        :param max_consecutive_duplicates (Optional) If set, when refilling the population: Refilling will be
+            early-aborted, if the population manager fails to generate a new DerivationTree that is not yet part
+            of the population `max_consecutive_duplicates` times in a row.
+        """
         self._grammar = grammar
         self._start_symbol = start_symbol
         self.max_consecutive_duplicates = max_consecutive_duplicates
