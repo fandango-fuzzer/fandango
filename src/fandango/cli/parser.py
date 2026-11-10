@@ -439,9 +439,19 @@ def _get_file_parser() -> argparse.ArgumentParser:
     )
     output_group.add_argument(
         "--format",
-        choices=["string", "bits", "tree", "grammar", "value", "repr", "1", "none"],
+        choices=[
+            "string",
+            "bits",
+            "tree",
+            "grammar",
+            "value",
+            "repr",
+            "pickle",
+            "1",
+            "none",
+        ],
         default="string",
-        help="Produce output(s) as string (default), as a bit string, as a derivation tree, as a grammar, as a Python value, in internal representation, as the constant '1' (for testing), or none.",
+        help="Produce output(s) as string (default), as a bit string, as a derivation tree, as a grammar, as a Python value, in internal representation, as a Python pickle of the derivation tree (binary, one pickle per output, no separator), as the constant '1' (for testing), or none.",
     )
     output_group.add_argument(
         "--validate",
