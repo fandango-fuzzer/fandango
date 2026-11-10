@@ -209,3 +209,22 @@ assert _exit_code == 0
 ```
 
 This is useful for debugging [binary formats](sec:binary) that contain [bits](sec:bits).
+
+### Pickle
+
+The option `--format=pickle` outputs the parsed tree as a Python [pickle](https://docs.python.org/3/library/pickle.html), so that a Python program can load the `DerivationTree` object and work with it, as described in [the section on derivation trees](sec:derivation-tree).
+The output is binary; use `-o` or `-d` to write it to a file.
+If several trees are written to the same file, they follow each other without a separator, so repeated calls to `pickle.load()` read them in turn:
+
+```shell
+$ fandango fuzz -f iso8601.fan -n 3 --format=pickle -o trees.pickle
+```
+
+```python
+import pickle
+
+with open("trees.pickle", "rb") as fd:
+    for _ in range(3):
+        tree = pickle.load(fd)
+        print(tree.to_string())
+```

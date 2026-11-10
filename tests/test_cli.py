@@ -284,6 +284,41 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
         self.assertEqual(err, "", err)
         self.assertEqual(["1"] * 5, out.strip().split("\n"))
 
+    def test_format_pickle(self):
+        import pickle
+        import tempfile
+
+        from fandango.language.tree import DerivationTree
+
+        with tempfile.TemporaryDirectory() as tmp:
+            pickle_file = os.path.join(tmp, "out.pickle")
+            command = [
+                "fandango",
+                "fuzz",
+                "-f",
+                str(RESOURCES_ROOT / "digit.fan"),
+                "-n",
+                "3",
+                "--format=pickle",
+                "-o",
+                pickle_file,
+                "--random-seed",
+                "426912",
+                "--no-cache",
+            ]
+            out, err, code = run_command(command)
+            self.assertEqual(0, code, code)
+            self.assertEqual("", err, err)
+            self.assertEqual("", out, out)
+
+            with open(pickle_file, "rb") as fd:
+                trees = [pickle.load(fd) for _ in range(3)]
+                self.assertEqual(b"", fd.read())  # no separators, nothing trailing
+
+        for tree in trees:
+            self.assertIsInstance(tree, DerivationTree)
+            self.assertRegex(tree.to_string(), r"^[0-9]+$")
+
     def test_binfinity(self):
         command = [
             "fandango",

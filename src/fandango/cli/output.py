@@ -2,6 +2,7 @@ import argparse
 import contextlib
 import ctypes
 import os
+import pickle
 import subprocess
 import sys
 import tempfile
@@ -15,7 +16,8 @@ from fandango.logger import LOGGER, clear_visualization
 
 def filename_extension(args: argparse.Namespace) -> str:
     """The extension for generated file names: `-x`, else what `-F` found, else `.txt`."""
-    return getattr(args, "filename_extension", None) or ".txt"
+    default = ".pickle" if getattr(args, "format", None) == "pickle" else ".txt"
+    return getattr(args, "filename_extension", None) or default
 
 
 def output(
@@ -39,6 +41,9 @@ def output(
 
     LOGGER.debug(f"Output as {args.format}")
 
+    if args.format == "pickle":
+        # Always bytes; output_solution() switches the file mode to binary
+        return pickle.dumps(tree)
     if args.format == "tree":
         return convert(tree.to_tree())
     if args.format == "repr":
@@ -244,6 +249,11 @@ def output_solution(
         return
     if "output" not in args:
         return
+    if args.format == "pickle":
+        # A pickle is bytes, whatever the grammar produces; and pickles must follow
+        # each other without a separator, so pickle.load() can read them in turn
+        file_mode = "binary"
+        args.separator = ""
 
     if args.directory:
         output_solution_to_directory(solution, args, solution_index, file_mode)
