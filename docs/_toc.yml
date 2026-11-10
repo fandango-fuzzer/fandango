@@ -47,6 +47,7 @@ parts:
     chapters:
     - file: Protocols
     - file: Parties
+    - file: Timers
     - file: FTP
     - file: DNS
   - caption: Hatching Specs

@@ -48,7 +48,6 @@ def fail_on_party_in_generator(grammar: Grammar) -> None:
             raise ValueError(
                 f"{found_node} contains a party or recipient and is generated using the generator on {nt}. This is not allowed!"
             )
-
     for nt in grammar.generators.keys():
         dependencies: set[NonTerminal] = grammar.generator_dependencies(nt)
         for dep_nt in dependencies:
@@ -139,6 +138,14 @@ def assign_implicit_party(grammar: Grammar, implicit_party: str) -> None:
     seen_nts.add(NonTerminal("<start>"))
     processed_nts: set[NonTerminal] = set()
     unprocessed_nts: set[NonTerminal] = seen_nts.difference(processed_nts)
+    rule_parties: dict[NonTerminal, set[str]] = {}
+
+    def node_parties(node: NonTerminalNode) -> set[str]:
+        if node.symbol not in rule_parties:
+            rule_parties[node.symbol] = grammar[node.symbol].msg_parties(
+                grammar=grammar, include_recipients=False
+            )
+        return rule_parties[node.symbol] | ({node.sender} if node.sender else set())
 
     while len(unprocessed_nts) > 0:
         current_symbol = unprocessed_nts.pop()
@@ -153,7 +160,7 @@ def assign_implicit_party(grammar: Grammar, implicit_party: str) -> None:
         child_party: set[str] = set()
 
         for c_node in rule_nts:
-            child_party |= c_node.msg_parties(grammar=grammar, include_recipients=False)
+            child_party |= node_parties(c_node)
 
         if len(child_party) == 0:
             processed_nts.add(current_symbol)
@@ -161,19 +168,11 @@ def assign_implicit_party(grammar: Grammar, implicit_party: str) -> None:
             continue
         for c_node in rule_nts:
             seen_nts.add(c_node.symbol)
-            if len(c_node.msg_parties(grammar=grammar, include_recipients=False)) != 0:
+            if node_parties(c_node):
                 continue
-
-            if c_node.msg_parties(grammar=grammar, include_recipients=False):
-                continue
-            # Check if the rule definition of this node already contains party definitions
-            if c_node.symbol in grammar.rules:
-                if grammar[c_node.symbol].msg_parties(
-                    grammar=grammar, include_recipients=False
-                ):
-                    continue
 
             c_node.sender = implicit_party
+            rule_parties.clear()
         for t_node in symbol_finder.terminalNodes:
             terminal_id = 0
             rule_nt = NonTerminal(f"<_terminal:{terminal_id}>")
@@ -187,6 +186,7 @@ def assign_implicit_party(grammar: Grammar, implicit_party: str) -> None:
             )
             NodeReplacer(t_node, n_node).visit(current_node)
             grammar.rules[rule_nt] = t_node
+            rule_parties.clear()
 
         processed_nts.add(current_symbol)
         unprocessed_nts = seen_nts.difference(processed_nts)

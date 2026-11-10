@@ -258,7 +258,10 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
                 to_add = [
                     tree
                     for tree in crossovers
-                    if tree.size() <= self.adaptive_tuner.current_max_nodes
+                    if tree.size()
+                    <= self.grammar.node_limit(
+                        tree.nonterminal, self.adaptive_tuner.current_max_nodes
+                    )
                 ]
 
             for i, child in enumerate(to_add):
@@ -299,6 +302,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
                             individual,
                             self.grammar,
                             self.evaluator.evaluate_individual,
+                            self.adaptive_tuner.current_max_nodes,
                         )
                     mutated_population.append(mutated_individual)
                     self.mutations_made += 1

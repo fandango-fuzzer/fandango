@@ -135,6 +135,38 @@ class ApplyAllSuggestions(Suggestion):
         ]
 
 
+class PrioritizedSuggestion(Suggestion):
+    """
+    Applies all replacements of `higher`, and those of `lower` only if those wouldn't overwrite the `higher` suggestions.
+    """
+
+    def __init__(self, higher: Suggestion, lower: Suggestion):
+        self.higher = higher
+        self.lower = lower
+
+    def rec_set_allow_repetition_full_delete(
+        self, allow_repetition_full_delete: bool
+    ) -> None:
+        self.higher.rec_set_allow_repetition_full_delete(allow_repetition_full_delete)
+        self.lower.rec_set_allow_repetition_full_delete(allow_repetition_full_delete)
+
+    def get_replacements(
+        self,
+        individual: DerivationTree,
+        grammar: "fandango.language.grammar.grammar.Grammar",
+    ) -> list[tuple[DerivationTree, DerivationTree]]:
+        higher = self.higher.get_replacements(individual, grammar)
+        higher_paths = [target.get_choices_path() for target, _ in higher]
+        lower = []
+        for target, source in self.lower.get_replacements(individual, grammar):
+            target_path = target.get_choices_path()
+            if not any(
+                path[: len(target_path)] == target_path for path in higher_paths
+            ):
+                lower.append((target, source))
+        return higher + lower
+
+
 class ApplyFirstSuggestion(Suggestion):
     """
     Iterate over the sub-suggestions and return the replacements from the first suggestion that provides any replacements.

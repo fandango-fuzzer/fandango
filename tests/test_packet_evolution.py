@@ -180,7 +180,9 @@ def test_mutation_uses_failing_trees_cached_from_equal_packet(
     equal_packet = attached_note(manager, "B\n", new_exchange)
     mutation = MountingMutation(SimpleMutation(), manager.packet_mounter)
     _, mutated_packet = GeneratorWithReturn(
-        mutation.mutate(equal_packet, fandango.grammar, evaluator.evaluate_individual)
+        mutation.mutate(
+            equal_packet, fandango.grammar, evaluator.evaluate_individual, max_nodes=50
+        )
     ).collect()
     assert is_attached(mutated_packet)
     assert str(mutated_packet.get_root()) == str(history)

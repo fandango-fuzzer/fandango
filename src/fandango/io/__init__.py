@@ -180,11 +180,15 @@ class FandangoParty(  # noqa: B024 # this is an abstract base class without any 
                 f"Party {self.party_name} received None-type message. This indicates a socket closing event. Override the receive() method of {self.party_name} to handle this case."
             )
         if sender is None:
+            # Timers name themselves as sender, so they are no candidates
             parties = list(
                 map(
                     lambda x: x.party_name,
                     filter(
-                        lambda party: not party.is_fuzzer_controlled(),
+                        lambda party: (
+                            not party.is_fuzzer_controlled()
+                            and not isinstance(party, TimerEvent)
+                        ),
                         self.io_instance.parties.values(),
                     ),
                 )
@@ -427,9 +431,7 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
                     if self.connection_mode == ConnectionMode.OPEN:
                         assert self._sock is not None
                         while self._running:
-                            rlist, _, _ = select.select(
-                                [self._sock], [], [], 0.0000000001
-                            )
+                            rlist, _, _ = select.select([self._sock], [], [], 0.01)
                             if rlist:
                                 self._connection, _ = self._sock.accept()
                                 break
@@ -492,7 +494,10 @@ class UdpTcpProtocolImplementation(ProtocolImplementation):
                         self._connection.shutdown(socket.SHUT_RDWR)
                         continue
                     self._party_instance.receive(data, None)
-            except Exception:
+            except Exception as error:
+                LOGGER.warning(
+                    f"{self._party_instance.party_name}: stopped receiving: {error!r}"
+                )
                 self._running = False
                 break
 
@@ -720,10 +725,15 @@ class Out(FandangoParty):
         threading.Thread(target=self._listen_loop, daemon=True).start()
 
     def _listen_loop(self) -> None:
-        while True:
-            if self.stdout is not None:
+        while self.stdout is not None:
+            try:
                 line = self.stdout.read(1)
-                self.receive(line, self.party_name)
+            except OSError:
+                # The pseudo-terminal fails with EIO once the process has closed its end
+                break
+            if not line:
+                break
+            self.receive(line, self.party_name)
 
 
 class In(FandangoParty):
@@ -785,15 +795,22 @@ class TimerControl(FandangoParty):
     def stop(self) -> None:
         self.stop_timers()
 
-    def start_timer(self, name: str, time_s: int) -> None:
+    def _is_running_timer(self, name: str) -> bool:
+        """
+        Whether the timer `name` runs and is the calling thread's own, not one
+        started after it was cancelled. Must be called with `self.lock` held.
+        """
+        entry = self.timers.get(name)
+        return entry is not None and entry[1] and entry[2] is threading.current_thread()
+
+    def start_timer(self, name: str, time_s: float | int) -> None:
         def timer_sleep() -> None:
-            timer_start_time = time.time()
-            while (time.time() - timer_start_time) < time_s:
+            expires_at = time.monotonic() + time_s
+            while (remaining_s := expires_at - time.monotonic()) > 0:
                 with self.lock:
-                    entry = self.timers.get(name)
-                    if entry is None or not entry[1]:
+                    if not self._is_running_timer(name):
                         return
-                time.sleep(0.1)
+                time.sleep(max(0.001, remaining_s - 0.1))
             self._on_timer_expire(name)
 
         timer_thread = threading.Thread(target=timer_sleep, daemon=True)
@@ -809,6 +826,9 @@ class TimerControl(FandangoParty):
                 timers_to_stop = list(self.timers.keys())
             to_join: list[tuple[str, threading.Thread]] = []
             for timer_name in timers_to_stop:
+                self.io_instance.drop_received_msg(
+                    "TimerEvent", f"expired: {timer_name}\n"
+                )
                 if timer_name not in self.timers:
                     continue
                 timeout, _, timer_thread = self.timers[timer_name]
@@ -840,7 +860,7 @@ class TimerControl(FandangoParty):
             if len(timer_time_s_nodes) == 0:
                 raise ValueError("No timer_timeout found in timer message")
             self.stop_timers(timer_id)
-            self.start_timer(timer_id, int(timer_time_s_nodes[0]))
+            self.start_timer(timer_id, float(str(timer_time_s_nodes[0])))
         elif timer_cmd == "cancel:":
             self.stop_timers(timer_id)
         else:
@@ -850,9 +870,10 @@ class TimerControl(FandangoParty):
 
     def _on_timer_expire(self, name: str) -> None:
         with self.lock:
-            if name in self.timers:
-                del self.timers[name]
-        self.receive(f"expired: {name}\n", "TimerEvent")
+            if not self._is_running_timer(name):
+                return
+            del self.timers[name]
+            self.receive(f"expired: {name}\n", "TimerEvent")
 
 
 class TimerEvent(FandangoParty):
@@ -1005,6 +1026,15 @@ class FandangoIO(object):
         """Clears a specific received message by its index."""
         with self.receive_lock:
             del self.receive[idx]
+
+    def drop_received_msg(self, sender: str, message: str | bytes) -> None:
+        """Drops the received messages from `sender` that are `message`."""
+        with self.receive_lock:
+            self.receive = [
+                entry
+                for entry in self.receive
+                if entry[0] != sender or entry[2] != message
+            ]
 
     def clear_received_msgs(self) -> None:
         """Clears all received messages."""

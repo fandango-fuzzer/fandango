@@ -95,13 +95,20 @@ class PacketSelector:
     def _ensure_next_packets(self) -> list[ForecastingPacket]:
         if self._next_packets is None:
             if self._coverage_tracker.coverage_goal == CoverageGoal.RANDOM:
-                self._next_packets = self._guider.find_packets()
-                return self._next_packets
-            self._next_packets = self._guider.select_next_packet(
-                self.history_tree,
-                self._coverage_tracker.uncovered_paths,
-                self._coverage_tracker.coverage_scores,
-            )
+                packets = self._guider.find_packets()
+                if packets and random.choice(packets).node.sender != "TimerEvent":
+                    packets = [
+                        packet
+                        for packet in packets
+                        if packet.node.sender != "TimerEvent"
+                    ]
+                self._next_packets = packets
+            else:
+                self._next_packets = self._guider.select_next_packet(
+                    self.history_tree,
+                    self._coverage_tracker.uncovered_paths,
+                    self._coverage_tracker.coverage_scores,
+                )
         return self._next_packets
 
     @property
@@ -173,8 +180,43 @@ class PacketSelector:
             for packet in self.next_packets:
                 if packet.node.sender == "TimerEvent":
                     return False
-        return (
-            len(self.next_fuzzer_parties()) != 0 and not self.io_instance.received_msg()
+        if self._guider.awaited_external_packet() is not None:
+            # The plan waits for an external party; a packet of the fuzzer would leave it
+            return False
+        return len(self.next_fuzzer_parties()) != 0 and not self.has_message_to_handle()
+
+    def may_go_on_without_awaited_packet(self) -> bool:
+        """
+        True if the plan awaits a packet from an external party while the grammar would allow the fuzzer to send
+        a packet too instead.
+        """
+        self._ensure_next_packets()
+        return self._guider.awaited_external_packet() is not None and bool(
+            self.next_fuzzer_parties()
+        )
+
+    def observe_silence(self) -> None:
+        """Notifies that the awaited packet did not arrive in time."""
+        self._guider.observe_silence()
+        self._next_packets = None
+
+    def has_external_message(self) -> bool:
+        """Whether a received message of a party other than the timers waits to be handled."""
+        return any(
+            sender != "TimerEvent" for sender in self.io_instance.get_received_parties()
+        )
+
+    def has_message_to_handle(self) -> bool:
+        """
+        Whether a received message waits to be handled. A timer's expiry waits only
+        where the grammar takes one next.
+        """
+        timer_event_next = any(
+            packet.node.sender == "TimerEvent" for packet in self.next_packets
+        )
+        return any(
+            timer_event_next or sender != "TimerEvent"
+            for sender in self.io_instance.get_received_parties()
         )
 
     def __repr__(self) -> str:
