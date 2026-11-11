@@ -79,6 +79,12 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             stop_criterion=old_evaluator._stop_criterion,
             use_fcc=False,
         )
+        # Protocol runs count as covered, not packet solutions; the tracker's weights replace the packet algorithm's
+        self._guide_alternatives = (
+            self._packet_algorithm.alternative_weights is not None
+        )
+        self._packet_algorithm.alternative_weights = None
+        self.grammar.alternative_weights = None
         self._packet_algorithm.crossover_operator = MountingCrossover(
             self._packet_algorithm.crossover_operator,
             self._packet_mounter,
@@ -127,6 +133,8 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         """Switch the guidance mode, e.g. to CoverageGoal.RANDOM once every
         k-path is covered. Takes effect with the next protocol run."""
         self._packet_selector.set_coverage_goal(goal)
+        # The weights cover the k-paths of the old goal
+        self.grammar.alternative_weights = None
 
     def coverage_percent(self) -> Optional[float]:
         """Share of k-paths covered so far, in [0, 1]; None in RANDOM mode,
@@ -463,6 +471,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                 with packet_mounter.history_context(self._protocol_tree):
                     self._configure_fuzzable_packets()
                     self._packet_coverage_filter.set_current_tree(self._protocol_tree)
+                    self._sync_alternative_weights()
                     new_packet = self._generate_packet(max_generations=max_generations)
                     if self._packet_selector.has_message_to_handle():
                         self._population_manager.leap_packet = new_packet
@@ -543,6 +552,16 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     continue
             self._protocol_tree.set_all_read_only(True)
         log_guidance_hint("Coverage goal reached, stopping evolution.")
+
+    def _sync_alternative_weights(self) -> None:
+        """Weight the grammar's alternatives by the k-paths that no protocol run covers yet."""
+        if not self._guide_alternatives or self.coverage_goal == CoverageGoal.RANDOM:
+            self.grammar.alternative_weights = None
+            return
+        tracker = self._packet_selector.coverage_tracker
+        if self.grammar.alternative_weights is None:
+            self.grammar.alternative_weights = tracker.alternative_weights()
+        self.grammar.alternative_weights.sync(tracker.covered_paths())
 
     def _configure_fuzzable_packets(self) -> None:
         self._clear_constraint_caches()

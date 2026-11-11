@@ -21,12 +21,15 @@ class AlternativeWeights:
         k: int,
         start_symbol: Optional[NonTerminal] = None,
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
+        input_parties: Optional[set[str]] = None,
     ):
         self._grammar = grammar
         self._k = k
-        self._coverage_goal = coverage_goal
         self._k_paths = grammar.generate_all_k_paths(
-            k=k, non_terminal=start_symbol, coverage_goal=coverage_goal
+            k=k,
+            non_terminal=start_symbol,
+            coverage_goal=coverage_goal,
+            input_parties=input_parties,
         )
         self._starting_with: dict[Symbol, list[KPath]] = {}
         for path in self._k_paths:
@@ -37,14 +40,9 @@ class AlternativeWeights:
         self._below_uncovered: dict[Node, int] = {}
         self._crossing_uncovered: dict[tuple[Node, KPath], int] = {}
 
-    def cover(self, tree: DerivationTree) -> None:
-        """Count the k-paths of `tree` as covered."""
-        new = (
-            self._grammar._extract_k_paths_from_tree(
-                tree, self._k, coverage_goal=self._coverage_goal
-            )
-            - self._covered
-        )
+    def add_covered(self, k_paths: set[KPath]) -> None:
+        """Count `k_paths` as covered, too."""
+        new = k_paths - self._covered
         if not new:
             return
         self._covered |= new
@@ -52,6 +50,17 @@ class AlternativeWeights:
             self._below_uncovered[alternative] -= len(new & paths)
         for key, paths in self._crossing.items():
             self._crossing_uncovered[key] -= len(new & paths)
+
+    def sync(self, covered: set[KPath]) -> None:
+        """Count exactly the k-paths in `covered` as covered."""
+        if self._covered <= covered:
+            self.add_covered(covered)
+            return
+        self._covered = set(covered)
+        for alternative, paths in self._below.items():
+            self._below_uncovered[alternative] = len(paths - self._covered)
+        for key, paths in self._crossing.items():
+            self._crossing_uncovered[key] = len(paths - self._covered)
 
     def weights(
         self,
