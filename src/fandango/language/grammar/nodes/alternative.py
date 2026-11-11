@@ -74,17 +74,16 @@ class Alternative(Node):
                 in_range_nodes = concats
                 guide = None
 
-        weights = (
-            guide.weights(
-                in_range_nodes, parent, self.settings.get("alternatives_covered_weight")
-            )
-            if guide is not None
-            else None
-        )
-        if weights is not None and any(weights):
-            chosen = random.choices(in_range_nodes, weights)[0]
-        else:
+        if guide is None:
             chosen = random.choice(in_range_nodes)
+        else:
+            chosen = guide.choose(
+                in_range_nodes,
+                parent,
+                self.settings.get("alternatives_covered_weight"),
+                self.settings.get("alternatives_failure_decay"),
+                self.settings.get("alternatives_decay_floor"),
+            )
         chosen.fuzz(parent, grammar, max_nodes, in_message)
 
     def accept(

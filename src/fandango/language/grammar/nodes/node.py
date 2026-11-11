@@ -168,6 +168,8 @@ NODE_SETTINGS_DEFAULTS = {
     "option_should_return_multiple": 0.0,
     "alternatives_should_concatenate": 0.0,
     "alternatives_covered_weight": 0.3,
+    "alternatives_failure_decay": 0.98,
+    "alternatives_decay_floor": 0.2,
     "invert_regex": 0.0,
     "max_out_of_regex_tries": 10000,
     "non_terminal_use_other_rule": 0.0,

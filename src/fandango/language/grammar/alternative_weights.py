@@ -1,3 +1,4 @@
+import random
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Optional
 
@@ -39,6 +40,8 @@ class AlternativeWeights:
         self._crossing: dict[tuple[Node, KPath], frozenset[KPath]] = {}
         self._below_uncovered: dict[Node, int] = {}
         self._crossing_uncovered: dict[tuple[Node, KPath], int] = {}
+        # Picks of an alternative in a context since its uncovered k-paths last shrank
+        self._failures: dict[Node, dict[KPath, int]] = {}
 
     def add_covered(self, k_paths: set[KPath]) -> None:
         """Count `k_paths` as covered, too."""
@@ -47,9 +50,13 @@ class AlternativeWeights:
             return
         self._covered |= new
         for alternative, paths in self._below.items():
-            self._below_uncovered[alternative] -= len(new & paths)
-        for key, paths in self._crossing.items():
-            self._crossing_uncovered[key] -= len(new & paths)
+            if progress := len(new & paths):
+                self._below_uncovered[alternative] -= progress
+                self._failures.pop(alternative, None)
+        for (alternative, context), paths in self._crossing.items():
+            if progress := len(new & paths):
+                self._crossing_uncovered[(alternative, context)] -= progress
+                self._failures.get(alternative, {}).pop(context, None)
 
     def sync(self, covered: set[KPath]) -> None:
         """Count exactly the k-paths in `covered` as covered."""
@@ -57,6 +64,7 @@ class AlternativeWeights:
             self.add_covered(covered)
             return
         self._covered = set(covered)
+        self._failures.clear()
         for alternative, paths in self._below.items():
             self._below_uncovered[alternative] = len(paths - self._covered)
         for key, paths in self._crossing.items():
@@ -67,11 +75,57 @@ class AlternativeWeights:
         alternatives: Sequence[Node],
         parent: DerivationTree,
         covered_weight: float,
+        failure_decay: float = 1.0,
+        decay_floor: float = 0.0,
     ) -> list[float]:
-        """Return `covered_weight` plus the uncovered share of k-paths of each alternative fuzzed below `parent`."""
+        """
+        Return `covered_weight` plus the uncovered share of k-paths of each alternative fuzzed below `parent`.
+        The share shrinks by `failure_decay` per pick without progress, down to `decay_floor` of it.
+        """
+        return self._weights(
+            alternatives,
+            self._context(parent),
+            covered_weight,
+            failure_decay,
+            decay_floor,
+        )
+
+    def choose(
+        self,
+        alternatives: Sequence[Node],
+        parent: DerivationTree,
+        covered_weight: float,
+        failure_decay: float,
+        decay_floor: float,
+    ) -> Node:
+        """Pick one of `alternatives` by weight; count the pick as a failure until its k-paths get covered."""
         context = self._context(parent)
+        weights = self._weights(
+            alternatives, context, covered_weight, failure_decay, decay_floor
+        )
+        if not any(weights):
+            return random.choice(alternatives)
+        chosen = random.choices(alternatives, weights)[0]
+        if self._uncovered_share(chosen, context) > 0:
+            failures = self._failures.setdefault(chosen, {})
+            failures[context] = failures.get(context, 0) + 1
+        return chosen
+
+    def _weights(
+        self,
+        alternatives: Sequence[Node],
+        context: KPath,
+        covered_weight: float,
+        failure_decay: float,
+        decay_floor: float,
+    ) -> list[float]:
         return [
-            covered_weight + self._uncovered_share(alternative, context)
+            covered_weight
+            + self._uncovered_share(alternative, context)
+            * max(
+                decay_floor,
+                failure_decay ** self._failures.get(alternative, {}).get(context, 0),
+            )
             for alternative in alternatives
         ]
 
