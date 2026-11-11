@@ -3,6 +3,7 @@ from typing import NamedTuple, Optional
 
 from fandango.io.navigation.forecasting.forecast_view import ForecastView
 from fandango.io.navigation.forecasting.forecasting_result import ForecastingPacket
+from fandango.io.navigation.graph.grammar_navigator import NavigatorTimedOutError
 from fandango.io.navigation.graph.grammar_navigator.navigator import (
     UnreachableTargetError,
 )
@@ -337,7 +338,8 @@ class PacketGuider:
     ) -> None:
         """
         Selects targets until one has a path, in this run or a new one, and follows that path. Leaves out each target
-        without a path until a restriction is lifted. Follows a path to the end of the run if no target has a path.
+        without a path, or whose search timed out, until a restriction is lifted. Follows a path to the end of the run
+        if no target has a path.
         """
         self._update_unreachable_targets()
         for _ in range(self.TARGET_ATTEMPTS):
@@ -353,6 +355,9 @@ class PacketGuider:
                     included_k_paths=self._session_covered_k_paths,
                 )
             except UnreachableTargetError:
+                guide = None
+            except NavigatorTimedOutError:
+                log_guidance_hint(f"The search for a path to {target} timed out.")
                 guide = None
             if guide is not None:
                 self._guide_target = target
@@ -408,9 +413,12 @@ class PacketGuider:
     def _plan_path_to_end(self) -> None:
         """Drops the target and follows a path to the end of the run from now on."""
         self._guide_target = None
-        path = self._updated_navigator().astar_search_end_including_k_paths(
-            self._history_tree, included_k_paths=self._session_covered_k_paths
-        )
+        try:
+            path = self._updated_navigator().astar_search_end_including_k_paths(
+                self._history_tree, included_k_paths=self._session_covered_k_paths
+            )
+        except NavigatorTimedOutError:
+            path = None
         # None marks the end of the run, as in the paths to a target.
         if path is None:
             self._guide_path.set_guide_path(GuidePath([None]))
