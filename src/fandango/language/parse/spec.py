@@ -85,7 +85,8 @@ class FandangoSpec:
             grammar_settings_ctx,
             local_variables=self.local_vars,
             global_variables=self.global_vars,
-            id_prefix="{0:x}".format(abs(hash(filename))),
+            # hash needs to be stable across processes, so we use SHA256
+            id_prefix=hashlib.sha256(filename.encode()).hexdigest()[:16],
             max_repetitions=max_repetitions,
         )
         self.grammar = grammar_processor.get_grammar(productions_ctx, prime=False)

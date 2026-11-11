@@ -399,6 +399,12 @@ class DerivationTree:
             assert isinstance(items, DerivationTree)
             return items
 
+    def __getstate__(self) -> dict[str, Any]:
+        state = self.__dict__.copy()
+        # don't serialize caches, as these aren't stable across processes
+        state["hash_cache"] = None
+        return state
+
     def get_last_by_path(self, path: list[NonTerminal]) -> "DerivationTree":
         symbol = path[0]
         if self.symbol == symbol:
