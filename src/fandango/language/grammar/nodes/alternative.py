@@ -54,6 +54,7 @@ class Alternative(Node):
             ]
             max_nodes = 0
 
+        guide = grammar.alternative_weights
         # Gmutator mutation (2)
         if random.random() < self.settings.get("alternatives_should_concatenate"):
             if len(in_range_nodes) < 2:
@@ -71,8 +72,20 @@ class Alternative(Node):
                         sum(n.distance_to_completion for n in node.nodes) + 1
                     )
                 in_range_nodes = concats
+                guide = None
 
-        random.choice(in_range_nodes).fuzz(parent, grammar, max_nodes, in_message)
+        weights = (
+            guide.weights(
+                in_range_nodes, parent, self.settings.get("alternatives_covered_weight")
+            )
+            if guide is not None
+            else None
+        )
+        if weights is not None and any(weights):
+            chosen = random.choices(in_range_nodes, weights)[0]
+        else:
+            chosen = random.choice(in_range_nodes)
+        chosen.fuzz(parent, grammar, max_nodes, in_message)
 
     def accept(
         self,
