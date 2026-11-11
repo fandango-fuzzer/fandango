@@ -11,6 +11,7 @@ from fandango.errors import FandangoGeneratorError, FandangoValueError
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.language.grammar import FuzzingMode, ParsingMode, closest_match
+from fandango.language.grammar.alternative_weights import AlternativeWeights
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.literal_generator import LiteralGenerator
 from fandango.language.grammar.node_visitors.disambiguator import Disambiguator
@@ -61,6 +62,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         self._k_paths_by_symbol: LRUCache[
             CoverageGoal, tuple[int, dict[Symbol, list[KPath]]]
         ] = LRUCache(maxsize=cache_size())
+        self.alternative_weights: Optional[AlternativeWeights] = None
 
     @property
     def grammar_settings(self) -> Sequence[HasSettings]:
