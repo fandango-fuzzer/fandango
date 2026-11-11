@@ -1,4 +1,5 @@
 import itertools
+import math
 import warnings
 from collections import defaultdict
 from collections.abc import Generator, Iterator, Sequence
@@ -256,6 +257,18 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
     def node_limit(self, symbol: str | NonTerminal, max_nodes: int) -> int:
         """The most nodes a tree of `symbol` may have: `max_nodes` on top of the nodes it needs at least."""
         return max_nodes + int(self[symbol].distance_to_completion)
+
+    def hard_max_nodes(self, symbol: str | NonTerminal) -> int:
+        """The hard `max_nodes`-limit that shall not be exceeded, based on `node.min_distance_to_coverage`
+        and `nodes.COVERAGE_NODES_FACTOR`"""
+        rule = self[symbol]
+        max_nodes = (
+            nodes.COVERAGE_NODES_FACTOR * rule.min_distance_to_coverage
+            - rule.distance_to_completion
+        )
+        if not math.isfinite(max_nodes):
+            return nodes.MAX_SAFE_NODES
+        return math.ceil(max_nodes)
 
     def fuzz(
         self,

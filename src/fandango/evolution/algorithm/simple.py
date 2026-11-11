@@ -113,6 +113,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
             put,
             put_args,
         )
+        grammar.prime_coverage(diversity_k)
         self.adaptive_tuner = AdaptiveTuner(
             mutation_rate,
             crossover_rate,
@@ -120,7 +121,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
             max_nodes,
             max_repetitions,
             max_repetition_rate,
-            max_nodes,
+            grammar.hard_max_nodes(start_symbol),
             max_nodes_rate,
         )
         self.profiler = Profiler(enabled=profiling)
