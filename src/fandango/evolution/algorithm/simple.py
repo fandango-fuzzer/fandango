@@ -28,7 +28,9 @@ from fandango.evolution.population import PopulationManager
 from fandango.evolution.profiler import Profiler
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.language.grammar import FuzzingMode
+from fandango.language.grammar.alternative_weights import AlternativeWeights
 from fandango.language.grammar.grammar import Grammar
+from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import (
     LOGGER,
@@ -70,6 +72,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
         use_fcc: bool = False,
         put: Optional[str] = None,
         put_args: Optional[list[str]] = None,
+        coverage_guided_alternatives: bool = True,
     ):
         if tournament_size > 1:
             raise FandangoValueError(
@@ -97,6 +100,15 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
         self.experiment_start_time = time.time()
         self.stop_after_seconds = stop_after_seconds
 
+        alternative_weights = (
+            AlternativeWeights(
+                grammar, diversity_k, NonTerminal(start_symbol), coverage_goal
+            )
+            if coverage_guided_alternatives
+            else None
+        )
+        grammar.alternative_weights = alternative_weights
+
         # Instantiate managers
         self.population_manager = PopulationManager(
             grammar,
@@ -112,6 +124,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
             use_fcc,
             put,
             put_args,
+            alternative_weights=alternative_weights,
         )
         self.adaptive_tuner = AdaptiveTuner(
             mutation_rate,
