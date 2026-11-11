@@ -297,6 +297,11 @@ class PrimerTest(unittest.TestCase):
         # concat(1) + covered <a>(1 + alt(1) + max(1, concat "y" "z"(3))) + completed <a>(3)
         self.assertEqual(self.min_distance_to_coverage(spec, k=2), 9)
 
+    def test_coverage_takes_cheapest_route_to_a_k_path(self):
+        spec = '<start> ::= <x> | <x> <x>\n<x> ::= "a"'
+        # alt(1) + nt x(1) + "a"(1); <x> <x> adds no new k-path
+        self.assertEqual(self.min_distance_to_coverage(spec, k=1), 3)
+
     def test_coverage_unrolls_direct_recursion_k_times(self):
         spec = '<start> ::= <a> <b>\n<a> ::= "x" | <c>\n<c> ::= "y" "z"\n<b> ::= <b> "q" | "r"'
         expected = {1: 11, 2: 11, 3: 15, 5: 23}

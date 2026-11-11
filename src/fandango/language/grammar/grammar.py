@@ -13,10 +13,10 @@ from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.language.grammar import FuzzingMode, ParsingMode, closest_match
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.literal_generator import LiteralGenerator
-from fandango.language.grammar.node_visitors.coverage_primer import (
-    CoveragePrimerVisitor,
-)
 from fandango.language.grammar.node_visitors.disambiguator import Disambiguator
+from fandango.language.grammar.node_visitors.min_distance_to_coverage import (
+    MinDistanceToCoverageVisitor,
+)
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.node_visitors.primer import PrimerVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
@@ -916,7 +916,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         primer.prime()
 
     def prime_coverage(self, k: int) -> None:
-        CoveragePrimerVisitor(self.rules, k).prime()
+        MinDistanceToCoverageVisitor(self.rules, k).prime()
 
     def default_result(self) -> list[Node]:
         return []
