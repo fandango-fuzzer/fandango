@@ -113,6 +113,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
             put,
             put_args,
         )
+        # Not nide, but I need the `k` here.
         grammar.prime_coverage(diversity_k)
         self.adaptive_tuner = AdaptiveTuner(
             mutation_rate,
