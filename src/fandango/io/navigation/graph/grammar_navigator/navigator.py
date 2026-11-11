@@ -8,6 +8,7 @@ from fandango.io.navigation.graph.grammar_navigator.grammar_graph_converter impo
     GrammarGraphNode,
 )
 from fandango.io.navigation.graph.grammar_navigator.path_search import (
+    NavigatorTimedOutError,
     PathSearch,
     SearchTarget,
 )
@@ -45,7 +46,7 @@ class GrammarNavigator:
         self.grammar = grammar
         self._start_symbol = start_symbol
         self.graph = self._new_graph()
-        self.max_comparisons = 10_000_000
+        self.max_comparisons = 10_000
         self.comparisons = 0
         self.set_message_cost(0)
 
@@ -177,7 +178,12 @@ class GrammarNavigator:
             self._clear_graph()
             return []
         searched = self._search_target(RunEndTarget(self._costs), controlflow_tree)
-        path = self._search(start, searched)
+        try:
+            path = self._search(start, searched)
+        except NavigatorTimedOutError:
+            if isinstance(searched, RunEndTarget):
+                raise
+            path = None
         if path is None and not isinstance(searched, RunEndTarget):
             # Ending the run outweighs avoiding what the searched target rules out
             path = self._search(
