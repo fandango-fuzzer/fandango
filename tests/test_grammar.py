@@ -284,3 +284,27 @@ class PrimerTest(unittest.TestCase):
         }
         for name, dist in should_values.items():
             self.assertEqual(rules[NonTerminal(name)].distance_to_completion, dist)
+
+    @staticmethod
+    def min_distance_to_coverage(spec: str, k: int) -> float:
+        grammar, _ = parse(spec, use_stdlib=False, use_cache=False)
+        assert grammar is not None
+        grammar.prime_coverage(k)
+        return grammar.rules[NonTerminal("<start>")].min_distance_to_coverage
+
+    def test_coverage_covers_one_concatenation_child(self):
+        spec = '<start> ::= <a> <a>\n<a> ::= "x" | "y" "z"'
+        # concat(1) + covered <a>(1 + alt(1) + max(1, concat "y" "z"(3))) + completed <a>(3)
+        self.assertEqual(self.min_distance_to_coverage(spec, k=2), 9)
+
+    def test_coverage_unrolls_direct_recursion_k_times(self):
+        spec = '<start> ::= <a> <b>\n<a> ::= "x" | <c>\n<c> ::= "y" "z"\n<b> ::= <b> "q" | "r"'
+        expected = {1: 11, 2: 11, 3: 15, 5: 23}
+        for k, dist in expected.items():
+            self.assertEqual(self.min_distance_to_coverage(spec, k), dist, f"k={k}")
+
+    def test_coverage_unrolls_indirect_recursion(self):
+        spec = '<start> ::= <x>\n<x> ::= <y> | "a"\n<y> ::= <x> "b"'
+        expected = {1: 8, 2: 8, 3: 13}
+        for k, dist in expected.items():
+            self.assertEqual(self.min_distance_to_coverage(spec, k), dist, f"k={k}")
