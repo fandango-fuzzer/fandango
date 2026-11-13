@@ -120,13 +120,16 @@ class ConjunctionConstraint(Constraint):
         chain = self._format_as_comparison_chain()
         if chain is not None:
             return chain
-        # No parentheses around the conjunction: a parenthesised formula is
-        # parsed as a single Python expression. Only a disjunction needs them,
-        # as it binds less tightly.
+        # A part needs parentheses if it binds less tightly, or to stay a
+        # conjunction of its own. A comparison chain is one without them.
         return " and ".join(
             (
                 f"({c.format_as_spec()})"
                 if isinstance(c, (DisjunctionConstraint, ImplicationConstraint))
+                or (
+                    isinstance(c, ConjunctionConstraint)
+                    and c._format_as_comparison_chain() is None
+                )
                 else c.format_as_spec()
             )
             for c in self.constraints

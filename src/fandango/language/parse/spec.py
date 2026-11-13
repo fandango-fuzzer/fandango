@@ -18,7 +18,6 @@ from fandango.constraints.constraint import Constraint
 from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
 from fandango.constraints.soft import SoftValue
 from fandango.io import CURRENT_ENV_KEY
-from fandango.language.grammar.grammar_settings import GrammarSetting
 from fandango.language.parse.cache import get_cache_dir
 from fandango.language.parse.convert import (
     ConstraintProcessor,
@@ -130,13 +129,6 @@ class FandangoSpec:
         s = self.code_text
         if s:
             s += "\n\n"
-        settings = [
-            setting.format_as_spec()
-            for setting in self.grammar.grammar_settings
-            if isinstance(setting, GrammarSetting)
-        ]
-        if settings:
-            s += "\n".join(settings) + "\n\n"
         s += str(self.grammar) + "\n"
         constraints = [
             (

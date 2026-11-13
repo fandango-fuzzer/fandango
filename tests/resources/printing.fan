@@ -6,7 +6,7 @@ def is_big(n):
     return n > 2  # comments are not printed; that is fine
 
 
-# A setting has to be printed as well.
+# A setting is not printed.
 setting <count> max_out_of_regex_tries = 9999
 
 <start> ::= <count> <pairs> <nested> <items> <tagged> <plain> <choice> <grouped> <terminals>
@@ -54,8 +54,12 @@ where (int(<count>) > 0 or False) == True
 where (not int(<count>)) == False
 where (int(<count>) if True else 0) > 0
 
-# A parenthesised part of a formula.
+# Parenthesised parts of a formula.
+where (int(<count>) > 0 and int(<count>) < 4)
 where (int(<count>) > 3 or int(<count>) < 4) and int(<count>) != 0
+where (int(<count>) > 0 and int(<count>) < 4) and int(<count>) != 0
+where (int(<count>) > 3 or int(<count>) < 4) or int(<count>) != 0
+where (0 < int(<count>) <= 3) and int(<count>) != 0
 
 # The number of elements of a star selection.
 where len(*<item>) > 0

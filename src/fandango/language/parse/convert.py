@@ -536,9 +536,6 @@ class ConstraintProcessor(FandangoParserVisitor):
         else:
             raise FandangoValueError(f"Unknown formula atom: {ctx.getText()}")
 
-    # The Python operators that `formula_comparison` takes
-    _FORMULA_COMPARISON_OPS = (ast.Lt, ast.Gt, ast.Eq, ast.GtE, ast.LtE, ast.NotEq)
-
     def visitExpr(self, ctx: FandangoParser.ExprContext):
         if ctx.selector_length():
             expr, _, search_map = self.searches.visitSelector_length(
@@ -556,16 +553,8 @@ class ConstraintProcessor(FandangoParserVisitor):
             expr, _, search_map = self.searches.visitInversion(ctx.inversion(0))
         else:
             raise FandangoValueError(f"Unknown expression: {ctx.getText()}")
-        expression = ast.unparse(expr)
-        if isinstance(expr, ast.BoolOp) or (
-            isinstance(expr, ast.Compare)
-            and any(isinstance(op, self._FORMULA_COMPARISON_OPS) for op in expr.ops)
-        ):
-            # This was in parentheses, which `ast.unparse` drops. Without
-            # them, it is a formula of several constraints, not one expression.
-            expression = f"({expression})"
         return ExpressionConstraint(
-            expression,
+            ast.unparse(expr),
             searches=search_map,
             local_variables=self.local_variables,
             global_variables=self.global_variables,

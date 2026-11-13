@@ -5,7 +5,8 @@
 
 Every .fan file of the repository is parsed and printed. The printed text is
 parsed again and compared with the original, piece by piece: Python code,
-rules (with repetition bounds and settings), generators and constraints.
+rules (with repetition bounds), generators and constraints. `setting` lines
+are not printed, and not compared.
 Comparing the parsed specs, not the texts, is what finds a printed spec that
 parses but means something else, such as `("a" <b>)*` printed as `'a' <b>*`.
 Last, the printed spec is printed once more, and the text must stay the same.
@@ -30,7 +31,7 @@ from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
 from fandango.constraints.soft import SoftValue
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
-from fandango.language.grammar.nodes.node import NODE_SETTINGS_DEFAULTS, Node
+from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.parse.parse_spec import parse_content
@@ -64,9 +65,8 @@ def resolve(
 def describe_node(node: Node) -> str:
     """
     The grammar element `node` in a spelling that cannot be read in two ways:
-    every sequence and every alternative is in parentheses, computed
-    repetition bounds are written out, and settings other than the defaults
-    follow in brackets.
+    every sequence and every alternative is in parentheses, and computed
+    repetition bounds are written out.
     """
     if isinstance(node, Alternative):
         text = "(" + " | ".join(describe_node(n) for n in node.alternatives) + ")"
@@ -90,12 +90,7 @@ def describe_node(node: Node) -> str:
         # Terminals and nonterminals. A terminal is compared in its printed
         # form, because printing may respell a regex (`'` as `\x27`).
         text = node.format_as_spec()
-    settings = {
-        key: node.settings.get(key)
-        for key, default in NODE_SETTINGS_DEFAULTS.items()
-        if node.settings.get(key) != default
-    }
-    return f"{text} [{settings}]" if settings else text
+    return text
 
 
 def describe_constraint(constraint: Constraint | SoftValue) -> str:

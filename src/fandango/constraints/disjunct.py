@@ -99,12 +99,12 @@ class DisjunctionConstraint(Constraint):
         return fitness
 
     def format_as_spec(self) -> str:
-        # No parentheses around the disjunction: a parenthesised formula is
-        # parsed as a single Python expression.
+        # A part needs parentheses if it binds less tightly, or to stay a
+        # disjunction of its own.
         return " or ".join(
             (
                 f"({c.format_as_spec()})"
-                if isinstance(c, ImplicationConstraint)
+                if isinstance(c, (DisjunctionConstraint, ImplicationConstraint))
                 else c.format_as_spec()
             )
             for c in self.constraints
