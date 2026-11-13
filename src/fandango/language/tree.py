@@ -4,7 +4,7 @@ from collections import deque
 from collections.abc import Callable, Generator, Iterable, Iterator
 from contextlib import contextmanager
 from functools import partial
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
+from typing import TYPE_CHECKING, Any, NamedTuple, Optional, TypeVar, cast
 
 from fandango.language.symbols import NonTerminal, Slice, Symbol, Terminal
 from fandango.language.tree_value import (
@@ -112,6 +112,29 @@ def forward_to_tree_value_methods(
     return decorator
 
 
+class AlternativeOrigin(NamedTuple):
+    """A tree node was derived by an alternative taking one of its branches."""
+
+    node_id: str
+    """The id of the `Alternative` grammar node."""
+    branch: int
+    """The index of the branch that was taken."""
+
+
+class RepetitionOrigin(NamedTuple):
+    """A tree node was derived by an iteration of a repetition (`*`, `+`, `?`, `{...}`)."""
+
+    node_id: str
+    """The id of the `Repetition` grammar node."""
+    expansion: int
+    """Which expansion of the repetition this is; iterations of one expansion share it."""
+    iteration: int
+    """The index of the iteration within that expansion."""
+
+
+Origin = AlternativeOrigin | RepetitionOrigin
+
+
 @forward_to_tree_value_methods(DIRECT_ACCESS_METHODS_BASE_TO_FIRST_ARG_TYPE)
 @forward_to_tree_value_methods(DIRECT_ACCESS_METHODS_BASE_TO_UNDERLYING_TYPE)
 class DerivationTree:
@@ -129,7 +152,7 @@ class DerivationTree:
         sender: Optional[str] = None,
         recipient: Optional[str] = None,
         read_only: Optional[bool] = False,
-        origin_repetitions: Optional[list[tuple[str, int, int]]] = None,
+        origins: Optional[list[Origin]] = None,
     ) -> None:
         """
         Create a new derivation tree node.
@@ -154,9 +177,11 @@ class DerivationTree:
         self._sources: list[DerivationTree] = []  # init first
         if sources is not None:
             self.sources = sources  # use setter
-        if origin_repetitions is None:
-            origin_repetitions = []
-        self.origin_repetitions: list[tuple[str, int, int]] = origin_repetitions
+        if origins is None:
+            origins = []
+        # The alternatives and repetitions of the parent's rule that derived this
+        # node, from the outermost to the innermost.
+        self.origins: list[Origin] = origins
         self.read_only = read_only
         self._size: Optional[int] = None
         self.set_children(children or [])
@@ -383,10 +408,8 @@ class DerivationTree:
         for child in [*self._children, *self._sources]:
             if child.symbol.is_non_terminal:
                 trees.extend(child.find_by_origin(node_id))
-        for o_node_id, _o_iter_id, _rep in self.origin_repetitions:
-            if o_node_id == node_id:
-                trees.append(self)
-                break
+        if any(origin.node_id == node_id for origin in self.origins):
+            trees.append(self)
         return trees
 
     def __getitem__(self, item: Any) -> "DerivationTree":
@@ -513,7 +536,7 @@ class DerivationTree:
             recipient=self.recipient,
             sources=[],
             read_only=self.read_only,
-            origin_repetitions=list(self.origin_repetitions),
+            origins=list(self.origins),
         )
         memo[id(self)] = copied
 
@@ -532,7 +555,7 @@ class DerivationTree:
                             recipient=child.recipient,
                             sources=[],
                             read_only=child.read_only,
-                            origin_repetitions=list(child.origin_repetitions),
+                            origins=list(child.origins),
                         )
                         todo.append(child)
                         copied_nodes.append(child)
@@ -881,7 +904,7 @@ class DerivationTree:
                 copy_children=True, copy_params=False, copy_parent=False
             )
             new_subtree._parent = self.parent
-            new_subtree.origin_repetitions = list(self.origin_repetitions)
+            new_subtree.origins = list(self.origins)
             # Replacements below this one were meant for the subtree it replaces, not for the new one
             # We ignore replacements targeting other replacements — they're changed in the next iteration of fixing
             grammar.populate_sources(new_subtree)
@@ -920,7 +943,7 @@ class DerivationTree:
             recipient=self.recipient,
             sources=sources,
             read_only=self.read_only,
-            origin_repetitions=list(self.origin_repetitions),
+            origins=list(self.origins),
         )
 
         # Update children match generator parameters, if parameters updated

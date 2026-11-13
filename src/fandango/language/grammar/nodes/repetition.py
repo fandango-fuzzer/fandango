@@ -10,7 +10,7 @@ from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.symbols.symbol import Symbol
-from fandango.language.tree import DerivationTree
+from fandango.language.tree import DerivationTree, RepetitionOrigin
 
 if TYPE_CHECKING:
     import fandango.language.grammar.node_visitors
@@ -103,8 +103,8 @@ class Repetition(Node):
                 )
             new_children = parent.children[prev_children_len:]
             for child in new_children:
-                child.origin_repetitions.insert(
-                    0, (self.id, current_iteration, current_rep)
+                child.origins.insert(
+                    0, RepetitionOrigin(self.id, current_iteration, current_rep)
                 )
             max_nodes -= sum(child.size() for child in new_children)
             prev_children_len = len(parent.children)

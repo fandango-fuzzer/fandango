@@ -1,6 +1,6 @@
 import random
 from copy import copy
-from typing import Any, Callable, Optional, Unpack
+from typing import Any, Callable, Optional, TypeGuard, Unpack
 
 from fandango.constraints.base import GeneticBaseInitArgs
 from fandango.constraints.constraint import Constraint
@@ -18,7 +18,12 @@ from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.nodes.repetition import Repetition
 from fandango.language.search import NonTerminalSearch, RuleSearch
 from fandango.language.symbols.non_terminal import NonTerminal
-from fandango.language.tree import DerivationTree, index_by_reference
+from fandango.language.tree import (
+    DerivationTree,
+    Origin,
+    RepetitionOrigin,
+    index_by_reference,
+)
 from fandango.logger import LOGGER
 
 
@@ -78,6 +83,16 @@ class RepetitionBoundsSuggestion(Suggestion):
     ) -> None:
         self.allow_repetition_full_delete = allow_repetition_full_delete
 
+    def _is_iteration(
+        self, origin: Origin, expansion: int
+    ) -> TypeGuard[RepetitionOrigin]:
+        """Whether `origin` is an iteration of the given expansion of our repetition."""
+        return (
+            isinstance(origin, RepetitionOrigin)
+            and origin.node_id == self._repetition_id
+            and origin.expansion == expansion
+        )
+
     def _insert_repetitions(
         self,
         *,
@@ -94,10 +109,12 @@ class RepetitionBoundsSuggestion(Suggestion):
         insertion_index = index + 1
 
         starting_rep = 0
-        for ref in self._ending_rep_tree.origin_repetitions:
-            if ref[0] == self._repetition_id and ref[1] == rep_iteration:
-                assert ref[2] is not None, "repetition index (ref[2]) must not be None"
-                starting_rep = ref[2] + 1
+        # What the repetition is nested in: the alternatives and repetitions around it
+        enclosing: list[Origin] = []
+        for i, origin in enumerate(self._ending_rep_tree.origins):
+            if self._is_iteration(origin, rep_iteration):
+                starting_rep = origin.iteration + 1
+                enclosing = self._ending_rep_tree.origins[:i]
 
         old_tree_children = tree.children
         tree.set_children([])
@@ -110,6 +127,8 @@ class RepetitionBoundsSuggestion(Suggestion):
                 override_iterations_to_perform=starting_rep + nr_to_insert,
             )
             insert_children = tree.children
+            for child in insert_children:
+                child.origins[:0] = enclosing
         finally:
             tree.set_children(old_tree_children)
 
@@ -146,18 +165,15 @@ class RepetitionBoundsSuggestion(Suggestion):
         reps_deleted = 0
         new_children: list[DerivationTree] = []
         for child in copy_parent.children[::-1]:
-            repetition_node_id = self._repetition_id
-            matching_o_nodes = list(
-                filter(
-                    lambda x: x[0] == repetition_node_id and x[1] == rep_iteration,
-                    child.origin_repetitions,
-                )
-            )
-            if len(matching_o_nodes) == 0:
+            matching_origins = [
+                origin
+                for origin in child.origins
+                if self._is_iteration(origin, rep_iteration)
+            ]
+            if len(matching_origins) == 0:
                 new_children.insert(0, child)
                 continue
-            matching_o_node = matching_o_nodes[0]
-            rep_id = matching_o_node[2]
+            rep_id = matching_origins[0].iteration
             if curr_rep_id != rep_id and reps_deleted >= nr_to_delete:
                 # We have deleted enough repetitions iteratively add all remaining children
                 new_children.insert(0, child)
@@ -392,12 +408,15 @@ class RepetitionBoundsConstraint(Constraint):
     ) -> dict[tuple[str, int], dict[int, list[DerivationTree]]]:
         reference_trees: dict[tuple[str, int], dict[int, list[DerivationTree]]] = {}
         for id_tree in id_trees:
-            iteration_ids: list[tuple[str, int, int]] = list(
-                filter(lambda x: x[0] == self.repetition_id, id_tree.origin_repetitions)
-            )
-            for i_id in iteration_ids:
-                call_id = tuple[str, int](i_id[:2])
-                rep_round = i_id[2]
+            iterations = [
+                origin
+                for origin in id_tree.origins
+                if isinstance(origin, RepetitionOrigin)
+                and origin.node_id == self.repetition_id
+            ]
+            for origin in iterations:
+                call_id = (origin.node_id, origin.expansion)
+                rep_round = origin.iteration
                 # Group by id and repetition round
 
                 if call_id not in reference_trees:

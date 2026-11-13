@@ -2,15 +2,22 @@ from collections.abc import Callable, Iterator
 from typing import Any, Optional
 
 from fandango.errors import FandangoValueError
+from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.repetition import Repetition
 from fandango.language.grammar.parser.parse_state import Edge, LeoNest, ParseState
 from fandango.language.grammar.parser.parser_tree import ParserDerivationTree
-from fandango.language.symbols import NonTerminal
-from fandango.language.tree import DerivationTree
+from fandango.language.symbols import NonTerminal, Symbol, Terminal
+from fandango.language.tree import (
+    AlternativeOrigin,
+    DerivationTree,
+    Origin,
+    RepetitionOrigin,
+)
+from fandango.language.tree_value import TreeValueType
 
 #: Which repetitions a node sits inside: (repetition id, iteration, index).
-Repetitions = list[tuple[str, int, int]]
+Origins = list[Origin]
 
 
 class _Choices:
@@ -63,6 +70,8 @@ class ForestBuilder:
     ):
         self._rules = rules
         self._nodes = nodes
+        # The symbols of the alternatives of each `Alternative`, by its id
+        self._alternative_symbols: dict[str, list[Symbol]] = {}
         self._children_cache: dict[int, list[DerivationTree]] = {}
         self._children_keepalive: list[ParseState] = []
         self._ambiguous_cache: dict[int, bool] = {}
@@ -276,8 +285,8 @@ class ForestBuilder:
         """
         Converts the ParserDerivationTree to normal DerivationTrees
         """
-        descent: list[tuple[DerivationTree, Repetitions]] = []
-        todo: list[tuple[DerivationTree, Repetitions]] = [(tree, [])]
+        descent: list[tuple[DerivationTree, Origins]] = []
+        todo: list[tuple[DerivationTree, Origins]] = [(tree, [])]
         while todo:
             node, reps = todo.pop()
             descent.append((node, reps))
@@ -294,15 +303,15 @@ class ForestBuilder:
                 sender=node.sender,
                 recipient=node.recipient,
                 read_only=node.read_only,
-                origin_repetitions=reps,
+                origins=reps,
             )
         return built[id(tree)]
 
     def _child_repetitions(
-        self, node: DerivationTree, inherited: Repetitions
-    ) -> list[Repetitions]:
+        self, node: DerivationTree, inherited: Origins
+    ) -> list[Origins]:
         """
-        The `origin_repetitions` each child of `node` inherits.
+        The `origins` each child of `node` inherits.
         """
         symbol = node.symbol
         if not (isinstance(symbol, NonTerminal) and symbol.name() in self._nodes):
@@ -310,14 +319,44 @@ class ForestBuilder:
             return [[] for _ in node.children]
 
         cf_node = self._nodes[symbol.name()]
+        if isinstance(cf_node, Alternative) and len(node.children) == 1:
+            # The only child is the chosen alternative; tag it like `Alternative.fuzz`.
+            index = self._chosen_alternative(cf_node, node.children[0].symbol)
+            if index is not None:
+                return [inherited + [AlternativeOrigin(cf_node.id, index)]]
         if not isinstance(cf_node, Repetition):
             return [list(inherited) for _ in node.children]
 
         cf_node.iteration += 1
         return [
-            inherited + [(cf_node.id, cf_node.iteration, index)]
+            inherited + [RepetitionOrigin(cf_node.id, cf_node.iteration, index)]
             for index in range(len(node.children))
         ]
+
+    def _chosen_alternative(self, node: Alternative, chosen: Symbol) -> Optional[int]:
+        """
+        The index of the alternative of `node` that derived a child with symbol `chosen`.
+        If several alternatives have that symbol, this is the first of them.
+        """
+        if node.id not in self._alternative_symbols:
+            self._alternative_symbols[node.id] = [
+                alternative.to_symbol() for alternative in node.alternatives
+            ]
+        symbols = self._alternative_symbols[node.id]
+        if chosen in symbols:
+            return symbols.index(chosen)
+        if isinstance(chosen, Terminal):
+            # A terminal parsed from a regex holds the text it matched, not the regex
+            value = chosen.value()
+            word = (
+                value.to_bytes() if value.is_type(TreeValueType.BYTES) else str(value)
+            )
+            for index, symbol in enumerate(symbols):
+                if isinstance(symbol, Terminal) and symbol.is_regex:
+                    matches, length = symbol.check(word)
+                    if matches and length == len(word):
+                        return index
+        return None
 
     def collapse(self, tree: Optional[DerivationTree]) -> Optional[DerivationTree]:
         if tree is None:
@@ -359,7 +398,7 @@ class ForestBuilder:
                         read_only=node.read_only,
                         recipient=node.recipient,
                         sender=node.sender,
-                        origin_repetitions=node.origin_repetitions,
+                        origins=node.origins,
                     )
                 ]
         return collapsed[id(tree)]

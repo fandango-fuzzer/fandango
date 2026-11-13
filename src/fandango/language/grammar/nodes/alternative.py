@@ -7,7 +7,7 @@ from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.symbols import NonTerminal, Symbol
-from fandango.language.tree import DerivationTree
+from fandango.language.tree import AlternativeOrigin, DerivationTree
 
 if TYPE_CHECKING:
     import fandango.language.grammar.node_visitors.node_visitor
@@ -72,7 +72,18 @@ class Alternative(Node):
                     )
                 in_range_nodes = concats
 
-        random.choice(in_range_nodes).fuzz(parent, grammar, max_nodes, in_message)
+        chosen = random.choice(in_range_nodes)
+        prev_children_len = len(parent.children)
+        chosen.fuzz(parent, grammar, max_nodes, in_message)
+        # Record the chosen alternative on the children it derived
+        # An alternative without id is not part of the grammar, and a mutated
+        # choice is none of the alternatives: neither is a derivation to record.
+        index = next(
+            (i for i, alt in enumerate(self.alternatives) if alt is chosen), None
+        )
+        if self.id and index is not None:
+            for child in parent.children[prev_children_len:]:
+                child.origins.insert(0, AlternativeOrigin(self.id, index))
 
     def accept(
         self,

@@ -1,7 +1,7 @@
 from typing import Optional
 
 from fandango.language.symbols.symbol import Symbol
-from fandango.language.tree import DerivationTree
+from fandango.language.tree import DerivationTree, Origin
 
 
 class ParserDerivationTree(DerivationTree):
@@ -14,7 +14,7 @@ class ParserDerivationTree(DerivationTree):
         sender: Optional[str] = None,
         recipient: Optional[str] = None,
         read_only: bool = False,
-        origin_repetitions: Optional[list[tuple[str, int, int]]] = None,
+        origins: Optional[list[Origin]] = None,
     ):
         super().__init__(
             symbol,
@@ -24,7 +24,7 @@ class ParserDerivationTree(DerivationTree):
             sender=sender,
             recipient=recipient,
             read_only=read_only,
-            origin_repetitions=origin_repetitions,
+            origins=origins,
         )
 
     def set_children(self, children: list[DerivationTree]) -> None:
