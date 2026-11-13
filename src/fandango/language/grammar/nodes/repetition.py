@@ -8,6 +8,7 @@ from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node, NodeType
+from fandango.language.search import resolve_searches
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.symbols.symbol import Symbol
 from fandango.language.tree import DerivationTree
@@ -109,10 +110,37 @@ class Repetition(Node):
             max_nodes -= sum(child.size() for child in new_children)
             prev_children_len = len(parent.children)
 
+    def _operand_as_spec(self) -> str:
+        """
+        Format the repeated node. A repetition operator applies to a single
+        symbol, so sequences and repetitions need parentheses to stay one.
+        """
+        operand = self.node.format_as_spec()
+        if isinstance(self.node, (Concatenation, Repetition)):
+            return f"({operand})"
+        return operand
+
+    def _bounds_as_spec(self) -> str:
+        if self.bounds_constraint is None:
+            if self.min == self.max:
+                return f"{{{self.min}}}"
+            return f"{{{self.min},{self.max}}}"
+
+        # Computed bounds: print the expressions they were parsed from.
+        bounds = self.bounds_constraint
+        min_expr, _, min_searches = bounds.expr_data_min
+        max_expr, _, max_searches = bounds.expr_data_max
+        min_spec = resolve_searches(min_expr, min_searches)
+        if self._max is None and max_expr.isdigit():
+            # No upper bound was given; the parser filled in its default.
+            return f"{{{min_spec},}}"
+        max_spec = resolve_searches(max_expr, max_searches)
+        if min_spec == max_spec:
+            return f"{{{min_spec}}}"
+        return f"{{{min_spec},{max_spec}}}"
+
     def format_as_spec(self) -> str:
-        if self.min == self.max:
-            return f"{self.node.format_as_spec()}{{{self.min}}}"
-        return f"{self.node.format_as_spec()}{{{self.min},{self.max}}}"
+        return self._operand_as_spec() + self._bounds_as_spec()
 
     def descendents(
         self,
@@ -166,7 +194,7 @@ class Star(Repetition):
         return visitor.visitStar(self)
 
     def format_as_spec(self) -> str:
-        return self.node.format_as_spec() + "*"
+        return self._operand_as_spec() + "*"
 
 
 class Plus(Repetition):
@@ -212,7 +240,7 @@ class Plus(Repetition):
         return visitor.visitPlus(self)
 
     def format_as_spec(self) -> str:
-        return self.node.format_as_spec() + "+"
+        return self._operand_as_spec() + "+"
 
 
 class Option(Repetition):
@@ -275,4 +303,4 @@ class Option(Repetition):
         return visitor.visitOption(self)
 
     def format_as_spec(self) -> str:
-        return self.node.format_as_spec() + "?"
+        return self._operand_as_spec() + "?"

@@ -11,6 +11,7 @@ from fandango.constraints.failing_tree import (
     Suggestion,
 )
 from fandango.constraints.fitness import ConstraintFitness
+from fandango.constraints.implication import ImplicationConstraint
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 
@@ -98,7 +99,16 @@ class DisjunctionConstraint(Constraint):
         return fitness
 
     def format_as_spec(self) -> str:
-        return "(" + " or ".join(c.format_as_spec() for c in self.constraints) + ")"
+        # No parentheses around the disjunction: a parenthesised formula is
+        # parsed as a single Python expression.
+        return " or ".join(
+            (
+                f"({c.format_as_spec()})"
+                if isinstance(c, ImplicationConstraint)
+                else c.format_as_spec()
+            )
+            for c in self.constraints
+        )
 
     def accept(self, visitor: ConstraintVisitor) -> None:
         """

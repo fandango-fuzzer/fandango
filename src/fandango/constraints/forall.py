@@ -8,7 +8,7 @@ from fandango.constraints.constraint import Constraint
 from fandango.constraints.constraint_visitor import ConstraintVisitor
 from fandango.constraints.failing_tree import ApplyAllSuggestions
 from fandango.constraints.fitness import ConstraintFitness
-from fandango.language.search import NonTerminalSearch
+from fandango.language.search import NonTerminalSearch, StarSearch
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 
@@ -131,8 +131,11 @@ class ForallConstraint(Constraint):
         )
         if LEGACY:
             return f"(forall {bound} in {self.search.format_as_spec()}: {self.statement.format_as_spec()})"
-        else:
+        if isinstance(self.search, StarSearch):
             return f"all({self.statement.format_as_spec()} for {bound} in {self.search.format_as_spec()})"
+        # `all(...)` takes a star selection only; any other search was
+        # written as `forall ... in ...:` and has to be printed that way.
+        return f"forall {bound} in {self.search.format_as_spec()}: {self.statement.format_as_spec()}"
 
     def accept(self, visitor: ConstraintVisitor) -> None:
         """

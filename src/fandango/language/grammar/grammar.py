@@ -422,7 +422,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         """Return a (canonical) string representation of the grammar."""
         return "\n".join(
             [
-                f"{key.name()} ::= {value.format_as_spec()}{' := ' + str(self.generators[key]) if key in self.generators else ''}"
+                f"{key.name()} ::= {value.format_as_spec()}{' := ' + self.generators[key].format_as_spec() if key in self.generators else ''}"
                 for key, value in self.rules.items()
             ]
         )
@@ -601,7 +601,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             symbol = NonTerminal(symbol)
         return (
             f"{symbol.format_as_spec()} ::= {self.rules[symbol].format_as_spec()}"
-            f"{' := ' + str(self.generators[symbol]) if symbol in self.generators else ''}"
+            f"{' := ' + self.generators[symbol].format_as_spec() if symbol in self.generators else ''}"
         )
 
     @staticmethod

@@ -64,7 +64,13 @@ class Concatenation(Node):
         return len(self.nodes)
 
     def format_as_spec(self) -> str:
-        return " ".join(map(lambda x: x.format_as_spec(), self.nodes))
+        # A nested sequence keeps its parentheses, so that it stays nested.
+        return " ".join(
+            f"({node.format_as_spec()})"
+            if isinstance(node, Concatenation)
+            else node.format_as_spec()
+            for node in self.nodes
+        )
 
     def descendents(
         self,

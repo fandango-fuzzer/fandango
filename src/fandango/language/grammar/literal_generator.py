@@ -1,6 +1,7 @@
 import re
 
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.search import resolve_searches
 
 
 class LiteralGenerator:
@@ -16,6 +17,12 @@ class LiteralGenerator:
         # we replace them with "..." to avoid cluttering the output.
         s = re.sub(r"___[0-9a-zA-Z_]+___", r"...", str(self.call))
         return s
+
+    def format_as_spec(self) -> str:
+        """
+        Format as a string that can be used in a spec file.
+        """
+        return resolve_searches(self.call, self.nonterminals)
 
     def __eq__(self, other: object) -> bool:
         return (

@@ -13,7 +13,15 @@ class GrammarSetting(HasSettings):
     def __init__(self, selector: str, rules: dict[str, str]):
 
         self._selector = selector
+        self._rules = dict(rules)
         self._node_settings = NodeSettings(rules)
+
+    def format_as_spec(self) -> str:
+        """
+        Format as a string that can be used in a spec file.
+        """
+        rules = "".join(f" {key} = {value}" for key, value in self._rules.items())
+        return f"setting {self._selector}{rules}"
 
     def _matches(self, node: Node) -> bool:
         if self._selector == "*":
