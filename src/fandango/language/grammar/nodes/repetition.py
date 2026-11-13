@@ -116,12 +116,17 @@ class Repetition(Node):
         symbol, so sequences and repetitions need parentheses to stay one.
         """
         operand = self.node.format_as_spec()
-        if isinstance(self.node, (Concatenation, Repetition)):
+        if isinstance(self.node, (Concatenation, Repetition)) or (
+            isinstance(self.node, Alternative) and self.node.is_permutation
+        ):
             return f"({operand})"
         return operand
 
     def _bounds_as_spec(self) -> str:
         if self.bounds_constraint is None:
+            if self._max is None:
+                # No upper bound was given; the default depends on settings
+                return f"{{{self.min},}}"
             if self.min == self.max:
                 return f"{{{self.min}}}"
             return f"{{{self.min},{self.max}}}"

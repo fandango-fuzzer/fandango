@@ -9,7 +9,7 @@ def is_big(n):
 # A setting is not printed.
 setting <count> max_out_of_regex_tries = 9999
 
-<start> ::= <count> <pairs> <nested> <items> <tagged> <plain> <choice> <grouped> <terminals>
+<start> ::= <count> <pairs> <nested> <items> <tagged> <plain> <choice> <grouped> <permuted> <terminals>
 <count> ::= "1" | "2" | "3"
 
 # A parenthesised sequence under each repetition operator.
@@ -29,13 +29,16 @@ setting <count> max_out_of_regex_tries = 9999
 <source> ::= "4" | "5" := str(int(<tagged>) - 1)
 <plain> ::= r"[0-9]" := str(7)
 
-# Printed correctly so far: alternatives in groups, fixed and open counts.
+# Alternatives in groups, fixed and open counts.
 <choice> ::= "q" ("r" | "s") ("t" | "u" "v")* "w"{2} "z"{1,}
 
 # A parenthesised sequence within a sequence.
 <grouped> ::= "A" ("B" "C") "D"
 
-# Printed correctly so far: the kinds of terminals.
+# Permutations, also of groups and under a repetition.
+<permuted> ::= [["E" "F"]] [[<b> ("G" "H") ("I"?)]] ([["J" "K"]]){2}
+
+# The kinds of terminals.
 <terminals> ::= "it's" '"' "\n" "\\" r"[a-c]+" r"['\"]"
 
 # Quantifiers.

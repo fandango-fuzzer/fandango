@@ -3,42 +3,48 @@
 """
 `fandango convert` on a .fan file must print a spec that means the same.
 
-Every .fan file of the repository is parsed and printed. The printed text is
-parsed again and compared with the original, piece by piece: Python code,
-rules (with repetition bounds), generators and constraints. `setting` lines
-are not printed, and not compared.
-Comparing the parsed specs, not the texts, is what finds a printed spec that
-parses but means something else, such as `("a" <b>)*` printed as `'a' <b>*`.
-Last, the printed spec is printed once more, and the text must stay the same.
+Every .fan file of the repository is parsed and printed, and the printed text
+is parsed again. Both parsed specs must then have the same structure: the
+objects that make up their code, rules, generators and constraints are
+compared attribute by attribute. Comparing the objects, not the texts, is what
+finds a printed spec that parses but means something else, such as
+`("a" <b>)*` printed as `'a' <b>*`.
 
 A file whose Python code cannot run here (a missing module, say) is skipped.
 """
 
-from collections import Counter
-from collections.abc import Mapping
+import re
+from collections.abc import Iterator
+from enum import Enum
 from pathlib import Path
+from typing import Any
 
 import pytest
 
 import fandango
-from fandango.constraints.conjunction import ConjunctionConstraint
-from fandango.constraints.constraint import Constraint
-from fandango.constraints.disjunct import DisjunctionConstraint
-from fandango.constraints.exists import ExistsConstraint
-from fandango.constraints.forall import ForallConstraint
-from fandango.constraints.implication import ImplicationConstraint
-from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
-from fandango.constraints.soft import SoftValue
-from fandango.language.grammar.nodes.alternative import Alternative
-from fandango.language.grammar.nodes.concatenation import Concatenation
-from fandango.language.grammar.nodes.node import Node
-from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
-from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.parse.parse_spec import parse_content
 from fandango.language.parse.spec import FandangoSpec
-from fandango.language.search import NonTerminalSearch
 
 from .utils import PROJECT_ROOT
+
+# Attributes that do not say what a spec means: the Python environment,
+# settings (which are not printed), generated names, and caches and state
+# that fuzzing fills in.
+IGNORED_ATTRIBUTES = {
+    "id",
+    "repetition_id",
+    "_hash_cache",
+    "local_variables",
+    "global_variables",
+    "_grammar_settings",
+    "_settings",
+    "cache",
+    "iteration",
+    "tdigest",
+}
+
+# Parsing names each search in an expression `___fandango_<address>_<count>___`
+PLACEHOLDER = re.compile(r"___fandango_\d+_(\d+)___")
 
 
 def spec_files() -> list[Path]:
@@ -53,81 +59,50 @@ def spec_files() -> list[Path]:
     )
 
 
-def resolve(
-    text: str, placeholders: Mapping[str, NonTerminalSearch | NonTerminalNode]
-) -> str:
-    """Replace the internal placeholders in `text` by what they stand for."""
-    for placeholder, target in placeholders.items():
-        text = text.replace(placeholder, target.format_as_spec())
-    return text
-
-
-def describe_node(node: Node) -> str:
+def attributes(
+    value: Any, path: str = "spec", seen: tuple[int, ...] = ()
+) -> Iterator[tuple[str, Any]]:
     """
-    The grammar element `node` in a spelling that cannot be read in two ways:
-    every sequence and every alternative is in parentheses, and computed
-    repetition bounds are written out.
+    Everything `value` is made of, as (path, plain value) pairs, such as
+    `("spec.rules[<start>].nodes[0].min", 1)`.
     """
-    if isinstance(node, Alternative):
-        text = "(" + " | ".join(describe_node(n) for n in node.alternatives) + ")"
-    elif isinstance(node, Concatenation):
-        text = "(" + " ".join(describe_node(n) for n in node.nodes) + ")"
-    elif isinstance(node, Star):
-        text = describe_node(node.node) + "*"
-    elif isinstance(node, Plus):
-        text = describe_node(node.node) + "+"
-    elif isinstance(node, Option):
-        text = describe_node(node.node) + "?"
-    elif isinstance(node, Repetition):
-        bounds = node.bounds_constraint
-        if bounds is None:
-            low, high = str(node.min), str(node.max)
-        else:
-            low = resolve(bounds.expr_data_min[0], bounds.expr_data_min[2])
-            high = resolve(bounds.expr_data_max[0], bounds.expr_data_max[2])
-        text = f"{describe_node(node.node)}{{{low}, {high}}}"
+    if isinstance(value, str):
+        yield path, PLACEHOLDER.sub(r"___\1___", value)
+    elif isinstance(value, (list, tuple)):
+        yield f"{path}.length", len(value)
+        for index, item in enumerate(value):
+            yield from attributes(item, f"{path}[{index}]", seen)
+    elif isinstance(value, dict):
+        yield f"{path}.length", len(value)
+        for index, (key, item) in enumerate(value.items()):
+            name = key if isinstance(key, str) else key.format_as_spec()
+            name = PLACEHOLDER.sub(r"___\1___", name)
+            yield from attributes(item, f"{path}[{index}: {name}]", seen)
+    elif (
+        isinstance(value, Enum)
+        or not type(value).__module__.startswith("fandango.")
+        or not hasattr(value, "__dict__")
+    ):
+        yield path, value  # numbers, None, slices, ...
+    elif id(value) in seen:
+        yield path, f"the {type(value).__name__} above"
     else:
-        # Terminals and nonterminals. A terminal is compared in its printed
-        # form, because printing may respell a regex (`'` as `\x27`).
-        text = node.format_as_spec()
-    return text
+        yield f"{path}.type", type(value).__name__
+        for name, attribute in vars(value).items():
+            if name not in IGNORED_ATTRIBUTES:
+                yield from attributes(attribute, f"{path}.{name}", (*seen, id(value)))
 
 
-def describe_constraint(constraint: Constraint | SoftValue) -> str:
-    """The constraint with the kind of each of its parts spelled out."""
-    if isinstance(constraint, (ConjunctionConstraint, DisjunctionConstraint)):
-        text = ", ".join(describe_constraint(c) for c in constraint.constraints)
-    elif isinstance(constraint, ImplicationConstraint):
-        text = f"{describe_constraint(constraint.antecedent)} -> {describe_constraint(constraint.consequent)}"
-    elif isinstance(constraint, (ForallConstraint, ExistsConstraint)):
-        bound = constraint.bound
-        name = bound if isinstance(bound, str) else bound.format_as_spec()
-        text = f"{name} in {constraint.search.format_as_spec()}: {describe_constraint(constraint.statement)}"
-    elif isinstance(constraint, RepetitionBoundsConstraint):
-        low = resolve(constraint.expr_data_min[0], constraint.expr_data_min[2])
-        high = resolve(constraint.expr_data_max[0], constraint.expr_data_max[2])
-        text = f"{low} <= |{describe_node(constraint.repetition_node.node)}| <= {high}"
-    else:
-        text = constraint.format_as_spec()
-    return f"{type(constraint).__name__}[{text}]"
-
-
-def describe(spec: FandangoSpec) -> Counter[str]:
-    """Everything a spec says, one entry per rule, generator and constraint."""
-    grammar = spec.grammar
-    return Counter(
-        [
-            f"code: {spec.code_text}",
-            *(
-                f"rule: {symbol.name()} ::= {describe_node(node)}"
-                for symbol, node in grammar.rules.items()
-            ),
-            *(
-                f"generator: {symbol.name()} := {resolve(generator.call, generator.nonterminals)}"
-                for symbol, generator in grammar.generators.items()
-            ),
-            *(f"constraint: {describe_constraint(c)}" for c in spec.constraints),
-        ]
+def spec_attributes(spec: FandangoSpec) -> dict[str, Any]:
+    return dict(
+        attributes(
+            {
+                "code": spec.code_text,
+                "rules": spec.grammar.rules,
+                "generators": spec.grammar.generators,
+                "constraints": spec.constraints,
+            }
+        )
     )
 
 
@@ -149,13 +124,6 @@ def test_printed_spec_means_the_same(
     except Exception as error:
         pytest.fail(f"the printed spec does not parse: {error}\n\n{printed}")
 
-    before, after = describe(original), describe(reparsed)
-    lost = "\n".join(sorted((before - after).elements()))
-    new = "\n".join(sorted((after - before).elements()))
-    assert before == after, (
-        f"the printed spec means something else.\n\n"
-        f"Only in the original:\n{lost}\n\nOnly in the printed spec:\n{new}\n\n"
-        f"Printed spec:\n{printed}"
-    )
+    assert spec_attributes(original) == spec_attributes(reparsed), printed
     # Printing the printed spec gives the same text again.
     assert str(reparsed) == printed
