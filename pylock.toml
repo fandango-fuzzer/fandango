@@ -131,7 +131,16 @@ wheels = [{ url = "https://files.pythonhosted.org/packages/71/cc/18245721fa77470
 
 [[packages]]
 name = "beautifulsoup4"
+version = "4.6.3"
+marker = "python_full_version < '3.11.5'"
+index = "https://pypi.org/simple"
+sdist = { url = "https://files.pythonhosted.org/packages/88/df/86bffad6309f74f3ff85ea69344a078fc30003270c8df6894fca7a3c72ff/beautifulsoup4-4.6.3.tar.gz", upload-time = 2018-08-12T16:39:49Z, size = 167469, hashes = { sha256 = "90f8e61121d6ae58362ce3bed8cd997efb00c914eae0ff3d363c32f9a9822d10" } }
+wheels = [{ url = "https://files.pythonhosted.org/packages/21/0a/47fdf541c97fd9b6a610cb5fd518175308a7cc60569962e776ac52420387/beautifulsoup4-4.6.3-py3-none-any.whl", upload-time = 2018-08-12T16:39:48Z, size = 90375, hashes = { sha256 = "194ec62a25438adcb3fdb06378b26559eda1ea8a747367d34c33cef9c7f48d57" } }]
+
+[[packages]]
+name = "beautifulsoup4"
 version = "4.14.3"
+marker = "python_full_version >= '3.11.5'"
 index = "https://pypi.org/simple"
 sdist = { url = "https://files.pythonhosted.org/packages/c3/b0/1c6a16426d389813b48d95e26898aff79abbde42ad353958ad95cc8c9b21/beautifulsoup4-4.14.3.tar.gz", upload-time = 2025-11-30T15:08:26Z, size = 627737, hashes = { sha256 = "6292b1c5186d356bba669ef9f7f051757099565ad9ada5dd630bd9de5fa7fb86" } }
 wheels = [{ url = "https://files.pythonhosted.org/packages/1a/39/47f9197bdd44df24d67ac8893641e16f386c984a0619ef2ee4c51fbbc019/beautifulsoup4-4.14.3-py3-none-any.whl", upload-time = 2025-11-30T15:08:24Z, size = 107721, hashes = { sha256 = "0918bfe44902e6ad8d57732ba310582e98da931428d231a5ecb9e7c703a735bb" } }]
@@ -2537,10 +2546,11 @@ wheels = [{ url = "https://files.pythonhosted.org/packages/c8/78/3565d011c61f5a4
 
 [[packages]]
 name = "soupsieve"
-version = "2.9"
+version = "4.0"
+marker = "python_full_version >= '3.11.5'"
 index = "https://pypi.org/simple"
-sdist = { url = "https://files.pythonhosted.org/packages/80/f1/93422647dd7e461f23d254e6b2bfa687a85b53aeb4903fcdbb74474d4584/soupsieve-2.9.tar.gz", upload-time = 2026-07-19T01:35:18Z, size = 122122, hashes = { sha256 = "acee8417325c5653e1377dc31eccad59eb82cbc65942afe6174c53b3aaad63fc" } }
-wheels = [{ url = "https://files.pythonhosted.org/packages/7b/d6/3185ab5ad1280319b31986898f3206dd7227cd75e293d4dba2a5e6bf27a0/soupsieve-2.9-py3-none-any.whl", upload-time = 2026-07-19T01:35:17Z, size = 37387, hashes = { sha256 = "a2b2c76d67df2382d245409fd71e321a571717e58463efa32ace87dcadac2c12" } }]
+sdist = { url = "https://files.pythonhosted.org/packages/7d/5e/19b7c5d20bc2f226c44f33a9d9aab9740efed7555b96e656231fd564e514/soupsieve-4.0.tar.gz", upload-time = 2026-11-03T14:28:55Z, size = 151929, hashes = { sha256 = "ccd6470b256394ac44b08b86fd94b30a17d335a5335c8a3d15565f7b03d3c8cf" } }
+wheels = [{ url = "https://files.pythonhosted.org/packages/4f/18/d24df2f733ee0655c58717d51add4118a70e64692d0e47d403b9aac4cf98/soupsieve-4.0-py3-none-any.whl", upload-time = 2026-11-03T14:28:53Z, size = 50158, hashes = { sha256 = "5e7494bfce90e06676cfb4c5c2cf22243e98e5cf24646bb1ecdda46d318550a0" } }]
 
 [[packages]]
 name = "speedy-antlr-tool"
