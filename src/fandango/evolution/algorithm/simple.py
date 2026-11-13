@@ -28,7 +28,9 @@ from fandango.evolution.population import PopulationManager
 from fandango.evolution.profiler import Profiler
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.language.grammar import FuzzingMode
+from fandango.language.grammar.alternative_weights import AlternativeWeights
 from fandango.language.grammar.grammar import Grammar
+from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import (
     LOGGER,
@@ -70,6 +72,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
         use_fcc: bool = False,
         put: Optional[str] = None,
         put_args: Optional[list[str]] = None,
+        coverage_guided_alternatives: bool = True,
     ):
         if tournament_size > 1:
             raise FandangoValueError(
@@ -96,6 +99,16 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
         self.coverage_goal = coverage_goal
         self.experiment_start_time = time.time()
         self.stop_after_seconds = stop_after_seconds
+
+        # Covered by the solutions this algorithm generates
+        self.alternative_weights = (
+            AlternativeWeights(
+                grammar, diversity_k, NonTerminal(start_symbol), coverage_goal
+            )
+            if coverage_guided_alternatives
+            else None
+        )
+        grammar.alternative_weights = self.alternative_weights
 
         # Instantiate managers
         self.population_manager = PopulationManager(
@@ -371,9 +384,22 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
     ) -> Generator[DerivationTree, None, None]:
         match mode:
             case FuzzingMode.COMPLETE:
-                yield from self._generate_simple(max_generations=max_generations)
+                for solution in self._generate_simple(max_generations=max_generations):
+                    self._observe_solution(solution)
+                    yield solution
             case _:
                 raise RuntimeError(f"Fuzzing Mode {mode} is not implemented")
+
+    def _observe_solution(self, solution: DerivationTree) -> None:
+        """Notifies local algorithm components about the emitted solution."""
+        weights = self.alternative_weights
+        if weights is None:
+            return
+        weights.add_covered(
+            self.grammar._extract_k_paths_from_tree(
+                solution, self.diversity_k, coverage_goal=self.coverage_goal
+            )
+        )
 
     def _generate_simple(
         self, max_generations: Optional[int] = None
@@ -541,3 +567,5 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
         self.evaluation.clear()
         self._initial_solutions.clear()
         self.adaptive_tuner.reset_parameters()
+        if self.alternative_weights is not None:
+            self.alternative_weights.sync(set())
