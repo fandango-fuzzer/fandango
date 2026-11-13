@@ -23,8 +23,14 @@ class AlternativeWeights:
         start_symbol: Optional[NonTerminal] = None,
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
         input_parties: Optional[set[str]] = None,
+        covered_weight: float = 0.3,
+        failure_decay: float = 0.98,
+        decay_floor: float = 0.2,
     ):
         self._grammar = grammar
+        self._covered_weight = covered_weight
+        self._failure_decay = failure_decay
+        self._decay_floor = decay_floor
         self._k = k
         self._k_paths = grammar.generate_all_k_paths(
             k=k,
@@ -71,38 +77,15 @@ class AlternativeWeights:
             self._crossing_uncovered[key] = len(paths - self._covered)
 
     def weights(
-        self,
-        alternatives: Sequence[Node],
-        parent: DerivationTree,
-        covered_weight: float,
-        failure_decay: float = 1.0,
-        decay_floor: float = 0.0,
+        self, alternatives: Sequence[Node], parent: DerivationTree
     ) -> list[float]:
-        """
-        Return `covered_weight` plus the uncovered share of k-paths of each alternative fuzzed below `parent`.
-        The share shrinks by `failure_decay` per pick without progress, down to `decay_floor` of it.
-        """
-        return self._weights(
-            alternatives,
-            self._context(parent),
-            covered_weight,
-            failure_decay,
-            decay_floor,
-        )
+        """Return the weight of each alternative fuzzed below `parent`."""
+        return self._weights(alternatives, self._context(parent))
 
-    def choose(
-        self,
-        alternatives: Sequence[Node],
-        parent: DerivationTree,
-        covered_weight: float,
-        failure_decay: float,
-        decay_floor: float,
-    ) -> Node:
+    def choose(self, alternatives: Sequence[Node], parent: DerivationTree) -> Node:
         """Pick one of `alternatives` by weight; count the pick as a failure until its k-paths get covered."""
         context = self._context(parent)
-        weights = self._weights(
-            alternatives, context, covered_weight, failure_decay, decay_floor
-        )
+        weights = self._weights(alternatives, context)
         if not any(weights):
             return random.choice(alternatives)
         chosen = random.choices(alternatives, weights)[0]
@@ -111,20 +94,14 @@ class AlternativeWeights:
             failures[context] = failures.get(context, 0) + 1
         return chosen
 
-    def _weights(
-        self,
-        alternatives: Sequence[Node],
-        context: KPath,
-        covered_weight: float,
-        failure_decay: float,
-        decay_floor: float,
-    ) -> list[float]:
+    def _weights(self, alternatives: Sequence[Node], context: KPath) -> list[float]:
         return [
-            covered_weight
+            self._covered_weight
             + self._uncovered_share(alternative, context)
             * max(
-                decay_floor,
-                failure_decay ** self._failures.get(alternative, {}).get(context, 0),
+                self._decay_floor,
+                self._failure_decay
+                ** self._failures.get(alternative, {}).get(context, 0),
             )
             for alternative in alternatives
         ]
