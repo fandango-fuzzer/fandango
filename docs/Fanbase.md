@@ -101,9 +101,11 @@ Fanbase specs come first, so rules in files given with `-f` override them. If th
 
 Specs are installed in the first of these directories, which are also the ones Fandango searches for `include()`:
 
-1. the first directory in `$FANDANGO_PATH`;
-2. `$XDG_DATA_HOME/fandango`; or, if that is not set,
-3. `~/Library/Fandango` (macOS) or `~/.local/share/fandango` (other systems).
+1. the first directory in `$FANDANGO_PATH`, if it is set;
+2. `~/Library/Fandango` on a Mac; or
+3. `$XDG_DATA_HOME/fandango` on other systems or, if that is not set, `~/.local/share/fandango`.
+
+On a Mac, Fandango searches `~/Library/Fandango` before `$XDG_DATA_HOME/fandango`, so that is where a spec is installed: an older copy in the other directory cannot take its place.
 
 An installed spec is `<format>/<name>.fan` in that directory, together with a copy of its metadata, `<format>/<name>.yml`.
 
