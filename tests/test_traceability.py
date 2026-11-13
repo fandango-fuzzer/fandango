@@ -4,18 +4,11 @@ from typing import Any
 
 from fandango import Fandango
 from fandango.language.parse.parse import parse
-from fandango.language.tree import (
-    AlternativeOrigin,
-    DerivationTree,
-    Origin,
-    RepetitionOrigin,
-)
 
 SPEC = """<start> ::= <n> <item>{int(<n>)}
 <n> ::= "1" | "2" | "3"
 <item> ::= ("a" <b> | <b> "a")* | "z"
 <b> ::= "b"
-<word> ::= r"[x-z]+" | "q" | r"[0-9]+"
 """
 
 
@@ -23,11 +16,6 @@ def load(spec: Any = SPEC) -> tuple[Any, Any]:
     grammar, constraints = parse(spec, use_stdlib=False, use_cache=False, check=False)
     assert grammar is not None
     return grammar, constraints
-
-
-def origins(tree: DerivationTree) -> list[Origin]:
-    """The origins of `tree`, with the content hash removed from the node ids."""
-    return [o._replace(node_id=o.node_id.split("_")[0]) for o in tree.origins]
 
 
 def ids(grammar: Any) -> list[str]:
@@ -44,94 +32,8 @@ def ids(grammar: Any) -> list[str]:
     return found
 
 
-def test_parsed_trees_record_chosen_alternative():
-    grammar, _ = load()
-    tree = grammar.parse("abba", "<item>")
-    assert tree is not None
-    outer = AlternativeOrigin("alternative:3", branch=0)
-    assert [(str(c), origins(c)) for c in tree.children] == [
-        (
-            "a",
-            [
-                outer,
-                RepetitionOrigin("star:1", 1, 0),
-                AlternativeOrigin("alternative:2", 0),
-            ],
-        ),
-        (
-            "b",
-            [
-                outer,
-                RepetitionOrigin("star:1", 1, 0),
-                AlternativeOrigin("alternative:2", 0),
-            ],
-        ),
-        (
-            "b",
-            [
-                outer,
-                RepetitionOrigin("star:1", 1, 1),
-                AlternativeOrigin("alternative:2", 1),
-            ],
-        ),
-        (
-            "a",
-            [
-                outer,
-                RepetitionOrigin("star:1", 1, 1),
-                AlternativeOrigin("alternative:2", 1),
-            ],
-        ),
-    ]
-
-    tree = grammar.parse("z", "<item>")
-    assert tree is not None
-    assert [origins(c) for c in tree.children] == [
-        [AlternativeOrigin("alternative:3", branch=1)]
-    ]
-
-
-def test_parsed_regex_alternative_is_recorded():
-    grammar, _ = load()
-    for word, branch in (("xy", 0), ("q", 1), ("42", 2)):
-        tree = grammar.parse(word, "<word>")
-        assert tree is not None
-        assert origins(tree.children[0]) == [AlternativeOrigin("alternative:4", branch)]
-
-
-def test_generated_trees_record_chosen_alternative():
-    grammar, _ = load()
-    random.seed(0)
-    seen = set()
-    for _ in range(50):
-        tree = grammar.fuzz("<n>")
-        (child,) = tree.children
-        (origin,) = origins(child)
-        assert isinstance(origin, AlternativeOrigin)
-        assert origin.node_id == "alternative:1"
-        # The origin names the branch that derived the child
-        assert str(child) == "123"[origin.branch]
-        seen.add(origin.branch)
-    assert seen == {0, 1, 2}
-
-    # Generating and re-parsing agree on the branches and iterations taken
-    def choices(tree: DerivationTree) -> list[int]:
-        return [
-            o.branch if isinstance(o, AlternativeOrigin) else o.iteration
-            for o in tree.origins
-        ]
-
-    for _ in range(20):
-        tree = grammar.fuzz("<item>")
-        parsed = grammar.parse(str(tree), "<item>")
-        assert parsed is not None
-        assert [choices(c) for c in tree.children] == [
-            choices(c) for c in parsed.children
-        ]
-
-
-def test_repaired_repetitions_keep_enclosing_origins():
-    spec = """<start> ::= <n> (<x>{int(<n>)} | "z" <x>{int(<n>)})
+def test_repaired_repetitions_keep_enclosing_repetitions():
+    spec = """<start> ::= (<n> <x>{int(<n>)} ";")+
 <n> ::= "1" | "2" | "3" | "4" | "5" | "6"
 <x> ::= "a" | "b"
 """
@@ -141,9 +43,11 @@ def test_repaired_repetitions_keep_enclosing_origins():
     assert solutions
     for tree in solutions:
         for child in tree.children:
+            kinds = [id_.split(":")[0] for id_, _, _ in child.origin_repetitions]
             if str(child.symbol.format_as_spec()) == "<x>":
-                kinds = [type(origin) for origin in child.origins]
-                assert kinds == [AlternativeOrigin, RepetitionOrigin], str(tree)
+                assert kinds == ["plus", "repetition"], str(tree)
+            else:
+                assert kinds == ["plus"], str(tree)
 
 
 def test_ids_only_depend_on_contents(tmp_path, monkeypatch):
