@@ -1,6 +1,7 @@
 # Constructs that `fandango convert` has printed with a different meaning or
 # in a form that does not parse, next to related ones it printed correctly.
-# tests/test_spec_printing.py checks this file like every other .fan file.
+# tests/test_spec_printing.py compares what this is printed as with
+# printing_expected.fan.
 
 def is_big(n):
     return n > 2  # comments are not printed; that is fine
