@@ -14,8 +14,8 @@ import threading
 import time
 from _contextvars import ContextVar
 from abc import ABC, abstractmethod
-from collections.abc import Callable
-from typing import IO, Hashable, Optional
+from collections.abc import Callable, Hashable
+from typing import IO, Optional
 from uuid import UUID
 
 from fandango.errors import (
