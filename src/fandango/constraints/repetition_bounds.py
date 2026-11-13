@@ -1,6 +1,7 @@
 import random
+from collections.abc import Callable
 from copy import copy
-from typing import Any, Callable, Optional, Unpack
+from typing import Any, Optional, Unpack
 
 from fandango.constraints.base import GeneticBaseInitArgs
 from fandango.constraints.constraint import Constraint

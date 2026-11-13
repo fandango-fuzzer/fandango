@@ -3,8 +3,8 @@ import itertools
 import random
 import time
 import warnings
-from collections.abc import Callable, Generator
-from typing import Iterable, Optional
+from collections.abc import Callable, Generator, Iterable
+from typing import Optional
 
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
