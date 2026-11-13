@@ -94,10 +94,13 @@ class RepetitionBoundsSuggestion(Suggestion):
         insertion_index = index + 1
 
         starting_rep = 0
-        for ref in self._ending_rep_tree.origin_repetitions:
+        # The repetitions our repetition is nested in
+        enclosing: list[tuple[str, int, int]] = []
+        for i, ref in enumerate(self._ending_rep_tree.origin_repetitions):
             if ref[0] == self._repetition_id and ref[1] == rep_iteration:
                 assert ref[2] is not None, "repetition index (ref[2]) must not be None"
                 starting_rep = ref[2] + 1
+                enclosing = self._ending_rep_tree.origin_repetitions[:i]
 
         old_tree_children = tree.children
         tree.set_children([])
@@ -110,6 +113,9 @@ class RepetitionBoundsSuggestion(Suggestion):
                 override_iterations_to_perform=starting_rep + nr_to_insert,
             )
             insert_children = tree.children
+            # The inserted iterations are nested in the same repetitions
+            for child in insert_children:
+                child.origin_repetitions[:0] = enclosing
         finally:
             tree.set_children(old_tree_children)
 
