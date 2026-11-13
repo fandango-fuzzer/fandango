@@ -1,8 +1,6 @@
 #!/usr/bin/env pytest
-import random
 from typing import Any
 
-from fandango import Fandango
 from fandango.language.parse.parse import parse
 
 SPEC = """<start> ::= <n> <item>{int(<n>)}
@@ -30,24 +28,6 @@ def ids(grammar: Any) -> list[str]:
     for rule in grammar.rules.values():
         walk(rule)
     return found
-
-
-def test_repaired_repetitions_keep_enclosing_repetitions():
-    spec = """<start> ::= (<n> <x>{int(<n>)} ";")+
-<n> ::= "1" | "2" | "3" | "4" | "5" | "6"
-<x> ::= "a" | "b"
-"""
-    fandango = Fandango(spec, use_stdlib=False, use_cache=False)
-    random.seed(1)
-    solutions = fandango.fuzz(desired_solutions=20, max_generations=50)
-    assert solutions
-    for tree in solutions:
-        for child in tree.children:
-            kinds = [id_.split(":")[0] for id_, _, _ in child.origin_repetitions]
-            if str(child.symbol.format_as_spec()) == "<x>":
-                assert kinds == ["plus", "repetition"], str(tree)
-            else:
-                assert kinds == ["plus"], str(tree)
 
 
 def test_ids_only_depend_on_contents(tmp_path, monkeypatch):

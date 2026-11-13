@@ -2,12 +2,14 @@
 
 import os
 import pickle
+import random
 import subprocess
 import sys
 from collections.abc import Generator
 
 import pytest
 
+from fandango import Fandango
 from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
 from fandango.language.parse.parse import parse
 from fandango.language.symbols.non_terminal import NonTerminal
@@ -131,3 +133,21 @@ sys.stdout.buffer.write(pickle.dumps((good, bad)))
     assert len(good.find_by_origin(constraint.repetition_id)) == 2
     assert constraint.fitness(good).success
     assert not constraint.fitness(bad).success
+
+
+def test_repaired_repetitions_keep_enclosing_repetitions():
+    spec = """<start> ::= (<n> <x>{int(<n>)} ";")+
+<n> ::= "1" | "2" | "3" | "4" | "5" | "6"
+<x> ::= "a" | "b"
+"""
+    fandango = Fandango(spec, use_stdlib=False, use_cache=False)
+    random.seed(1)
+    solutions = fandango.fuzz(desired_solutions=20, max_generations=50)
+    assert solutions
+    for tree in solutions:
+        for child in tree.children:
+            kinds = [id_.split(":")[0] for id_, _, _ in child.origin_repetitions]
+            if str(child.symbol.format_as_spec()) == "<x>":
+                assert kinds == ["plus", "repetition"], str(tree)
+            else:
+                assert kinds == ["plus"], str(tree)
