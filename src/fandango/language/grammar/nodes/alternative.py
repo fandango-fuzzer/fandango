@@ -90,6 +90,26 @@ class Alternative(Node):
         return len(self.alternatives)
 
     def format_as_spec(self) -> str:
+        if self.is_permutation:
+            # Each alternative starts with a different one of the permuted nodes
+            permuted = [
+                alternative.nodes[0]
+                for alternative in self.alternatives
+                if isinstance(alternative, Concatenation)
+            ]
+            if len(permuted) == len(self.alternatives):
+                return (
+                    "[["
+                    + " ".join(
+                        (
+                            f"({node.format_as_spec()})"
+                            if node.is_controlflow and not isinstance(node, Alternative)
+                            else node.format_as_spec()
+                        )
+                        for node in permuted
+                    )
+                    + "]]"
+                )
         return (
             "(" + " | ".join(map(lambda x: x.format_as_spec(), self.alternatives)) + ")"
         )

@@ -566,8 +566,8 @@ class ConstraintProcessor(FandangoParserVisitor):
         constraints: list[Constraint] = [
             ComparisonConstraint(
                 self.visitFormula_comparison_operator(op),
-                ast.unparse(left),
-                ast.unparse(right),
+                self._unparse_operand(left),
+                self._unparse_operand(right),
                 left_searches=left_map,
                 right_searches=right_map,
                 local_variables=self.local_variables,
@@ -588,6 +588,20 @@ class ConstraintProcessor(FandangoParserVisitor):
             global_variables=self.global_variables,
             lazy=self.lazy,
         )
+
+    @staticmethod
+    def _unparse_operand(operand: ast.AST) -> str:
+        """
+        Unparse an operand of a comparison. `ast.unparse` drops the
+        parentheses around it; put them back where the operand binds less
+        tightly than a comparison, so that `(a > 1) == b` stays what it is.
+        """
+        text = ast.unparse(operand)
+        if isinstance(
+            operand, (ast.Compare, ast.BoolOp, ast.IfExp, ast.Lambda, ast.NamedExpr)
+        ) or (isinstance(operand, ast.UnaryOp) and isinstance(operand.op, ast.Not)):
+            return f"({text})"
+        return text
 
     def visitFormula_comparison_operator(
         self, ctx: FandangoParser.Formula_comparison_operatorContext

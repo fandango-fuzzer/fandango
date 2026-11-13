@@ -3,10 +3,14 @@ from copy import copy
 from typing import Any, Optional, Unpack
 
 from fandango.constraints.base import GeneticBaseInitArgs
+from fandango.constraints.comparison import ComparisonConstraint
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.constraint_visitor import ConstraintVisitor
+from fandango.constraints.disjunct import DisjunctionConstraint
 from fandango.constraints.failing_tree import ApplyAllSuggestions
 from fandango.constraints.fitness import ConstraintFitness
+from fandango.constraints.implication import ImplicationConstraint
+from fandango.language.search import NonTerminalSearch, resolve_searches
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 
@@ -89,8 +93,47 @@ class ConjunctionConstraint(Constraint):
         self.cache[tree_hash] = fitness
         return fitness
 
+    def _format_as_comparison_chain(self) -> Optional[str]:
+        """
+        Format as `a < b <= c` if this conjunction was parsed from such a
+        chain, i.e. each comparison continues with the operand the previous
+        one ended with.
+        """
+        comparisons = [
+            c for c in self.constraints if isinstance(c, ComparisonConstraint)
+        ]
+        if len(comparisons) < 2 or len(comparisons) != len(self.constraints):
+            return None
+        if any(
+            previous._right != following._left
+            for previous, following in itertools.pairwise(comparisons)
+        ):
+            return None
+        chain = comparisons[0]._left
+        searches: dict[str, NonTerminalSearch] = {}
+        for comparison in comparisons:
+            chain += f" {comparison._operator.value} {comparison._right}"
+            searches.update(comparison.searches)
+        return resolve_searches(chain, searches)
+
     def format_as_spec(self) -> str:
-        return "(" + " and ".join(c.format_as_spec() for c in self.constraints) + ")"
+        chain = self._format_as_comparison_chain()
+        if chain is not None:
+            return chain
+        # A part needs parentheses if it binds less tightly, or to stay a
+        # conjunction of its own. A comparison chain is one without them.
+        return " and ".join(
+            (
+                f"({c.format_as_spec()})"
+                if isinstance(c, (DisjunctionConstraint, ImplicationConstraint))
+                or (
+                    isinstance(c, ConjunctionConstraint)
+                    and c._format_as_comparison_chain() is None
+                )
+                else c.format_as_spec()
+            )
+            for c in self.constraints
+        )
 
     def accept(self, visitor: ConstraintVisitor) -> None:
         """

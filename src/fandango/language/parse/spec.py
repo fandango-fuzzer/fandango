@@ -15,6 +15,7 @@ from antlr4.tree.Tree import ParseTree
 import fandango
 from fandango.constraints import predicates
 from fandango.constraints.constraint import Constraint
+from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
 from fandango.constraints.soft import SoftValue
 from fandango.io import CURRENT_ENV_KEY
 from fandango.language.parse.cache import get_cache_dir
@@ -129,11 +130,19 @@ class FandangoSpec:
         if s:
             s += "\n\n"
         s += str(self.grammar) + "\n"
-        if self.constraints:
+        constraints = [
+            (
+                constraint.format_as_spec()
+                if isinstance(constraint, SoftValue)
+                else "where " + constraint.format_as_spec()
+            )
+            for constraint in self.constraints
+            # Computed repetition bounds are printed with their repetition
+            if not isinstance(constraint, RepetitionBoundsConstraint)
+        ]
+        if constraints:
             s += "\n"
-        s += "\n".join(
-            "where " + constraint.format_as_spec() for constraint in self.constraints
-        )
+        s += "\n".join(constraints)
         return s
 
 
