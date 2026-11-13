@@ -1,4 +1,5 @@
 import itertools
+import math
 import warnings
 from collections import defaultdict
 from collections.abc import Generator, Iterator, Sequence
@@ -14,6 +15,9 @@ from fandango.language.grammar import FuzzingMode, ParsingMode, closest_match
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.literal_generator import LiteralGenerator
 from fandango.language.grammar.node_visitors.disambiguator import Disambiguator
+from fandango.language.grammar.node_visitors.min_distance_to_coverage import (
+    MinDistanceToCoverageVisitor,
+)
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.node_visitors.primer import PrimerVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
@@ -253,6 +257,18 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
     def node_limit(self, symbol: str | NonTerminal, max_nodes: int) -> int:
         """The most nodes a tree of `symbol` may have: `max_nodes` on top of the nodes it needs at least."""
         return max_nodes + int(self[symbol].distance_to_completion)
+
+    def hard_max_nodes(self, symbol: str | NonTerminal) -> int:
+        """The hard `max_nodes`-limit that shall not be exceeded, based on `node.min_distance_to_coverage`
+        and `nodes.COVERAGE_NODES_FACTOR`"""
+        rule = self[symbol]
+        max_nodes = (
+            nodes.COVERAGE_NODES_FACTOR * rule.min_distance_to_coverage
+            - rule.distance_to_completion
+        )
+        if not math.isfinite(max_nodes):
+            return nodes.MAX_SAFE_NODES
+        return math.ceil(max_nodes)
 
     def fuzz(
         self,
@@ -911,6 +927,9 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         LOGGER.debug("Priming grammar")
         primer = PrimerVisitor(self.rules)
         primer.prime()
+
+    def prime_coverage(self, k: int) -> None:
+        MinDistanceToCoverageVisitor(self.rules, k).prime()
 
     def default_result(self) -> list[Node]:
         return []

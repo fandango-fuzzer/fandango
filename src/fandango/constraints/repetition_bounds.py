@@ -13,7 +13,6 @@ from fandango.constraints.failing_tree import (
 )
 from fandango.constraints.fitness import ConstraintFitness
 from fandango.errors import FandangoGeneratorError, FandangoValueError
-from fandango.language.grammar import nodes
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.nodes.repetition import Repetition
 from fandango.language.search import NonTerminalSearch, RuleSearch
@@ -47,7 +46,7 @@ class RepetitionBoundsSuggestion(Suggestion):
         iter_id: int,
         repetition_id: str,
         repetition_node: Repetition,
-        on_node_limit: Callable[[int], None],
+        on_node_limit: Callable[[int, int], None],
     ):
         """
         Suggestion to fix a failing tree for a repetition bounds constraint.
@@ -60,7 +59,7 @@ class RepetitionBoundsSuggestion(Suggestion):
         :param int iter_id: The iteration ID of the repetition.
         :param str repetition_id: The ID of the repetition to fix.
         :param Repetition repetition_node: The grammar node of the repetition to fix.
-        :param Callable[[int], None] on_node_limit: Called with the number of repetitions to insert if inserting them would exceed the node limit.
+        :param Callable[[int, int], None] on_node_limit: Called with the number of repetitions to insert and the node limit of the repetition's subtree if inserting them would exceed that limit.
         """
         self._ending_rep_tree = ending_rep_tree
         self._starting_rep_value = starting_rep_value
@@ -84,9 +83,11 @@ class RepetitionBoundsSuggestion(Suggestion):
         nr_to_insert: int,
         rep_iteration: int,
         grammar: "Grammar",
+        node_limit: int,
     ) -> tuple[DerivationTree, DerivationTree]:
         tree = self._ending_rep_tree.parent
         assert tree is not None, "end_rep must have a parent"
+        max_nodes = node_limit - tree.size()
         index = index_by_reference(tree, self._ending_rep_tree)
 
         if index is None:
@@ -105,6 +106,7 @@ class RepetitionBoundsSuggestion(Suggestion):
             self._repetition_node.fuzz(
                 tree,
                 grammar,
+                max_nodes,
                 override_starting_repetition=starting_rep,
                 override_current_iteration=rep_iteration,
                 override_iterations_to_perform=starting_rep + nr_to_insert,
@@ -126,13 +128,20 @@ class RepetitionBoundsSuggestion(Suggestion):
 
         return tree, copy_parent
 
-    def _insertion_exceeds_node_limit(
-        self, individual: DerivationTree, nr_to_insert: int
-    ) -> bool:
+    def _node_limit(self, grammar: Grammar) -> int:
+        """Returns the most nodes the subtree holding the repetition may have."""
+        tree = self._ending_rep_tree.parent
+        assert tree is not None, "end_rep must have a parent"
+        symbol = tree.nonterminal
+        return grammar.node_limit(symbol, grammar.hard_max_nodes(symbol))
+
+    def _insertion_exceeds_node_limit(self, nr_to_insert: int, node_limit: int) -> bool:
+        tree = self._ending_rep_tree.parent
+        assert tree is not None, "end_rep must have a parent"
         fewest_inserted_nodes = (
             nr_to_insert * self._repetition_node.node.distance_to_completion
         )
-        return individual.size() + fewest_inserted_nodes > nodes.MAX_SAFE_NODES
+        return tree.size() + fewest_inserted_nodes > node_limit
 
     def _delete_repetitions(
         self, *, nr_to_delete: int, rep_iteration: int
@@ -178,8 +187,9 @@ class RepetitionBoundsSuggestion(Suggestion):
         replacements: list[tuple[DerivationTree, DerivationTree]] = []
         if self._goal_len > self._bound_len:
             nr_to_insert = self._goal_len - self._bound_len
-            if self._insertion_exceeds_node_limit(individual, nr_to_insert):
-                self._on_node_limit(nr_to_insert)
+            node_limit = self._node_limit(grammar)
+            if self._insertion_exceeds_node_limit(nr_to_insert, node_limit):
+                self._on_node_limit(nr_to_insert, node_limit)
                 return replacements
             try:
                 replacements.append(
@@ -187,6 +197,7 @@ class RepetitionBoundsSuggestion(Suggestion):
                         nr_to_insert=nr_to_insert,
                         rep_iteration=self._iter_id,
                         grammar=grammar,
+                        node_limit=node_limit,
                     )
                 )
             except FandangoGeneratorError as error:
@@ -310,14 +321,14 @@ class RepetitionBoundsConstraint(Constraint):
         self.repetition_node = repetition_node
         self._warned_about_node_limit = False
 
-    def warn_about_node_limit(self, nr_to_insert: int) -> None:
+    def warn_about_node_limit(self, nr_to_insert: int, node_limit: int) -> None:
         if self._warned_about_node_limit:
             return
         self._warned_about_node_limit = True
         LOGGER.warning(
             f"Not repairing {self.format_as_spec()}: it needs "
-            f"{nr_to_insert} more repetitions, which would grow the tree past "
-            f"{nodes.MAX_SAFE_NODES} nodes"
+            f"{nr_to_insert} more repetitions, which would grow the subtree past "
+            f"{node_limit} nodes"
         )
 
     def _compute_rep_bound(
