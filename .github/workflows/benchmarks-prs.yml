@@ -11,7 +11,7 @@ concurrency:
 jobs:
   run_benchmarks:
     name: Run PR Benchmarks
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     steps:

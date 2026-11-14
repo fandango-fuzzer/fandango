@@ -20,7 +20,7 @@ jobs:
       matrix:
         include:
           - os: linux-intel
-            runs-on: ubuntu-latest
+            runs-on: ubuntu-24.04
           - os: linux-arm
             runs-on: ubuntu-24.04-arm
           - os: macos-arm
@@ -44,7 +44,7 @@ jobs:
 
   build_sdist:
     name: Build source distribution
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -61,7 +61,7 @@ jobs:
     needs: [build_wheels, build_sdist]
     # only run on releases and manual runs
     if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: pypi
       url: https://pypi.org/p/fandango-fuzzer
@@ -82,7 +82,7 @@ jobs:
     name: Build and Push Docker Image
     # only run on releases and manual runs
     if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
