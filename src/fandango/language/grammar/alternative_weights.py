@@ -1,16 +1,26 @@
+import math
 import random
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Optional
+from dataclasses import dataclass
+from typing import Optional
 
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
+from fandango.language.grammar.grammar import Grammar, KPath
+from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.node import Node
-from fandango.language.symbols import NonTerminal, Symbol
+from fandango.language.symbols import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree
 
-if TYPE_CHECKING:
-    import fandango.language.grammar.grammar
 
-KPath = tuple[Symbol, ...]
+@dataclass(frozen=True)
+class Decay:
+    """A decay `factor` set while `uncovered` k-paths were left; it weakens as they get covered."""
+
+    factor: float
+    uncovered: int
+
+    def factor_at(self, uncovered: int) -> float:
+        return math.pow(self.factor, min(1.0, uncovered / self.uncovered))
 
 
 class AlternativeWeights:
@@ -18,7 +28,7 @@ class AlternativeWeights:
 
     def __init__(
         self,
-        grammar: "fandango.language.grammar.grammar.Grammar",
+        grammar: Grammar,
         k: int,
         start_symbol: Optional[NonTerminal] = None,
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
@@ -46,35 +56,43 @@ class AlternativeWeights:
         self._crossing: dict[tuple[Node, KPath], frozenset[KPath]] = {}
         self._below_uncovered: dict[Node, int] = {}
         self._crossing_uncovered: dict[tuple[Node, KPath], int] = {}
-        # Picks of an alternative in a context since its uncovered k-paths last shrank
-        self._failures: dict[Node, dict[KPath, int]] = {}
+        self._decays: dict[tuple[Node, KPath], Decay] = {}
+        self._alternatives_in_rule: dict[
+            Symbol, list[list[tuple[Node, frozenset[Symbol]]]]
+        ] = {}
 
     def add_covered(self, k_paths: set[KPath]) -> None:
         """Count `k_paths` as covered, too."""
         new = k_paths - self._covered
-        if not new:
-            return
         self._covered |= new
-        for alternative, paths in self._below.items():
-            if progress := len(new & paths):
-                self._below_uncovered[alternative] -= progress
-                self._failures.pop(alternative, None)
-        for (alternative, context), paths in self._crossing.items():
-            if progress := len(new & paths):
-                self._crossing_uncovered[(alternative, context)] -= progress
-                self._failures.get(alternative, {}).pop(context, None)
+        self._shift_uncovered(new, -1)
 
     def sync(self, covered: set[KPath]) -> None:
         """Count exactly the k-paths in `covered` as covered."""
-        if self._covered <= covered:
-            self.add_covered(covered)
-            return
-        self._covered = set(covered)
-        self._failures.clear()
+        lost = self._covered - covered
+        self._covered -= lost
+        self._shift_uncovered(lost, 1)
+        self.add_covered(covered)
+
+    def apply_decay(self, tree: DerivationTree) -> None:
+        """Decay the uncovered share of each alternative `tree` derives that still has uncovered k-paths."""
+        for alternative, context in self._derived_alternatives(tree):
+            key = (alternative, context)
+            if self._uncovered_share(alternative, context) == 0:
+                self._decays.pop(key, None)
+                continue
+            uncovered = self._uncovered(alternative, context)
+            factor = self._decay_factor(alternative, context) * self._failure_decay
+            self._decays[key] = Decay(max(self._decay_floor, factor), uncovered)
+
+    def reset(self) -> None:
+        """Count no k-path as covered and drop all decay."""
+        self._covered.clear()
+        self._decays.clear()
         for alternative, paths in self._below.items():
-            self._below_uncovered[alternative] = len(paths - self._covered)
+            self._below_uncovered[alternative] = len(paths)
         for key, paths in self._crossing.items():
-            self._crossing_uncovered[key] = len(paths - self._covered)
+            self._crossing_uncovered[key] = len(paths)
 
     def weights(
         self, alternatives: Sequence[Node], parent: DerivationTree
@@ -83,28 +101,110 @@ class AlternativeWeights:
         return self._weights(alternatives, self._context(parent))
 
     def choose(self, alternatives: Sequence[Node], parent: DerivationTree) -> Node:
-        """Pick one of `alternatives` by weight; count the pick as a failure until its k-paths get covered."""
-        context = self._context(parent)
-        weights = self._weights(alternatives, context)
+        """Pick one of `alternatives` by weight."""
+        weights = self.weights(alternatives, parent)
         if not any(weights):
             return random.choice(alternatives)
-        chosen = random.choices(alternatives, weights)[0]
-        if self._uncovered_share(chosen, context) > 0:
-            failures = self._failures.setdefault(chosen, {})
-            failures[context] = failures.get(context, 0) + 1
-        return chosen
+        return random.choices(alternatives, weights)[0]
 
     def _weights(self, alternatives: Sequence[Node], context: KPath) -> list[float]:
         return [
             self._covered_weight
             + self._uncovered_share(alternative, context)
-            * max(
-                self._decay_floor,
-                self._failure_decay
-                ** self._failures.get(alternative, {}).get(context, 0),
-            )
+            * self._decay_factor(alternative, context)
             for alternative in alternatives
         ]
+
+    def _decay_factor(self, alternative: Node, context: KPath) -> float:
+        decay = self._decays.get((alternative, context))
+        if decay is None:
+            return 1.0
+        return decay.factor_at(self._uncovered(alternative, context))
+
+    def _derived_alternatives(self, tree: DerivationTree) -> set[tuple[Node, KPath]]:
+        """Return the alternatives each node of `tree` derives its children from, with the node's context."""
+        derived: set[tuple[Node, KPath]] = set()
+        pending = [tree]
+        while pending:
+            node = pending.pop()
+            if not isinstance(node.symbol, NonTerminal):
+                continue
+            pending.extend(node.children)
+            child_symbols = self._child_symbols(node)
+            context = self._context(node)
+            for choices in self._rule_alternatives(node.symbol):
+                for alternative in self._best_matching(choices, child_symbols):
+                    derived.add((alternative, context))
+        return derived
+
+    @staticmethod
+    def _best_matching(
+        choices: list[tuple[Node, frozenset[Symbol]]], child_symbols: set[Symbol]
+    ) -> list[Node]:
+        """Return the choices sharing the most symbols with `child_symbols`, then lacking the fewest."""
+        scored: list[tuple[tuple[int, int], Node]] = []
+        for alternative, symbols in choices:
+            shared = len(symbols & child_symbols)
+            if shared:
+                scored.append(((shared, -len(symbols - child_symbols)), alternative))
+        if not scored:
+            return []
+        best = max(score for score, _alternative in scored)
+        return [alternative for score, alternative in scored if score == best]
+
+    def _child_symbols(self, node: DerivationTree) -> set[Symbol]:
+        """Return the symbols of the children of `node`, with terminals as the rule's terminals that match them."""
+        assert isinstance(node.symbol, NonTerminal)
+        symbols: set[Symbol] = set()
+        for child in node.children:
+            if isinstance(child.symbol, Terminal):
+                symbols.update(
+                    self._grammar._rule_terminals_matching(node.symbol, child.symbol)
+                )
+            else:
+                symbols.add(child.symbol)
+        return symbols
+
+    def _rule_alternatives(
+        self, symbol: NonTerminal
+    ) -> list[list[tuple[Node, frozenset[Symbol]]]]:
+        """Return the choices of each alternative node inside the rule of `symbol`, each with the symbols it derives directly."""
+        alternatives = self._alternatives_in_rule.get(symbol)
+        if alternatives is None:
+            alternatives = []
+            pending: list[Node] = (
+                [self._grammar.rules[symbol]] if symbol in self._grammar.rules else []
+            )
+            while pending:
+                node = pending.pop()
+                if isinstance(node, Alternative):
+                    choices: list[tuple[Node, frozenset[Symbol]]] = []
+                    for alternative in node.alternatives:
+                        symbols = frozenset(
+                            first.to_symbol()
+                            for first in self._first_nodes(alternative)
+                        )
+                        choices.append((alternative, symbols))
+                    alternatives.append(choices)
+                pending.extend(node.children())
+            self._alternatives_in_rule[symbol] = alternatives
+        return alternatives
+
+    def _shift_uncovered(self, k_paths: set[KPath], change: int) -> None:
+        if not k_paths:
+            return
+        for alternative, paths in self._below.items():
+            if count := len(k_paths & paths):
+                self._below_uncovered[alternative] += change * count
+        for key, paths in self._crossing.items():
+            if count := len(k_paths & paths):
+                self._crossing_uncovered[key] += change * count
+
+    def _uncovered(self, alternative: Node, context: KPath) -> int:
+        return (
+            self._below_uncovered[alternative]
+            + self._crossing_uncovered[(alternative, context)]
+        )
 
     def _context(self, parent: DerivationTree) -> KPath:
         """Return the symbols of `parent` and its ancestors, at most k-1, root first."""
@@ -121,11 +221,7 @@ class AlternativeWeights:
         total = len(below) + len(crossing)
         if total == 0:
             return 0.0
-        uncovered = (
-            self._below_uncovered[alternative]
-            + self._crossing_uncovered[(alternative, context)]
-        )
-        return uncovered / total
+        return self._uncovered(alternative, context) / total
 
     def _first_nodes(self, alternative: Node) -> list[Node]:
         """Return the terminals and non-terminals `alternative` derives directly."""

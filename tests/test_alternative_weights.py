@@ -63,24 +63,27 @@ def test_full_coverage_leaves_the_covered_weight():
     ) == pytest.approx([0.1, 0.1, 0.1])
 
 
-def test_failed_picks_decay_the_uncovered_share_until_progress():
+def test_derived_alternatives_decay_the_uncovered_share():
     grammar = load_grammar()
     weights = AlternativeWeights(
         grammar, 3, covered_weight=0.1, failure_decay=0.5, decay_floor=0.2
     )
     undecayed = AlternativeWeights(grammar, 3, covered_weight=0.1, failure_decay=1.0)
     value = value_in_a_record(grammar)
-    alternatives = [number, quoted, empty] = value_alternatives(grammar)
+    alternatives = value_alternatives(grammar)
+    quoted_record = grammar.parse('k="x";')
+    assert quoted_record is not None
 
-    weights.choose([quoted], value)
+    weights.apply_decay(quoted_record)
     assert weights.weights(alternatives, value) == pytest.approx([1.1, 0.1 + 0.5, 1.1])
     for _ in range(10):
-        weights.choose([quoted], value)
+        weights.apply_decay(quoted_record)
     assert weights.weights(alternatives, value) == pytest.approx([1.1, 0.1 + 0.2, 1.1])
 
     covered = k_paths(grammar, 3, 'k="x";')
     weights.add_covered(covered)
     undecayed.add_covered(covered)
-    assert weights.weights(alternatives, value) == pytest.approx(
-        undecayed.weights(alternatives, value)
-    )
+    expected = undecayed.weights(alternatives, value)
+    share = expected[1] - 0.1
+    expected[1] = 0.1 + share * 0.2**share
+    assert weights.weights(alternatives, value) == pytest.approx(expected)

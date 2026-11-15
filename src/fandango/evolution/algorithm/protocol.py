@@ -516,6 +516,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     )
                 self._protocol_tree = packet_mounter.commit(new_packet)
                 self._packet_selector.observe_message(self._protocol_tree)
+                self._decay_sent_alternatives(new_packet)
             else:
                 if (
                     not external_message_waits
@@ -563,6 +564,14 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             self.grammar.alternative_weights = tracker.alternative_weights()
         self.grammar.alternative_weights.sync(tracker.covered_paths())
 
+    def _decay_sent_alternatives(self, packet: DerivationTree) -> None:
+        """Decay the alternatives the sent `packet` derives, against the coverage including it."""
+        weights = self.grammar.alternative_weights
+        if weights is None:
+            return
+        weights.sync(self._packet_selector.coverage_tracker.covered_paths())
+        weights.apply_decay(packet)
+
     def _configure_fuzzable_packets(self) -> None:
         self._clear_constraint_caches()
         # The next packets may include a timer's expiry, which Fandango only receives
@@ -593,4 +602,5 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._packet_selector.reset()
         self._packet_coverage_filter.reset()
         self._violation_profiler.reset()
+        self.grammar.alternative_weights = None
         self._protocol_tree = DerivationTree(self._start_symbol)

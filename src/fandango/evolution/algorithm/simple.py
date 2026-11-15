@@ -400,6 +400,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
                 solution, self.diversity_k, coverage_goal=self.coverage_goal
             )
         )
+        weights.apply_decay(solution)
 
     def _generate_simple(
         self, max_generations: Optional[int] = None
@@ -568,4 +569,4 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
         self._initial_solutions.clear()
         self.adaptive_tuner.reset_parameters()
         if self.alternative_weights is not None:
-            self.alternative_weights.sync(set())
+            self.alternative_weights.reset()
