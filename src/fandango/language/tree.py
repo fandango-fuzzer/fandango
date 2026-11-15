@@ -299,19 +299,18 @@ class DerivationTree:
         :param tree: The DerivationTree to append.
         :param read_only_new_nodes: If True, the nodes created along hookin_path are read-only.
         """
-        if len(hookin_path) == 0:
-            self.add_child(tree)
-            return
-        next_nt, add_new_node = hookin_path[0]
-        if add_new_node:
-            self.add_child(DerivationTree(next_nt, read_only=read_only_new_nodes))
-        elif (
-            len(self.children) == 0
-            or not isinstance(self.children[-1].symbol, NonTerminal)
-            or self.children[-1].symbol.name() != next_nt.name()
-        ):
-            raise ValueError("Invalid hookin_path!")
-        self.children[-1].append(hookin_path[1:], tree, read_only_new_nodes)
+        node = self
+        for next_nt, add_new_node in hookin_path:
+            if add_new_node:
+                node.add_child(DerivationTree(next_nt, read_only=read_only_new_nodes))
+            elif (
+                len(node.children) == 0
+                or not isinstance(node.children[-1].symbol, NonTerminal)
+                or node.children[-1].symbol.name() != next_nt.name()
+            ):
+                raise ValueError("Invalid hookin_path!")
+            node = node.children[-1]
+        node.add_child(tree)
 
     def set_children(self, children: list["DerivationTree"]) -> None:
         self._children = children
@@ -380,14 +379,26 @@ class DerivationTree:
 
     def find_by_origin(self, node_id: str) -> list["DerivationTree"]:
         trees = []
-        for child in [*self._children, *self._sources]:
-            if child.symbol.is_non_terminal:
-                trees.extend(child.find_by_origin(node_id))
-        for o_node_id, _o_iter_id, _rep in self.origin_repetitions:
-            if o_node_id == node_id:
-                trees.append(self)
-                break
+        pending: list[tuple[DerivationTree, bool]] = [(self, False)]
+        while pending:
+            node, is_below_visited = pending.pop()
+            if is_below_visited:
+                if node.is_repetition_origin(node_id):
+                    trees.append(node)
+                continue
+            pending.append((node, True))
+            pending.extend(
+                (child, False)
+                for child in reversed([*node._children, *node._sources])
+                if child.symbol.is_non_terminal
+            )
         return trees
+
+    def is_repetition_origin(self, node_id: str) -> bool:
+        return any(
+            o_node_id == node_id
+            for o_node_id, _o_iter_id, _rep in self.origin_repetitions
+        )
 
     def __getitem__(self, item: Any) -> "DerivationTree":
         if isinstance(item, list) and len(item) == 1:
@@ -399,6 +410,12 @@ class DerivationTree:
             assert isinstance(items, DerivationTree)
             return items
 
+    def __getstate__(self) -> dict[str, Any]:
+        state = self.__dict__.copy()
+        # don't serialize caches, as these aren't stable across processes
+        state["hash_cache"] = None
+        return state
+
     def get_last_by_path(self, path: list[NonTerminal]) -> "DerivationTree":
         symbol = path[0]
         if self.symbol == symbol:
@@ -409,16 +426,21 @@ class DerivationTree:
         raise IndexError(f"No such path in tree: {path} Tree: {self}")
 
     def _get_last_by_path(self, path: list[NonTerminal]) -> "DerivationTree":
-        symbol = path[0]
+        node = self
+        for index, symbol in enumerate(path):
+            last_child = node._last_child_with_symbol(symbol)
+            if last_child is None:
+                raise IndexError(
+                    f"No such path in tree: {path[index:]} Tree: {node.get_root(stop_at_argument_begin=True)}"
+                )
+            node = last_child
+        return node
+
+    def _last_child_with_symbol(self, symbol: Symbol) -> Optional["DerivationTree"]:
         for child in self._children[::-1]:
             if child.symbol == symbol:
-                if len(path) == 1:
-                    return child
-                else:
-                    return child._get_last_by_path(path[1:])
-        raise IndexError(
-            f"No such path in tree: {path} Tree: {self.get_root(stop_at_argument_begin=True)}"
-        )
+                return child
+        return None
 
     def __str__(self) -> str:
         return str(self.value())
@@ -780,22 +802,25 @@ class DerivationTree:
     def _split_end(
         self, undo: Optional[list[Callable[[], None]]] = None
     ) -> "DerivationTree":
-        """Internal recursive function. Use split_end_context instead."""
-        if self.parent is None or self in self.parent.sources:
-            if self.parent is not None:
-                if undo is not None:
-                    undo.append(partial(setattr, self, "_parent", self.parent))
-                self._parent = None
-            return self
-        me_idx = index_by_reference(self.parent.children, self)
-        if me_idx is None:
-            # Handle error or fallback — for example:
-            raise ValueError("self not found in parent's children")
-        keep_children = self.parent.children[: (me_idx + 1)]
-        parent = self.parent._split_end(undo)
-        if undo is not None:
-            undo.append(partial(parent.set_children, parent.children))
-        parent.set_children(keep_children)
+        """Internal function. Use split_end_context instead."""
+        kept_children_by_parent: list[tuple[DerivationTree, list[DerivationTree]]] = []
+        node = self
+        while node.parent is not None and node not in node.parent.sources:
+            me_idx = index_by_reference(node.parent.children, node)
+            if me_idx is None:
+                raise ValueError("self not found in parent's children")
+            kept_children_by_parent.append(
+                (node.parent, node.parent.children[: (me_idx + 1)])
+            )
+            node = node.parent
+        if node.parent is not None:
+            if undo is not None:
+                undo.append(partial(setattr, node, "_parent", node.parent))
+            node._parent = None
+        for parent, keep_children in reversed(kept_children_by_parent):
+            if undo is not None:
+                undo.append(partial(parent.set_children, parent.children))
+            parent.set_children(keep_children)
         return self
 
     def get_choices_path(self) -> tuple[PathStep, ...]:
