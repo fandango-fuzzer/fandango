@@ -85,7 +85,6 @@ class FandangoSpec:
             grammar_settings_ctx,
             local_variables=self.local_vars,
             global_variables=self.global_vars,
-            id_prefix="{0:x}".format(abs(hash(filename))),
             max_repetitions=max_repetitions,
         )
         self.grammar = grammar_processor.get_grammar(productions_ctx, prime=False)

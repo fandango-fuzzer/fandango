@@ -77,13 +77,7 @@ class Alternative(Node):
         if guide is None:
             chosen = random.choice(in_range_nodes)
         else:
-            chosen = guide.choose(
-                in_range_nodes,
-                parent,
-                self.settings.get("alternatives_covered_weight"),
-                self.settings.get("alternatives_failure_decay"),
-                self.settings.get("alternatives_decay_floor"),
-            )
+            chosen = guide.choose(in_range_nodes, parent)
         chosen.fuzz(parent, grammar, max_nodes, in_message)
 
     def accept(
