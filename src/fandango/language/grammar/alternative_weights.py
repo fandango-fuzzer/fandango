@@ -23,6 +23,21 @@ class Decay:
         return math.pow(self.factor, min(1.0, uncovered / self.uncovered))
 
 
+@dataclass
+class KPathCount:
+    """k-paths and how many of them are not covered yet."""
+
+    paths: frozenset[KPath]
+    uncovered: int
+
+    def shift_uncovered(self, k_paths: set[KPath], change: int) -> None:
+        """Change the uncovered count by `change` for each of `k_paths` among the paths."""
+        self.uncovered += change * len(k_paths & self.paths)
+
+    def uncover_all(self) -> None:
+        self.uncovered = len(self.paths)
+
+
 class AlternativeWeights:
     """Weights the alternatives of a rule by the share of their k-paths that are not covered yet."""
 
@@ -52,10 +67,8 @@ class AlternativeWeights:
         for path in self._k_paths:
             self._starting_with.setdefault(path[0], []).append(path)
         self._covered: set[KPath] = set()
-        self._below: dict[Node, frozenset[KPath]] = {}
-        self._crossing: dict[tuple[Node, KPath], frozenset[KPath]] = {}
-        self._below_uncovered: dict[Node, int] = {}
-        self._crossing_uncovered: dict[tuple[Node, KPath], int] = {}
+        self._below: dict[Node, KPathCount] = {}
+        self._crossing: dict[tuple[Node, KPath], KPathCount] = {}
         self._decays: dict[tuple[Node, KPath], Decay] = {}
         self._alternatives_in_rule: dict[
             Symbol, list[list[tuple[Node, frozenset[Symbol]]]]
@@ -89,10 +102,8 @@ class AlternativeWeights:
         """Count no k-path as covered and drop all decay."""
         self._covered.clear()
         self._decays.clear()
-        for alternative, paths in self._below.items():
-            self._below_uncovered[alternative] = len(paths)
-        for key, paths in self._crossing.items():
-            self._crossing_uncovered[key] = len(paths)
+        for count in self._counts():
+            count.uncover_all()
 
     def weights(
         self, alternatives: Sequence[Node], parent: DerivationTree
@@ -193,17 +204,18 @@ class AlternativeWeights:
     def _shift_uncovered(self, k_paths: set[KPath], change: int) -> None:
         if not k_paths:
             return
-        for alternative, paths in self._below.items():
-            if count := len(k_paths & paths):
-                self._below_uncovered[alternative] += change * count
-        for key, paths in self._crossing.items():
-            if count := len(k_paths & paths):
-                self._crossing_uncovered[key] += change * count
+        for count in self._counts():
+            count.shift_uncovered(k_paths, change)
+
+    def _counts(self) -> list[KPathCount]:
+        counts = list(self._below.values())
+        counts.extend(self._crossing.values())
+        return counts
 
     def _uncovered(self, alternative: Node, context: KPath) -> int:
         return (
-            self._below_uncovered[alternative]
-            + self._crossing_uncovered[(alternative, context)]
+            self._count_below(alternative).uncovered
+            + self._count_crossing(alternative, context).uncovered
         )
 
     def _context(self, parent: DerivationTree) -> KPath:
@@ -216,12 +228,12 @@ class AlternativeWeights:
         return tuple(reversed(symbols))
 
     def _uncovered_share(self, alternative: Node, context: KPath) -> float:
-        below = self._paths_below(alternative)
-        crossing = self._paths_crossing(alternative, context)
-        total = len(below) + len(crossing)
+        below = self._count_below(alternative)
+        crossing = self._count_crossing(alternative, context)
+        total = len(below.paths) + len(crossing.paths)
         if total == 0:
             return 0.0
-        return self._uncovered(alternative, context) / total
+        return (below.uncovered + crossing.uncovered) / total
 
     def _first_nodes(self, alternative: Node) -> list[Node]:
         """Return the terminals and non-terminals `alternative` derives directly."""
@@ -229,10 +241,10 @@ class AlternativeWeights:
             return [alternative]
         return list(alternative.descendents(self._grammar, filter_controlflow=True))
 
-    def _paths_below(self, alternative: Node) -> frozenset[KPath]:
+    def _count_below(self, alternative: Node) -> KPathCount:
         """Return the k-paths starting at or below `alternative`."""
-        paths = self._below.get(alternative)
-        if paths is None:
+        count = self._below.get(alternative)
+        if count is None:
             seen: set[Node] = set()
             work = self._first_nodes(alternative)
             symbols: set[Symbol] = set()
@@ -248,16 +260,16 @@ class AlternativeWeights:
                 for symbol in symbols
                 for path in self._starting_with.get(symbol, [])
             )
-            self._below[alternative] = paths
-            self._below_uncovered[alternative] = len(paths - self._covered)
-        return paths
+            count = KPathCount(paths, len(paths - self._covered))
+            self._below[alternative] = count
+        return count
 
-    def _paths_crossing(self, alternative: Node, context: KPath) -> frozenset[KPath]:
+    def _count_crossing(self, alternative: Node, context: KPath) -> KPathCount:
         """Return the k-paths starting in `context` that continue into `alternative`, without those below it."""
         key = (alternative, context)
-        paths = self._crossing.get(key)
-        if paths is None:
-            below = self._paths_below(alternative)
+        count = self._crossing.get(key)
+        if count is None:
+            below = self._count_below(alternative).paths
             firsts = {node.to_symbol() for node in self._first_nodes(alternative)}
             crossing: set[KPath] = set()
             for length in range(1, len(context) + 1):
@@ -270,6 +282,6 @@ class AlternativeWeights:
                         if candidate in self._k_paths and candidate not in below:
                             crossing.add(candidate)
             paths = frozenset(crossing)
-            self._crossing[key] = paths
-            self._crossing_uncovered[key] = len(paths - self._covered)
-        return paths
+            count = KPathCount(paths, len(paths - self._covered))
+            self._crossing[key] = count
+        return count
