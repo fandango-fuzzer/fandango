@@ -567,11 +567,10 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self.grammar.alternative_weights.sync(tracker.covered_paths())
 
     def _decay_sent_alternatives(self, packet: DerivationTree) -> None:
-        """Decay the alternatives the sent `packet` derives, against the coverage including it."""
+        """Decay the alternatives the sent `packet` derives, against the coverage it was generated for."""
         weights = self.grammar.alternative_weights
         if weights is None:
             return
-        weights.sync(self._packet_selector.coverage_tracker.covered_paths())
         weights.apply_decay(packet)
 
     def _limit_max_nodes_to_allowed_packets(self) -> None:
