@@ -59,6 +59,12 @@ class Symbol(abc.ABC):
             self._hash_cache = hash((self._value, self._type))
         return self._hash_cache
 
+    def __getstate__(self) -> dict[str, Any]:
+        state = self.__dict__.copy()
+        # don't serialize caches, as these aren't stable across processes
+        state["_hash_cache"] = None
+        return state
+
     @abc.abstractmethod
     def format_as_spec(self) -> str:
         raise NotImplementedError

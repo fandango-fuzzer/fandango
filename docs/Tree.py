@@ -11,7 +11,7 @@ from IPython.display import display_png
 
 class Tree:
     id_counter = 1
-    dot = None
+    dot: Optional[Digraph] = None
 
     def __init__(self, symbol, *children, sources: Optional[list] = None):
         self.symbol = symbol
@@ -27,10 +27,11 @@ class Tree:
     def visualize(self, title="Derivation Tree"):
         """Display as PNG. (PNG works with HTML and PDF books, SVG does not)"""
         # https://graphviz.org/doc/info/lang.html
-        Tree.dot = Digraph(comment=title, format="png")
-        Tree.dot.attr("node", shape="none", fontname="courier-bold", fontsize="18pt")
-        Tree.dot.attr("graph", rankdir="TB", tooltip=title)
-        Tree.dot.attr("edge", penwidth="2pt")
+        dot = Digraph(comment=title, format="png")
+        dot.attr("node", shape="none", fontname="courier-bold", fontsize="18pt")
+        dot.attr("graph", rankdir="TB", tooltip=title)
+        dot.attr("edge", penwidth="2pt")
+        Tree.dot = dot
         Tree.id_counter = 1
         self._visualize()
         display_png(self.dot)
