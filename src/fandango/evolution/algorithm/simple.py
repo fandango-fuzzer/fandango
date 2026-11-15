@@ -395,12 +395,12 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
         weights = self.alternative_weights
         if weights is None:
             return
+        weights.apply_decay(solution)
         weights.add_covered(
             self.grammar._extract_k_paths_from_tree(
                 solution, self.diversity_k, coverage_goal=self.coverage_goal
             )
         )
-        weights.apply_decay(solution)
 
     def _generate_simple(
         self, max_generations: Optional[int] = None
