@@ -5,6 +5,7 @@ from typing import Generic, Optional, TypeVar
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
+from fandango.language.grammar.alternative_weights import AlternativeWeights
 from fandango.language.grammar.grammar import Grammar, KPath
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree
@@ -174,6 +175,20 @@ class CoverageTracker:
             input_parties=self._input_parties(),
         )
         return all_paths.difference(self._goal_coverage.covered(self._start_symbol))
+
+    def covered_paths(self) -> set[KPath]:
+        """Return the k-paths of the coverage goal that the finished runs and the current history cover."""
+        return self._goal_coverage.covered(self._start_symbol)
+
+    def alternative_weights(self) -> AlternativeWeights:
+        """Return alternative weights over the k-paths of the coverage goal, with none covered."""
+        return AlternativeWeights(
+            self._grammar,
+            self._diversity_k,
+            self._start_symbol,
+            self._coverage_goal,
+            self._input_parties(),
+        )
 
     def coverage_scores(self) -> list[tuple[NonTerminal, float]]:
         if self._coverage_scores is None:
