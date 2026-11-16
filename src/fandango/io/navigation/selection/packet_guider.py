@@ -225,13 +225,21 @@ class PacketGuider:
                 self._confirm_covered_path(self._guide_target)
             return
         self._deviated_from_guide = True
-        awaited = self.awaited_external_packet()
-        if sender == "TimerEvent" and awaited is not None:
-            # The timer expired instead of the awaited packet
-            assert awaited.packet.sender is not None
-            self._count_refusal_on_route(awaited.step, awaited.packet.sender)
+        planned = self._guide_path.next_packet()
+        if self._is_planned_and_arrived_from_external_parties(planned, sender):
+            assert planned is not None and planned.packet.sender is not None
+            self._count_refusal_on_route(planned.step, planned.packet.sender)
         elif deviation.refused is not None:
             self._count_refusal_on_route(deviation.refused, sender)
+
+    def _is_planned_and_arrived_from_external_parties(
+        self, planned: Optional[PlannedPacket], arrived_sender: str
+    ) -> bool:
+        return (
+            planned is not None
+            and self._is_external_party(planned.packet.sender)
+            and self._is_external_party(arrived_sender)
+        )
 
     def _count_refusal_on_route(self, step: Step, party: str) -> None:
         """Counts that the party refused a step of the plan; gives the session up if no route to its end is left."""
