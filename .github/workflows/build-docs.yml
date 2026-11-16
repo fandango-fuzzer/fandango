@@ -15,11 +15,17 @@ permissions:
 
 jobs:
   build:
+    name: build (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-latest]
-    runs-on: ${{ matrix.os }}
+        os: [linux, macos]
+        include:
+          - os: linux
+            runner: ubuntu-24.04
+          - os: macos
+            runner: macos-latest
+    runs-on: ${{ matrix.runner }}
     steps:
       # Step 1: Checkout the source repository
       - name: Checkout code
@@ -30,13 +36,13 @@ jobs:
         uses: ./.github/workflows/setup-fandango
         with:
           python-version: "3.13"
-          needs-sudo: ${{ matrix.os == 'ubuntu-24.04' }}
+          needs-sudo: ${{ matrix.os == 'linux' }}
       
       # Step 3: Build the documentation
       - name: Build the book
         shell: bash
         run: |
-          if [[ "${{ matrix.os }}" == "ubuntu-24.04" ]]; then
+          if [[ "${{ matrix.os }}" == "linux" ]]; then
             sudo make system-dev-tools
           else
             make system-dev-tools
@@ -46,7 +52,7 @@ jobs:
 
       # Step 4: Upload built book as artifact
       - name: Upload built book as artifact
-        if: matrix.os == 'ubuntu-24.04'
+        if: matrix.os == 'linux'
         uses: actions/upload-artifact@v4
         with:
           name: book-html
