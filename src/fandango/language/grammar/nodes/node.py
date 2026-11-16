@@ -43,6 +43,7 @@ class Node(abc.ABC):
         self._grammar_settings = grammar_settings
         self._node_type = node_type
         self.distance_to_completion = distance_to_completion
+        self.min_distance_to_coverage = float("inf")
         self._settings = NodeSettings({})
         for setting in grammar_settings:
             self._settings.update(setting.settings_for(self))

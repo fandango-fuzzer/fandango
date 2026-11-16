@@ -44,6 +44,11 @@ class AdaptiveTuner:
         self.current_max_repetition = self.initial_max_repetition
         self.current_max_nodes = self.initial_max_nodes
 
+    def set_max_nodes(self, max_nodes: int) -> None:
+        self.max_nodes = min(max_nodes, self.max_safe_nodes)
+        self.initial_max_nodes = self.max_nodes
+        self.current_max_nodes = self.max_nodes
+
     def update_parameters(
         self,
         generation: int,

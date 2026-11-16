@@ -53,13 +53,17 @@ class IoPopulationManager(PopulationManager):
                 return leap_packet
         return None
 
+    def allowed_packets(self) -> list[ForecastingPacket]:
+        packets = list(self.fuzzable_packets)
+        if self.allow_fallback_packets:
+            packets.extend(self.fallback_packets)
+        return packets
+
     def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
         leap_packet = self._attach_leap_packet()
         if leap_packet is not None:
             return leap_packet
-        packet_selection = list(self.fuzzable_packets)
-        if self.allow_fallback_packets:
-            packet_selection.extend(self.fallback_packets)
+        packet_selection = self.allowed_packets()
         if len(packet_selection) == 0:
             return DerivationTree(NonTerminal(self._start_symbol))
 

@@ -1,4 +1,5 @@
 import itertools
+import math
 import warnings
 from collections import defaultdict
 from collections.abc import Generator, Iterator, Sequence
@@ -14,6 +15,9 @@ from fandango.language.grammar import FuzzingMode, ParsingMode, closest_match
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.literal_generator import LiteralGenerator
 from fandango.language.grammar.node_visitors.disambiguator import Disambiguator
+from fandango.language.grammar.node_visitors.min_distance_to_coverage import (
+    MinDistanceToCoverageVisitor,
+)
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.node_visitors.primer import PrimerVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
@@ -253,6 +257,18 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
     def node_limit(self, symbol: str | NonTerminal, max_nodes: int) -> int:
         """The most nodes a tree of `symbol` may have: `max_nodes` on top of the nodes it needs at least."""
         return max_nodes + int(self[symbol].distance_to_completion)
+
+    def hard_max_nodes(self, symbol: str | NonTerminal) -> int:
+        """The hard `max_nodes`-limit that shall not be exceeded, based on `node.min_distance_to_coverage`
+        and `nodes.COVERAGE_NODES_FACTOR`"""
+        rule = self[symbol]
+        max_nodes = (
+            nodes.COVERAGE_NODES_FACTOR * rule.min_distance_to_coverage
+            - rule.distance_to_completion
+        )
+        if not math.isfinite(max_nodes):
+            return nodes.MAX_SAFE_NODES
+        return math.ceil(max_nodes)
 
     def fuzz(
         self,
@@ -836,51 +852,83 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         inside_message: bool,
     ) -> tuple[set[KPath], set[KPath]]:
         """Returns the k-paths starting at `tree` and the k-paths starting at or below `tree`."""
-        symbol = tree.symbol
-        if isinstance(symbol, Terminal):
-            if not in_goal or tree.parent is None:
-                return set(), set()
-            assert isinstance(tree.parent.symbol, NonTerminal)
-            matching_paths: set[KPath] = {
-                (terminal,)
-                for terminal in self._rule_terminals_matching(
-                    tree.parent.symbol, symbol
+        k_paths_by_node: dict[int, tuple[set[KPath], set[KPath]]] = {}
+        open_nodes: list[tuple[DerivationTree, bool, Optional[int]]] = []
+        pending: list[tuple[DerivationTree, bool, bool]] = [
+            (tree, in_goal, inside_message)
+        ]
+        while pending:
+            node, node_in_goal, node_inside_message = pending.pop()
+            if isinstance(node.symbol, Terminal):
+                k_paths_by_node[id(node)] = self._k_paths_at_terminal(
+                    node, node_in_goal
                 )
-            }
-            return matching_paths, matching_paths
+                continue
+            cache_key = None
+            if node.sender is not None or not node_inside_message:
+                cache_key = hash((node, k, node_in_goal, coverage_goal, input_parties))
+                if cache_key in self._tree_k_path_cache:
+                    k_paths_by_node[id(node)] = self._tree_k_path_cache[cache_key]
+                    continue
+            open_nodes.append((node, node_in_goal, cache_key))
+            for child in node.children:
+                child_in_goal = self._in_k_path_coverage_goal(
+                    child, node_in_goal, coverage_goal, input_parties
+                )
+                if child_in_goal is not None:
+                    pending.append(
+                        (
+                            child,
+                            child_in_goal,
+                            node_inside_message or node.sender is not None,
+                        )
+                    )
+
+        for node, node_in_goal, cache_key in reversed(open_nodes):
+            k_paths = self._k_paths_at_non_terminal(
+                node, node_in_goal, k, k_paths_by_node
+            )
+            if cache_key is not None:
+                self._tree_k_path_cache[cache_key] = k_paths
+            k_paths_by_node[id(node)] = k_paths
+        return k_paths_by_node[id(tree)]
+
+    def _k_paths_at_terminal(
+        self, tree: DerivationTree, in_goal: bool
+    ) -> tuple[set[KPath], set[KPath]]:
+        if not in_goal or tree.parent is None:
+            return set(), set()
+        assert isinstance(tree.symbol, Terminal)
+        assert isinstance(tree.parent.symbol, NonTerminal)
+        matching_paths: set[KPath] = {
+            (terminal,)
+            for terminal in self._rule_terminals_matching(
+                tree.parent.symbol, tree.symbol
+            )
+        }
+        return matching_paths, matching_paths
+
+    @staticmethod
+    def _k_paths_at_non_terminal(
+        tree: DerivationTree,
+        in_goal: bool,
+        k: int,
+        k_paths_by_node: dict[int, tuple[set[KPath], set[KPath]]],
+    ) -> tuple[set[KPath], set[KPath]]:
+        symbol = tree.symbol
         assert isinstance(symbol, NonTerminal)
-
-        cache_key = None
-        if tree.sender is not None or not inside_message:
-            cache_key = hash((tree, k, in_goal, coverage_goal, input_parties))
-            if cache_key in self._tree_k_path_cache:
-                return self._tree_k_path_cache[cache_key]
-
         starting_here: set[KPath] = {(symbol,)} if in_goal else set()
         at_or_below: set[KPath] = set()
         for child in tree.children:
-            child_in_goal = self._in_k_path_coverage_goal(
-                child, in_goal, coverage_goal, input_parties
-            )
-            if child_in_goal is None:
+            if id(child) not in k_paths_by_node:
                 continue
-            starting_at_child, at_or_below_child = self._k_paths_at_or_below(
-                child,
-                child_in_goal,
-                k,
-                coverage_goal,
-                input_parties,
-                inside_message=inside_message or tree.sender is not None,
-            )
+            starting_at_child, at_or_below_child = k_paths_by_node.pop(id(child))
             if in_goal:
                 for path in starting_at_child:
                     if len(path) < k:
                         starting_here.add((symbol,) + path)
             at_or_below |= at_or_below_child
         at_or_below |= starting_here
-
-        if cache_key is not None:
-            self._tree_k_path_cache[cache_key] = (starting_here, at_or_below)
         return starting_here, at_or_below
 
     def _rule_terminals_matching(
@@ -911,6 +959,9 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         LOGGER.debug("Priming grammar")
         primer = PrimerVisitor(self.rules)
         primer.prime()
+
+    def prime_coverage(self, k: int) -> None:
+        MinDistanceToCoverageVisitor(self.rules, k).prime()
 
     def default_result(self) -> list[Node]:
         return []

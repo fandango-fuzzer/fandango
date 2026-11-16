@@ -307,6 +307,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             overall_max_generations = max_generations - selected_packet_max_generations
 
         self._packet_algorithm.reset()
+        self._limit_max_nodes_to_allowed_packets()
         self.grammar.set_max_repetition(self._initial_max_repetition)
         try:
             # Refill the population
@@ -358,6 +359,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             return random.choice(list(hold_back_solutions.values()))
 
         self._population_manager.allow_fallback_packets = True
+        self._limit_max_nodes_to_allowed_packets()
         try:
             return next(
                 self._packet_algorithm.generate(max_generations=overall_max_generations)
@@ -543,6 +545,17 @@ class ProtocolAlgorithm(GeneticAlgorithm):
                     continue
             self._protocol_tree.set_all_read_only(True)
         log_guidance_hint("Coverage goal reached, stopping evolution.")
+
+    def _limit_max_nodes_to_allowed_packets(self) -> None:
+        allowed_packets = self._population_manager.allowed_packets()
+        if not allowed_packets:
+            return
+        self._packet_algorithm.adaptive_tuner.set_max_nodes(
+            max(
+                self.grammar.hard_max_nodes(packet.node.symbol)
+                for packet in allowed_packets
+            )
+        )
 
     def _configure_fuzzable_packets(self) -> None:
         self._clear_constraint_caches()

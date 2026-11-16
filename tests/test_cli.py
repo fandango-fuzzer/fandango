@@ -3,7 +3,6 @@ import asyncio
 import io
 import json
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -12,6 +11,7 @@ import unittest
 from unittest.mock import patch
 
 from fandango import DISTRIBUTION_NAME
+from fandango.api import Fandango
 from fandango.cli import get_parser, main
 from fandango.cli.upgrade import (
     Version,
@@ -20,22 +20,23 @@ from fandango.cli.upgrade import (
     version,
 )
 from fandango.errors import FandangoError
+from fandango.evolution.algorithm.simple import SimpleGeneticAlgorithm
 
 from .utils import DOCS_ROOT, IS_BEARTYPE_ACTIVE, RESOURCES_ROOT, run_command
 
 # beartype somehow scrambles the fixed rng
 if IS_BEARTYPE_ACTIVE:
     expected_with_random_seed = [
-        "9300226346851476",
-        "1902296417352606748",
-        "7",
-        "628",
-        "1365967990811",
-        "89037317705367",
-        "2893585743177290",
-        "684507592588",
-        "5901939819221875",
-        "8430",
+        "9515178791080050869",
+        "8648",
+        "5299880249301",
+        "0971",
+        "8808",
+        "7794700209144",
+        "670957",
+        "4",
+        "5833105424108762",
+        "94950",
     ]
 
 
@@ -401,39 +402,24 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
 
         # need to manually constrain the length to be greater than the absolute minimum that can be produced
         # otherwise, the algorithm will produce results even though they are too big
-        command = [
-            "fandango",
-            "fuzz",
-            "-f",
-            str(RESOURCES_ROOT / "gen_number.fan"),
-            "-n",
-            "10",
-            "--population-size",
-            "20",  # makes the test faster
-            "--max-generations",
-            "30",
-            "-c",
-            "len(str(<start>)) >= 53",  # 50 'a's, '.', and 2 digits
-            "--max-nodes",
-            str(max_nodes),
-        ]
-
-        out, err, code = run_command(command)
-
-        # ignore these warnings, they are expected because there is no way to build a full population of 20 unique individuals with these constraints/max-nodes
-        err_stripped = re.sub(
-            r"fandango:WARNING: Could not generate a full population of unique individuals\. Population size reduced to (\d+)\.\n",
-            "",
-            err,
+        with open(RESOURCES_ROOT / "gen_number.fan") as spec:
+            fan = Fandango(
+                spec,
+                ["len(str(<start>)) >= 53"],  # 50 'a's, '.', and 2 digits
+                use_cache=False,
+            )
+        fan.init_population(
+            population_size=20,  # makes the test faster
+            max_nodes=max_nodes,
         )
+        algorithm = fan.fandango
+        assert isinstance(algorithm, SimpleGeneticAlgorithm)
+        # The tuner may grow the budget up to `Grammar.hard_max_nodes`; keep it at `max_nodes`
+        algorithm.adaptive_tuner.max_nodes = max_nodes
 
-        self.assertEqual(out, "", f"out: {out}")
-        self.assertEqual(
-            err_stripped,
-            "fandango:ERROR: Population did not converge to a perfect population\nfandango:ERROR: Only found 0 perfect solutions, instead of the required 10\n",
-            f"err: {err}",
-        )
-        self.assertEqual(0, code, code)
+        solutions = list(fan.generate_solutions(max_generations=30))
+
+        self.assertEqual([], solutions, [str(solution) for solution in solutions])
 
     def test_unparse_grammar(self):
         # We unparse the standard library as well as docs/persons.fan
