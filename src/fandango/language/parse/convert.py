@@ -1,9 +1,12 @@
 # mypy: disable-error-code="no-untyped-call, no-untyped-def"
 
 import ast
+import hashlib
 from collections.abc import Sequence
 from io import UnsupportedOperation
 from typing import Any, Optional, cast
+
+from antlr4.InputStream import InputStream
 
 from fandango.constraints.comparison import ComparisonConstraint
 from fandango.constraints.conjunction import ConjunctionConstraint
@@ -48,12 +51,10 @@ class GrammarProcessor(FandangoParserVisitor):
         grammar_settings: list[FandangoParser.Grammar_setting_contentContext],
         local_variables: Optional[dict[str, Any]] = None,
         global_variables: Optional[dict[str, Any]] = None,
-        id_prefix: Optional[str] = None,
         max_repetitions: int = 5,
     ):
         self.local_variables = local_variables
         self.global_variables = global_variables
-        self.id_prefix = id_prefix
         self.searches = SearchProcessor(Grammar.dummy())
         self.repetition_constraints: list[RepetitionBoundsConstraint] = list()
         self.seenParties = set[str]()
@@ -63,15 +64,28 @@ class GrammarProcessor(FandangoParserVisitor):
             self.visitGrammar_setting_content(ctx) for ctx in grammar_settings
         ]
 
-        if self.id_prefix is None:
-            self.id_prefix = ""
+        # Per parsed file: the hash of its contents, and how many ids of each type it has
+        self._content_hashes: dict[InputStream, str] = {}
+        self._seen_ids: dict[tuple[InputStream, NodeType], int] = {}
 
-        self.seenAlternatives = 0
-        self.seenConcatenations = 0
-        self.seenStars = 0
-        self.seenRepetitions = 0
-        self.seenOptions = 0
-        self.seenPluses = 0
+    def _new_id(self, node_type: NodeType, ctx: Any) -> str:
+        """
+        A new id for a node of `node_type` written at `ctx`.
+
+        It is made of the node type, a counter per file, and a hash of the file's
+        contents. It thus only depends on the contents of the file the node is
+        written in: not on how the file is named, and not on what includes it, how
+        often, or what it is loaded with.
+        """
+        source: InputStream = ctx.start.getInputStream()
+        if source not in self._content_hashes:
+            # the hash needs to be stable across processes, so we use SHA256
+            self._content_hashes[source] = hashlib.sha256(
+                str(source).encode()
+            ).hexdigest()[:16]
+        count = self._seen_ids.get((source, node_type), 0) + 1
+        self._seen_ids[(source, node_type)] = count
+        return f"{node_type}:{count}_{self._content_hashes[source]}"
 
     def get_grammar(
         self,
@@ -128,57 +142,46 @@ class GrammarProcessor(FandangoParserVisitor):
         ]
         if len(nodes) == 1:
             return nodes[0]
-        self.seenAlternatives += 1
-        nid = self.seenAlternatives
         return Alternative(
             nodes,
             self._grammar_settings,
-            f"{NodeType.ALTERNATIVE}:{nid}_{self.id_prefix}",
+            self._new_id(NodeType.ALTERNATIVE, ctx),
         )
 
     def visitConcatenation(self, ctx: FandangoParser.ConcatenationContext):
         nodes = [self.visitOperator(child) for child in ctx.operator()]
         if len(nodes) == 1:
             return nodes[0]
-        self.seenConcatenations += 1
-        nid = self.seenConcatenations
         return Concatenation(
             nodes,
             self._grammar_settings,
-            f"{NodeType.CONCATENATION}:{nid}_{self.id_prefix}",
+            self._new_id(NodeType.CONCATENATION, ctx),
         )
 
     def visitKleene(self, ctx: FandangoParser.KleeneContext):
-        self.seenStars += 1
-        nid = self.seenStars
         return Star(
             self.visit(ctx.symbol()),
             self._grammar_settings,
-            f"{NodeType.STAR}:{nid}_{self.id_prefix}",
+            self._new_id(NodeType.STAR, ctx),
         )
 
     def visitPlus(self, ctx: FandangoParser.PlusContext):
-        self.seenPluses += 1
-        nid = self.seenPluses
         return Plus(
             self.visit(ctx.symbol()),
             self._grammar_settings,
-            f"{NodeType.PLUS}:{nid}_{self.id_prefix}",
+            self._new_id(NodeType.PLUS, ctx),
         )
 
     def visitOption(self, ctx: FandangoParser.OptionContext):
-        self.seenOptions += 1
-        nid = self.seenOptions
         return Option(
             self.visit(ctx.symbol()),
             self._grammar_settings,
-            f"{NodeType.OPTION}:{nid}_{self.id_prefix}",
+            self._new_id(NodeType.OPTION, ctx),
         )
 
     def visitRepeat(self, ctx: FandangoParser.RepeatContext):
         node = self.visitSymbol(ctx.symbol())
-        self.seenRepetitions += 1
-        nid = f"{NodeType.REPETITION}:{self.seenRepetitions}_{self.id_prefix}"
+        nid = self._new_id(NodeType.REPETITION, ctx)
         min_ = None
         max_ = None
         if ctx.COMMA():
@@ -273,32 +276,32 @@ class GrammarProcessor(FandangoParserVisitor):
     def visitPermutation(self, ctx: FandangoParser.PermutationContext):
         """All nodes in the permutation context. We generate all possible permutations of them using alternatives."""
         nodes = [self.visitSymbol(c) for c in ctx.symbol()]
-        return self._node_permutation_tree(nodes)
+        return self._node_permutation_tree(nodes, ctx)
 
-    def _concat_two_nodes(self, first: Node, second: Node) -> Node:
-        self.seenConcatenations += 1
-        nid = self.seenConcatenations
+    def _concat_two_nodes(
+        self, first: Node, second: Node, ctx: FandangoParser.PermutationContext
+    ) -> Node:
         return Concatenation(
             [first, second],
             self._grammar_settings,
-            f"{NodeType.CONCATENATION}:{nid}_{self.id_prefix}",
+            self._new_id(NodeType.CONCATENATION, ctx),
         )
 
-    def _node_permutation_tree(self, nodes: list[Node]) -> Node:
+    def _node_permutation_tree(
+        self, nodes: list[Node], ctx: FandangoParser.PermutationContext
+    ) -> Node:
         """Generate all possible permutations of the nodes in the list `nodes`."""
         if len(nodes) == 1:
             return nodes[0]
         branches: list[Node] = []
         for i, first in enumerate(nodes):
             remaining = nodes[:i] + nodes[i + 1 :]
-            tail = self._node_permutation_tree(remaining)
-            branches.append(self._concat_two_nodes(first, tail))
-        self.seenAlternatives += 1
-        nid = self.seenAlternatives
+            tail = self._node_permutation_tree(remaining, ctx)
+            branches.append(self._concat_two_nodes(first, tail, ctx))
         return Alternative(
             branches,
             self._grammar_settings,
-            f"{NodeType.ALTERNATIVE}:{nid}_{self.id_prefix}",
+            self._new_id(NodeType.ALTERNATIVE, ctx),
             is_permutation=True,
         )
 
