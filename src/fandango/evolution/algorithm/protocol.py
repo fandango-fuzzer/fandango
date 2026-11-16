@@ -214,12 +214,19 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             expected_nonterminals=[],
         )
 
+    def _is_timer_event_awaited(self) -> bool:
+        if not self._io_instance.is_timer_running():
+            return False
+        return any(
+            packet.node.sender == "TimerEvent"
+            for packet in self._packet_selector.next_packets
+        )
+
     def _handle_remote_response(self) -> DerivationTree:
         if not self._io_instance.received_msg():
             timeout = self._remote_response_timeout
-            for packet in self._packet_selector.next_packets:
-                if packet.node.sender == "TimerEvent":
-                    timeout = -1.0
+            if self._is_timer_event_awaited():
+                timeout = -1.0
             if not self._io_instance.wait_until(
                 self._io_instance.received_msg, timeout
             ):

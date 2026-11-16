@@ -803,6 +803,10 @@ class TimerControl(FandangoParty):
         entry = self.timers.get(name)
         return entry is not None and entry[1] and entry[2] is threading.current_thread()
 
+    def is_timer_running(self) -> bool:
+        with self.lock:
+            return any(is_running for _, is_running, _ in self.timers.values())
+
     def start_timer(self, name: str, time_s: float | int) -> None:
         def timer_sleep() -> None:
             expires_at = time.monotonic() + time_s
@@ -957,6 +961,12 @@ class FandangoIO(object):
         Returns the set of all parties controlled by Fandango.
         """
         return set(filter(lambda i: i.is_fuzzer_controlled(), self.parties.values()))
+
+    def is_timer_running(self) -> bool:
+        return any(
+            isinstance(party, TimerControl) and party.is_timer_running()
+            for party in self.parties.values()
+        )
 
     def add_receive(self, sender: str, receiver: str, message: str | bytes) -> None:
         """
