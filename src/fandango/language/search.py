@@ -5,6 +5,7 @@ search criteria.
 
 import abc
 import warnings
+from collections.abc import Mapping
 from typing import Any, Generic, Optional, TypeVar
 
 from fandango.language.symbols import NonTerminal
@@ -317,6 +318,9 @@ class LengthSearch(NonTerminalSearch):
         ]
 
     def format_as_spec(self) -> str:
+        if isinstance(self.value, StarSearch):
+            # `|...|` does not take a star selection
+            return f"len({self.value.format_as_spec()})"
         return f"|{self.value.format_as_spec()}|"
 
     def get_root_symbol(self) -> NonTerminal:
@@ -811,3 +815,18 @@ class AnnotatedSearch(NonTerminalSearch, Generic[Annotation]):
         :return list[NonTerminal]: The list of access points.
         """
         return self._inner.get_access_points(include_base)
+
+
+def resolve_searches(expression: str, searches: Mapping[str, Any]) -> str:
+    """
+    Format a parsed expression as it can be written in a spec file.
+
+    Parsing replaces each search or nonterminal in an expression by an
+    internal identifier; this puts them back in.
+
+    :param expression: The expression, containing internal identifiers.
+    :param searches: What each internal identifier stands for.
+    """
+    for identifier, search in searches.items():
+        expression = expression.replace(identifier, search.format_as_spec())
+    return expression
