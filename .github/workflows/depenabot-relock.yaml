@@ -1,0 +1,84 @@
+name: Dependabot Relock
+
+# Dependabot updates `uv.lock` but not the exported `pylock.toml`, so the
+# `uv-check` job fails on its PRs. This regenerates `pylock.toml` from the
+# `uv.lock` Dependabot wrote (same command as `uv-check`) and commits the
+# result back to the PR branch. It never re-resolves: if `uv.lock` itself is
+# stale, the export fails and the PR stays red instead of being papered over.
+#
+# Security notes:
+# - Dependency code may be part of the PR, so the push token is never written
+#   to disk and only reaches the final `git push` step.
+# - Actions are pinned to commit SHAs; Dependabot (github-actions ecosystem)
+#   keeps them and the version comments up to date.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    # Skip PRs that don't touch Python dependencies (e.g. GitHub Actions bumps,
+    # which could otherwise run unreviewed action versions with the token).
+    paths:
+      - pyproject.toml
+      - uv.lock
+      - "**/pyproject.toml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  relock:
+    # Dependabot branches always live in this repository, never in a fork.
+    if: >-
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      # Only used when falling back to the default GITHUB_TOKEN.
+      contents: write
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.head_ref }}
+          # Keep credentials out of .git/config while uv runs.
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+        with:
+          version: 0.12.19
+          enable-cache: false
+
+      - name: Export pylock.toml
+        env:
+          # Exporting an up-to-date lockfile never builds anything; this makes
+          # sure no dependency build code (e.g. sdist-only py010parser) can run.
+          UV_NO_BUILD: "1"
+        run: uv export --output-file=pylock.toml --all-extras --locked
+
+      - name: Commit and push if changed
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          REPO: ${{ github.repository }}
+          # Pushes made with the default GITHUB_TOKEN do not trigger workflows,
+          # so the other checks would not run on the relock commit. Set
+          # DEPENDABOT_RELOCK_TOKEN as a *Dependabot* secret (fine-grained PAT
+          # or app token with contents: write on this repo only) to have CI
+          # re-run on it.
+          TOKEN: ${{ secrets.DEPENDABOT_RELOCK_TOKEN || github.token }}
+        run: |
+          if git diff --quiet -- pylock.toml; then
+            echo "pylock.toml is up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pylock.toml
+          # `[dependabot skip]` lets Dependabot keep rebasing the PR (it force-pushes
+          # over this commit, which re-triggers this workflow).
+          git commit -m "Update pylock.toml" -m "[dependabot skip]"
+          git push "https://x-access-token:${TOKEN}@github.com/${REPO}" "HEAD:${HEAD_REF}"

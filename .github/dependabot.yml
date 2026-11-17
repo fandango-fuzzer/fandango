@@ -1,16 +1,28 @@
 version: 2
 updates:
+  - package-ecosystem: github-actions
+    directories:
+      - /
+      - /.github/workflows/setup-fandango   # composite action, also uses setup-uv
+    cooldown:
+      default-days: 7
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
   - package-ecosystem: uv
     directory: /
-    versioning-strategy: auto
     cooldown:
       default-days: 7
     schedule:
       interval: weekly
     groups:
       minor-and-patch-updates:
+        patterns:
+          - "*"
         update-types:
           - "minor"
           - "patch"
-    patterns:
-      - "*"
