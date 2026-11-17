@@ -378,12 +378,18 @@ class DerivationTree:
         ]
 
     def find_by_origin(self, node_id: str) -> list["DerivationTree"]:
+        """
+        Return all non-terminal subtrees, including this tree, that stem from the repetition `node_id`.
+        Subtrees are returned in post-order, children before their parent.
+        """
         trees = []
+        # (node, is_below_visited): False = expand the node's children next,
+        # True = its children are done, check the node itself.
         pending: list[tuple[DerivationTree, bool]] = [(self, False)]
         while pending:
             node, is_below_visited = pending.pop()
             if is_below_visited:
-                if node.is_repetition_origin(node_id):
+                if node._is_repetition_origin(node_id):
                     trees.append(node)
                 continue
             pending.append((node, True))
@@ -394,7 +400,10 @@ class DerivationTree:
             )
         return trees
 
-    def is_repetition_origin(self, node_id: str) -> bool:
+    def _is_repetition_origin(self, node_id: str) -> bool:
+        """
+        Return whether this tree stems from an iteration of the repetition `node_id`.
+        """
         return any(
             o_node_id == node_id
             for o_node_id, _o_iter_id, _rep in self.origin_repetitions
