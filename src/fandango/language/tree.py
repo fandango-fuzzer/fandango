@@ -812,6 +812,8 @@ class DerivationTree:
         self, undo: Optional[list[Callable[[], None]]] = None
     ) -> "DerivationTree":
         """Internal function. Use split_end_context instead."""
+        # (parent, kept_children): each parent on the path up from this node, paired
+        # with its children up to and including the one on that path.
         kept_children_by_parent: list[tuple[DerivationTree, list[DerivationTree]]] = []
         node = self
         while node.parent is not None and node not in node.parent.sources:
