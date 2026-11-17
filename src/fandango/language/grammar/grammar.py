@@ -2,7 +2,7 @@ import itertools
 import warnings
 from collections import defaultdict
 from collections.abc import Generator, Iterator, Sequence
-from typing import Any, Optional, cast
+from typing import Any, NamedTuple, Optional, cast
 
 from cachetools import LRUCache
 
@@ -33,6 +33,15 @@ from fandango.utils import cache_size
 KPath = tuple[Symbol, ...]
 
 
+class _TreeKPaths(NamedTuple):
+    """K-paths of a tree node."""
+
+    starting_here: set[KPath]
+    """K-paths starting at the node."""
+    at_or_below: set[KPath]
+    """K-paths starting at the node or any node below it."""
+
+
 class Grammar(NodeVisitor[list[Node], list[Node]]):
     """Represent a grammar."""
 
@@ -52,10 +61,10 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         self._global_variables = global_variables or {}
         self._parser = Parser(self.rules)
         self._k_path_cache: LRUCache[
-            tuple[NonTerminal, bool, CoverageGoal], list[set[tuple[Symbol, ...]]]
+            tuple[NonTerminal, bool, CoverageGoal], list[set[KPath]]
         ] = LRUCache(maxsize=cache_size())
-        self._tree_k_path_cache: LRUCache[int, tuple[set[KPath], set[KPath]]] = (
-            LRUCache(maxsize=cache_size())
+        self._tree_k_path_cache: LRUCache[int, _TreeKPaths] = LRUCache(
+            maxsize=cache_size()
         )
         # The k-paths from <start> by each symbol they contain, with the k they reach up to
         self._k_paths_by_symbol: LRUCache[
@@ -834,10 +843,13 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         coverage_goal: CoverageGoal,
         input_parties: frozenset[str],
         inside_message: bool,
-    ) -> tuple[set[KPath], set[KPath]]:
+    ) -> _TreeKPaths:
         """Returns the k-paths starting at `tree` and the k-paths starting at or below `tree`."""
-        k_paths_by_node: dict[int, tuple[set[KPath], set[KPath]]] = {}
+        k_paths_by_node: dict[int, _TreeKPaths] = {}
+        # (node, in_goal, cache_key): non-terminals whose k-paths are computed once
+        # their children are done; cache_key is None if the result is not cached.
         open_nodes: list[tuple[DerivationTree, bool, Optional[int]]] = []
+        # (node, in_goal, inside_message): nodes still to visit.
         pending: list[tuple[DerivationTree, bool, bool]] = [
             (tree, in_goal, inside_message)
         ]
@@ -877,11 +889,9 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             k_paths_by_node[id(node)] = k_paths
         return k_paths_by_node[id(tree)]
 
-    def _k_paths_at_terminal(
-        self, tree: DerivationTree, in_goal: bool
-    ) -> tuple[set[KPath], set[KPath]]:
+    def _k_paths_at_terminal(self, tree: DerivationTree, in_goal: bool) -> _TreeKPaths:
         if not in_goal or tree.parent is None:
-            return set(), set()
+            return _TreeKPaths(set(), set())
         assert isinstance(tree.symbol, Terminal)
         assert isinstance(tree.parent.symbol, NonTerminal)
         matching_paths: set[KPath] = {
@@ -890,15 +900,15 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                 tree.parent.symbol, tree.symbol
             )
         }
-        return matching_paths, matching_paths
+        return _TreeKPaths(matching_paths, matching_paths)
 
     @staticmethod
     def _k_paths_at_non_terminal(
         tree: DerivationTree,
         in_goal: bool,
         k: int,
-        k_paths_by_node: dict[int, tuple[set[KPath], set[KPath]]],
-    ) -> tuple[set[KPath], set[KPath]]:
+        k_paths_by_node: dict[int, _TreeKPaths],
+    ) -> _TreeKPaths:
         symbol = tree.symbol
         assert isinstance(symbol, NonTerminal)
         starting_here: set[KPath] = {(symbol,)} if in_goal else set()
@@ -913,7 +923,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                         starting_here.add((symbol,) + path)
             at_or_below |= at_or_below_child
         at_or_below |= starting_here
-        return starting_here, at_or_below
+        return _TreeKPaths(starting_here, at_or_below)
 
     def _rule_terminals_matching(
         self, non_terminal: NonTerminal, terminal: Terminal
