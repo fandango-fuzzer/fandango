@@ -166,16 +166,35 @@ class DerivationTree:
         return len(self._children)
 
     def count_terminals(self) -> int:
-        if self.symbol.is_terminal:
-            return 1
         count = 0
-        for child in self._children:
-            count += child.count_terminals()
+        pending: list[DerivationTree] = [self]
+        while pending:
+            node = pending.pop()
+            if node.symbol.is_terminal:
+                count += 1
+            else:
+                pending.extend(node._children)
         return count
 
     def size(self) -> int:
-        if self._size is None:
-            self._size = 1 + sum(child.size() for child in self._children)
+        if self._size is not None:
+            return self._size
+        # Without recursion, like __hash__: the nodes without a cached size, then their sizes from the leaves up
+        unsized: list[DerivationTree] = []
+        pending: list[DerivationTree] = [self]
+        while pending:
+            node = pending.pop()
+            unsized.append(node)
+            for child in node._children:
+                if child._size is None:
+                    pending.append(child)
+        for node in reversed(unsized):
+            total = 1
+            for child in node._children:
+                # Every child is sized by now; `or 0` only tells mypy so
+                total += child._size or 0
+            node._size = total
+        assert self._size is not None
         return self._size
 
     @property
@@ -591,9 +610,13 @@ class DerivationTree:
         """
         Return true if the derivation tree contains any terminal symbols of type `tp` (say, `int` or `bytes`).
         """
-        if self.symbol.is_terminal and self.symbol.is_type(tp):
-            return True
-        return any(child._contains_type(tp) for child in self._children)
+        pending: list[DerivationTree] = [self]
+        while pending:
+            node = pending.pop()
+            if node.symbol.is_terminal and node.symbol.is_type(tp):
+                return True
+            pending.extend(node._children)
+        return False
 
     def contains_bits(self) -> bool:
         """
@@ -992,12 +1015,15 @@ class DerivationTree:
         Retrieve all non-terminal symbols present in the derivation tree.
         """
         symbols = set()
-        if self.symbol.is_non_terminal and not (exclude_read_only and self.read_only):
-            symbols.add(self.nonterminal)
-        for child in self._children:
-            symbols.update(child.get_non_terminal_symbols(exclude_read_only))
-        for param in self._sources:
-            symbols.update(param.get_non_terminal_symbols(exclude_read_only))
+        pending: list[DerivationTree] = [self]
+        while pending:
+            node = pending.pop()
+            if node.symbol.is_non_terminal and not (
+                exclude_read_only and node.read_only
+            ):
+                symbols.add(node.nonterminal)
+            pending.extend(node._children)
+            pending.extend(node._sources)
         return symbols
 
     def find_all_nodes(
@@ -1009,14 +1035,17 @@ class DerivationTree:
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
         nodes = []
-        if self.symbol.is_non_terminal:
-            nt = cast(NonTerminal, self.symbol)
-            if nt == symbol and not (exclude_read_only and self.read_only):
-                nodes.append(self)
-            for child in self._children:
-                nodes.extend(child.find_all_nodes(symbol, exclude_read_only))
-            for param in self._sources:
-                nodes.extend(param.find_all_nodes(symbol, exclude_read_only))
+        # Pre-order, children before sources, as the recursion this replaces
+        pending: list[DerivationTree] = [self]
+        while pending:
+            node = pending.pop()
+            if not node.symbol.is_non_terminal:
+                continue
+            if node.symbol == symbol and not (exclude_read_only and node.read_only):
+                nodes.append(node)
+            if node._sources:
+                pending.extend(reversed(node._sources))
+            pending.extend(reversed(node._children))
         return nodes
 
     @property
@@ -1082,10 +1111,25 @@ class DerivationTree:
         if self.symbol.is_terminal:
             return self.symbol.value()
 
-        aggregate = TreeValue.empty()
-        for child in self._children:
-            aggregate = aggregate.append(child.value())
-        return aggregate
+        # Without recursion. The values are appended in the order recursion would append them, as append can change
+        # the left value. (iterator over the remaining children, value of the children so far): the ancestors left
+        # off at a non-terminal child.
+        suspended: list[tuple[Iterator[DerivationTree], TreeValue]] = []
+        children, aggregate = iter(self._children), TreeValue.empty()
+        while True:
+            for child in children:
+                if child.symbol.is_terminal:
+                    aggregate = aggregate.append(child.symbol.value())
+                else:
+                    suspended.append((children, aggregate))
+                    children, aggregate = iter(child._children), TreeValue.empty()
+                    break
+            else:  # all children done
+                if not suspended:
+                    return aggregate
+                child_value = aggregate
+                children, aggregate = suspended.pop()
+                aggregate = aggregate.append(child_value)
 
     def to_value(self) -> str:
         value = self.value()
