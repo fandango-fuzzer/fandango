@@ -34,12 +34,6 @@ class PacketSelector:
         self.io_instance = io_instance
         self._model = ProtocolModel(grammar, self.start_symbol)
         self._forecast = ForecastView(grammar, io_instance, lambda: self.history_tree)
-        self._guider = PacketGuider(
-            self._model,
-            self._forecast,
-            max_messages_per_tree=max_messages_per_tree,
-            suspect_predecessors=suspect_predecessors,
-        )
         self.history_tree = history_tree
         self._coverage_tracker = CoverageTracker(
             grammar,
@@ -49,6 +43,13 @@ class PacketSelector:
             self._input_parties,
             lambda: self.history_tree,
             CoverageGoal.STATE_INPUTS,
+        )
+        self._guider = PacketGuider(
+            self._model,
+            self._forecast,
+            max_messages_per_tree=max_messages_per_tree,
+            suspect_predecessors=suspect_predecessors,
+            open_sent_messages=self._coverage_tracker.open_sent_messages,
         )
         self._next_packets: Optional[list[ForecastingPacket]] = None
 

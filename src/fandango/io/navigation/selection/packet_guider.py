@@ -53,6 +53,7 @@ class PacketGuider:
         forecast: ForecastView,
         max_messages_per_tree: int,
         suspect_predecessors: Callable[[], SuspectPredecessors] = dict,
+        open_sent_messages: Callable[[], list[NonTerminal]] = list,
     ):
         self._model = model
         self._forecast = forecast
@@ -61,7 +62,7 @@ class PacketGuider:
         self._navigator_instance = PacketNavigator(
             self._model.grammar, self._model.start_symbol
         )
-        self._target_selector = TargetSelector(model)
+        self._target_selector = TargetSelector(model, open_sent_messages)
         self._max_messages_per_tree = max_messages_per_tree
 
         self._history_tree: DerivationTree = DerivationTree(NonTerminal("<start>"))

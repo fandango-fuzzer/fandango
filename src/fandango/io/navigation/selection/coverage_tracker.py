@@ -136,6 +136,9 @@ class CoverageTracker:
             )
         )
         self._coverage_scores: Optional[list[tuple[NonTerminal, float]]] = None
+        self.unreachable_packet_k_paths: dict[
+            tuple[PacketNonTerminal, bool], set[KPath]
+        ] = {}
 
     @property
     def diversity_k(self) -> int:
@@ -151,6 +154,7 @@ class CoverageTracker:
         for grouped_coverage in self._grouped_coverages():
             grouped_coverage.reset()
         self._coverage_scores = None
+        self.unreachable_packet_k_paths.clear()
 
     def invalidate(self) -> None:
         for grouped_coverage in self._grouped_coverages():
@@ -214,6 +218,20 @@ class CoverageTracker:
             symbol: KPathCounts(covered, available)
             for symbol, (covered, available) in counts.items()
         }
+
+    def open_sent_messages(self) -> list[NonTerminal]:
+        """The messages a fuzzer-controlled party sends that have k-paths neither covered nor marked unreachable."""
+        open_messages: set[NonTerminal] = set()
+        for packet_type in self._model.protocol_msg_symbols:
+            if packet_type.sender not in self._input_parties():
+                continue
+            unreachable = self.unreachable_packet_k_paths.get(
+                (packet_type, False), set()
+            )
+            covered = self.covered_packet_k_paths(packet_type, False)
+            if self.all_k_paths(packet_type.symbol) - unreachable - covered:
+                open_messages.add(packet_type.symbol)
+        return sorted(open_messages, key=lambda symbol: symbol.name())
 
     def covered_packet_k_paths(
         self, packet_type: PacketNonTerminal, overlap_to_root: bool

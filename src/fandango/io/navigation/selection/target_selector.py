@@ -1,3 +1,4 @@
+import random
 from collections import Counter, defaultdict
 from collections.abc import Callable
 from typing import Optional
@@ -16,9 +17,15 @@ class TargetSelector:
 
     # How often a target may be picked before the targets one longer are picked as well.
     MAX_PICKS = 3
+    MESSAGE_TARGET_SHARE = 0.25
 
-    def __init__(self, model: ProtocolModel):
+    def __init__(
+        self,
+        model: ProtocolModel,
+        open_sent_messages: Callable[[], list[NonTerminal]] = list,
+    ):
         self._model = model
+        self._open_sent_messages = open_sent_messages
         self._msg_power_schedule = PowerScheduleCoverage()
         self._state_path_power_schedule = PowerScheduleKPath()
         self._protocol_msg_symbols = set(
@@ -45,6 +52,13 @@ class TargetSelector:
     ) -> Optional[KPath]:
         """Picks a derivable uncovered k-path, or else a derivable message. None if there is neither."""
         self._update_open_below(uncovered_paths)
+        messages = [
+            message
+            for message in self._open_sent_messages()
+            if is_derivable((message,))
+        ]
+        if messages and random.random() < self.MESSAGE_TARGET_SHARE:
+            return (random.choice(messages),)
         candidates = self._targets_up_to_current_length(
             uncovered_paths, is_derivable
         ) or list(filter(is_derivable, self._open_below))
