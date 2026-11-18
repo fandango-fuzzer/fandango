@@ -32,6 +32,9 @@ from fandango.utils import cache_size
 
 KPath = tuple[Symbol, ...]
 
+# k, non-terminal, overlap_to_root, coverage goal and input parties: everything the k-paths of a grammar depend on
+_KPathsKey = tuple[int, NonTerminal, bool, CoverageGoal, frozenset[str]]
+
 
 class _TreeKPaths(NamedTuple):
     """K-paths of a tree node."""
@@ -60,15 +63,14 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         self._local_variables = local_variables or {}
         self._global_variables = global_variables or {}
         self._parser = Parser(self.rules)
-        self._k_path_cache: LRUCache[
-            tuple[NonTerminal, bool, CoverageGoal], list[set[KPath]]
-        ] = LRUCache(maxsize=cache_size())
+        # A plain dict: the keys are bounded by the grammar, and a hit costs a single lookup
+        self._k_path_cache: dict[_KPathsKey, set[KPath]] = {}
         self._tree_k_path_cache: LRUCache[int, _TreeKPaths] = LRUCache(
             maxsize=cache_size()
         )
         # The k-paths from <start> by each symbol they contain, with the k they reach up to
         self._k_paths_by_symbol: LRUCache[
-            CoverageGoal, tuple[int, dict[Symbol, list[KPath]]]
+            tuple[CoverageGoal, frozenset[str]], tuple[int, dict[Symbol, list[KPath]]]
         ] = LRUCache(maxsize=cache_size())
 
     @property
@@ -663,18 +665,29 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         :param non_terminal: The non-terminal from which to start generating paths.
         :param overlap_to_root: Whether to include paths that contain the starting symbol but are overlapping with symbols towards the root direction.
         :param coverage_goal: The coverage goal to consider when generating paths.
+        :param input_parties: The parties whose messages count as inputs, under STATE_INPUTS and INPUTS.
         :return: All paths of length up to *k* within this grammar.
         """
-        if non_terminal is None:
-            non_terminal = NonTerminal("<start>")
-        if input_parties is None:
-            input_parties = set()
-        cache_key = (non_terminal, overlap_to_root, coverage_goal)
-        if cache_key in self._k_path_cache:
-            cache_work = self._k_path_cache[cache_key]
-            if len(cache_work) >= k:
-                return cache_work[k - 1]
+        cache_key: _KPathsKey = (
+            k,
+            NonTerminal("<start>") if non_terminal is None else non_terminal,
+            overlap_to_root,
+            coverage_goal,
+            frozenset(input_parties or ()),
+        )
+        k_paths = self._k_path_cache.get(cache_key)
+        if k_paths is None:
+            k_paths = self._k_path_cache[cache_key] = self._compute_k_paths(*cache_key)
+        return k_paths
 
+    def _compute_k_paths(
+        self,
+        k: int,
+        non_terminal: NonTerminal,
+        overlap_to_root: bool,
+        coverage_goal: CoverageGoal,
+        input_parties: frozenset[str],
+    ) -> set[KPath]:
         initial: set[Node] = set()
         starter_node = NonTerminalNode(non_terminal, self._grammar_settings)
 
@@ -739,21 +752,20 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                 symbol_work_k.add(tuple(node.to_symbol() for node in path))
 
         if overlap_to_root:
-            indexed = self._k_paths_by_symbol.get(coverage_goal)
+            index_key = (coverage_goal, input_parties)
+            indexed = self._k_paths_by_symbol.get(index_key)
             if indexed is None or indexed[0] < k:
                 k_paths_by_symbol: dict[Symbol, list[KPath]] = {}
                 for k_path in self.generate_all_k_paths(
-                    k=k, coverage_goal=coverage_goal, input_parties=input_parties
+                    k=k, coverage_goal=coverage_goal, input_parties=set(input_parties)
                 ):
                     for symbol in set(k_path):
                         k_paths_by_symbol.setdefault(symbol, []).append(k_path)
                 indexed = (k, k_paths_by_symbol)
-                self._k_paths_by_symbol[coverage_goal] = indexed
+                self._k_paths_by_symbol[index_key] = indexed
             for k_path in indexed[1].get(non_terminal, []):
                 for idx in range(len(k_path) - 1, k):
                     symbol_work[idx].add(k_path)
-
-        self._k_path_cache[cache_key] = symbol_work
 
         return symbol_work[k - 1]
 
@@ -846,47 +858,46 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
     ) -> _TreeKPaths:
         """Returns the k-paths starting at `tree` and the k-paths starting at or below `tree`."""
         k_paths_by_node: dict[int, _TreeKPaths] = {}
-        # (node, in_goal, cache_key): non-terminals whose k-paths are computed once
-        # their children are done; cache_key is None if the result is not cached.
-        open_nodes: list[tuple[DerivationTree, bool, Optional[int]]] = []
-        # (node, in_goal, inside_message): nodes still to visit.
-        pending: list[tuple[DerivationTree, bool, bool]] = [
-            (tree, in_goal, inside_message)
+        # Post-order, like the recursion it replaces: a subtree is done and cached before its later siblings are
+        # visited, so an equal subtree further on is a cache hit.
+        # (node, in_goal, inside_message, children_done, cache_key): a node to visit, or, once children_done, a
+        # non-terminal whose children are done; cache_key is None if its result is not cached.
+        pending: list[tuple[DerivationTree, bool, bool, bool, Optional[int]]] = [
+            (tree, in_goal, inside_message, False, None)
         ]
         while pending:
-            node, node_in_goal, node_inside_message = pending.pop()
+            node, node_in_goal, node_inside_message, children_done, cache_key = (
+                pending.pop()
+            )
+            if children_done:
+                k_paths = self._k_paths_at_non_terminal(
+                    node, node_in_goal, k, k_paths_by_node
+                )
+                if cache_key is not None:
+                    self._tree_k_path_cache[cache_key] = k_paths
+                k_paths_by_node[id(node)] = k_paths
+                continue
             if isinstance(node.symbol, Terminal):
                 k_paths_by_node[id(node)] = self._k_paths_at_terminal(
                     node, node_in_goal
                 )
                 continue
-            cache_key = None
             if node.sender is not None or not node_inside_message:
                 cache_key = hash((node, k, node_in_goal, coverage_goal, input_parties))
                 if cache_key in self._tree_k_path_cache:
                     k_paths_by_node[id(node)] = self._tree_k_path_cache[cache_key]
                     continue
-            open_nodes.append((node, node_in_goal, cache_key))
-            for child in node.children:
+            pending.append((node, node_in_goal, node_inside_message, True, cache_key))
+            child_inside_message = node_inside_message or node.sender is not None
+            # Reversed, so that the children are visited from left to right
+            for child in reversed(node.children):
                 child_in_goal = self._in_k_path_coverage_goal(
                     child, node_in_goal, coverage_goal, input_parties
                 )
                 if child_in_goal is not None:
                     pending.append(
-                        (
-                            child,
-                            child_in_goal,
-                            node_inside_message or node.sender is not None,
-                        )
+                        (child, child_in_goal, child_inside_message, False, None)
                     )
-
-        for node, node_in_goal, cache_key in reversed(open_nodes):
-            k_paths = self._k_paths_at_non_terminal(
-                node, node_in_goal, k, k_paths_by_node
-            )
-            if cache_key is not None:
-                self._tree_k_path_cache[cache_key] = k_paths
-            k_paths_by_node[id(node)] = k_paths
         return k_paths_by_node[id(tree)]
 
     def _k_paths_at_terminal(self, tree: DerivationTree, in_goal: bool) -> _TreeKPaths:
