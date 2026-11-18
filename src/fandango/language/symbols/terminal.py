@@ -164,7 +164,14 @@ class Terminal(Symbol):
             if '"' not in str(self._value):
                 return 'r"' + str(self._value) + '"'
 
-            # Mixed quotes: encode single quotes
+            # Mixed quotes: a triple-quoted string keeps the regex as it is
+            for quotes in ("'''", '"""'):
+                if quotes not in str(self._value) and not str(self._value).endswith(
+                    quotes[0]
+                ):
+                    return "r" + quotes + str(self._value) + quotes
+
+            # Otherwise, encode single quotes
             symbol = str(self._value).replace("'", r"\x27")
             return "r'" + str(symbol) + "'"
 
