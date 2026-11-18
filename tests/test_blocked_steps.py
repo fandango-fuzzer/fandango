@@ -1,6 +1,7 @@
 import itertools
 import random
 import unittest
+from unittest import mock
 
 from fandango.evolution.algorithm.protocol import ProtocolAlgorithm
 from fandango.evolution.algorithm.simple import SimpleGeneticAlgorithm
@@ -66,9 +67,14 @@ class TestBlockedSteps(unittest.TestCase):
             self.assertNotIn(self.ok_after_c, blocked)
 
     def test_stops_once_only_blocked_targets_are_left(self):
-        sessions = self._run_sessions()
+        # generate() yields only completed runs, and the run taking <c> <ok> may be abandoned before <quit>
+        with mock.patch.object(
+            self.refusals, "observe_taken", wraps=self.refusals.observe_taken
+        ) as observe_taken:
+            sessions = self._run_sessions()
         self.assertLess(len(sessions), SESSIONS)
-        self.assertTrue(any("c\nok\n" in text for text, _ in sessions))
+        taken = {call.args[0] for call in observe_taken.call_args_list}
+        self.assertIn(self.ok_after_c, taken)
         _, blocked_at_stop = sessions[-1]
         self.assertLessEqual(blocked_at_stop, self.refusable)
         ok_after_a, note, notes = (
