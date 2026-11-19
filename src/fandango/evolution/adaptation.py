@@ -37,8 +37,19 @@ class AdaptiveTuner:
         self.max_nodes_rate = max_nodes_rate
         self.max_safe_repetition = max_safe_repetition
         self.max_safe_nodes = max_safe_nodes
+        self._solutions_seen = 0
+
+    def found_new_solutions(self, solution_count: int) -> bool:
+        """
+        Whether solutions were found since the last call.
+        :param solution_count: The number of solutions found so far.
+        """
+        found = solution_count > self._solutions_seen
+        self._solutions_seen = solution_count
+        return found
 
     def reset_parameters(self) -> None:
+        self._solutions_seen = 0
         self.mutation_rate = self.initial_mutation_rate
         self.crossover_rate = self.initial_crossover_rate
         self.current_max_repetition = self.initial_max_repetition
@@ -65,6 +76,10 @@ class AdaptiveTuner:
 
         fitness_improvement_threshold = 0.005
         diversity_low_threshold = 0.1
+        # Longer repetitions and larger trees are for a search that is stuck.
+        # Once solutions exist, the best fitness cannot improve any more; that
+        # alone must not count as stuck while new solutions keep coming.
+        found_new_solutions = self.found_new_solutions(evaluator.get_solution_count())
 
         # Mutation rate adjustment
         if (
@@ -98,7 +113,7 @@ class AdaptiveTuner:
             self.crossover_rate = new_crossover_rate
 
         # Max repetition growth
-        if (
+        if not found_new_solutions and (
             fitness_improvement < fitness_improvement_threshold
             or avg_diversity < diversity_low_threshold
         ):
@@ -120,7 +135,7 @@ class AdaptiveTuner:
                 self.current_max_repetition = new_max_repetition
 
         # Max nodes growth
-        if (
+        if not found_new_solutions and (
             fitness_improvement < fitness_improvement_threshold
             or avg_diversity < diversity_low_threshold
         ):
