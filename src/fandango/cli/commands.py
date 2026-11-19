@@ -212,6 +212,8 @@ def fuzz_command(args: argparse.Namespace) -> None:
         desired_solutions=desired_solutions,
         infinite=infinite,
         mode=FuzzingMode.COMPLETE,
+        # The callback has written every solution; only --validate reads them again
+        keep_solutions=bool(args.validate),
         **settings,
     )
 
