@@ -147,6 +147,7 @@ class FandangoBase(ABC):
         infinite: bool = False,
         mode: FuzzingMode = FuzzingMode.COMPLETE,
         max_stale_generations: Optional[int] = None,
+        keep_solutions: bool = True,
         **settings: Any,
     ) -> list[DerivationTree]:
         """
@@ -154,6 +155,7 @@ class FandangoBase(ABC):
         :param extra_constraints: Additional constraints to apply
         :param solution_callback: What to do with each solution; receives the solution and a unique index
         :param max_stale_generations: Stop after this many generations in a row without a new solution (ignored if `infinite`)
+        :param keep_solutions: If False, solutions only go to `solution_callback` and are not returned, so that a long run does not keep every tree in memory
         :param settings: Additional settings for the evolution algorithm
         :return: A list of derivation trees
         """
@@ -392,16 +394,20 @@ class Fandango(FandangoBase):
         desired_solutions: Optional[int],
         solutions: list[DerivationTree],
         settings: dict[str, Any],
+        found: Optional[int] = None,
     ) -> list[DerivationTree]:
         """
         Print warnings if necessary after fuzzing.
         :param desired_solutions: The desired number of solutions
         :param solutions: The solutions found
         :param settings: The settings used for the fuzzing
+        :param found: The number of solutions found, if not all of them are in `solutions`
         :return: A list of derivation trees from the population to append to the solutions before returning; used for best-effort solving of constraints
         """
         assert self.fandango is not None
-        if desired_solutions is not None and len(solutions) < desired_solutions:
+        if found is None:
+            found = len(solutions)
+        if desired_solutions is not None and found < desired_solutions:
             assert isinstance(self.fandango, SimpleGeneticAlgorithm)
             warnings_are_errors = settings.get("warnings_are_errors", False)
             best_effort = settings.get("best_effort", False)
@@ -413,20 +419,18 @@ class Fandango(FandangoBase):
                 if warnings_are_errors:
                     raise FandangoFailedError("Failed to find a perfect solution")
                 elif best_effort:
-                    padding = self.fandango.population[
-                        : desired_solutions - len(solutions)
-                    ]
+                    padding = self.fandango.population[: desired_solutions - found]
                     return solutions + padding
 
             LOGGER.error(
-                f"Only found {len(solutions)} perfect solutions, instead of the required {desired_solutions}"
+                f"Only found {found} perfect solutions, instead of the required {desired_solutions}"
             )
             if warnings_are_errors:
                 raise FandangoFailedError(
                     "Failed to find the required number of perfect solutions"
                 )
             elif best_effort:
-                padding = self.fandango.population[: desired_solutions - len(solutions)]
+                padding = self.fandango.population[: desired_solutions - found]
                 return solutions + padding
         return []
 
@@ -440,6 +444,7 @@ class Fandango(FandangoBase):
         infinite: bool = False,
         mode: FuzzingMode = FuzzingMode.COMPLETE,
         max_stale_generations: Optional[int] = None,
+        keep_solutions: bool = True,
         **settings: Any,
     ) -> list[DerivationTree]:
         """
@@ -447,6 +452,7 @@ class Fandango(FandangoBase):
         :param extra_constraints: Additional constraints to apply
         :param solution_callback: What to do with each solution; receives the solution and a unique index
         :param max_stale_generations: Stop after this many generations in a row without a new solution (ignored if `infinite`)
+        :param keep_solutions: If False, solutions only go to `solution_callback` and are not returned, so that a long run does not keep every tree in memory
         :param settings: Additional settings for the evolution algorithm
         :return: A list of derivation trees
         """
@@ -475,11 +481,11 @@ class Fandango(FandangoBase):
             solution_callback(s, solution_i)
             solution_i += 1
             # prevent memory buildup in infinite mode
-            if not infinite:
+            if keep_solutions and not infinite:
                 solutions.append(s)
 
         padding = self._print_warnings_if_necessary_post_fuzz(
-            desired_solutions, solutions, settings
+            desired_solutions, solutions, settings, found=solution_i
         )
 
         solutions.extend(padding)
