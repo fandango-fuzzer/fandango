@@ -12,6 +12,7 @@ from ansi_styles import ansiStyles as styles
 
 import fandango
 from fandango import DerivationTree, Fandango
+from fandango.api import DEFAULT_MAX_GENERATIONS
 from fandango.cli.fanbase_files import fanbase_files
 from fandango.cli.output import open_file, output_population, output_solution
 from fandango.cli.parser import get_parser
@@ -195,10 +196,19 @@ def fuzz_command(args: argparse.Namespace) -> None:
     max_generations = args.max_generations
     desired_solutions = args.desired_solutions
     infinite = args.infinite
+    max_stale_generations = None
+    if max_generations is None and not infinite:
+        if desired_solutions is None:
+            max_generations = DEFAULT_MAX_GENERATIONS
+        else:
+            # -n says when to stop. Go on for as long as outputs keep coming,
+            # so that a slow spec is not cut off before it has produced them.
+            max_stale_generations = DEFAULT_MAX_GENERATIONS
 
     population = fandango.fuzz(
         solution_callback=solutions_callback,
         max_generations=max_generations,
+        max_stale_generations=max_stale_generations,
         desired_solutions=desired_solutions,
         infinite=infinite,
         mode=FuzzingMode.COMPLETE,
@@ -347,6 +357,8 @@ def talk_command(args: argparse.Namespace) -> None:
         return output_solution(sol, args, i, file_mode)
 
     max_generations = args.max_generations
+    if max_generations is None:
+        max_generations = DEFAULT_MAX_GENERATIONS
     desired_solutions = args.desired_solutions
     infinite = args.infinite
 

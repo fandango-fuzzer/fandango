@@ -88,6 +88,12 @@ class Evaluator:
     def uses_diversity_bonus(self) -> bool:
         return self._diversity_k > 0 and self._diversity_weight > 0
 
+    def get_solution_count(self) -> int:
+        """
+        :return: The number of distinct solutions found so far.
+        """
+        return len(self._solution_set)
+
     def get_fitness_check_count(self) -> int:
         """
         :return: The number of fitness checks made so far.

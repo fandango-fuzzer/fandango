@@ -185,8 +185,8 @@ def _get_algorithm_parser() -> argparse.ArgumentParser:
         "-N",
         "--max-generations",
         type=int,
-        help="Maximum number of generations to run the algorithm (ignored if --infinite is set).",
-        default=fandango.api.DEFAULT_MAX_GENERATIONS,
+        help=f"Maximum number of generations to run the algorithm (ignored if --infinite is set). Default: {fandango.api.DEFAULT_MAX_GENERATIONS}; if -n is given, no limit, but stop after {fandango.api.DEFAULT_MAX_GENERATIONS} generations in a row without a new output.",
+        default=None,
     )
     algorithm_group.add_argument(
         "--infinite",
