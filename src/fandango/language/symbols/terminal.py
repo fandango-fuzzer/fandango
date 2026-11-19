@@ -99,6 +99,12 @@ class Terminal(Symbol):
         #     can_continue = longer_pattern.fullmatch(word, partial=True) is not None
         return lengths, can_continue
 
+    def regex_matches_all(self, word: str | bytes) -> bool:
+        """Whether this regex matches `word` as a whole."""
+        assert self.is_regex
+        symbol, word = self._align_type(word)
+        return _compile(symbol).fullmatch(word) is not None
+
     def check(
         self, word: str | bytes | int, incomplete: bool = False
     ) -> tuple[bool, int]:
