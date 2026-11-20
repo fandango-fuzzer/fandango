@@ -41,9 +41,25 @@ def test_repetitions_grow_when_no_solution_is_found() -> None:
         nodes.MAX_REPETITIONS = old
 
 
-def test_tuner_counts_new_solutions_per_generation() -> None:
+def test_tuner_records_the_solution_count_per_generation() -> None:
     tuner = AdaptiveTuner(0.2, 0.8, 20, 200, None, 0.5, 200, 0.5)
-    assert tuner._found_new_solutions(0) is False
-    assert tuner._found_new_solutions(3) is True
-    assert tuner._found_new_solutions(3) is False
-    assert tuner._found_new_solutions(4) is True
+    assert tuner._record_solution_count(0) is False
+    assert tuner._record_solution_count(3) is True
+    assert tuner._record_solution_count(3) is False
+    assert tuner._record_solution_count(4) is True
+
+
+def test_reset_starts_the_count_of_solutions_again() -> None:
+    """SimpleGeneticAlgorithm.reset() empties the evaluator's solution set and
+    resets the tuner; the first solutions after it count as new."""
+    old = nodes.MAX_REPETITIONS
+    nodes.MAX_REPETITIONS = 20
+    try:
+        algorithm, solutions = run_generations(SPEC, 3)
+        assert algorithm.adaptive_tuner._solutions_seen > 0
+        algorithm.reset()
+        assert algorithm.evaluator.get_solution_count() == 0
+        assert algorithm.adaptive_tuner._solutions_seen == 0
+        assert algorithm.adaptive_tuner._record_solution_count(1) is True
+    finally:
+        nodes.MAX_REPETITIONS = old
