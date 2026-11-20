@@ -43,7 +43,7 @@ def test_repetitions_grow_when_no_solution_is_found() -> None:
 
 def test_tuner_counts_new_solutions_per_generation() -> None:
     tuner = AdaptiveTuner(0.2, 0.8, 20, 200, None, 0.5, 200, 0.5)
-    assert tuner.found_new_solutions(0) is False
-    assert tuner.found_new_solutions(3) is True
-    assert tuner.found_new_solutions(3) is False
-    assert tuner.found_new_solutions(4) is True
+    assert tuner._found_new_solutions(0) is False
+    assert tuner._found_new_solutions(3) is True
+    assert tuner._found_new_solutions(3) is False
+    assert tuner._found_new_solutions(4) is True

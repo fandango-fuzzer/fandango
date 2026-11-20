@@ -39,7 +39,7 @@ class AdaptiveTuner:
         self.max_safe_nodes = max_safe_nodes
         self._solutions_seen = 0
 
-    def found_new_solutions(self, solution_count: int) -> bool:
+    def _found_new_solutions(self, solution_count: int) -> bool:
         """
         Whether solutions were found since the last call.
         :param solution_count: The number of solutions found so far.
@@ -79,7 +79,7 @@ class AdaptiveTuner:
         # Longer repetitions and larger trees are for a search that is stuck.
         # Once solutions exist, the best fitness cannot improve any more; that
         # alone must not count as stuck while new solutions keep coming.
-        found_new_solutions = self.found_new_solutions(evaluator.get_solution_count())
+        found_new_solutions = self._found_new_solutions(evaluator.get_solution_count())
 
         # Mutation rate adjustment
         if (
