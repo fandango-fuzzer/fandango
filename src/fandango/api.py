@@ -1,6 +1,7 @@
 import itertools
 import logging
 import time
+import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Generator
 from typing import IO, Any, Optional, cast
@@ -150,6 +151,7 @@ class FandangoBase(ABC):
         Create a Fandango population.
         :param extra_constraints: Additional constraints to apply
         :param solution_callback: What to do with each solution; receives the solution and a unique index
+        :param infinite: Deprecated: `fuzz` keeps no solutions then, and returns an empty list, if at all. Use `fuzz_iter(infinite=True)` instead.
         :param settings: Additional settings for the evolution algorithm
         :return: A list of derivation trees
         """
@@ -487,9 +489,18 @@ class Fandango(FandangoBase):
         Create a Fandango population.
         :param extra_constraints: Additional constraints to apply
         :param solution_callback: What to do with each solution; receives the solution and a unique index
+        :param infinite: Deprecated: `fuzz` keeps no solutions then, and returns an empty list, if at all. Use `fuzz_iter(infinite=True)` instead.
         :param settings: Additional settings for the evolution algorithm
         :return: A list of derivation trees
         """
+        if infinite:
+            warnings.warn(
+                "fuzz(infinite=True) is deprecated: it keeps no solutions, so it "
+                "returns an empty list, if it returns at all. "
+                "Use fuzz_iter(infinite=True) instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         solutions = []
         found = 0
         for solution in self.fuzz_iter(

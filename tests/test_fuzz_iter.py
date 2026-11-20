@@ -92,3 +92,25 @@ def test_cli_has_no_best_effort_option() -> None:
     the `best_effort` setting of fuzz() remains."""
     with pytest.raises(SystemExit):
         get_parser(True).parse_args(["fuzz", "-f", "docs/digits.fan", "--best-effort"])
+
+
+def test_fuzz_with_infinite_is_deprecated() -> None:
+    """It still runs (here until the callback stops it), but warns."""
+
+    class Enough(Exception):
+        pass
+
+    def stop_after_three(_tree: DerivationTree, i: int) -> None:
+        if i == 2:
+            raise Enough()
+
+    with pytest.warns(DeprecationWarning, match="fuzz_iter"):
+        with pytest.raises(Enough):
+            Fandango(SPEC).fuzz(
+                infinite=True, solution_callback=stop_after_three, random_seed=1
+            )
+
+
+def test_fuzz_iter_with_infinite_does_not_warn() -> None:
+    solutions = Fandango(SPEC).fuzz_iter(infinite=True, random_seed=1)
+    assert len([next(solutions) for _ in range(3)]) == 3
