@@ -144,16 +144,33 @@ class FandangoBase(ABC):
         max_generations: Optional[int] = None,
         infinite: bool = False,
         mode: FuzzingMode = FuzzingMode.COMPLETE,
-        keep_solutions: bool = True,
         **settings: Any,
     ) -> list[DerivationTree]:
         """
         Create a Fandango population.
         :param extra_constraints: Additional constraints to apply
         :param solution_callback: What to do with each solution; receives the solution and a unique index
-        :param keep_solutions: If False, solutions only go to `solution_callback` and nothing is returned (no best-effort padding either), so that a long run does not keep every tree in memory
         :param settings: Additional settings for the evolution algorithm
         :return: A list of derivation trees
+        """
+        pass
+
+    @abstractmethod
+    def fuzz_iter(
+        self,
+        *,
+        extra_constraints: Optional[list[str]] = None,
+        desired_solutions: Optional[int] = None,
+        max_generations: Optional[int] = None,
+        infinite: bool = False,
+        mode: FuzzingMode = FuzzingMode.COMPLETE,
+        **settings: Any,
+    ) -> Generator[DerivationTree, None, None]:
+        """
+        Yield solutions one at a time, as `fuzz` finds them, without keeping them.
+        :param extra_constraints: Additional constraints to apply
+        :param settings: Additional settings for the evolution algorithm
+        :return: A generator of derivation trees
         """
         pass
 
@@ -376,67 +393,64 @@ class Fandango(FandangoBase):
     def _print_warnings_if_necessary_post_fuzz(
         self,
         desired_solutions: Optional[int],
-        solutions: list[DerivationTree],
+        found: int,
         settings: dict[str, Any],
-        found: Optional[int] = None,
-    ) -> list[DerivationTree]:
+    ) -> None:
         """
         Print warnings if necessary after fuzzing.
         :param desired_solutions: The desired number of solutions
-        :param solutions: The solutions found
+        :param found: The number of solutions found
         :param settings: The settings used for the fuzzing
-        :param found: The number of solutions found, if not all of them are in `solutions`
-        :return: A list of derivation trees from the population to append to the solutions before returning; used for best-effort solving of constraints
         """
         assert self.fandango is not None
-        if found is None:
-            found = len(solutions)
-        if desired_solutions is not None and found < desired_solutions:
-            assert isinstance(self.fandango, SimpleGeneticAlgorithm)
-            warnings_are_errors = settings.get("warnings_are_errors", False)
-            best_effort = settings.get("best_effort", False)
-            if (
-                self.fandango.average_population_fitness
-                < self.fandango.evaluator.expected_fitness
-            ):
-                LOGGER.error("Population did not converge to a perfect population")
-                if warnings_are_errors:
-                    raise FandangoFailedError("Failed to find a perfect solution")
-                elif best_effort:
-                    padding = self.fandango.population[: desired_solutions - found]
-                    return solutions + padding
-
-            LOGGER.error(
-                f"Only found {found} perfect solutions, instead of the required {desired_solutions}"
-            )
+        if desired_solutions is None or found >= desired_solutions:
+            return
+        assert isinstance(self.fandango, SimpleGeneticAlgorithm)
+        warnings_are_errors = settings.get("warnings_are_errors", False)
+        if (
+            self.fandango.average_population_fitness
+            < self.fandango.evaluator.expected_fitness
+        ):
+            LOGGER.error("Population did not converge to a perfect population")
             if warnings_are_errors:
-                raise FandangoFailedError(
-                    "Failed to find the required number of perfect solutions"
-                )
-            elif best_effort:
-                padding = self.fandango.population[: desired_solutions - found]
-                return solutions + padding
-        return []
+                raise FandangoFailedError("Failed to find a perfect solution")
 
-    def fuzz(
+        LOGGER.error(
+            f"Only found {found} perfect solutions, instead of the required {desired_solutions}"
+        )
+        if warnings_are_errors:
+            raise FandangoFailedError(
+                "Failed to find the required number of perfect solutions"
+            )
+
+    def _best_effort_padding(
+        self, desired_solutions: Optional[int], found: int
+    ) -> list[DerivationTree]:
+        """
+        Individuals of the population to fill up a result that has fewer than
+        `desired_solutions` solutions; used for best-effort solving of constraints.
+        """
+        if desired_solutions is None or found >= desired_solutions:
+            return []
+        assert isinstance(self.fandango, SimpleGeneticAlgorithm)
+        return self.fandango.population[: desired_solutions - found]
+
+    def fuzz_iter(
         self,
         *,
         extra_constraints: Optional[list[str]] = None,
-        solution_callback: Callable[[DerivationTree, int], None] = lambda _a, _b: None,
         desired_solutions: Optional[int] = None,
         max_generations: Optional[int] = None,
         infinite: bool = False,
         mode: FuzzingMode = FuzzingMode.COMPLETE,
-        keep_solutions: bool = True,
         **settings: Any,
-    ) -> list[DerivationTree]:
+    ) -> Generator[DerivationTree, None, None]:
         """
-        Create a Fandango population.
+        Yield solutions one at a time, as `fuzz` finds them, without keeping them.
+        The warnings about missing solutions are given once the solutions run out.
         :param extra_constraints: Additional constraints to apply
-        :param solution_callback: What to do with each solution; receives the solution and a unique index
-        :param keep_solutions: If False, solutions only go to `solution_callback` and nothing is returned (no best-effort padding either), so that a long run does not keep every tree in memory
         :param settings: Additional settings for the evolution algorithm
-        :return: A list of derivation trees
+        :return: A generator of derivation trees
         """
         max_generations, desired_solutions, infinite = (
             self._sanitize_runtime_end_settings(
@@ -447,32 +461,53 @@ class Fandango(FandangoBase):
                 settings.get("use_fcc", False),
             )
         )
-
-        solution_i = 0
-        solutions = []
-
         self.init_population(extra_constraints=extra_constraints, mode=mode, **settings)
         raw_generator = self.generate_solutions(max_generations, mode)
 
         # limit the generator to desired_solutions — no limit if desired_solutions is None
-        generator = itertools.islice(raw_generator, desired_solutions)
+        found = 0
+        for solution in itertools.islice(raw_generator, desired_solutions):
+            found += 1
+            yield solution
 
-        for s in generator:
-            solution_callback(s, solution_i)
-            solution_i += 1
+        self._print_warnings_if_necessary_post_fuzz(desired_solutions, found, settings)
+
+    def fuzz(
+        self,
+        *,
+        extra_constraints: Optional[list[str]] = None,
+        solution_callback: Callable[[DerivationTree, int], None] = lambda _a, _b: None,
+        desired_solutions: Optional[int] = None,
+        max_generations: Optional[int] = None,
+        infinite: bool = False,
+        mode: FuzzingMode = FuzzingMode.COMPLETE,
+        **settings: Any,
+    ) -> list[DerivationTree]:
+        """
+        Create a Fandango population.
+        :param extra_constraints: Additional constraints to apply
+        :param solution_callback: What to do with each solution; receives the solution and a unique index
+        :param settings: Additional settings for the evolution algorithm
+        :return: A list of derivation trees
+        """
+        solutions = []
+        found = 0
+        for solution in self.fuzz_iter(
+            extra_constraints=extra_constraints,
+            desired_solutions=desired_solutions,
+            max_generations=max_generations,
+            infinite=infinite,
+            mode=mode,
+            **settings,
+        ):
+            solution_callback(solution, found)
+            found += 1
             # prevent memory buildup in infinite mode
-            if keep_solutions and not infinite:
-                solutions.append(s)
+            if not infinite:
+                solutions.append(solution)
 
-        padding = self._print_warnings_if_necessary_post_fuzz(
-            desired_solutions, solutions, settings, found=solution_i
-        )
-
-        if not keep_solutions:
-            # The caller asked for nothing back, best-effort padding included
-            return []
-
-        solutions.extend(padding)
+        if settings.get("best_effort", False):
+            solutions.extend(self._best_effort_padding(desired_solutions, found))
 
         return solutions
 

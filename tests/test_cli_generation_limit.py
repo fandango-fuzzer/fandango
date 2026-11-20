@@ -1,4 +1,5 @@
 import argparse
+from collections.abc import Generator
 from typing import Any
 
 import pytest
@@ -12,14 +13,16 @@ from fandango.language.tree import DerivationTree
 
 
 def fuzz_kwargs(monkeypatch: pytest.MonkeyPatch, *cli: str) -> dict[str, Any]:
-    """The arguments `fandango fuzz ...` passes on to Fandango.fuzz()."""
+    """The arguments `fandango fuzz ...` passes on to Fandango.fuzz_iter()."""
     seen: dict[str, Any] = {}
 
-    def fake_fuzz(self: Fandango, **kwargs: Any) -> list[DerivationTree]:
+    def fake_fuzz_iter(
+        self: Fandango, **kwargs: Any
+    ) -> Generator[DerivationTree, None, None]:
         seen.update(kwargs)
-        return []
+        yield from ()
 
-    monkeypatch.setattr(fandango.api.Fandango, "fuzz", fake_fuzz)
+    monkeypatch.setattr(fandango.api.Fandango, "fuzz_iter", fake_fuzz_iter)
     args: argparse.Namespace = get_parser(True).parse_args(
         ["fuzz", "-f", "docs/digits.fan", "--no-cache", *cli]
     )
