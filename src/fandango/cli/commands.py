@@ -196,8 +196,6 @@ def fuzz_command(args: argparse.Namespace) -> None:
     max_generations = args.max_generations
     desired_solutions = args.desired_solutions
     infinite = args.infinite
-    # Without -N: -n alone says when to stop, so there is no generation limit;
-    # with neither, Fandango.fuzz() falls back to DEFAULT_MAX_GENERATIONS.
 
     population = fandango.fuzz(
         solution_callback=solutions_callback,
