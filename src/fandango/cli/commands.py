@@ -1,5 +1,5 @@
 import argparse
-import glob
+import copy
 import os
 import shutil
 import sys
@@ -14,7 +14,13 @@ import fandango
 from fandango import DerivationTree, Fandango
 from fandango.api import DEFAULT_MAX_GENERATIONS
 from fandango.cli.fanbase_files import fanbase_files
-from fandango.cli.output import open_file, output_population, output_solution
+from fandango.cli.output import (
+    filename_extension,
+    open_file,
+    output_population,
+    output_solution,
+    output_solution_to_directory,
+)
 from fandango.cli.parser import get_parser
 from fandango.cli.upgrade import check_for_fandango_update
 from fandango.cli.utils import (
@@ -190,63 +196,70 @@ def fuzz_command(args: argparse.Namespace) -> None:
                 f"Output directory {out_dir} is not a directory or is not empty"
             )
 
-    def solutions_callback(sol: DerivationTree, i: int) -> None:
-        return output_solution(sol, args, i, file_mode)
-
-    max_generations = args.max_generations
-    desired_solutions = args.desired_solutions
-    infinite = args.infinite
-
-    population = fandango.fuzz(
-        solution_callback=solutions_callback,
-        max_generations=max_generations,
-        desired_solutions=desired_solutions,
-        infinite=infinite,
-        mode=FuzzingMode.COMPLETE,
-        # The callback has written every solution; only --validate reads them again
-        keep_solutions=bool(args.validate),
-        **settings,
-    )
-
+    validate_args: Optional[argparse.Namespace] = None
     if args.validate:
-        LOGGER.debug("Validating population")
-
-        # Ensure that every generated file can be parsed
-        # and returns the same string as the original
+        # Every solution is written once more, as a string, to a directory of
+        # its own, and parsed back; it has to give the same tree.
         try:
-            temp_dir = tempfile.TemporaryDirectory(delete=False)  # type: ignore [call-overload, unused-ignore] # delete is only available on some OSs
+            temp_dir = tempfile.TemporaryDirectory(delete=False)  # type: ignore [call-overload, unused-ignore] # delete is only available on some OSs
         except TypeError:
             # Python 3.11 does not know the `delete` argument
             temp_dir = tempfile.TemporaryDirectory()
-        args.directory = temp_dir.name
-        args.format = "string"
-        output_population(population, args, file_mode=file_mode, output_on_stdout=False)
-        generated_files = glob.glob(args.directory + "/*")
-        generated_files.sort()
-        assert len(generated_files) == len(population), (
-            f"len(generated_files): {len(generated_files)}, len(population): {len(population)}"
+        validate_args = copy.copy(args)
+        validate_args.directory = temp_dir.name
+        validate_args.format = "string"
+
+    errors = 0
+    # Each solution is written (and validated) as soon as it is found, and then
+    # dropped, so that a long run does not keep every tree in memory.
+    for i, solution in enumerate(
+        fandango.fuzz_iter(
+            max_generations=args.max_generations,
+            desired_solutions=args.desired_solutions,
+            infinite=args.infinite,
+            mode=FuzzingMode.COMPLETE,
+            **settings,
         )
+    ):
+        output_solution(solution, args, i, file_mode)
+        if validate_args is not None:
+            errors += validate_solution(
+                solution, i, validate_args, file_mode, grammar, constraints, settings
+            )
 
-        errors = 0
-        for i in range(len(generated_files)):
-            generated_file = generated_files[i]
-            individual = population[i]
-
-            try:
-                with open_file(generated_file, file_mode, mode="r") as fd:
-                    tree = parse_file(fd, args, grammar, constraints, settings)
-                    validate(individual, tree, filename=fd.name)
-
-            except Exception as e:
-                print_exception(e)
-                errors += 1
-
+    if validate_args is not None:
         if errors:
             raise FandangoError(f"{errors} error(s) during validation")
-
         # If everything went well, clean up;
-        # otherwise preserve file for debugging
-        shutil.rmtree(temp_dir.name)
+        # otherwise preserve files for debugging
+        shutil.rmtree(validate_args.directory)
+
+
+def validate_solution(
+    solution: DerivationTree,
+    index: int,
+    args: argparse.Namespace,
+    file_mode: str,
+    grammar: Grammar,
+    constraints: list[Constraint | SoftValue],
+    settings: dict[str, Any],
+) -> int:
+    """
+    Write `solution` to `args.directory` and parse it back.
+    :return: The number of errors (0 or 1)
+    """
+    output_solution_to_directory(solution, args, index, file_mode)
+    filename = os.path.join(
+        args.directory, f"fandango-{index:04d}{filename_extension(args)}"
+    )
+    try:
+        with open_file(filename, file_mode, mode="r") as fd:
+            tree = parse_file(fd, args, grammar, constraints, settings)
+            validate(solution, tree, filename=fd.name)
+    except Exception as e:
+        print_exception(e)
+        return 1
+    return 0
 
 
 def parse_command(args: argparse.Namespace) -> None:

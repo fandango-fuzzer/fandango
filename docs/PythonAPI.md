@@ -167,6 +167,16 @@ The `fuzz()` method returns a list of [`DerivationTree` objects](sec:derivation-
 
 The exception class `FandangoError` is the superclass of these exceptions.
 
+To handle each output as soon as it is found, without keeping all of them, use `fuzz_iter()` instead.
+It takes the same arguments as `fuzz()` except `solution_callback`, and yields one `DerivationTree` at a time.
+It gives the warning (or raises the exception) about missing solutions once the solutions run out; `best_effort` has no effect on it.
+`fuzz()` is `fuzz_iter()` with the outputs collected in a list.
+
+```python
+for tree in fan.fuzz_iter(desired_solutions=10_000):
+    print(tree)
+```
+
 
 (sec:parse-api)=
 ## The `parse()` method
