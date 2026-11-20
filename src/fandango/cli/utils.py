@@ -6,7 +6,7 @@ import zipfile
 from collections.abc import Iterable
 from typing import IO, Any, Optional
 
-from fandango.api import Fandango, FandangoBase
+from fandango.api import Fandango
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
 from fandango.errors import FandangoError, FandangoParseError
@@ -304,49 +304,19 @@ def parse_file(
     """
     LOGGER.info(f"Parsing {fd.name!r}")
     individual = fd.read()
-    tree = parse_value(
-        individual,
-        args,
-        grammar,
-        constraints,
-        settings,
-        name=fd.name,
-        binary="b" in fd.mode,
-    )
-    if args.validate:
-        validate(individual, tree, filename=fd.name)
-    return tree
-
-
-def parse_value(
-    individual: str | bytes,
-    args: argparse.Namespace,
-    grammar: Grammar,
-    constraints: list[Constraint | SoftValue],
-    settings: dict[str, Any],
-    *,
-    name: str,
-    binary: bool,
-    fan: Optional[FandangoBase] = None,
-) -> DerivationTree:
-    """
-    Parse `individual` according to `args`, `grammar`, `constraints`, and `settings`, and return the parse tree.
-    :param name: What to call `individual` in error messages
-    :param binary: Whether `individual` is binary data, for error messages
-    :param fan: A Fandango object for `grammar` and `constraints` to parse with; made anew if None
-    """
     start_symbol = settings.get("start_symbol", "<start>")
     allow_incomplete = hasattr(args, "prefix") and args.prefix
-    if fan is None:
-        fan = Fandango._with_parsed(
-            grammar,
-            constraints,
-            start_symbol=start_symbol,
-            logging_level=LOGGER.getEffectiveLevel(),
-        )
+    fan = Fandango._with_parsed(
+        grammar,
+        constraints,
+        start_symbol=start_symbol,
+        logging_level=LOGGER.getEffectiveLevel(),
+    )
 
     gen = GeneratorWithReturn(fan.parse(individual, prefix=allow_incomplete))
     for tree in gen:
+        if args.validate:
+            validate(individual, tree, filename=fd.name)
         return tree
 
     # so no tree matched everything (we would have returned above)
@@ -363,7 +333,9 @@ def parse_value(
     else:
         # no tree matched the grammar
         raise FandangoParseError(
-            report_syntax_error(name, len(individual), individual, binary=binary)
+            report_syntax_error(
+                fd.name, len(individual), individual, binary=("b" in fd.mode)
+            )
         )
 
 
