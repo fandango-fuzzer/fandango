@@ -3,6 +3,7 @@ from fandango.evolution.adaptation import AdaptiveTuner
 from fandango.evolution.evaluation import Evaluator
 from fandango.language import DerivationTree
 from fandango.language.grammar import nodes
+from fandango.language.grammar.k_paths import GrammarKPaths
 
 SPEC = "<start> ::= <digit>*"
 
@@ -49,7 +50,15 @@ def _tuner() -> AdaptiveTuner:
 
 class _NoDiversityEvaluator(Evaluator):
     def __init__(self) -> None:
-        pass
+        grammar = Fandango(SPEC).grammar
+        super().__init__(
+            grammar=grammar,
+            k_paths=GrammarKPaths(grammar),
+            constraints=[],
+            expected_fitness=1.0,
+            diversity_k=0,
+            diversity_weight=0.0,
+        )
 
     def compute_diversity_bonus(  # type: ignore[override]
         self, individuals: list[DerivationTree], fill_up: object = None
