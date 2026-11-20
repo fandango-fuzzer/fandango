@@ -39,6 +39,7 @@ class GrammarKPaths:
         self._grammar = grammar
         # A plain dict: the keys are bounded by the grammar, and a hit costs a single lookup
         self._k_path_cache: dict[_KPathsKey, set[KPath]] = {}
+        # Keys are the hashes of `_KPathsKey` objects
         self._tree_k_path_cache: LRUCache[int, _TreeKPaths] = LRUCache(
             maxsize=cache_size()
         )
