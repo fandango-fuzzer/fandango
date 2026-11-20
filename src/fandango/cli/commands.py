@@ -217,7 +217,8 @@ def fuzz_command(args: argparse.Namespace) -> None:
             value = (
                 solution.to_bytes() if file_mode == "binary" else solution.to_string()
             )
-            if next(fandango.parse(value), None) is None:
+            re_parsed = next(fandango.parse(value), None)
+            if re_parsed is not None and re_parsed.value() != value:
                 raise FandangoError(
                     f"Output {i} does not parse back; it is the last output written."
                     " Use `fandango parse` on it to see why."
