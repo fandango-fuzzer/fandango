@@ -20,6 +20,14 @@ def grammar():  # type: ignore[no-untyped-def]
     return Fandango(SPEC).grammar
 
 
+def iterative_parse(grammar, word, symbol):  # type: ignore[no-untyped-def]
+    """The first tree of the iterative parser, without the shortcut for one regex."""
+    tree = next(
+        grammar._parser._parse_forest(word, symbol, mode=ParsingMode.COMPLETE), None
+    )
+    return None if tree is None else grammar._parser.collapse(tree)
+
+
 @pytest.mark.parametrize(
     "symbol, word",
     [
@@ -35,7 +43,7 @@ def grammar():  # type: ignore[no-untyped-def]
 def test_a_rule_of_one_regex_parses_as_before(grammar, symbol, word) -> None:  # type: ignore[no-untyped-def]
     """The direct match gives the tree (or the failure) the Earley parser gives."""
     direct = grammar.parse(word, symbol)
-    earley = grammar._parser.parse(word, symbol, mode=ParsingMode.COMPLETE)
+    earley = iterative_parse(grammar, word, symbol)
     if earley is None:
         assert direct is None
     else:
@@ -66,4 +74,12 @@ def test_a_long_value_for_a_rule_of_one_regex_is_parsed_quickly(grammar) -> None
     tree = grammar.parse(word, "<blob>")
     assert tree is not None
     assert tree.to_bytes() == word
+    assert time.time() - start < 2.0
+
+
+def test_parse_forest_takes_the_shortcut_too(grammar) -> None:  # type: ignore[no-untyped-def]
+    word = bytes(range(256)).replace(b"m", b"-") * 200
+    start = time.time()
+    trees = list(grammar.parse_forest(word, "<blob>"))
+    assert [t.to_bytes() for t in trees] == [word]
     assert time.time() - start < 2.0

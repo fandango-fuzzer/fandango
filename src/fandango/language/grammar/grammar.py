@@ -21,7 +21,7 @@ from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.grammar.parser.parser import Parser
-from fandango.language.symbols import NonTerminal, Symbol, Terminal
+from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree, TreeTuple
 from fandango.language.tree_value import TreeValueType
 from fandango.logger import LOGGER
@@ -334,14 +334,6 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         hookin_parent: Optional[DerivationTree] = None,
         include_controlflow: bool = False,
     ) -> Optional[DerivationTree]:
-        if (
-            mode == ParsingMode.COMPLETE
-            and hookin_parent is None
-            and isinstance(word, (str, bytes))
-        ):
-            regex = self._lone_regex(start, word)
-            if regex is not None:
-                return self._parse_lone_regex(regex, word, start)
         return self._parser.parse(
             word,
             start,
@@ -349,41 +341,6 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
             hookin_parent=hookin_parent,
             include_controlflow=include_controlflow,
         )
-
-    def _lone_regex(
-        self, start: str | NonTerminal, word: str | bytes
-    ) -> Optional[Terminal]:
-        """
-        The regex of `start` if its rule is that one regex and nothing else,
-        and `word` is of the regex's own type (no conversion needed).
-        """
-        if isinstance(start, str):
-            start = NonTerminal(start)
-        rule = self.rules.get(start)
-        if not isinstance(rule, TerminalNode) or not rule.symbol.is_regex:
-            return None
-        terminal = rule.symbol
-        assert isinstance(terminal, Terminal)
-        if isinstance(word, bytes) and terminal.is_type(TreeValueType.BYTES):
-            return terminal
-        if isinstance(word, str) and terminal.is_type(TreeValueType.STRING):
-            return terminal
-        return None
-
-    def _parse_lone_regex(
-        self, terminal: Terminal, word: str | bytes, start: str | NonTerminal
-    ) -> Optional[DerivationTree]:
-        """
-        Parse `word` as a nonterminal whose rule is one regex: it has to match
-        as a whole. The general parser keeps a state, with a copy of the
-        prefix, for every length the regex accepts, which is quadratic in the
-        length of the word for a regex like `[^x]*`.
-        """
-        if isinstance(start, str):
-            start = NonTerminal(start)
-        if not terminal.regex_matches_all(word):
-            return None
-        return DerivationTree(start, [DerivationTree(Terminal(word))])
 
     def parse_forest(
         self,
