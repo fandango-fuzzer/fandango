@@ -322,7 +322,7 @@ After a maximum number of generations (which can be set using `-N`), Fandango st
 We can see this if we specify `False` as a constraint:
 
 :::{margin}
-The `-N` option limits the number of generations - the default is 500.
+The `-N` option limits the number of generations. Without it, Fandango runs until it has the number of outputs asked for with `-n`; if `-n` is not given either, it stops after 500 generations.
 :::
 
 ```shell
