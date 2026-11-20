@@ -86,10 +86,10 @@ FSTRING_END_TRIPLE_SINGLE_QUOTE: '\'\'\'' { fstring_end() };
 FSTRING_END_QUOTE: '"' { fstring_end() };
 FSTRING_END_SINGLE_QUOTE: '\'' { fstring_end() };
 BYTES_LITERAL: ( [bB] | ( [bB] [rR]) | ( [rR] [bB])) ( SHORT_BYTES | LONG_BYTES);
-DECIMAL_INTEGER: NON_ZERO_DIGIT DIGIT* | '0'+;
-OCT_INTEGER: '0' [oO] OCT_DIGIT+;
-HEX_INTEGER: '0' [xX] HEX_DIGIT+;
-BIN_INTEGER: '0' [bB] BIN_DIGIT+;
+DECIMAL_INTEGER: NON_ZERO_DIGIT ( '_'? DIGIT)* | '0' ( '_'? '0')*;
+OCT_INTEGER: '0' [oO] ( '_'? OCT_DIGIT)+;
+HEX_INTEGER: '0' [xX] ( '_'? HEX_DIGIT)+;
+BIN_INTEGER: '0' [bB] ( '_'? BIN_DIGIT)+;
 FLOAT_NUMBER: POINT_FLOAT | EXPONENT_FLOAT;
 IMAG_NUMBER: ( FLOAT_NUMBER | INT_PART) [jJ];
 
@@ -174,9 +174,9 @@ fragment HEX_DIGIT: [0-9a-fA-F];
 fragment BIN_DIGIT: [01];
 fragment POINT_FLOAT: INT_PART? FRACTION | INT_PART '.';
 fragment EXPONENT_FLOAT: ( INT_PART | POINT_FLOAT) EXPONENT;
-fragment INT_PART: DIGIT+;
-fragment FRACTION: '.' DIGIT+;
-fragment EXPONENT: [eE] [+-]? DIGIT+;
+fragment INT_PART: DIGIT ( '_'? DIGIT)*;
+fragment FRACTION: '.' INT_PART;
+fragment EXPONENT: [eE] [+-]? INT_PART;
 fragment SHORT_BYTES:
     '\'' (SHORT_BYTES_CHAR_NO_SINGLE_QUOTE | BYTES_ESCAPE_SEQ)* '\''
     | '"' ( SHORT_BYTES_CHAR_NO_DOUBLE_QUOTE | BYTES_ESCAPE_SEQ)* '"'
