@@ -226,6 +226,12 @@ def fuzz_command(args: argparse.Namespace) -> None:
 
     fandango._print_warnings_if_necessary_post_fuzz(desired_solutions, found, settings)
 
+    if settings.get("best_effort", False):
+        # Not validated: the padding need not satisfy the constraints
+        padding = fandango._best_effort_padding(desired_solutions, found)
+        for i, individual in enumerate(padding, start=found):
+            output_solution(individual, args, i, file_mode)
+
 
 def parse_command(args: argparse.Namespace) -> None:
     """Parse given files"""

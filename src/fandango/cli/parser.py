@@ -260,6 +260,13 @@ def _get_algorithm_parser() -> argparse.ArgumentParser:
         default=None,
     )
     algorithm_group.add_argument(
+        "--best-effort",
+        dest="best_effort",
+        action="store_true",
+        help="If fewer than the desired number of solutions are found, fill up the output with individuals of the final population (which may not satisfy all constraints).",
+        default=None,
+    )
+    algorithm_group.add_argument(
         "-i",
         "--initial-population",
         type=str,

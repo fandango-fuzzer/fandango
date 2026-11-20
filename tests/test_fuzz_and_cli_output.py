@@ -77,11 +77,22 @@ def test_cli_writes_solutions_without_collecting_them(
     assert len(list(out.iterdir())) == 5
 
 
-def test_cli_has_no_best_effort_option() -> None:
-    """It never wrote the padding (the CLI writes solutions only), so it is gone;
-    the `best_effort` setting of fuzz() remains."""
-    with pytest.raises(SystemExit):
-        get_parser(True).parse_args(["fuzz", "-f", "docs/digits.fan", "--best-effort"])
+def test_cli_best_effort_writes_the_padding(tmp_path: Any) -> None:
+    """The CLI writes what fuzz(best_effort=True) returns: the solutions plus padding."""
+    spec = tmp_path / "two.fan"
+    spec.write_text(TWO + "\n")
+    out = tmp_path / "out"
+    args: argparse.Namespace = get_parser(True).parse_args(
+        ["fuzz", "-f", str(spec), "--no-cache", "-n", "5", "-N", "3"]
+        + ["--random-seed", "1", "--best-effort", "-d", str(out)]
+    )
+    commands.fuzz_command(args)
+    expected = Fandango(TWO).fuzz(
+        desired_solutions=5, max_generations=3, best_effort=True, random_seed=1
+    )
+    assert len(expected) > 2  # padded
+    written = sorted(out.iterdir())
+    assert [p.read_text() for p in written] == [str(t) for t in expected]
 
 
 def test_fuzz_with_infinite_is_deprecated() -> None:
