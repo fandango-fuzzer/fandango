@@ -1,7 +1,5 @@
 import argparse
-import copy
 import os
-import shutil
 import sys
 import tempfile
 from collections.abc import Callable
@@ -12,14 +10,12 @@ from ansi_styles import ansiStyles as styles
 
 import fandango
 from fandango import DerivationTree, Fandango
-from fandango.api import DEFAULT_MAX_GENERATIONS
+from fandango.api import DEFAULT_MAX_GENERATIONS, FandangoBase
 from fandango.cli.fanbase_files import fanbase_files
 from fandango.cli.output import (
-    filename_extension,
     open_file,
     output_population,
     output_solution,
-    output_solution_to_directory,
 )
 from fandango.cli.parser import get_parser
 from fandango.cli.upgrade import check_for_fandango_update
@@ -29,6 +25,7 @@ from fandango.cli.utils import (
     parse_constraints_from_args,
     parse_contents_from_args,
     parse_file,
+    parse_value,
     validate,
 )
 from fandango.constraints.constraint import Constraint
@@ -196,20 +193,19 @@ def fuzz_command(args: argparse.Namespace) -> None:
                 f"Output directory {out_dir} is not a directory or is not empty"
             )
 
-    validate_args: Optional[argparse.Namespace] = None
+    validate_fan: Optional[FandangoBase] = None
     if args.validate:
-        # Every solution is written once more, as a string, to a directory of
-        # its own, and parsed back; it has to give the same tree.
-        try:
-            temp_dir = tempfile.TemporaryDirectory(delete=False)  # type: ignore [call-overload, unused-ignore] # delete is only available on some OSs
-        except TypeError:
-            # Python 3.11 does not know the `delete` argument
-            temp_dir = tempfile.TemporaryDirectory()
-        validate_args = copy.copy(args)
-        validate_args.directory = temp_dir.name
-        validate_args.format = "string"
+        # Every solution is serialized and parsed back; it has to give the same
+        # tree. One Fandango object does the parsing for the whole run.
+        validate_fan = Fandango._with_parsed(
+            grammar,
+            constraints,
+            start_symbol=settings.get("start_symbol", "<start>"),
+            logging_level=LOGGER.getEffectiveLevel(),
+        )
 
     errors = 0
+    failure_dir: Optional[str] = None
     # Each solution is written (and validated) as soon as it is found, and then
     # dropped, so that a long run does not keep every tree in memory.
     for i, solution in enumerate(
@@ -222,17 +218,18 @@ def fuzz_command(args: argparse.Namespace) -> None:
         )
     ):
         output_solution(solution, args, i, file_mode)
-        if validate_args is not None:
-            errors += validate_solution(
-                solution, i, validate_args, file_mode, grammar, constraints, settings
-            )
+        if validate_fan is not None and not validate_solution(
+            solution, i, args, file_mode, grammar, constraints, settings, validate_fan
+        ):
+            errors += 1
+            if failure_dir is None:
+                failure_dir = tempfile.mkdtemp(prefix="fandango-validation-")
+            write_failed_solution(solution, i, args, file_mode, failure_dir)
 
-    if validate_args is not None:
-        if errors:
-            raise FandangoError(f"{errors} error(s) during validation")
-        # If everything went well, clean up;
-        # otherwise preserve files for debugging
-        shutil.rmtree(validate_args.directory)
+    if errors:
+        raise FandangoError(
+            f"{errors} error(s) during validation; the failing solutions are in {failure_dir}"
+        )
 
 
 def validate_solution(
@@ -243,23 +240,47 @@ def validate_solution(
     grammar: Grammar,
     constraints: list[Constraint | SoftValue],
     settings: dict[str, Any],
-) -> int:
+    fan: FandangoBase,
+) -> bool:
     """
-    Write `solution` to `args.directory` and parse it back.
-    :return: The number of errors (0 or 1)
+    Serialize `solution` as `fandango fuzz` writes it as a string, parse it
+    back, and check that the result is the same.
+    :return: Whether it is the same
     """
-    output_solution_to_directory(solution, args, index, file_mode)
-    filename = os.path.join(
-        args.directory, f"fandango-{index:04d}{filename_extension(args)}"
-    )
+    binary = file_mode == "binary"
+    individual = solution.to_bytes() if binary else solution.to_string()
+    name = f"<solution {index}>"
     try:
-        with open_file(filename, file_mode, mode="r") as fd:
-            tree = parse_file(fd, args, grammar, constraints, settings)
-            validate(solution, tree, filename=fd.name)
+        tree = parse_value(
+            individual,
+            args,
+            grammar,
+            constraints,
+            settings,
+            name=name,
+            binary=binary,
+            fan=fan,
+        )
+        validate(solution, tree, filename=name)
     except Exception as e:
         print_exception(e)
-        return 1
-    return 0
+        return False
+    return True
+
+
+def write_failed_solution(
+    solution: DerivationTree,
+    index: int,
+    args: argparse.Namespace,
+    file_mode: str,
+    directory: str,
+) -> None:
+    """Write `solution`, as it was validated, to `directory` for inspection."""
+    extension = getattr(args, "filename_extension", None) or ".txt"
+    filename = os.path.join(directory, f"fandango-{index:04d}{extension}")
+    with open_file(filename, file_mode, mode="w") as fd:
+        fd.write(solution.to_bytes() if file_mode == "binary" else solution.to_string())
+    LOGGER.error(f"Solution {index} failed validation; written to {filename!r}")
 
 
 def parse_command(args: argparse.Namespace) -> None:

@@ -1,5 +1,7 @@
 import argparse
 import inspect
+import shutil
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -114,3 +116,32 @@ def test_fuzz_with_infinite_is_deprecated() -> None:
 def test_fuzz_iter_with_infinite_does_not_warn() -> None:
     solutions = Fandango(SPEC).fuzz_iter(infinite=True, random_seed=1)
     assert len([next(solutions) for _ in range(3)]) == 3
+
+
+def test_cli_validation_is_in_memory_and_writes_failures_to_disk(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Any
+) -> None:
+    """--validate parses each solution back without a file; a solution that
+    fails is written to a directory that the error names."""
+    from fandango.errors import FandangoError
+
+    def always_fails(original: Any, parsed: Any, *, filename: str = "") -> None:
+        raise FandangoError(f"{filename}: does not match")
+
+    monkeypatch.setattr(commands, "validate", always_fails)
+    # report each failure and go on, as outside the tests
+    monkeypatch.setattr("fandango.logger._RAISE_ON_LOGGED_EXCEPTIONS", False)
+    out = tmp_path / "out"
+    args: argparse.Namespace = get_parser(True).parse_args(
+        ["fuzz", "-f", "docs/digits.fan", "--no-cache", "-n", "2", "--random-seed", "1"]
+        + ["-d", str(out), "--validate"]
+    )
+    with pytest.raises(FandangoError, match="2 error") as error:
+        commands.fuzz_command(args)
+    failure_dir = str(error.value).rsplit(" ", 1)[-1]
+    written = sorted(p.name for p in Path(failure_dir).iterdir())
+    assert written == ["fandango-0000.txt", "fandango-0001.txt"]
+    assert sorted(p.name for p in out.iterdir()) == written  # same contents
+    for name in written:
+        assert (Path(failure_dir) / name).read_text() == (out / name).read_text()
+    shutil.rmtree(failure_dir)
