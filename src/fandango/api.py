@@ -151,7 +151,7 @@ class FandangoBase(ABC):
         Create a Fandango population.
         :param extra_constraints: Additional constraints to apply
         :param solution_callback: What to do with each solution; receives the solution and a unique index
-        :param keep_solutions: If False, solutions only go to `solution_callback` and are not returned, so that a long run does not keep every tree in memory
+        :param keep_solutions: If False, solutions only go to `solution_callback` and nothing is returned (no best-effort padding either), so that a long run does not keep every tree in memory
         :param settings: Additional settings for the evolution algorithm
         :return: A list of derivation trees
         """
@@ -434,7 +434,7 @@ class Fandango(FandangoBase):
         Create a Fandango population.
         :param extra_constraints: Additional constraints to apply
         :param solution_callback: What to do with each solution; receives the solution and a unique index
-        :param keep_solutions: If False, solutions only go to `solution_callback` and are not returned, so that a long run does not keep every tree in memory
+        :param keep_solutions: If False, solutions only go to `solution_callback` and nothing is returned (no best-effort padding either), so that a long run does not keep every tree in memory
         :param settings: Additional settings for the evolution algorithm
         :return: A list of derivation trees
         """
@@ -467,6 +467,10 @@ class Fandango(FandangoBase):
         padding = self._print_warnings_if_necessary_post_fuzz(
             desired_solutions, solutions, settings, found=solution_i
         )
+
+        if not keep_solutions:
+            # The caller asked for nothing back, best-effort padding included
+            return []
 
         solutions.extend(padding)
 

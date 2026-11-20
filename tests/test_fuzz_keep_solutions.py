@@ -53,3 +53,25 @@ def test_fuzz_without_keeping_still_reports_missing_solutions(caplog) -> None:  
     assert solutions == []
     assert count == 2
     assert "Only found 2 perfect solutions" in caplog.text
+
+
+def test_fuzz_without_keeping_returns_no_best_effort_padding() -> None:
+    """best_effort pads the result with individuals of the population. A caller
+    that asked for nothing back gets nothing back."""
+    spec = "<start> ::= 'a' | 'b'"
+    kept = Fandango(spec).fuzz(
+        desired_solutions=5, max_generations=3, best_effort=True, random_seed=1
+    )
+    assert len(kept) > 2  # two solutions plus padding
+
+    seen: list[DerivationTree] = []
+    solutions = Fandango(spec).fuzz(
+        desired_solutions=5,
+        max_generations=3,
+        best_effort=True,
+        solution_callback=lambda tree, _i: seen.append(tree),
+        keep_solutions=False,
+        random_seed=1,
+    )
+    assert solutions == []
+    assert len(seen) == 2
