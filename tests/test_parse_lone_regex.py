@@ -42,8 +42,15 @@ def test_a_rule_of_one_regex_parses_as_before(grammar, symbol, word) -> None:  #
         assert direct is not None
         assert direct.to_tree() == earley.to_tree()
         assert direct.symbol == earley.symbol
-        assert [c.symbol for c in direct.children] == [c.symbol for c in earley.children]
-        assert type(direct.children[0].symbol.value()) is type(earley.children[0].symbol.value()) if earley.children else True
+        assert [c.symbol for c in direct.children] == [
+            c.symbol for c in earley.children
+        ]
+        assert (
+            type(direct.children[0].symbol.value())
+            is type(earley.children[0].symbol.value())
+            if earley.children
+            else True
+        )
 
 
 def test_other_rules_still_go_through_the_parser(grammar) -> None:  # type: ignore[no-untyped-def]
