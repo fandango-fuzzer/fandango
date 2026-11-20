@@ -371,27 +371,20 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
         self,
         max_generations: Optional[int] = None,
         mode: FuzzingMode = FuzzingMode.COMPLETE,
-        max_stale_generations: Optional[int] = None,
     ) -> Generator[DerivationTree, None, None]:
         match mode:
             case FuzzingMode.COMPLETE:
-                yield from self._generate_simple(
-                    max_generations=max_generations,
-                    max_stale_generations=max_stale_generations,
-                )
+                yield from self._generate_simple(max_generations=max_generations)
             case _:
                 raise RuntimeError(f"Fuzzing Mode {mode} is not implemented")
 
     def _generate_simple(
-        self,
-        max_generations: Optional[int] = None,
-        max_stale_generations: Optional[int] = None,
+        self, max_generations: Optional[int] = None
     ) -> Generator[DerivationTree, None, None]:
         """
         Generates solutions for the grammar.
 
         :param max_generations: The maximum number of generations to generate. If None, the generation will run indefinitely.
-        :param max_stale_generations: Stop after this many generations in a row that found no new solution. If None, there is no such limit.
         :return: A generator of DerivationTree objects, all of which are valid solutions to the grammar (or satisfy the minimum fitness threshold).
         """
         while self._initial_solutions:
@@ -406,8 +399,6 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
 
         prev_best_fitness = 0.0
         generation = 0
-        stale_generations = 0
-        solutions_found = self.evaluator.get_solution_count()
         if self.stop_after_seconds is not None:
             self.experiment_start_time = time.time()
             LOGGER.info(
@@ -416,15 +407,6 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
 
         while True:
             if max_generations is not None and generation >= max_generations:
-                break
-
-            if (
-                max_stale_generations is not None
-                and stale_generations >= max_stale_generations
-            ):
-                LOGGER.info(
-                    f"Stopping after {stale_generations} generations without a new solution"
-                )
                 break
 
             if self._is_time_limit_reached() or self.evaluator.stop_criterion_met:
@@ -509,12 +491,6 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
                 )
 
             prev_best_fitness = current_best_fitness
-
-            if self.evaluator.get_solution_count() > solutions_found:
-                solutions_found = self.evaluator.get_solution_count()
-                stale_generations = 0
-            else:
-                stale_generations += 1
 
             self.adaptive_tuner.log_generation_statistics(
                 generation, self.evaluation, self.population, self.evaluator
