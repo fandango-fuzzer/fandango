@@ -29,6 +29,7 @@ from fandango.evolution.profiler import Profiler
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.language.grammar import FuzzingMode
 from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar.k_paths import GrammarKPaths
 from fandango.language.tree import DerivationTree
 from fandango.logger import (
     LOGGER,
@@ -82,6 +83,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
         LOGGER.info("---------- Initializing FANDANGO algorithm ---------- ")
 
         self.grammar = grammar
+        self.k_paths = GrammarKPaths(grammar)
         self.constraints = constraints
         self.population_size = population_size
         self.elitism_rate = elitism_rate
@@ -104,6 +106,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
         )
         self.evaluator = Evaluator(
             grammar,
+            self.k_paths,
             constraints,
             expected_fitness,
             diversity_k,

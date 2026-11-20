@@ -23,7 +23,7 @@ from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.route import GuidePath, PlannedPacket, Route
 from fandango.io.navigation.step import Step
 from fandango.language import DerivationTree, Grammar
-from fandango.language.grammar.grammar import KPath
+from fandango.language.grammar.k_paths import GrammarKPaths, KPath
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.symbols import NonTerminal, Symbol
@@ -182,6 +182,8 @@ class PacketNavigator(GrammarNavigator):
             ),
             start_symbol,
         )
+        # The k-paths of the reduced grammar
+        self._grammar_k_paths = GrammarKPaths(self.grammar)
         self._packet_symbols = {
             message.symbol for message in grammar.get_protocol_messages(start_symbol)
         }
@@ -337,7 +339,7 @@ class PacketNavigator(GrammarNavigator):
             return False
         covered_k_paths = {
             self._k_paths.to_state_k_path(k_path)
-            for k_path in self.grammar._extract_k_paths_from_tree(collapsed, k)
+            for k_path in self._grammar_k_paths.extract_from_tree(collapsed, k)
         }
         return packet_k_paths <= covered_k_paths
 

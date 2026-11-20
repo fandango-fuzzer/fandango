@@ -10,7 +10,7 @@ from fandango.io.navigation.selection.coverage_tracker import (
 from fandango.io.navigation.selection.violation_profiler.violation_profiler import (
     ViolationProfiler,
 )
-from fandango.language.grammar.grammar import KPath
+from fandango.language.grammar.k_paths import KPath
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 
@@ -37,7 +37,6 @@ class PacketCoverageFilter:
         self.hold_back_solutions_by_msg_hash: dict[int, DerivationTree] = {}
         self._solution_set: set[int] = set()
         self._held_back_packet_types: set[PacketNonTerminal] = set()
-        self._unreachable_k_paths: dict[tuple[PacketNonTerminal, bool], set[KPath]] = {}
 
     def add_completed_tree(self, tree: DerivationTree) -> None:
         """Fold a finished run's messages into the past-message set."""
@@ -63,7 +62,6 @@ class PacketCoverageFilter:
         self.hold_back_solutions_by_msg_hash.clear()
         self._solution_set.clear()
         self._held_back_packet_types.clear()
-        self._unreachable_k_paths.clear()
         self._held_back_count = 0
         self._held_back_in_a_row.clear()
         self._message_started_at = time.monotonic()
@@ -87,7 +85,7 @@ class PacketCoverageFilter:
 
     def _mark_unreachable(self, packet_type: PacketNonTerminal) -> None:
         for overlap_to_root in (False, True):
-            self._unreachable_k_paths.setdefault(
+            self._coverage_tracker.unreachable_packet_k_paths.setdefault(
                 (packet_type, overlap_to_root), set()
             ).update(
                 self._reachable_k_paths(packet_type, overlap_to_root)
@@ -101,7 +99,9 @@ class PacketCoverageFilter:
     ) -> set[KPath]:
         return self._coverage_tracker.all_k_paths(
             packet_type.symbol, overlap_to_root=overlap_to_root
-        ) - self._unreachable_k_paths.get((packet_type, overlap_to_root), set())
+        ) - self._coverage_tracker.unreachable_packet_k_paths.get(
+            (packet_type, overlap_to_root), set()
+        )
 
     @staticmethod
     def _is_path_start_with(state_path: KPath, path: KPath) -> int:

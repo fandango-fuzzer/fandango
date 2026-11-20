@@ -12,7 +12,7 @@ from fandango.io.navigation.selection.violation_profiler.value_features import (
     value_features,
 )
 from fandango.io.violation import FandangoRemoteViolation, RemoteViolationType
-from fandango.language.grammar.grammar import KPath
+from fandango.language.grammar.k_paths import KPath
 from fandango.language.tree import DerivationTree
 from fandango.logger import log_guidance_hint
 

@@ -12,6 +12,7 @@ from fandango.io.navigation.step import Step
 from fandango.language import DerivationTree, NonTerminal
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar.k_paths import GrammarKPaths
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
@@ -138,7 +139,7 @@ class TestPermutationGuidePathAdjustment(unittest.TestCase):
     def _make_guide(self) -> PacketGuider:
         start = NonTerminal("<start>")
         self.history = DerivationTree(start)
-        model = ProtocolModel(self.grammar, start)
+        model = ProtocolModel(self.grammar, GrammarKPaths(self.grammar), start)
         forecast = _StubForecast(self.grammar, _make_test_io(), lambda: self.history)
         return PacketGuider(model, forecast, max_messages_per_tree=200)
 

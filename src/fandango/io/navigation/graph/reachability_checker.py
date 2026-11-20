@@ -5,7 +5,8 @@ from fandango.io.navigation.graph.visitor.continuing_nodevisitor import (
     ContinuingNodeVisitor,
 )
 from fandango.io.navigation.step import Step
-from fandango.language.grammar.grammar import Grammar, KPath
+from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar.k_paths import KPath
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.terminal import TerminalNode

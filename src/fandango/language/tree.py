@@ -3,7 +3,6 @@ import warnings
 from collections import deque
 from collections.abc import Callable, Generator, Iterable, Iterator
 from contextlib import contextmanager
-from functools import partial
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
 from fandango.language.symbols import NonTerminal, Slice, Symbol, Terminal
@@ -166,16 +165,35 @@ class DerivationTree:
         return len(self._children)
 
     def count_terminals(self) -> int:
-        if self.symbol.is_terminal:
-            return 1
         count = 0
-        for child in self._children:
-            count += child.count_terminals()
+        pending: list[DerivationTree] = [self]
+        while pending:
+            node = pending.pop()
+            if node.symbol.is_terminal:
+                count += 1
+            else:
+                pending.extend(node._children)
         return count
 
     def size(self) -> int:
-        if self._size is None:
-            self._size = 1 + sum(child.size() for child in self._children)
+        if self._size is not None:
+            return self._size
+        # Without recursion, like __hash__: the nodes without a cached size, then their sizes from the leaves up
+        unsized: list[DerivationTree] = []
+        pending: list[DerivationTree] = [self]
+        while pending:
+            node = pending.pop()
+            unsized.append(node)
+            for child in node._children:
+                if child._size is None:
+                    pending.append(child)
+        for node in reversed(unsized):
+            total = 1
+            for child in node._children:
+                assert child._size is not None
+                total += child._size
+            node._size = total
+        assert self._size is not None
         return self._size
 
     @property
@@ -299,19 +317,18 @@ class DerivationTree:
         :param tree: The DerivationTree to append.
         :param read_only_new_nodes: If True, the nodes created along hookin_path are read-only.
         """
-        if len(hookin_path) == 0:
-            self.add_child(tree)
-            return
-        next_nt, add_new_node = hookin_path[0]
-        if add_new_node:
-            self.add_child(DerivationTree(next_nt, read_only=read_only_new_nodes))
-        elif (
-            len(self.children) == 0
-            or not isinstance(self.children[-1].symbol, NonTerminal)
-            or self.children[-1].symbol.name() != next_nt.name()
-        ):
-            raise ValueError("Invalid hookin_path!")
-        self.children[-1].append(hookin_path[1:], tree, read_only_new_nodes)
+        node = self
+        for next_nt, add_new_node in hookin_path:
+            if add_new_node:
+                node.add_child(DerivationTree(next_nt, read_only=read_only_new_nodes))
+            elif (
+                len(node.children) == 0
+                or not isinstance(node.children[-1].symbol, NonTerminal)
+                or node.children[-1].symbol.name() != next_nt.name()
+            ):
+                raise ValueError("Invalid hookin_path!")
+            node = node.children[-1]
+        node.add_child(tree)
 
     def set_children(self, children: list["DerivationTree"]) -> None:
         self._children = children
@@ -379,15 +396,36 @@ class DerivationTree:
         ]
 
     def find_by_origin(self, node_id: str) -> list["DerivationTree"]:
+        """
+        Return all non-terminal subtrees, including this tree, that stem from the repetition `node_id`.
+        Subtrees are returned in post-order, children before their parent.
+        """
         trees = []
-        for child in [*self._children, *self._sources]:
-            if child.symbol.is_non_terminal:
-                trees.extend(child.find_by_origin(node_id))
-        for o_node_id, _o_iter_id, _rep in self.origin_repetitions:
-            if o_node_id == node_id:
-                trees.append(self)
-                break
+        # (node, is_below_visited): False = expand the node's children next,
+        # True = its children are done, check the node itself.
+        pending: list[tuple[DerivationTree, bool]] = [(self, False)]
+        while pending:
+            node, is_below_visited = pending.pop()
+            if is_below_visited:
+                if node._is_repetition_origin(node_id):
+                    trees.append(node)
+                continue
+            pending.append((node, True))
+            pending.extend(
+                (child, False)
+                for child in reversed([*node._children, *node._sources])
+                if child.symbol.is_non_terminal
+            )
         return trees
+
+    def _is_repetition_origin(self, node_id: str) -> bool:
+        """
+        Return whether this tree stems from an iteration of the repetition `node_id`.
+        """
+        return any(
+            o_node_id == node_id
+            for o_node_id, _o_iter_id, _rep in self.origin_repetitions
+        )
 
     def __getitem__(self, item: Any) -> "DerivationTree":
         if isinstance(item, list) and len(item) == 1:
@@ -415,16 +453,21 @@ class DerivationTree:
         raise IndexError(f"No such path in tree: {path} Tree: {self}")
 
     def _get_last_by_path(self, path: list[NonTerminal]) -> "DerivationTree":
-        symbol = path[0]
+        node = self
+        for index, symbol in enumerate(path):
+            last_child = node._last_child_with_symbol(symbol)
+            if last_child is None:
+                raise IndexError(
+                    f"No such path in tree: {path[index:]} Tree: {node.get_root(stop_at_argument_begin=True)}"
+                )
+            node = last_child
+        return node
+
+    def _last_child_with_symbol(self, symbol: Symbol) -> Optional["DerivationTree"]:
         for child in self._children[::-1]:
             if child.symbol == symbol:
-                if len(path) == 1:
-                    return child
-                else:
-                    return child._get_last_by_path(path[1:])
-        raise IndexError(
-            f"No such path in tree: {path} Tree: {self.get_root(stop_at_argument_begin=True)}"
-        )
+                return child
+        return None
 
     def __str__(self) -> str:
         return str(self.value())
@@ -566,9 +609,13 @@ class DerivationTree:
         """
         Return true if the derivation tree contains any terminal symbols of type `tp` (say, `int` or `bytes`).
         """
-        if self.symbol.is_terminal and self.symbol.is_type(tp):
-            return True
-        return any(child._contains_type(tp) for child in self._children)
+        pending: list[DerivationTree] = [self]
+        while pending:
+            node = pending.pop()
+            if node.symbol.is_terminal and node.symbol.is_type(tp):
+                return True
+            pending.extend(node._children)
+        return False
 
     def contains_bits(self) -> bool:
         """
@@ -747,14 +794,15 @@ class DerivationTree:
     def __repr__(self) -> str:
         return self.to_repr()
 
-    def split_end(self, copy_tree: bool = True) -> "DerivationTree":
+    def _split_end(self, copy_tree: bool = True) -> "DerivationTree":
         inst = self
         if copy_tree:
             inst = copy.deepcopy(self)
-        return inst._split_end()
+        inst._apply_end_cut(*inst._end_cut())
+        return inst
 
     def prefix(self, copy_tree: bool = True) -> "DerivationTree":
-        ref_tree = self.split_end(copy_tree)
+        ref_tree = self._split_end(copy_tree)
         assert ref_tree.parent is not None
         ref_tree = ref_tree.parent
         ref_tree.remove_child(index=-1)
@@ -776,33 +824,54 @@ class DerivationTree:
         the entire right-most path to the root.
         Restores the original tree when the block exits.
         """
-        undo: list[Callable[[], None]] = []
+        detached, kept_children_by_parent = self._end_cut()
+        old_parent = detached.parent if detached is not None else None
+        old_children_by_parent = [
+            (parent, parent.children) for parent, _ in kept_children_by_parent
+        ]
         try:
-            yield self._split_end(undo)
+            self._apply_end_cut(detached, kept_children_by_parent)
+            yield self
         finally:
-            for restore in reversed(undo):
-                restore()
+            for parent, old_children in old_children_by_parent:
+                parent.set_children(old_children)
+            if detached is not None:
+                detached.parent = old_parent
 
-    def _split_end(
-        self, undo: Optional[list[Callable[[], None]]] = None
-    ) -> "DerivationTree":
-        """Internal recursive function. Use split_end_context instead."""
-        if self.parent is None or self in self.parent.sources:
-            if self.parent is not None:
-                if undo is not None:
-                    undo.append(partial(setattr, self, "_parent", self.parent))
-                self._parent = None
-            return self
-        me_idx = index_by_reference(self.parent.children, self)
-        if me_idx is None:
-            # Handle error or fallback — for example:
-            raise ValueError("self not found in parent's children")
-        keep_children = self.parent.children[: (me_idx + 1)]
-        parent = self.parent._split_end(undo)
-        if undo is not None:
-            undo.append(partial(parent.set_children, parent.children))
-        parent.set_children(keep_children)
-        return self
+    def _end_cut(
+        self,
+    ) -> tuple[
+        Optional["DerivationTree"],
+        list[tuple["DerivationTree", list["DerivationTree"]]],
+    ]:
+        """
+        Returns the argument root to detach (None if the path reaches the tree root)
+        and each parent on the path up from this node with its children up to and
+        including the one on that path.
+        """
+        kept_children_by_parent: list[tuple[DerivationTree, list[DerivationTree]]] = []
+        node = self
+        while node.parent is not None and node not in node.parent.sources:
+            me_idx = index_by_reference(node.parent.children, node)
+            if me_idx is None:
+                raise ValueError("self not found in parent's children")
+            kept_children_by_parent.append(
+                (node.parent, node.parent.children[: (me_idx + 1)])
+            )
+            node = node.parent
+        detached = node if node.parent is not None else None
+        return detached, kept_children_by_parent
+
+    @staticmethod
+    def _apply_end_cut(
+        detached: Optional["DerivationTree"],
+        kept_children_by_parent: list[tuple["DerivationTree", list["DerivationTree"]]],
+    ) -> None:
+        """Detaches the argument root and truncates the children of each parent."""
+        if detached is not None:
+            detached.parent = None
+        for parent, keep_children in reversed(kept_children_by_parent):
+            parent.set_children(keep_children)
 
     def get_choices_path(self) -> tuple[PathStep, ...]:
         current = self
@@ -962,12 +1031,15 @@ class DerivationTree:
         Retrieve all non-terminal symbols present in the derivation tree.
         """
         symbols = set()
-        if self.symbol.is_non_terminal and not (exclude_read_only and self.read_only):
-            symbols.add(self.nonterminal)
-        for child in self._children:
-            symbols.update(child.get_non_terminal_symbols(exclude_read_only))
-        for param in self._sources:
-            symbols.update(param.get_non_terminal_symbols(exclude_read_only))
+        pending: list[DerivationTree] = [self]
+        while pending:
+            node = pending.pop()
+            if node.symbol.is_non_terminal and not (
+                exclude_read_only and node.read_only
+            ):
+                symbols.add(node.nonterminal)
+            pending.extend(node._children)
+            pending.extend(node._sources)
         return symbols
 
     def find_all_nodes(
@@ -979,14 +1051,17 @@ class DerivationTree:
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
         nodes = []
-        if self.symbol.is_non_terminal:
-            nt = cast(NonTerminal, self.symbol)
-            if nt == symbol and not (exclude_read_only and self.read_only):
-                nodes.append(self)
-            for child in self._children:
-                nodes.extend(child.find_all_nodes(symbol, exclude_read_only))
-            for param in self._sources:
-                nodes.extend(param.find_all_nodes(symbol, exclude_read_only))
+        # Pre-order, children before sources, as the recursion this replaces
+        pending: list[DerivationTree] = [self]
+        while pending:
+            node = pending.pop()
+            if not node.symbol.is_non_terminal:
+                continue
+            if node.symbol == symbol and not (exclude_read_only and node.read_only):
+                nodes.append(node)
+            if node._sources:
+                pending.extend(reversed(node._sources))
+            pending.extend(reversed(node._children))
         return nodes
 
     @property
@@ -1052,10 +1127,25 @@ class DerivationTree:
         if self.symbol.is_terminal:
             return self.symbol.value()
 
-        aggregate = TreeValue.empty()
-        for child in self._children:
-            aggregate = aggregate.append(child.value())
-        return aggregate
+        # The values are appended in the order recursion would append them, as append can change
+        # the left value. (iterator over the remaining children, value of the children so far): the ancestors left
+        # off at a non-terminal child.
+        suspended: list[tuple[Iterator[DerivationTree], TreeValue]] = []
+        children, aggregate = iter(self._children), TreeValue.empty()
+        while True:
+            for child in children:
+                if child.symbol.is_terminal:
+                    aggregate = aggregate.append(child.symbol.value())
+                else:
+                    suspended.append((children, aggregate))
+                    children, aggregate = iter(child._children), TreeValue.empty()
+                    break
+            else:  # all children done
+                if not suspended:
+                    return aggregate
+                child_value = aggregate
+                children, aggregate = suspended.pop()
+                aggregate = aggregate.append(child_value)
 
     def to_value(self) -> str:
         value = self.value()

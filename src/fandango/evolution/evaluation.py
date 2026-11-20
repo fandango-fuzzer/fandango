@@ -17,6 +17,7 @@ from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
 from fandango.constraints.soft import SoftValue
 from fandango.evolution import GeneratorWithReturn
 from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar.k_paths import GrammarKPaths
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER, print_exception
 from fandango.utils import cache_size
@@ -26,6 +27,7 @@ class Evaluator:
     def __init__(
         self,
         grammar: Grammar,
+        k_paths: GrammarKPaths,
         constraints: list[Constraint | SoftValue],
         expected_fitness: float,
         diversity_k: int,
@@ -36,6 +38,7 @@ class Evaluator:
         put_args: Optional[list[str]] = None,
     ):
         self._grammar = grammar
+        self._k_paths = k_paths
         self._soft_constraints: list[SoftValue] = []
         self._hard_constraints: list[Constraint] = []
         self._repetition_bounds_constraints: list[RepetitionBoundsConstraint] = []
@@ -142,12 +145,11 @@ class Evaluator:
         if fill_up is None:
             fill_up = []
         ind_kpaths = [
-            self._grammar._extract_k_paths_from_tree(ind, self._diversity_k)
+            self._k_paths.extract_from_tree(ind, self._diversity_k)
             for ind in individuals
         ]
         fill_up_kpaths = [
-            self._grammar._extract_k_paths_from_tree(ind, self._diversity_k)
-            for ind in fill_up
+            self._k_paths.extract_from_tree(ind, self._diversity_k) for ind in fill_up
         ]
         frequencies = Counter(
             path for paths in ind_kpaths + fill_up_kpaths for path in paths

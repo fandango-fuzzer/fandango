@@ -72,6 +72,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._packet_algorithm.evaluator = IoEvaluator(
             packet_mounter=self._packet_mounter,
             grammar=self.grammar,
+            k_paths=self._packet_algorithm.k_paths,
             constraints=self._packet_algorithm.constraints,
             expected_fitness=old_evaluator.expected_fitness,
             diversity_k=self._packet_algorithm.diversity_k,
@@ -106,6 +107,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         )
         self._packet_selector: PacketSelector = PacketSelector(
             self.grammar,
+            self._packet_algorithm.k_paths,
             self._io_instance,
             self._protocol_tree,
             self._packet_algorithm.diversity_k,
@@ -214,12 +216,19 @@ class ProtocolAlgorithm(GeneticAlgorithm):
             expected_nonterminals=[],
         )
 
+    def _is_timer_event_awaited(self) -> bool:
+        if not self._io_instance.is_timer_running():
+            return False
+        return any(
+            packet.node.sender == "TimerEvent"
+            for packet in self._packet_selector.next_packets
+        )
+
     def _handle_remote_response(self) -> DerivationTree:
         if not self._io_instance.received_msg():
             timeout = self._remote_response_timeout
-            for packet in self._packet_selector.next_packets:
-                if packet.node.sender == "TimerEvent":
-                    timeout = -1.0
+            if self._is_timer_event_awaited():
+                timeout = -1.0
             if not self._io_instance.wait_until(
                 self._io_instance.received_msg, timeout
             ):

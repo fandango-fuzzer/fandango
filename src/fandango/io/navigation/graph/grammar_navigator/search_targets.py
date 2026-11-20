@@ -9,7 +9,7 @@ from fandango.io.navigation.graph.grammar_navigator.grammar_graph_converter impo
 from fandango.io.navigation.graph.grammar_navigator.path_search import SearchTarget
 from fandango.io.navigation.graph.grammar_navigator.rule_costs import RuleCosts
 from fandango.io.navigation.graph.reachability_checker import KPathMatcher
-from fandango.language.grammar.grammar import KPath
+from fandango.language.grammar.k_paths import KPath
 from fandango.language.symbols import Symbol
 
 

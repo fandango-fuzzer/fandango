@@ -24,7 +24,8 @@ from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.target_selector import TargetSelector
 from fandango.language import DerivationTree, NonTerminal
 from fandango.language.grammar import ParsingMode
-from fandango.language.grammar.grammar import Grammar, KPath
+from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar.k_paths import GrammarKPaths, KPath
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.parse.parse import parse
 from tests.utils import DOCS_ROOT, EVALUATION_ROOT, RESOURCES_ROOT
@@ -402,9 +403,10 @@ class TestTargetSelector(unittest.TestCase):
         nt_msg_b = NonTerminal("<msg_b>")
         a_follows_b = tuple([nt_msg_a, nt_msg_b])
         b_follows_a = tuple([nt_msg_b, nt_msg_a])
-        pm = ProtocolModel(grammar, start_symbol)
+        k_paths = GrammarKPaths(grammar)
+        pm = ProtocolModel(grammar, k_paths, start_symbol)
         ts = TargetSelector(pm)
-        all_paths = grammar.generate_all_k_paths(
+        all_paths = k_paths.generate_all(
             k=5, non_terminal=start_symbol, input_parties={"Party"}
         )
         for _ in range(10):
