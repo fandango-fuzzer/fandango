@@ -1,7 +1,5 @@
 import argparse
-import shutil
 from collections.abc import Generator
-from pathlib import Path
 from typing import Any
 
 import pytest
@@ -102,11 +100,11 @@ def test_fuzz_with_infinite_is_deprecated() -> None:
             )
 
 
-def test_cli_validation_writes_what_does_not_parse_back_to_disk(
+def test_cli_validation_stops_at_the_first_output_that_does_not_parse_back(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Any
 ) -> None:
-    """--validate parses each solution back without a file; a solution that
-    does not parse back is written to a directory that the error names."""
+    """--validate parses each output back right after writing it; the first
+    one that does not parse back ends the run, so it is the last output."""
     from fandango.errors import FandangoError
 
     def parses_nothing(
@@ -117,14 +115,9 @@ def test_cli_validation_writes_what_does_not_parse_back_to_disk(
     monkeypatch.setattr(fandango.api.Fandango, "parse", parses_nothing)
     out = tmp_path / "out"
     args: argparse.Namespace = get_parser(True).parse_args(
-        ["fuzz", "-f", "docs/digits.fan", "--no-cache", "-n", "2", "--random-seed", "1"]
+        ["fuzz", "-f", "docs/digits.fan", "--no-cache", "-n", "5", "--random-seed", "1"]
         + ["-d", str(out), "--validate"]
     )
-    with pytest.raises(FandangoError, match="2 error") as error:
+    with pytest.raises(FandangoError, match="Output 0 does not parse back"):
         commands.fuzz_command(args)
-    failure_dir = Path(str(error.value).rsplit(" ", 1)[-1])
-    written = sorted(p.name for p in failure_dir.iterdir())
-    assert written == ["fandango-0000.txt", "fandango-0001.txt"]
-    for name in written:
-        assert (failure_dir / name).read_text() == (out / name).read_text()
-    shutil.rmtree(failure_dir)
+    assert sorted(p.name for p in out.iterdir()) == ["fandango-0000.txt"]
