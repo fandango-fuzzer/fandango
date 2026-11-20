@@ -8,9 +8,12 @@ from cachetools import LRUCache
 
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.nodes.node import Node
+from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.grammar.parser.iterative_parser import IterativeParser
 from fandango.language.symbols.non_terminal import NonTerminal
+from fandango.language.symbols.terminal import Terminal
 from fandango.language.tree import DerivationTree
+from fandango.language.tree_value import TreeValueType
 from fandango.utils import cache_size
 
 
@@ -91,6 +94,22 @@ class Parser:
         if isinstance(start, str):
             start = NonTerminal(start)
 
+        regex = self._lone_regex(word, start)
+        if (
+            regex is not None
+            and mode == ParsingMode.COMPLETE
+            and hookin_parent is None
+            and starter_bit == -1
+        ):
+            # The rule is one regex: there is one tree, if the regex matches the
+            # whole word. The iterative parser would keep a state, with a copy of
+            # the prefix, for every length the regex accepts, which is quadratic in
+            # the length of the word for a regex like `[^x]*`.
+            lengths, _ = regex.regex_check_multiple_lengths(word, len(word))
+            if lengths:
+                yield DerivationTree(start, [DerivationTree(Terminal(word))])
+            return
+
         cache_key = (word, start, mode, hash(hookin_parent))
         last_yielded_tree = self._cache.get(cache_key)
         if last_yielded_tree is not None:
@@ -122,6 +141,21 @@ class Parser:
             if result is not None:
                 self._cache[cache_key] = parsed
                 yield result
+
+    def _lone_regex(self, word: str | bytes, start: NonTerminal) -> Optional[Terminal]:
+        """
+        The regex of `start` if its rule is that one regex and nothing else,
+        and `word` is of the regex's own type (no conversion needed).
+        """
+        rule = self._grammar_rules.get(start)
+        if not isinstance(rule, TerminalNode) or not rule.symbol.is_regex:
+            return None
+        terminal = rule.symbol
+        assert isinstance(terminal, Terminal)
+        word_type = (
+            TreeValueType.BYTES if isinstance(word, bytes) else TreeValueType.STRING
+        )
+        return terminal if terminal.is_type(word_type) else None
 
     def parse_multiple(
         self,
