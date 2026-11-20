@@ -191,8 +191,8 @@ class DerivationTree:
         for node in reversed(unsized):
             total = 1
             for child in node._children:
-                # Every child is sized by now; `or 0` only tells mypy so
-                total += child._size or 0
+                assert child._size is not None
+                total += child._size
             node._size = total
         assert self._size is not None
         return self._size
