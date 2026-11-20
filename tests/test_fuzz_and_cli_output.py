@@ -8,6 +8,7 @@ import fandango.api
 from fandango import Fandango
 from fandango.cli import commands
 from fandango.cli.parser import get_parser
+from fandango.evolution.algorithm import SimpleGeneticAlgorithm
 from fandango.language.tree import DerivationTree
 
 SPEC = """
@@ -51,7 +52,7 @@ def test_best_effort_pads_up_to_the_desired_number() -> None:
     result = fan.fuzz(
         desired_solutions=5, max_generations=3, best_effort=True, random_seed=1
     )
-    assert fan.fandango is not None
+    assert isinstance(fan.fandango, SimpleGeneticAlgorithm)
     padding = fan.fandango.population[:3]
     assert sorted(str(t) for t in result[:2]) == ["a", "b"]
     assert result[2:] == padding
