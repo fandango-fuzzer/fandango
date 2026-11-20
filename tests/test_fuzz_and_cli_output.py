@@ -1,5 +1,4 @@
 import argparse
-import inspect
 import shutil
 from pathlib import Path
 from typing import Any
@@ -19,43 +18,31 @@ where int(<start>) > 100
 TWO = "<start> ::= 'a' | 'b'"
 
 
-def test_fuzz_iter_yields_the_solutions_one_at_a_time() -> None:
-    solutions = Fandango(SPEC).fuzz_iter(desired_solutions=5, random_seed=1)
-    assert inspect.isgenerator(solutions)
-    trees = list(solutions)
-    assert len(trees) == 5
-    assert all(int(str(t)) > 100 for t in trees)
-
-
-def test_fuzz_returns_what_fuzz_iter_yields() -> None:
+def test_fuzz_returns_what_it_hands_to_the_callback() -> None:
     seen: list[DerivationTree] = []
     solutions = Fandango(SPEC).fuzz(
         desired_solutions=5,
         solution_callback=lambda tree, _i: seen.append(tree),
         random_seed=1,
     )
-    iterated = list(Fandango(SPEC).fuzz_iter(desired_solutions=5, random_seed=1))
+    assert len(solutions) == 5
     assert solutions == seen
-    assert [str(t) for t in solutions] == [str(t) for t in iterated]
+    assert all(int(str(t)) > 100 for t in solutions)
 
 
-def test_fuzz_iter_reports_missing_solutions_at_the_end(caplog) -> None:  # type: ignore[no-untyped-def]
-    trees = list(
-        Fandango(TWO).fuzz_iter(desired_solutions=5, max_generations=3, random_seed=1)
-    )
+def test_fuzz_reports_missing_solutions(caplog) -> None:  # type: ignore[no-untyped-def]
+    trees = Fandango(TWO).fuzz(desired_solutions=5, max_generations=3, random_seed=1)
     assert sorted(str(t) for t in trees) == ["a", "b"]
     assert "Only found 2 perfect solutions" in caplog.text
 
 
-def test_fuzz_iter_raises_on_missing_solutions_if_asked() -> None:
+def test_fuzz_raises_on_missing_solutions_if_asked() -> None:
     with pytest.raises(fandango.api.FandangoFailedError):
-        list(
-            Fandango(TWO).fuzz_iter(
-                desired_solutions=5,
-                max_generations=3,
-                warnings_are_errors=True,
-                random_seed=1,
-            )
+        Fandango(TWO).fuzz(
+            desired_solutions=5,
+            max_generations=3,
+            warnings_are_errors=True,
+            random_seed=1,
         )
 
 
@@ -74,7 +61,8 @@ def test_best_effort_pads_up_to_the_desired_number() -> None:
 def test_cli_writes_solutions_without_collecting_them(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Any
 ) -> None:
-    """`fandango fuzz` goes through fuzz_iter, never through fuzz()."""
+    """`fandango fuzz` takes the solutions from generate_solutions() and never
+    goes through fuzz(), which collects them."""
 
     def no_fuzz(self: Fandango, **_kwargs: Any) -> list[DerivationTree]:
         raise AssertionError("the CLI must not collect solutions")
@@ -106,16 +94,11 @@ def test_fuzz_with_infinite_is_deprecated() -> None:
         if i == 2:
             raise Enough()
 
-    with pytest.warns(DeprecationWarning, match="fuzz_iter"):
+    with pytest.warns(DeprecationWarning, match="generate_solutions"):
         with pytest.raises(Enough):
             Fandango(SPEC).fuzz(
                 infinite=True, solution_callback=stop_after_three, random_seed=1
             )
-
-
-def test_fuzz_iter_with_infinite_does_not_warn() -> None:
-    solutions = Fandango(SPEC).fuzz_iter(infinite=True, random_seed=1)
-    assert len([next(solutions) for _ in range(3)]) == 3
 
 
 def test_cli_validation_is_in_memory_and_writes_failures_to_disk(

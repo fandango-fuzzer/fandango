@@ -1,6 +1,6 @@
 import argparse
 from collections.abc import Generator
-from typing import Any
+from typing import Any, Optional
 
 import pytest
 
@@ -12,17 +12,30 @@ from fandango.language.grammar import FuzzingMode
 from fandango.language.tree import DerivationTree
 
 
-def fuzz_kwargs(monkeypatch: pytest.MonkeyPatch, *cli: str) -> dict[str, Any]:
-    """The arguments `fandango fuzz ...` passes on to Fandango.fuzz_iter()."""
+def fuzz_limits(monkeypatch: pytest.MonkeyPatch, *cli: str) -> dict[str, Any]:
+    """The generation limit `fandango fuzz ...` passes to generate_solutions(),
+    and the number of outputs it asks for."""
     seen: dict[str, Any] = {}
 
-    def fake_fuzz_iter(
-        self: Fandango, **kwargs: Any
+    def fake_generate_solutions(
+        self: Fandango,
+        max_generations: Optional[int] = None,
+        mode: FuzzingMode = FuzzingMode.COMPLETE,
     ) -> Generator[DerivationTree, None, None]:
-        seen.update(kwargs)
+        seen["max_generations"] = max_generations
         yield from ()
 
-    monkeypatch.setattr(fandango.api.Fandango, "fuzz_iter", fake_fuzz_iter)
+    def fake_warnings(
+        self: Fandango, desired_solutions: Optional[int], found: int, settings: Any
+    ) -> None:
+        seen["desired_solutions"] = desired_solutions
+
+    monkeypatch.setattr(
+        fandango.api.Fandango, "generate_solutions", fake_generate_solutions
+    )
+    monkeypatch.setattr(
+        fandango.api.Fandango, "_print_warnings_if_necessary_post_fuzz", fake_warnings
+    )
     args: argparse.Namespace = get_parser(True).parse_args(
         ["fuzz", "-f", "docs/digits.fan", "--no-cache", *cli]
     )
@@ -33,32 +46,24 @@ def fuzz_kwargs(monkeypatch: pytest.MonkeyPatch, *cli: str) -> dict[str, Any]:
 def test_cli_number_of_outputs_alone_means_no_generation_limit(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    seen = fuzz_kwargs(monkeypatch, "-n", "10000")
+    seen = fuzz_limits(monkeypatch, "-n", "10000")
     assert seen["desired_solutions"] == 10000
     assert seen["max_generations"] is None
-    assert "max_stale_generations" not in seen
 
 
 def test_cli_explicit_generations_are_a_hard_limit(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    seen = fuzz_kwargs(monkeypatch, "-n", "10000", "-N", "7")
+    seen = fuzz_limits(monkeypatch, "-n", "10000", "-N", "7")
     assert seen["max_generations"] == 7
 
 
-def test_without_any_limit_the_run_still_stops_after_500_generations(
+def test_cli_without_any_limit_stops_after_500_generations(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The CLI passes no limit on; Fandango.fuzz() then applies its default."""
-    seen = fuzz_kwargs(monkeypatch)
+    seen = fuzz_limits(monkeypatch)
     assert seen["desired_solutions"] is None
-    assert seen["max_generations"] is None
-    fan = Fandango("<start> ::= 'a'")
-    max_generations, desired_solutions, infinite = fan._sanitize_runtime_end_settings(
-        FuzzingMode.COMPLETE, None, None, False, False
-    )
-    assert max_generations == fandango.api.DEFAULT_MAX_GENERATIONS
-    assert desired_solutions is None and not infinite
+    assert seen["max_generations"] == fandango.api.DEFAULT_MAX_GENERATIONS
 
 
 def test_number_of_outputs_alone_leaves_the_generations_unlimited() -> None:

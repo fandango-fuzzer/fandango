@@ -1,4 +1,5 @@
 import argparse
+import itertools
 import os
 import sys
 import tempfile
@@ -204,19 +205,27 @@ def fuzz_command(args: argparse.Namespace) -> None:
             logging_level=LOGGER.getEffectiveLevel(),
         )
 
+    assert isinstance(fandango, Fandango)
+    max_generations, desired_solutions, _infinite = (
+        fandango._sanitize_runtime_end_settings(
+            FuzzingMode.COMPLETE,
+            args.desired_solutions,
+            args.max_generations,
+            args.infinite,
+            settings.get("use_fcc", False),
+        )
+    )
+    fandango.init_population(mode=FuzzingMode.COMPLETE, **settings)
+    solutions = fandango.generate_solutions(max_generations, FuzzingMode.COMPLETE)
+
     errors = 0
     failure_dir: Optional[str] = None
+    found = 0
     # Each solution is written (and validated) as soon as it is found, and then
-    # dropped, so that a long run does not keep every tree in memory.
-    for i, solution in enumerate(
-        fandango.fuzz_iter(
-            max_generations=args.max_generations,
-            desired_solutions=args.desired_solutions,
-            infinite=args.infinite,
-            mode=FuzzingMode.COMPLETE,
-            **settings,
-        )
-    ):
+    # dropped, so that a long run does not keep every tree in memory; this is
+    # why the CLI does not use Fandango.fuzz(), which collects them.
+    for i, solution in enumerate(itertools.islice(solutions, desired_solutions)):
+        found += 1
         output_solution(solution, args, i, file_mode)
         if validate_fan is not None and not validate_solution(
             solution, i, args, file_mode, grammar, constraints, settings, validate_fan
@@ -225,6 +234,8 @@ def fuzz_command(args: argparse.Namespace) -> None:
             if failure_dir is None:
                 failure_dir = tempfile.mkdtemp(prefix="fandango-validation-")
             write_failed_solution(solution, i, args, file_mode, failure_dir)
+
+    fandango._print_warnings_if_necessary_post_fuzz(desired_solutions, found, settings)
 
     if errors:
         raise FandangoError(
