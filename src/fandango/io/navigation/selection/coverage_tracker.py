@@ -5,7 +5,7 @@ from typing import Generic, Optional, TypeVar
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
-from fandango.language.grammar.grammar import Grammar, KPath
+from fandango.language.grammar.k_paths import GrammarKPaths, KPath
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree
 
@@ -84,7 +84,7 @@ class CoverageTracker:
 
     def __init__(
         self,
-        grammar: Grammar,
+        k_paths: GrammarKPaths,
         diversity_k: int,
         model: ProtocolModel,
         start_symbol: NonTerminal,
@@ -92,7 +92,7 @@ class CoverageTracker:
         history: Callable[[], DerivationTree],
         coverage_goal: CoverageGoal,
     ):
-        self._grammar = grammar
+        self._k_paths = k_paths
         self._diversity_k = diversity_k
         self._model = model
         self._start_symbol = start_symbol
@@ -279,7 +279,7 @@ class CoverageTracker:
         """k-paths covered by the trees (union of the per-tree extraction)."""
         result: set[KPath] = set()
         for tree in trees:
-            result |= self._grammar._extract_k_paths_from_tree(
+            result |= self._k_paths.extract_from_tree(
                 tree,
                 self._diversity_k,
                 overlap_to_root,
@@ -296,7 +296,7 @@ class CoverageTracker:
         coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
         input_parties: Optional[set[str]] = None,
     ) -> set[KPath]:
-        return self._grammar.generate_all_k_paths(
+        return self._k_paths.generate_all(
             k=self._diversity_k,
             non_terminal=non_terminal,
             overlap_to_root=overlap_to_root,

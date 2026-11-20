@@ -34,7 +34,7 @@ def evaluate_xml(
         solutions.append(solution)
         if time.time() >= time_in_an_hour:
             break
-    coverage = grammar.compute_grammar_coverage(solutions, 4)
+    coverage = fandango.k_paths.compute_coverage(solutions, 4)
 
     valid = []
     for solution in solutions:

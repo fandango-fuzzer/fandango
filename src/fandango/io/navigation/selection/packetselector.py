@@ -14,6 +14,7 @@ from fandango.io.navigation.selection.coverage_tracker import CoverageTracker
 from fandango.io.navigation.selection.packet_guider import PacketGuider
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar.k_paths import GrammarKPaths
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 
@@ -22,6 +23,7 @@ class PacketSelector:
     def __init__(
         self,
         grammar: Grammar,
+        k_paths: GrammarKPaths,
         io_instance: FandangoIO,
         history_tree: DerivationTree,
         diversity_k: int,
@@ -32,11 +34,11 @@ class PacketSelector:
         self.start_symbol = NonTerminal("<start>")
         self.grammar = grammar
         self.io_instance = io_instance
-        self._model = ProtocolModel(grammar, self.start_symbol)
+        self._model = ProtocolModel(grammar, k_paths, self.start_symbol)
         self._forecast = ForecastView(grammar, io_instance, lambda: self.history_tree)
         self.history_tree = history_tree
         self._coverage_tracker = CoverageTracker(
-            grammar,
+            k_paths,
             diversity_k,
             self._model,
             self.start_symbol,

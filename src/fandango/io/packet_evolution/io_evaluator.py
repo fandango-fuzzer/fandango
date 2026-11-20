@@ -17,6 +17,7 @@ from fandango.io.constraints.constraint_scope import (
 )
 from fandango.io.packet_evolution.packet_mounter import PacketMounter
 from fandango.language import Grammar
+from fandango.language.grammar.k_paths import GrammarKPaths
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER, print_exception
@@ -27,6 +28,7 @@ class IoEvaluator(Evaluator):
         self,
         packet_mounter: PacketMounter,
         grammar: Grammar,
+        k_paths: GrammarKPaths,
         constraints: list[Constraint | SoftValue],
         expected_fitness: float,
         diversity_k: int,
@@ -38,6 +40,7 @@ class IoEvaluator(Evaluator):
     ):
         super().__init__(
             grammar=grammar,
+            k_paths=k_paths,
             constraints=constraints,
             expected_fitness=expected_fitness,
             diversity_k=diversity_k,

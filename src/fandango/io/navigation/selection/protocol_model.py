@@ -1,5 +1,6 @@
 from fandango.io.navigation.graph.stategrammarconverter import StateGrammarConverter
 from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar.k_paths import GrammarKPaths
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
@@ -12,8 +13,11 @@ class ProtocolModel:
     The state-grammar message symbols and permutation peer groups.
     """
 
-    def __init__(self, grammar: Grammar, start_symbol: NonTerminal):
+    def __init__(
+        self, grammar: Grammar, k_paths: GrammarKPaths, start_symbol: NonTerminal
+    ):
         self.grammar = grammar
+        self._k_paths = k_paths
         self.start_symbol = start_symbol
         self.state_grammar_symbols = self._get_state_grammar_symbols(start_symbol)
         self.protocol_msg_symbols = grammar.get_protocol_messages(start_symbol)
@@ -40,8 +44,7 @@ class ProtocolModel:
         return [
             message.symbol
             for message in self.protocol_msg_symbols
-            if (symbol,)
-            in self.grammar.generate_all_k_paths(k=1, non_terminal=message.symbol)
+            if (symbol,) in self._k_paths.generate_all(k=1, non_terminal=message.symbol)
         ]
 
     def _build_permutation_groups(

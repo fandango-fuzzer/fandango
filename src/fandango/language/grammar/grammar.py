@@ -6,12 +6,9 @@ from typing import Any, Optional, cast
 
 import fandango.language.grammar.nodes as nodes
 from fandango.errors import FandangoGeneratorError, FandangoValueError
-from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.language.grammar import FuzzingMode, ParsingMode, closest_match
 from fandango.language.grammar.has_settings import HasSettings
-from fandango.language.grammar.k_paths import GrammarKPaths
-from fandango.language.grammar.k_paths import KPath as KPath  # re-exported
 from fandango.language.grammar.literal_generator import LiteralGenerator
 from fandango.language.grammar.node_visitors.disambiguator import Disambiguator
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
@@ -48,7 +45,6 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         self._local_variables = local_variables or {}
         self._global_variables = global_variables or {}
         self._parser = Parser(self.rules)
-        self.k_paths = GrammarKPaths(self)
 
     @property
     def grammar_settings(self) -> Sequence[HasSettings]:
@@ -626,37 +622,6 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
     def update_parser(self) -> None:
         self._parser = Parser(self.rules)
 
-    def generate_all_k_paths(
-        self,
-        *,
-        k: int,
-        non_terminal: Optional[NonTerminal] = None,
-        overlap_to_root: bool = False,
-        coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
-        input_parties: Optional[set[str]] = None,
-    ) -> set[KPath]:
-        """All k-paths of this grammar, see `GrammarKPaths.generate_all`."""
-        return self.k_paths.generate_all(
-            k=k,
-            non_terminal=non_terminal,
-            overlap_to_root=overlap_to_root,
-            coverage_goal=coverage_goal,
-            input_parties=input_parties,
-        )
-
-    def _extract_k_paths_from_tree(
-        self,
-        tree: DerivationTree,
-        k: int,
-        overlap_to_root: bool = False,
-        coverage_goal: CoverageGoal = CoverageGoal.STATE_INPUTS_OUTPUTS,
-        input_parties: Optional[set[str]] = None,
-    ) -> set[KPath]:
-        """The k-paths found in a derivation tree, see `GrammarKPaths.extract_from_tree`."""
-        return self.k_paths.extract_from_tree(
-            tree, k, overlap_to_root, coverage_goal, input_parties
-        )
-
     def prime(self) -> None:
         LOGGER.debug("Priming grammar")
         primer = PrimerVisitor(self.rules)
@@ -731,40 +696,6 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
                 f"Unknown symbol type: {type(tree.symbol)}: {tree.symbol}"
             )
         return paths
-
-    def compute_grammar_coverage(
-        self, derivation_trees: list[DerivationTree], k: int
-    ) -> tuple[float, int, int]:
-        """
-        Compute the coverage of k-paths in the grammar based on the given derivation trees.
-
-        :param derivation_trees: A list of derivation trees (solutions produced by FANDANGO).
-        :param k: The length of the paths (k).
-        :return: A float between 0 and 1 representing the coverage.
-        """
-
-        # Compute all possible k-paths in the grammar
-        all_k_paths = self.generate_all_k_paths(k=k)
-
-        disambiguator = Disambiguator(self, self._grammar_settings)
-
-        # Extract k-paths from the derivation trees
-        covered_k_paths = set()
-        for tree in derivation_trees:
-            for path in self.traverse_derivation(tree, disambiguator):
-                # for length in range(1, k + 1):
-                for window in range(len(path) - k + 1):
-                    covered_k_paths.add(path[window : window + k])
-
-        # Compute coverage
-        if not all_k_paths:
-            raise FandangoValueError("No k-paths found in the grammar")
-
-        return (
-            len(covered_k_paths) / len(all_k_paths),
-            len(covered_k_paths),
-            len(all_k_paths),
-        )
 
     def get_spec_env(self) -> tuple[dict[str, Any], dict[str, Any]]:
         return self._global_variables, self._local_variables

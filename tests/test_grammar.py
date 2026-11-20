@@ -7,6 +7,7 @@ import unittest
 from fandango.errors import FandangoValueError
 from fandango.evolution.algorithm import DefaultAlgorithm
 from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar.k_paths import GrammarKPaths
 from fandango.language.grammar.node_visitors.primer import PrimerVisitor
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.parse.parse import parse
@@ -33,7 +34,7 @@ class ConstraintTest(unittest.TestCase):
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
 
-        k_paths = grammar.generate_all_k_paths(k=3)
+        k_paths = GrammarKPaths(grammar).generate_all(k=3)
         print(len(k_paths))
 
     def test_derivation_k_paths(self):

@@ -1,10 +1,13 @@
 """The k-paths of a grammar and of the derivation trees it derives, with the caches that keep them fast."""
 
-from typing import TYPE_CHECKING, NamedTuple, Optional
+from typing import NamedTuple, Optional
 
 from cachetools import LRUCache
 
+from fandango.errors import FandangoValueError
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
+from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar.node_visitors.disambiguator import Disambiguator
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.terminal import TerminalNode
@@ -12,10 +15,6 @@ from fandango.language.symbols import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree, index_by_reference
 from fandango.language.tree_value import TreeValueType
 from fandango.utils import cache_size
-
-if TYPE_CHECKING:
-    # Fully qualified in the annotation, so that beartype can resolve it at runtime
-    import fandango.language.grammar.grammar
 
 KPath = tuple[Symbol, ...]
 
@@ -35,7 +34,7 @@ class _TreeKPaths(NamedTuple):
 class GrammarKPaths:
     """Computes the k-paths of a grammar and of its derivation trees, caching them per grammar."""
 
-    def __init__(self, grammar: "fandango.language.grammar.grammar.Grammar"):
+    def __init__(self, grammar: Grammar):
         self._grammar = grammar
         # A plain dict: the keys are bounded by the grammar, and a hit costs a single lookup
         self._k_path_cache: dict[_KPathsKey, set[KPath]] = {}
@@ -175,6 +174,40 @@ class GrammarKPaths:
                     symbol_work[idx].add(k_path)
 
         return symbol_work[k - 1]
+
+    def compute_coverage(
+        self, derivation_trees: list[DerivationTree], k: int
+    ) -> tuple[float, int, int]:
+        """
+        Compute the coverage of k-paths in the grammar based on the given derivation trees.
+
+        :param derivation_trees: A list of derivation trees (solutions produced by FANDANGO).
+        :param k: The length of the paths (k).
+        :return: A float between 0 and 1 representing the coverage.
+        """
+
+        # Compute all possible k-paths in the grammar
+        all_k_paths = self.generate_all(k=k)
+
+        disambiguator = Disambiguator(self._grammar, self._grammar.grammar_settings)
+
+        # Extract k-paths from the derivation trees
+        covered_k_paths = set()
+        for tree in derivation_trees:
+            for path in self._grammar.traverse_derivation(tree, disambiguator):
+                # for length in range(1, k + 1):
+                for window in range(len(path) - k + 1):
+                    covered_k_paths.add(path[window : window + k])
+
+        # Compute coverage
+        if not all_k_paths:
+            raise FandangoValueError("No k-paths found in the grammar")
+
+        return (
+            len(covered_k_paths) / len(all_k_paths),
+            len(covered_k_paths),
+            len(all_k_paths),
+        )
 
     def extract_from_tree(
         self,

@@ -19,7 +19,7 @@ from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.io.navigation.selection.step_refusals import StepRefusalCounter
 from fandango.io.navigation.selection.target_selector import TargetSelector
 from fandango.io.navigation.step import Step
-from fandango.language.grammar.grammar import KPath
+from fandango.language.grammar.k_paths import KPath
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree
 from fandango.logger import log_guidance_hint

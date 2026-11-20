@@ -2,8 +2,8 @@ from collections.abc import Collection, Sequence
 from typing import Optional
 
 from fandango.errors import FandangoValueError
-from fandango.language.grammar.grammar import KPath
 from fandango.language.grammar.has_settings import HasSettings
+from fandango.language.grammar.k_paths import KPath
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation

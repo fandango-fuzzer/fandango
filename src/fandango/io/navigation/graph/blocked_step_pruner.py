@@ -3,8 +3,8 @@ from typing import NamedTuple, Optional
 
 from fandango.io.navigation.graph.rule_recursion_tester import RuleRecursionTester
 from fandango.io.navigation.step import Step
-from fandango.language.grammar.grammar import KPath
 from fandango.language.grammar.has_settings import HasSettings
+from fandango.language.grammar.k_paths import KPath
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.char_set import CharSet

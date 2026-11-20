@@ -25,7 +25,7 @@ def packet_selector_and_tree(grammar_file):
 
 def make_tracker(selector, history):
     return CoverageTracker(
-        selector.grammar,
+        selector._coverage_tracker._k_paths,
         selector._coverage_tracker._diversity_k,
         selector._model,
         selector.start_symbol,
@@ -95,7 +95,7 @@ def test_folded_percent_matches_bruteforce(grammar_file):
     if len(uncovered) == 0:
         expected = 1.0
     else:
-        all_paths = selector.grammar.generate_all_k_paths(
+        all_paths = selector._coverage_tracker._k_paths.generate_all(
             k=selector._coverage_tracker._diversity_k,
             non_terminal=selector.start_symbol,
             coverage_goal=GOAL,

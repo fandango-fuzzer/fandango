@@ -3,6 +3,7 @@ from fandango.io.coverage_filter import PacketCoverageFilter
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
 from fandango.io.navigation.selection.coverage_tracker import CoverageTracker
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
+from fandango.language.grammar.k_paths import GrammarKPaths
 from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
 
@@ -40,10 +41,11 @@ def tracker_after(finished_session):
         (RESOURCES_ROOT / "echo_io.fan").read_text(), use_stdlib=False, use_cache=False
     ).grammar
     empty_history = DerivationTree(START)
+    k_paths = GrammarKPaths(grammar)
     tracker = CoverageTracker(
-        grammar,
+        k_paths,
         DIVERSITY_K,
-        ProtocolModel(grammar, START),
+        ProtocolModel(grammar, k_paths, START),
         START,
         lambda: {"Fuzzer"},
         lambda: empty_history,

@@ -72,6 +72,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         self._packet_algorithm.evaluator = IoEvaluator(
             packet_mounter=self._packet_mounter,
             grammar=self.grammar,
+            k_paths=self._packet_algorithm.k_paths,
             constraints=self._packet_algorithm.constraints,
             expected_fitness=old_evaluator.expected_fitness,
             diversity_k=self._packet_algorithm.diversity_k,
@@ -106,6 +107,7 @@ class ProtocolAlgorithm(GeneticAlgorithm):
         )
         self._packet_selector: PacketSelector = PacketSelector(
             self.grammar,
+            self._packet_algorithm.k_paths,
             self._io_instance,
             self._protocol_tree,
             self._packet_algorithm.diversity_k,

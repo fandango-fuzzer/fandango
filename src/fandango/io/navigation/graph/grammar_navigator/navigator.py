@@ -24,7 +24,7 @@ from fandango.io.navigation.graph.reachability_checker import (
     ReachabilityResult,
 )
 from fandango.language import DerivationTree, Grammar
-from fandango.language.grammar.grammar import KPath
+from fandango.language.grammar.k_paths import KPath
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.symbols import NonTerminal, Symbol

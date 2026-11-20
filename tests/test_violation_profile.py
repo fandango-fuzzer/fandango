@@ -21,7 +21,8 @@ from fandango.io.navigation.selection.violation_profiler.violation_profiler impo
 )
 from fandango.io.violation import FandangoRemoteViolation, RemoteViolationType
 from fandango.language.grammar import FuzzingMode, ParsingMode
-from fandango.language.grammar.grammar import Grammar, KPath
+from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar.k_paths import KPath
 from fandango.language.parse.parse import parse
 from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.tree import DerivationTree

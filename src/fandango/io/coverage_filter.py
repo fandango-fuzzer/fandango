@@ -10,7 +10,7 @@ from fandango.io.navigation.selection.coverage_tracker import (
 from fandango.io.navigation.selection.violation_profiler.violation_profiler import (
     ViolationProfiler,
 )
-from fandango.language.grammar.grammar import KPath
+from fandango.language.grammar.k_paths import KPath
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 

@@ -1,4 +1,5 @@
 from fandango.io.navigation.coverage.coverage_goal import CoverageGoal
+from fandango.language.grammar.k_paths import GrammarKPaths
 from fandango.language.parse.parse import parse
 from fandango.language.symbols import NonTerminal
 
@@ -12,10 +13,12 @@ def test_extract_k_paths():
     tree = grammar.parse("GET1200")
     assert tree is not None
 
+    grammar_k_paths = GrammarKPaths(grammar)
+
     def k_paths(tree, k, overlap_to_root, coverage_goal):
         return {
             " ".join(symbol.format_as_spec() for symbol in path)
-            for path in grammar._extract_k_paths_from_tree(
+            for path in grammar_k_paths.extract_from_tree(
                 tree, k, overlap_to_root, coverage_goal, {"Fuzzer"}
             )
         }

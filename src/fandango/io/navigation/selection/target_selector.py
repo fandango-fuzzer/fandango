@@ -8,7 +8,7 @@ from fandango.io.navigation.coverage.powerschedule import (
     PowerScheduleKPath,
 )
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
-from fandango.language.grammar.grammar import KPath
+from fandango.language.grammar.k_paths import KPath
 from fandango.language.symbols import NonTerminal, Symbol
 
 

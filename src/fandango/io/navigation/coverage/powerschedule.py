@@ -3,7 +3,7 @@ import random
 from collections import Counter
 from typing import Generic, TypeVar
 
-from fandango.language.grammar.grammar import KPath
+from fandango.language.grammar.k_paths import KPath
 from fandango.language.symbols import Symbol
 
 ScheduleType = TypeVar("ScheduleType")

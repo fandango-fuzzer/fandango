@@ -22,6 +22,7 @@ from fandango.io.packet_evolution.decorators.mounting_mutation import MountingMu
 from fandango.io.packet_evolution.io_evaluator import IoEvaluator
 from fandango.io.packet_evolution.io_population_manager import IoPopulationManager
 from fandango.io.packet_evolution.packet_mounter import PacketMounter
+from fandango.language.grammar.k_paths import GrammarKPaths
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.parse.parse import parse
@@ -111,6 +112,7 @@ def evaluator(fandango: Fandango, manager: IoPopulationManager) -> IoEvaluator:
     return IoEvaluator(
         packet_mounter=manager.packet_mounter,
         grammar=fandango.grammar,
+        k_paths=GrammarKPaths(fandango.grammar),
         constraints=fandango.constraints,
         expected_fitness=1.0,
         diversity_k=5,
@@ -393,6 +395,7 @@ def evaluator_with(constraint_text: str) -> IoEvaluator:
     return IoEvaluator(
         packet_mounter=PacketMounter(fandango.grammar, START),
         grammar=fandango.grammar,
+        k_paths=GrammarKPaths(fandango.grammar),
         constraints=fandango.constraints,
         expected_fitness=1.0,
         diversity_k=5,
