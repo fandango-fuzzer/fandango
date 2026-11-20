@@ -337,7 +337,3 @@ assert _exit_code == 0
 
 As you see, Fandango produces a population of zero.
 Of course, if the constraint is `False`, then there can be no success.
-
-```{tip}
-Fandango has a `--best-effort` option that allows you to still output the final population.
-```

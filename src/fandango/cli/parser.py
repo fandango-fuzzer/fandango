@@ -260,13 +260,6 @@ def _get_algorithm_parser() -> argparse.ArgumentParser:
         default=None,
     )
     algorithm_group.add_argument(
-        "--best-effort",
-        dest="best_effort",
-        action="store_true",
-        help="Produce a 'best effort' population (may not satisfy all constraints).",
-        default=None,
-    )
-    algorithm_group.add_argument(
         "-i",
         "--initial-population",
         type=str,
