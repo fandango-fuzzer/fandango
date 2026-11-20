@@ -122,7 +122,6 @@ class FandangoBase(ABC):
         self,
         max_generations: Optional[int] = None,
         mode: FuzzingMode = FuzzingMode.COMPLETE,
-        max_stale_generations: Optional[int] = None,
     ) -> Generator[DerivationTree, None, None]:
         """
         Generate trees that conform to the language.
@@ -131,7 +130,6 @@ class FandangoBase(ABC):
         Initialization can be done manually with `init_population` for more flexibility.
 
         :param max_generations: Maximum number of generations to evolve through
-        :param max_stale_generations: Stop after this many generations in a row without a new solution
         :return: A generator for solutions to the language
         """
         pass
@@ -146,7 +144,6 @@ class FandangoBase(ABC):
         max_generations: Optional[int] = None,
         infinite: bool = False,
         mode: FuzzingMode = FuzzingMode.COMPLETE,
-        max_stale_generations: Optional[int] = None,
         keep_solutions: bool = True,
         **settings: Any,
     ) -> list[DerivationTree]:
@@ -154,7 +151,6 @@ class FandangoBase(ABC):
         Create a Fandango population.
         :param extra_constraints: Additional constraints to apply
         :param solution_callback: What to do with each solution; receives the solution and a unique index
-        :param max_stale_generations: Stop after this many generations in a row without a new solution (ignored if `infinite`)
         :param keep_solutions: If False, solutions only go to `solution_callback` and are not returned, so that a long run does not keep every tree in memory
         :param settings: Additional settings for the evolution algorithm
         :return: A list of derivation trees
@@ -304,7 +300,6 @@ class Fandango(FandangoBase):
         self,
         max_generations: Optional[int] = None,
         mode: FuzzingMode = FuzzingMode.COMPLETE,
-        max_stale_generations: Optional[int] = None,
     ) -> Generator[DerivationTree, None, None]:
         """
         Generate trees that conform to the language.
@@ -313,7 +308,6 @@ class Fandango(FandangoBase):
         Initialization can be done manually with `init_population` for more flexibility.
 
         :param max_generations: Maximum number of generations to evolve through
-        :param max_stale_generations: Stop after this many generations in a row without a new solution
         :return: A generator for solutions to the language
         """
         if self.fandango is None or mode != self._last_fuzzing_mode:
@@ -324,17 +318,7 @@ class Fandango(FandangoBase):
             f"---------- Generating {'' if max_generations is None else f' for {max_generations} generations'}----------"
         )
         start_time = time.time()
-        if max_stale_generations is None:
-            yield from self.fandango.generate(
-                max_generations=max_generations, mode=mode
-            )
-        else:
-            assert isinstance(self.fandango, SimpleGeneticAlgorithm)
-            yield from self.fandango.generate(
-                max_generations=max_generations,
-                mode=mode,
-                max_stale_generations=max_stale_generations,
-            )
+        yield from self.fandango.generate(max_generations=max_generations, mode=mode)
         LOGGER.info(
             f"---------- Done generating {'' if max_generations is None else f' for {max_generations} generations'}----------"
         )
@@ -443,7 +427,6 @@ class Fandango(FandangoBase):
         max_generations: Optional[int] = None,
         infinite: bool = False,
         mode: FuzzingMode = FuzzingMode.COMPLETE,
-        max_stale_generations: Optional[int] = None,
         keep_solutions: bool = True,
         **settings: Any,
     ) -> list[DerivationTree]:
@@ -451,7 +434,6 @@ class Fandango(FandangoBase):
         Create a Fandango population.
         :param extra_constraints: Additional constraints to apply
         :param solution_callback: What to do with each solution; receives the solution and a unique index
-        :param max_stale_generations: Stop after this many generations in a row without a new solution (ignored if `infinite`)
         :param keep_solutions: If False, solutions only go to `solution_callback` and are not returned, so that a long run does not keep every tree in memory
         :param settings: Additional settings for the evolution algorithm
         :return: A list of derivation trees
@@ -470,9 +452,7 @@ class Fandango(FandangoBase):
         solutions = []
 
         self.init_population(extra_constraints=extra_constraints, mode=mode, **settings)
-        raw_generator = self.generate_solutions(
-            max_generations, mode, None if infinite else max_stale_generations
-        )
+        raw_generator = self.generate_solutions(max_generations, mode)
 
         # limit the generator to desired_solutions — no limit if desired_solutions is None
         generator = itertools.islice(raw_generator, desired_solutions)
