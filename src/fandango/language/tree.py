@@ -3,7 +3,6 @@ import warnings
 from collections import deque
 from collections.abc import Callable, Generator, Iterable, Iterator
 from contextlib import contextmanager
-from functools import partial
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
 from fandango.language.symbols import NonTerminal, Slice, Symbol, Terminal
@@ -795,14 +794,15 @@ class DerivationTree:
     def __repr__(self) -> str:
         return self.to_repr()
 
-    def split_end(self, copy_tree: bool = True) -> "DerivationTree":
+    def _split_end(self, copy_tree: bool = True) -> "DerivationTree":
         inst = self
         if copy_tree:
             inst = copy.deepcopy(self)
-        return inst._split_end()
+        inst._apply_end_cut(*inst._end_cut())
+        return inst
 
     def prefix(self, copy_tree: bool = True) -> "DerivationTree":
-        ref_tree = self.split_end(copy_tree)
+        ref_tree = self._split_end(copy_tree)
         assert ref_tree.parent is not None
         ref_tree = ref_tree.parent
         ref_tree.remove_child(index=-1)
@@ -824,19 +824,31 @@ class DerivationTree:
         the entire right-most path to the root.
         Restores the original tree when the block exits.
         """
-        undo: list[Callable[[], None]] = []
+        detached, kept_children_by_parent = self._end_cut()
+        old_parent = detached.parent if detached is not None else None
+        old_children_by_parent = [
+            (parent, parent.children) for parent, _ in kept_children_by_parent
+        ]
         try:
-            yield self._split_end(undo)
+            self._apply_end_cut(detached, kept_children_by_parent)
+            yield self
         finally:
-            for restore in reversed(undo):
-                restore()
+            for parent, old_children in old_children_by_parent:
+                parent.set_children(old_children)
+            if detached is not None:
+                detached.parent = old_parent
 
-    def _split_end(
-        self, undo: Optional[list[Callable[[], None]]] = None
-    ) -> "DerivationTree":
-        """Internal function. Use split_end_context instead."""
-        # (parent, kept_children): each parent on the path up from this node, paired
-        # with its children up to and including the one on that path.
+    def _end_cut(
+        self,
+    ) -> tuple[
+        Optional["DerivationTree"],
+        list[tuple["DerivationTree", list["DerivationTree"]]],
+    ]:
+        """
+        Returns the argument root to detach (None if the path reaches the tree root)
+        and each parent on the path up from this node with its children up to and
+        including the one on that path.
+        """
         kept_children_by_parent: list[tuple[DerivationTree, list[DerivationTree]]] = []
         node = self
         while node.parent is not None and node not in node.parent.sources:
@@ -847,15 +859,19 @@ class DerivationTree:
                 (node.parent, node.parent.children[: (me_idx + 1)])
             )
             node = node.parent
-        if node.parent is not None:
-            if undo is not None:
-                undo.append(partial(setattr, node, "_parent", node.parent))
-            node._parent = None
+        detached = node if node.parent is not None else None
+        return detached, kept_children_by_parent
+
+    @staticmethod
+    def _apply_end_cut(
+        detached: Optional["DerivationTree"],
+        kept_children_by_parent: list[tuple["DerivationTree", list["DerivationTree"]]],
+    ) -> None:
+        """Detaches the argument root and truncates the children of each parent."""
+        if detached is not None:
+            detached.parent = None
         for parent, keep_children in reversed(kept_children_by_parent):
-            if undo is not None:
-                undo.append(partial(parent.set_children, parent.children))
             parent.set_children(keep_children)
-        return self
 
     def get_choices_path(self) -> tuple[PathStep, ...]:
         current = self
@@ -1111,7 +1127,7 @@ class DerivationTree:
         if self.symbol.is_terminal:
             return self.symbol.value()
 
-        # Without recursion. The values are appended in the order recursion would append them, as append can change
+        # The values are appended in the order recursion would append them, as append can change
         # the left value. (iterator over the remaining children, value of the children so far): the ancestors left
         # off at a non-terminal child.
         suspended: list[tuple[Iterator[DerivationTree], TreeValue]] = []
