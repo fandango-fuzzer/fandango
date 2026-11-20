@@ -37,22 +37,8 @@ class AdaptiveTuner:
         self.max_nodes_rate = max_nodes_rate
         self.max_safe_repetition = max_safe_repetition
         self.max_safe_nodes = max_safe_nodes
-        self._solutions_seen = 0
-
-    def _record_solution_count(self, new_solution_count: int) -> bool:
-        """
-        Store the number of solutions found so far.
-        :param new_solution_count: The number of solutions found so far.
-        :return: Whether it is larger than the number stored before.
-        """
-        found_new = new_solution_count > self._solutions_seen
-        self._solutions_seen = new_solution_count
-        return found_new
 
     def reset_parameters(self) -> None:
-        # Called together with Evaluator.reset(), which empties the solution set,
-        # so the count of solutions starts again from zero.
-        self._solutions_seen = 0
         self.mutation_rate = self.initial_mutation_rate
         self.crossover_rate = self.initial_crossover_rate
         self.current_max_repetition = self.initial_max_repetition
@@ -66,6 +52,7 @@ class AdaptiveTuner:
         population: list[DerivationTree],
         evaluator: Evaluator,
         current_max_repetition: int,
+        found_new_solutions: bool,
     ) -> tuple[float, float]:
         diversities = evaluator.compute_diversity_bonus(population)
         avg_diversity = sum(diversities) / len(diversities) if diversities else 0
@@ -82,9 +69,6 @@ class AdaptiveTuner:
         # Longer repetitions and larger trees are for a search that is stuck.
         # Once solutions exist, the best fitness cannot improve any more; that
         # alone must not count as stuck while new solutions keep coming.
-        found_new_solutions = self._record_solution_count(
-            evaluator.get_solution_count()
-        )
 
         # Mutation rate adjustment
         if (

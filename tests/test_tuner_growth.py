@@ -1,5 +1,7 @@
 from fandango import Fandango
 from fandango.evolution.adaptation import AdaptiveTuner
+from fandango.evolution.evaluation import Evaluator
+from fandango.language import DerivationTree
 from fandango.language.grammar import nodes
 
 SPEC = "<start> ::= <digit>*"
@@ -41,25 +43,42 @@ def test_repetitions_grow_when_no_solution_is_found() -> None:
         nodes.MAX_REPETITIONS = old
 
 
-def test_tuner_records_the_solution_count_per_generation() -> None:
-    tuner = AdaptiveTuner(0.2, 0.8, 20, 200, None, 0.5, 200, 0.5)
-    assert tuner._record_solution_count(0) is False
-    assert tuner._record_solution_count(3) is True
-    assert tuner._record_solution_count(3) is False
-    assert tuner._record_solution_count(4) is True
+def _tuner() -> AdaptiveTuner:
+    return AdaptiveTuner(0.2, 0.8, 20, 200, None, 0.5, 1000, 0.5)
 
 
-def test_reset_starts_the_count_of_solutions_again() -> None:
-    """SimpleGeneticAlgorithm.reset() empties the evaluator's solution set and
-    resets the tuner; the first solutions after it count as new."""
-    old = nodes.MAX_REPETITIONS
-    nodes.MAX_REPETITIONS = 20
-    try:
-        algorithm, solutions = run_generations(SPEC, 3)
-        assert algorithm.adaptive_tuner._solutions_seen > 0
-        algorithm.reset()
-        assert algorithm.evaluator.get_solution_count() == 0
-        assert algorithm.adaptive_tuner._solutions_seen == 0
-        assert algorithm.adaptive_tuner._record_solution_count(1) is True
-    finally:
-        nodes.MAX_REPETITIONS = old
+class _NoDiversityEvaluator(Evaluator):
+    def __init__(self) -> None:
+        pass
+
+    def compute_diversity_bonus(  # type: ignore[override]
+        self, individuals: list[DerivationTree], fill_up: object = None
+    ) -> list[float]:
+        return []
+
+
+def _update_stuck(tuner: AdaptiveTuner, found_new_solutions: bool) -> None:
+    """One generation in which the best fitness did not improve."""
+    tuner.update_parameters(
+        generation=1,
+        prev_best_fitness=1.0,
+        current_best_fitness=1.0,
+        population=[],
+        evaluator=_NoDiversityEvaluator(),
+        current_max_repetition=20,
+        found_new_solutions=found_new_solutions,
+    )
+
+
+def test_tuner_does_not_grow_when_the_generation_found_new_solutions() -> None:
+    tuner = _tuner()
+    _update_stuck(tuner, found_new_solutions=True)
+    assert tuner.current_max_repetition == 20
+    assert tuner.current_max_nodes == 200
+
+
+def test_tuner_grows_when_the_generation_found_no_new_solutions() -> None:
+    tuner = _tuner()
+    _update_stuck(tuner, found_new_solutions=False)
+    assert tuner.current_max_repetition > 20
+    assert tuner.current_max_nodes > 200
