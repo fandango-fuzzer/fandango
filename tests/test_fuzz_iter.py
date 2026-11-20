@@ -85,3 +85,10 @@ def test_cli_writes_solutions_without_collecting_them(
     )
     commands.fuzz_command(args)
     assert len(list(out.iterdir())) == 5
+
+
+def test_cli_has_no_best_effort_option() -> None:
+    """It never wrote the padding (the CLI writes solutions only), so it is gone;
+    the `best_effort` setting of fuzz() remains."""
+    with pytest.raises(SystemExit):
+        get_parser(True).parse_args(["fuzz", "-f", "docs/digits.fan", "--best-effort"])
