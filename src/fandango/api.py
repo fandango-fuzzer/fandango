@@ -151,28 +151,9 @@ class FandangoBase(ABC):
         Create a Fandango population.
         :param extra_constraints: Additional constraints to apply
         :param solution_callback: What to do with each solution; receives the solution and a unique index
-        :param infinite: Deprecated: `fuzz` keeps no solutions then, and returns an empty list, if at all. Use `fuzz_iter(infinite=True)` instead.
+        :param infinite: Deprecated: `fuzz` keeps no solutions then, and returns an empty list, if at all. Use `init_population()` and `generate_solutions()` instead.
         :param settings: Additional settings for the evolution algorithm
         :return: A list of derivation trees
-        """
-        pass
-
-    @abstractmethod
-    def fuzz_iter(
-        self,
-        *,
-        extra_constraints: Optional[list[str]] = None,
-        desired_solutions: Optional[int] = None,
-        max_generations: Optional[int] = None,
-        infinite: bool = False,
-        mode: FuzzingMode = FuzzingMode.COMPLETE,
-        **settings: Any,
-    ) -> Generator[DerivationTree, None, None]:
-        """
-        Yield solutions one at a time, as `fuzz` finds them, without keeping them.
-        :param extra_constraints: Additional constraints to apply
-        :param settings: Additional settings for the evolution algorithm
-        :return: A generator of derivation trees
         """
         pass
 
@@ -437,43 +418,6 @@ class Fandango(FandangoBase):
         assert isinstance(self.fandango, SimpleGeneticAlgorithm)
         return self.fandango.population[: desired_solutions - found]
 
-    def fuzz_iter(
-        self,
-        *,
-        extra_constraints: Optional[list[str]] = None,
-        desired_solutions: Optional[int] = None,
-        max_generations: Optional[int] = None,
-        infinite: bool = False,
-        mode: FuzzingMode = FuzzingMode.COMPLETE,
-        **settings: Any,
-    ) -> Generator[DerivationTree, None, None]:
-        """
-        Yield solutions one at a time, as `fuzz` finds them, without keeping them.
-        The warnings about missing solutions are given once the solutions run out.
-        :param extra_constraints: Additional constraints to apply
-        :param settings: Additional settings for the evolution algorithm
-        :return: A generator of derivation trees
-        """
-        max_generations, desired_solutions, infinite = (
-            self._sanitize_runtime_end_settings(
-                mode,
-                desired_solutions,
-                max_generations,
-                infinite,
-                settings.get("use_fcc", False),
-            )
-        )
-        self.init_population(extra_constraints=extra_constraints, mode=mode, **settings)
-        raw_generator = self.generate_solutions(max_generations, mode)
-
-        # limit the generator to desired_solutions — no limit if desired_solutions is None
-        found = 0
-        for solution in itertools.islice(raw_generator, desired_solutions):
-            found += 1
-            yield solution
-
-        self._print_warnings_if_necessary_post_fuzz(desired_solutions, found, settings)
-
     def fuzz(
         self,
         *,
@@ -489,7 +433,7 @@ class Fandango(FandangoBase):
         Create a Fandango population.
         :param extra_constraints: Additional constraints to apply
         :param solution_callback: What to do with each solution; receives the solution and a unique index
-        :param infinite: Deprecated: `fuzz` keeps no solutions then, and returns an empty list, if at all. Use `fuzz_iter(infinite=True)` instead.
+        :param infinite: Deprecated: `fuzz` keeps no solutions then, and returns an empty list, if at all. Use `init_population()` and `generate_solutions()` instead.
         :param settings: Additional settings for the evolution algorithm
         :return: A list of derivation trees
         """
@@ -497,25 +441,33 @@ class Fandango(FandangoBase):
             warnings.warn(
                 "fuzz(infinite=True) is deprecated: it keeps no solutions, so it "
                 "returns an empty list, if it returns at all. "
-                "Use fuzz_iter(infinite=True) instead.",
+                "Use init_population() and generate_solutions() instead.",
                 DeprecationWarning,
                 stacklevel=2,
             )
+        max_generations, desired_solutions, infinite = (
+            self._sanitize_runtime_end_settings(
+                mode,
+                desired_solutions,
+                max_generations,
+                infinite,
+                settings.get("use_fcc", False),
+            )
+        )
+        self.init_population(extra_constraints=extra_constraints, mode=mode, **settings)
+        raw_generator = self.generate_solutions(max_generations, mode)
+
         solutions = []
         found = 0
-        for solution in self.fuzz_iter(
-            extra_constraints=extra_constraints,
-            desired_solutions=desired_solutions,
-            max_generations=max_generations,
-            infinite=infinite,
-            mode=mode,
-            **settings,
-        ):
+        # limit the generator to desired_solutions — no limit if desired_solutions is None
+        for solution in itertools.islice(raw_generator, desired_solutions):
             solution_callback(solution, found)
             found += 1
             # prevent memory buildup in infinite mode
             if not infinite:
                 solutions.append(solution)
+
+        self._print_warnings_if_necessary_post_fuzz(desired_solutions, found, settings)
 
         if settings.get("best_effort", False):
             solutions.extend(self._best_effort_padding(desired_solutions, found))
