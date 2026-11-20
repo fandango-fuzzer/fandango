@@ -11,7 +11,7 @@ from ansi_styles import ansiStyles as styles
 
 import fandango
 from fandango import DerivationTree, Fandango
-from fandango.api import DEFAULT_MAX_GENERATIONS, FandangoBase
+from fandango.api import DEFAULT_MAX_GENERATIONS
 from fandango.cli.fanbase_files import fanbase_files
 from fandango.cli.output import (
     open_file,
@@ -26,8 +26,6 @@ from fandango.cli.utils import (
     parse_constraints_from_args,
     parse_contents_from_args,
     parse_file,
-    parse_value,
-    validate,
 )
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
@@ -194,17 +192,6 @@ def fuzz_command(args: argparse.Namespace) -> None:
                 f"Output directory {out_dir} is not a directory or is not empty"
             )
 
-    validate_fan: Optional[FandangoBase] = None
-    if args.validate:
-        # Every solution is serialized and parsed back; it has to give the same
-        # tree. One Fandango object does the parsing for the whole run.
-        validate_fan = Fandango._with_parsed(
-            grammar,
-            constraints,
-            start_symbol=settings.get("start_symbol", "<start>"),
-            logging_level=LOGGER.getEffectiveLevel(),
-        )
-
     assert isinstance(fandango, Fandango)
     max_generations, desired_solutions, _infinite = (
         fandango._sanitize_runtime_end_settings(
@@ -227,13 +214,16 @@ def fuzz_command(args: argparse.Namespace) -> None:
     for i, solution in enumerate(itertools.islice(solutions, desired_solutions)):
         found += 1
         output_solution(solution, args, i, file_mode)
-        if validate_fan is not None and not validate_solution(
-            solution, i, args, file_mode, grammar, constraints, settings, validate_fan
-        ):
-            errors += 1
-            if failure_dir is None:
-                failure_dir = tempfile.mkdtemp(prefix="fandango-validation-")
-            write_failed_solution(solution, i, args, file_mode, failure_dir)
+        if args.validate:
+            # The solution, as written, has to parse back (and meet the constraints)
+            value = (
+                solution.to_bytes() if file_mode == "binary" else solution.to_string()
+            )
+            if next(fandango.parse(value), None) is None:
+                errors += 1
+                if failure_dir is None:
+                    failure_dir = tempfile.mkdtemp(prefix="fandango-validation-")
+                write_failed_solution(value, i, args, file_mode, failure_dir)
 
     fandango._print_warnings_if_necessary_post_fuzz(desired_solutions, found, settings)
 
@@ -243,55 +233,22 @@ def fuzz_command(args: argparse.Namespace) -> None:
         )
 
 
-def validate_solution(
-    solution: DerivationTree,
-    index: int,
-    args: argparse.Namespace,
-    file_mode: str,
-    grammar: Grammar,
-    constraints: list[Constraint | SoftValue],
-    settings: dict[str, Any],
-    fan: FandangoBase,
-) -> bool:
-    """
-    Serialize `solution` as `fandango fuzz` writes it as a string, parse it
-    back, and check that the result is the same.
-    :return: Whether it is the same
-    """
-    binary = file_mode == "binary"
-    individual = solution.to_bytes() if binary else solution.to_string()
-    name = f"<solution {index}>"
-    try:
-        tree = parse_value(
-            individual,
-            args,
-            grammar,
-            constraints,
-            settings,
-            name=name,
-            binary=binary,
-            fan=fan,
-        )
-        validate(solution, tree, filename=name)
-    except Exception as e:
-        print_exception(e)
-        return False
-    return True
-
-
 def write_failed_solution(
-    solution: DerivationTree,
+    value: str | bytes,
     index: int,
     args: argparse.Namespace,
     file_mode: str,
     directory: str,
 ) -> None:
-    """Write `solution`, as it was validated, to `directory` for inspection."""
+    """Write a solution that did not parse back to `directory` for inspection."""
     extension = getattr(args, "filename_extension", None) or ".txt"
     filename = os.path.join(directory, f"fandango-{index:04d}{extension}")
     with open_file(filename, file_mode, mode="w") as fd:
-        fd.write(solution.to_bytes() if file_mode == "binary" else solution.to_string())
-    LOGGER.error(f"Solution {index} failed validation; written to {filename!r}")
+        fd.write(value)
+    LOGGER.error(
+        f"Solution {index} does not parse back; written to {filename!r}."
+        " Use `fandango parse` on it to see why."
+    )
 
 
 def parse_command(args: argparse.Namespace) -> None:

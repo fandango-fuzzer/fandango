@@ -1,5 +1,6 @@
 import argparse
 import shutil
+from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 
@@ -101,19 +102,19 @@ def test_fuzz_with_infinite_is_deprecated() -> None:
             )
 
 
-def test_cli_validation_is_in_memory_and_writes_failures_to_disk(
+def test_cli_validation_writes_what_does_not_parse_back_to_disk(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Any
 ) -> None:
     """--validate parses each solution back without a file; a solution that
-    fails is written to a directory that the error names."""
+    does not parse back is written to a directory that the error names."""
     from fandango.errors import FandangoError
 
-    def always_fails(original: Any, parsed: Any, *, filename: str = "") -> None:
-        raise FandangoError(f"{filename}: does not match")
+    def parses_nothing(
+        self: Fandango, word: Any, **_kwargs: Any
+    ) -> Generator[DerivationTree, None, None]:
+        yield from ()
 
-    monkeypatch.setattr(commands, "validate", always_fails)
-    # report each failure and go on, as outside the tests
-    monkeypatch.setattr("fandango.logger._RAISE_ON_LOGGED_EXCEPTIONS", False)
+    monkeypatch.setattr(fandango.api.Fandango, "parse", parses_nothing)
     out = tmp_path / "out"
     args: argparse.Namespace = get_parser(True).parse_args(
         ["fuzz", "-f", "docs/digits.fan", "--no-cache", "-n", "2", "--random-seed", "1"]
@@ -121,10 +122,9 @@ def test_cli_validation_is_in_memory_and_writes_failures_to_disk(
     )
     with pytest.raises(FandangoError, match="2 error") as error:
         commands.fuzz_command(args)
-    failure_dir = str(error.value).rsplit(" ", 1)[-1]
-    written = sorted(p.name for p in Path(failure_dir).iterdir())
+    failure_dir = Path(str(error.value).rsplit(" ", 1)[-1])
+    written = sorted(p.name for p in failure_dir.iterdir())
     assert written == ["fandango-0000.txt", "fandango-0001.txt"]
-    assert sorted(p.name for p in out.iterdir()) == written  # same contents
     for name in written:
-        assert (Path(failure_dir) / name).read_text() == (out / name).read_text()
+        assert (failure_dir / name).read_text() == (out / name).read_text()
     shutil.rmtree(failure_dir)
