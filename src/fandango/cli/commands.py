@@ -205,8 +205,6 @@ def fuzz_command(args: argparse.Namespace) -> None:
     fandango.init_population(mode=FuzzingMode.COMPLETE, **settings)
     solutions = fandango.generate_solutions(max_generations, FuzzingMode.COMPLETE)
 
-    errors = 0
-    failure_dir: Optional[str] = None
     found = 0
     # Each solution is written (and validated) as soon as it is found, and then
     # dropped, so that a long run does not keep every tree in memory; this is
@@ -220,35 +218,12 @@ def fuzz_command(args: argparse.Namespace) -> None:
                 solution.to_bytes() if file_mode == "binary" else solution.to_string()
             )
             if next(fandango.parse(value), None) is None:
-                errors += 1
-                if failure_dir is None:
-                    failure_dir = tempfile.mkdtemp(prefix="fandango-validation-")
-                write_failed_solution(value, i, args, file_mode, failure_dir)
+                raise FandangoError(
+                    f"Output {i} does not parse back; it is the last output written."
+                    " Use `fandango parse` on it to see why."
+                )
 
     fandango._print_warnings_if_necessary_post_fuzz(desired_solutions, found, settings)
-
-    if errors:
-        raise FandangoError(
-            f"{errors} error(s) during validation; the failing solutions are in {failure_dir}"
-        )
-
-
-def write_failed_solution(
-    value: str | bytes,
-    index: int,
-    args: argparse.Namespace,
-    file_mode: str,
-    directory: str,
-) -> None:
-    """Write a solution that did not parse back to `directory` for inspection."""
-    extension = getattr(args, "filename_extension", None) or ".txt"
-    filename = os.path.join(directory, f"fandango-{index:04d}{extension}")
-    with open_file(filename, file_mode, mode="w") as fd:
-        fd.write(value)
-    LOGGER.error(
-        f"Solution {index} does not parse back; written to {filename!r}."
-        " Use `fandango parse` on it to see why."
-    )
 
 
 def parse_command(args: argparse.Namespace) -> None:
