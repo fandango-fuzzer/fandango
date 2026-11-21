@@ -185,8 +185,8 @@ def _get_algorithm_parser() -> argparse.ArgumentParser:
         "-N",
         "--max-generations",
         type=int,
-        help="Maximum number of generations to run the algorithm (ignored if --infinite is set).",
-        default=fandango.api.DEFAULT_MAX_GENERATIONS,
+        help=f"Maximum number of generations to run the algorithm (ignored if --infinite is set). Default: no limit if -n is given, otherwise {fandango.api.DEFAULT_MAX_GENERATIONS}.",
+        default=None,
     )
     algorithm_group.add_argument(
         "--infinite",
@@ -263,7 +263,7 @@ def _get_algorithm_parser() -> argparse.ArgumentParser:
         "--best-effort",
         dest="best_effort",
         action="store_true",
-        help="Produce a 'best effort' population (may not satisfy all constraints).",
+        help="If fewer than the desired number of solutions are found, fill up the output with individuals of the final population (which may not satisfy all constraints).",
         default=None,
     )
     algorithm_group.add_argument(

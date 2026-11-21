@@ -19,22 +19,35 @@ from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.nodes.repetition import Repetition
 from fandango.language.search import NonTerminalSearch, RuleSearch
 from fandango.language.symbols.non_terminal import NonTerminal
-from fandango.language.tree import DerivationTree, index_by_reference
+from fandango.language.tree import DerivationTree, SourceStep, index_by_reference
 from fandango.logger import LOGGER
 
 
 def _get_first_common_node(
     tree_a: DerivationTree, tree_b: DerivationTree
 ) -> DerivationTree:
-    common_node = tree_a.get_root(True)
-    for a_path, b_path in zip(
+    """
+    The lowest node that both trees are below. The way down from the root
+    leads through the sources of a node where a tree is, or is part of, the
+    argument of a generator.
+    """
+    common_node = tree_a.get_root()
+    for a_step, b_step in zip(
         tree_a.get_choices_path(), tree_b.get_choices_path(), strict=False
     ):
-        if a_path.index == b_path.index:
-            common_node = common_node.children[a_path.index]
-        else:
+        if a_step != b_step:
             break
+        if isinstance(a_step, SourceStep):
+            common_node = common_node.sources[a_step.index]
+        else:
+            common_node = common_node.children[a_step.index]
     return common_node
+
+
+def _leads_through_sources(ancestor: DerivationTree, tree: DerivationTree) -> bool:
+    """Whether the way from `ancestor` down to `tree` enters the argument of a generator."""
+    steps = tree.get_choices_path()[len(ancestor.get_choices_path()) :]
+    return any(isinstance(step, SourceStep) for step in steps)
 
 
 class RepetitionBoundsSuggestion(Suggestion):
@@ -228,6 +241,17 @@ class RepetitionBoundsSuggestion(Suggestion):
                 first_node = sorted(
                     [node_a, node_b, node_c], key=lambda x: len(x.get_path())
                 )[0]
+                if any(
+                    _leads_through_sources(first_node, node)
+                    for node in (
+                        repetition_parent,
+                        self._starting_rep_value,
+                        self._ending_rep_value,
+                    )
+                ):
+                    # The replacement below is a copy without generator
+                    # arguments, so it cannot hold all three
+                    return replacements
                 replacement = first_node.deepcopy(
                     copy_children=True, copy_params=False, copy_parent=False
                 )

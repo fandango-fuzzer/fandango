@@ -1,7 +1,6 @@
 import argparse
-import glob
+import itertools
 import os
-import shutil
 import sys
 import tempfile
 from collections.abc import Callable
@@ -12,8 +11,13 @@ from ansi_styles import ansiStyles as styles
 
 import fandango
 from fandango import DerivationTree, Fandango
+from fandango.api import DEFAULT_MAX_GENERATIONS
 from fandango.cli.fanbase_files import fanbase_files
-from fandango.cli.output import open_file, output_population, output_solution
+from fandango.cli.output import (
+    open_file,
+    output_population,
+    output_solution,
+)
 from fandango.cli.parser import get_parser
 from fandango.cli.upgrade import check_for_fandango_update
 from fandango.cli.utils import (
@@ -22,7 +26,6 @@ from fandango.cli.utils import (
     parse_constraints_from_args,
     parse_contents_from_args,
     parse_file,
-    validate,
 )
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
@@ -189,61 +192,45 @@ def fuzz_command(args: argparse.Namespace) -> None:
                 f"Output directory {out_dir} is not a directory or is not empty"
             )
 
-    def solutions_callback(sol: DerivationTree, i: int) -> None:
-        return output_solution(sol, args, i, file_mode)
-
-    max_generations = args.max_generations
-    desired_solutions = args.desired_solutions
-    infinite = args.infinite
-
-    population = fandango.fuzz(
-        solution_callback=solutions_callback,
-        max_generations=max_generations,
-        desired_solutions=desired_solutions,
-        infinite=infinite,
-        mode=FuzzingMode.COMPLETE,
-        **settings,
-    )
-
-    if args.validate:
-        LOGGER.debug("Validating population")
-
-        # Ensure that every generated file can be parsed
-        # and returns the same string as the original
-        try:
-            temp_dir = tempfile.TemporaryDirectory(delete=False)  # type: ignore [call-overload, unused-ignore] # delete is only available on some OSs
-        except TypeError:
-            # Python 3.11 does not know the `delete` argument
-            temp_dir = tempfile.TemporaryDirectory()
-        args.directory = temp_dir.name
-        args.format = "string"
-        output_population(population, args, file_mode=file_mode, output_on_stdout=False)
-        generated_files = glob.glob(args.directory + "/*")
-        generated_files.sort()
-        assert len(generated_files) == len(population), (
-            f"len(generated_files): {len(generated_files)}, len(population): {len(population)}"
+    assert isinstance(fandango, Fandango)
+    max_generations, desired_solutions, _infinite = (
+        fandango._sanitize_runtime_end_settings(
+            FuzzingMode.COMPLETE,
+            args.desired_solutions,
+            args.max_generations,
+            args.infinite,
+            settings.get("use_fcc", False),
         )
+    )
+    fandango.init_population(mode=FuzzingMode.COMPLETE, **settings)
+    solutions = fandango.generate_solutions(max_generations, FuzzingMode.COMPLETE)
 
-        errors = 0
-        for i in range(len(generated_files)):
-            generated_file = generated_files[i]
-            individual = population[i]
+    found = 0
+    # Each solution is written (and validated) as soon as it is found, and then
+    # dropped, so that a long run does not keep every tree in memory; this is
+    # why the CLI does not use Fandango.fuzz(), which collects them.
+    for i, solution in enumerate(itertools.islice(solutions, desired_solutions)):
+        found += 1
+        output_solution(solution, args, i, file_mode)
+        if args.validate:
+            # The solution, as written, has to parse back (and meet the constraints)
+            value = (
+                solution.to_bytes() if file_mode == "binary" else solution.to_string()
+            )
+            re_parsed = next(fandango.parse(value), None)
+            if re_parsed is None or re_parsed.value() != value:
+                raise FandangoError(
+                    f"Output {i} does not parse back; it is the last output written."
+                    " Use `fandango parse` on it to see why."
+                )
 
-            try:
-                with open_file(generated_file, file_mode, mode="r") as fd:
-                    tree = parse_file(fd, args, grammar, constraints, settings)
-                    validate(individual, tree, filename=fd.name)
+    fandango._print_warnings_if_necessary_post_fuzz(desired_solutions, found, settings)
 
-            except Exception as e:
-                print_exception(e)
-                errors += 1
-
-        if errors:
-            raise FandangoError(f"{errors} error(s) during validation")
-
-        # If everything went well, clean up;
-        # otherwise preserve file for debugging
-        shutil.rmtree(temp_dir.name)
+    if settings.get("best_effort", False):
+        # Not validated: the padding need not satisfy the constraints
+        padding = fandango._best_effort_padding(desired_solutions, found)
+        for i, individual in enumerate(padding, start=found):
+            output_solution(individual, args, i, file_mode)
 
 
 def parse_command(args: argparse.Namespace) -> None:
@@ -347,6 +334,8 @@ def talk_command(args: argparse.Namespace) -> None:
         return output_solution(sol, args, i, file_mode)
 
     max_generations = args.max_generations
+    if max_generations is None:
+        max_generations = DEFAULT_MAX_GENERATIONS
     desired_solutions = args.desired_solutions
     infinite = args.infinite
 

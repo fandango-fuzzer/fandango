@@ -167,7 +167,13 @@ class PopulationManager:
         failing_constraint_count = len({tree.cause for tree in failing_trees})
         max_fix_rounds = math.ceil(math.log2(max(failing_constraint_count, 2))) + 1
         for _ in range(max_fix_rounds if failing_trees else 0):
-            fixed, round_fixes_made = self._apply_suggestion(individual, suggestion)
+            try:
+                fixed, round_fixes_made = self._apply_suggestion(individual, suggestion)
+            except FandangoGeneratorError as error:
+                # A repair re-runs the generators above the nodes it replaces;
+                # the individual stays as it was if their output does not parse
+                LOGGER.warning(f"Discarding a repair: {error}")
+                break
             if round_fixes_made == 0:
                 break
             evaluation = GeneratorWithReturn(eval_individual(fixed))
