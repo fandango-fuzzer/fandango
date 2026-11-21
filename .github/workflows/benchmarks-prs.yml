@@ -15,7 +15,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Fandango
         uses: ./.github/workflows/setup-fandango
         with:
@@ -28,12 +28,12 @@ jobs:
         run: |
           pytest -n 0 --timeout 1200 --benchmark-json results.json --benchmark-enable --benchmark-only
       - name: Upload Benchmark Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: results.json
           path: ./results.json
       - name: Upload GitHub Pull Request Event
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: event.json
           path: ${{ github.event_path }}
