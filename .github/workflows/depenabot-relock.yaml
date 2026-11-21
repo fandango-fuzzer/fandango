@@ -36,8 +36,7 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
-      # Only used when falling back to the default GITHUB_TOKEN.
-      contents: write
+      contents: read
 
     steps:
       - name: Checkout PR branch
@@ -64,16 +63,17 @@ jobs:
         env:
           HEAD_REF: ${{ github.head_ref }}
           REPO: ${{ github.repository }}
-          # Pushes made with the default GITHUB_TOKEN do not trigger workflows,
-          # so the other checks would not run on the relock commit. Set
-          # DEPENDABOT_RELOCK_TOKEN as a *Dependabot* secret (fine-grained PAT
-          # or app token with contents: write on this repo only) to have CI
-          # re-run on it.
-          TOKEN: ${{ secrets.DEPENDABOT_RELOCK_TOKEN || github.token }}
+          # A Dependabot secret (fine-grained PAT or app token with contents:
+          # write on this repo only) is required to trigger CI on this commit.
+          TOKEN: ${{ secrets.DEPENDABOT_RELOCK_TOKEN }}
         run: |
           if git diff --quiet -- pylock.toml; then
             echo "pylock.toml is up to date."
             exit 0
+          fi
+          if [ -z "$TOKEN" ]; then
+            echo "DEPENDABOT_RELOCK_TOKEN is required to push the relock commit."
+            exit 1
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
