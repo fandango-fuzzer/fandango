@@ -146,7 +146,7 @@ class TestStepWaitingToBeBlocked(unittest.TestCase):
         guider.select_next_packet(history, lambda: {target}, lambda: [])
         self.assertTrue(guider.is_guide_to_end)
         self.assertTrue(
-            any(True for _ in guider._updated_navigator().controlflow_trees(history))
+            any(True for _ in guider._navigator_instance.controlflow_trees(history))
         )
         guider.observe_session_end()
         self.assertIn(help_step, guider._step_refusals.blocked_steps)

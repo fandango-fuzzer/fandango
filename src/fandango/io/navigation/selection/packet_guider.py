@@ -100,6 +100,7 @@ class PacketGuider:
         """Forget everything about previous runs, as after construction."""
         self._target_selector.reset()
         self._step_refusals.reset()
+        self._update_navigator()
         self._unreachable_targets.clear()
         self._last_restrictions = None
         self._clear_plan()
@@ -115,6 +116,7 @@ class PacketGuider:
         if not self._abandons_run:
             self._count_pending_step_as_refused(generation_failed)
         self._step_refusals.signal_session_end()
+        self._update_navigator()
         if (
             self._abandons_run
             or self._guide_target is None
@@ -146,6 +148,7 @@ class PacketGuider:
         steps = self._forecast.result.last_message_steps
         for step in steps:
             self._step_refusals.observe_taken(step, message.sender)
+        self._update_navigator()
         self._external_party_silent = False
         self._check_covered_paths_kept(message.sender, history_tree)
         self._follow_guide_path(message.msg, message.sender, steps)
@@ -250,11 +253,11 @@ class PacketGuider:
 
     def is_derivable_coverage_complete(self, uncovered_paths: set[KPath]) -> bool:
         return self._target_selector.is_every_path_underivable(
-            uncovered_paths, self._updated_navigator().is_derivable
+            uncovered_paths, self._navigator_instance.is_derivable
         )
 
-    def _updated_navigator(self) -> PacketNavigator:
-        """Brings the navigator up to the blocked steps, step costs and suspect predecessors and returns it."""
+    def _update_navigator(self) -> None:
+        """Brings the navigator up to the blocked steps, step costs and suspect predecessors."""
         blocked_steps = self._step_refusals.blocked_steps
         if blocked_steps != self._navigator_instance.blocked_steps:
             self._navigator_instance = self._navigator_instance.with_blocked_steps(
@@ -262,7 +265,6 @@ class PacketGuider:
             )
         self._navigator_instance.set_step_costs(self._step_refusals.repeat_costs())
         self._navigator_instance.set_suspect_predecessors(self._suspect_predecessors())
-        return self._navigator_instance
 
     def _update_unreachable_targets(self) -> None:
         """Forgets the targets out of reach of every run once a blocked step or suspect predecessor was lifted."""
@@ -279,7 +281,7 @@ class PacketGuider:
         """True if the target is derivable and not known to be out of reach of every run."""
         return (
             target not in self._unreachable_targets
-            and self._updated_navigator().is_derivable(target)
+            and self._navigator_instance.is_derivable(target)
         )
 
     def select_next_packet(
@@ -297,6 +299,7 @@ class PacketGuider:
             if "TimerEvent" not in current_external_parties:
                 return []
 
+        self._update_navigator()
         plan_left = self._deviated_from_guide
         self._deviated_from_guide = False
 
@@ -353,7 +356,7 @@ class PacketGuider:
             if target is None:
                 break
             try:
-                guide = self._updated_navigator().astar_tree_including_k_paths(
+                guide = self._navigator_instance.astar_tree_including_k_paths(
                     tree=self._history_tree,
                     destination_k_path=target,
                     included_k_paths=self._session_covered_k_paths,
@@ -418,7 +421,7 @@ class PacketGuider:
         """Drops the target and follows a path to the end of the run from now on."""
         self._guide_target = None
         try:
-            path = self._updated_navigator().astar_search_end_including_k_paths(
+            path = self._navigator_instance.astar_search_end_including_k_paths(
                 self._history_tree, included_k_paths=self._session_covered_k_paths
             )
         except NavigatorTimedOutError:
@@ -430,7 +433,7 @@ class PacketGuider:
             self._guide_path.set_guide_path(GuidePath([*path, None]))
 
     def _is_tree_contains_paths(self, paths: set[KPath], tree: DerivationTree) -> bool:
-        return self._updated_navigator().contains_k_paths(paths, tree)
+        return self._navigator_instance.contains_k_paths(paths, tree)
 
     def _confirm_covered_path(self, path: KPath) -> None:
         self._session_covered_k_paths.add(path)
