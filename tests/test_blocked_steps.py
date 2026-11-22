@@ -129,7 +129,7 @@ class TestStepWaitingToBeBlocked(unittest.TestCase):
         guider = algorithm._packet_selector._guider
         (help_step,) = (
             step
-            for step in guider._navigator_instance._rule_steps().values()
+            for step in guider._navigator._rule_steps().values()
             if step.parent == NonTerminal("<exchange_help>")
             and step.packet == NonTerminal("<_packet_help>")
         )
@@ -145,9 +145,7 @@ class TestStepWaitingToBeBlocked(unittest.TestCase):
         target = (NonTerminal("<exchange_cmd>"),)
         guider.select_next_packet(history, lambda: {target}, lambda: [])
         self.assertTrue(guider.is_guide_to_end)
-        self.assertTrue(
-            any(True for _ in guider._navigator_instance.controlflow_trees(history))
-        )
+        self.assertTrue(any(True for _ in guider._navigator.controlflow_trees(history)))
         guider.observe_session_end()
         self.assertIn(help_step, guider._step_refusals.blocked_steps)
 
