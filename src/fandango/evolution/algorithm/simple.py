@@ -398,6 +398,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
             )
 
         prev_best_fitness = 0.0
+        prev_solution_count = self.evaluator.get_solution_count()
         generation = 0
         if self.stop_after_seconds is not None:
             self.experiment_start_time = time.time()
@@ -476,6 +477,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
 
             current_best_fitness = max(e[1] for e in self.evaluation)
             current_max_repetitions = self.grammar.get_max_repetition()
+            solution_count = self.evaluator.get_solution_count()
             self.adaptive_tuner.update_parameters(
                 generation,
                 prev_best_fitness,
@@ -483,6 +485,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
                 self.population,
                 self.evaluator,
                 current_max_repetitions,
+                found_new_solutions=solution_count > prev_solution_count,
             )
 
             if self.adaptive_tuner.current_max_repetition > current_max_repetitions:
@@ -491,6 +494,7 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
                 )
 
             prev_best_fitness = current_best_fitness
+            prev_solution_count = solution_count
 
             self.adaptive_tuner.log_generation_statistics(
                 generation, self.evaluation, self.population, self.evaluator

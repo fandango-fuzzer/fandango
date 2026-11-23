@@ -15,6 +15,8 @@ class Column:
         self.leo: dict[Symbol, Optional[LeoEntry]] = {}
         # Finished items that consumed no input, by the symbol they complete.
         self.empty_completions = dict[Symbol, list[ParseState]]()
+        # Whether completing a symbol started here completes the whole parse.
+        self.ends_parse = dict[Symbol, bool]()
 
     def __iter__(self) -> Iterator[ParseState]:
         yield from self.states

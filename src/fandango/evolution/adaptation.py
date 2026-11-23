@@ -52,6 +52,7 @@ class AdaptiveTuner:
         population: list[DerivationTree],
         evaluator: Evaluator,
         current_max_repetition: int,
+        found_new_solutions: bool,
     ) -> tuple[float, float]:
         diversities = evaluator.compute_diversity_bonus(population)
         avg_diversity = sum(diversities) / len(diversities) if diversities else 0
@@ -65,6 +66,9 @@ class AdaptiveTuner:
 
         fitness_improvement_threshold = 0.005
         diversity_low_threshold = 0.1
+        # Longer repetitions and larger trees are for a search that is stuck.
+        # Once solutions exist, the best fitness cannot improve any more; that
+        # alone must not count as stuck while new solutions keep coming.
 
         # Mutation rate adjustment
         if (
@@ -98,7 +102,7 @@ class AdaptiveTuner:
             self.crossover_rate = new_crossover_rate
 
         # Max repetition growth
-        if (
+        if not found_new_solutions and (
             fitness_improvement < fitness_improvement_threshold
             or avg_diversity < diversity_low_threshold
         ):
@@ -120,7 +124,7 @@ class AdaptiveTuner:
                 self.current_max_repetition = new_max_repetition
 
         # Max nodes growth
-        if (
+        if not found_new_solutions and (
             fitness_improvement < fitness_improvement_threshold
             or avg_diversity < diversity_low_threshold
         ):

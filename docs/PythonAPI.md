@@ -153,7 +153,7 @@ In the future, the set of available `settings` may change dependent on the chose
   - `population_size: int`: set the population size (default: 100).
   - `desired_solutions: int`: set the number of desired solutions.
   - `initial_population: List[Union[DerivationTree, str]]`: set the initial population.
-  - `max_generations: int`: set the maximum number of generations (default: 500).
+  - `max_generations: int`: set the maximum number of generations (default: no limit if `desired_solutions` is given, otherwise 500).
   - `warnings_are_errors: bool` can be set to True to raise an exception on warnings.
   - `best_effort: bool` can be set to True to return the population even if it does not satisfy the constraints.
 

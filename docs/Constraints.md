@@ -322,7 +322,7 @@ After a maximum number of generations (which can be set using `-N`), Fandango st
 We can see this if we specify `False` as a constraint:
 
 :::{margin}
-The `-N` option limits the number of generations - the default is 500.
+The `-N` option limits the number of generations. Without it, Fandango runs until it has the number of outputs asked for with `-n`; if `-n` is not given either, it stops after 500 generations.
 :::
 
 ```shell
@@ -339,5 +339,5 @@ As you see, Fandango produces a population of zero.
 Of course, if the constraint is `False`, then there can be no success.
 
 ```{tip}
-Fandango has a `--best-effort` option that allows you to still output the final population.
+Fandango has a `--best-effort` option that fills up the output with individuals of the final population, even if they do not satisfy the constraints.
 ```
