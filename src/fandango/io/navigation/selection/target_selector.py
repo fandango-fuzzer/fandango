@@ -1,5 +1,5 @@
 import random
-from collections import Counter, defaultdict
+from collections import Counter
 from collections.abc import Callable
 from typing import Optional
 
@@ -7,6 +7,8 @@ from fandango.io.navigation.coverage.powerschedule import (
     PowerScheduleCoverage,
     PowerScheduleKPath,
 )
+from fandango.io.navigation.graph.packetnavigator import PacketNavigator
+from fandango.io.navigation.selection.open_targets import OpenTargets
 from fandango.io.navigation.selection.protocol_model import ProtocolModel
 from fandango.language.grammar.k_paths import KPath
 from fandango.language.symbols import NonTerminal, Symbol
@@ -28,49 +30,49 @@ class TargetSelector:
         self._open_sent_messages = open_sent_messages
         self._msg_power_schedule = PowerScheduleCoverage()
         self._state_path_power_schedule = PowerScheduleKPath()
-        self._protocol_msg_symbols = set(
-            map(lambda x: x.symbol, self._model.protocol_msg_symbols)
-        )
-        self._state_target_by_path: dict[KPath, KPath] = {}
-        self._uncovered: set[KPath] = set()
-        self._open_below: Counter[KPath] = Counter()
+        self._open_targets = OpenTargets(model)
         self._picks: Counter[KPath] = Counter()
 
     def reset(self) -> None:
         """Forget the targets chosen so far, as after construction."""
         self._msg_power_schedule = PowerScheduleCoverage()
         self._state_path_power_schedule = PowerScheduleKPath()
-        self._uncovered = set()
-        self._open_below = Counter()
+        self._open_targets.reset()
         self._picks = Counter()
+
+    def mark_unreachable(self, target: KPath) -> None:
+        self._open_targets.mark_unreachable(target)
+
+    def clear_unreachable(self) -> None:
+        self._open_targets.clear_unreachable()
 
     def select(
         self,
         uncovered_paths: set[KPath],
         coverage_scores: list[tuple[NonTerminal, float]],
-        is_derivable: Callable[[KPath], bool],
+        navigator: PacketNavigator,
     ) -> Optional[KPath]:
-        """Picks a derivable uncovered k-path, or else a derivable message. None if there is neither."""
-        self._update_open_below(uncovered_paths)
-        messages = [
+        """Picks a reachable uncovered k-path, or else a reachable message. None if there is neither."""
+        self._open_targets.set_uncovered(uncovered_paths)
+        reachable_sent_messages = [
             message
             for message in self._open_sent_messages()
-            if is_derivable((message,))
+            if self._open_targets.is_reachable_message(message, navigator)
         ]
-        if messages and random.random() < self.MESSAGE_TARGET_SHARE:
-            return (random.choice(messages),)
-        candidates = self._targets_up_to_current_length(
-            uncovered_paths, is_derivable
-        ) or list(filter(is_derivable, self._open_below))
+        if reachable_sent_messages and random.random() < self.MESSAGE_TARGET_SHARE:
+            return (random.choice(reachable_sent_messages),)
+        candidates = self._targets_up_to_current_length(navigator) or list(
+            self._open_targets.reachable(navigator)
+        )
         if len(candidates) == 0:
-            derivable_scores = [
+            reachable_scores = [
                 (message, score)
                 for message, score in coverage_scores
-                if is_derivable((message,))
+                if self._open_targets.is_reachable_message(message, navigator)
             ]
-            if len(derivable_scores) == 0:
+            if len(reachable_scores) == 0:
                 return None
-            return (self._least_covered_message(derivable_scores),)
+            return (self._least_covered_message(reachable_scores),)
         s_ps = self._state_path_power_schedule
         s_ps.assign_energy_k_path(candidates)
         selected_path = s_ps.choose()
@@ -78,89 +80,28 @@ class TargetSelector:
         self._picks[selected_path] += 1
         return selected_path
 
-    def _targets_up_to_current_length(
-        self, unreached: set[KPath], is_derivable: Callable[[KPath], bool]
-    ) -> list[KPath]:
+    def _targets_up_to_current_length(self, navigator: PacketNavigator) -> list[KPath]:
         """
-        The derivable unreached targets up to the current length.
+        The reachable uncovered targets up to the current length.
         The current length is the shortest one with a target picked fewer than MAX_PICKS times.
         """
-        unreached_by_length: dict[int, list[KPath]] = defaultdict(list)
-        for target in self._open_below:
-            if target in unreached:
-                unreached_by_length[len(target)].append(target)
+        reachable_uncovered_by_length = (
+            self._open_targets.reachable_uncovered_by_length(navigator)
+        )
         candidates: list[KPath] = []
-        for length in sorted(unreached_by_length):
-            derivable = list(filter(is_derivable, unreached_by_length[length]))
-            candidates.extend(derivable)
-            if any(self._picks[target] < self.MAX_PICKS for target in derivable):
+        for length in sorted(reachable_uncovered_by_length):
+            targets = reachable_uncovered_by_length[length]
+            candidates.extend(targets)
+            if any(self._picks[target] < self.MAX_PICKS for target in targets):
                 return candidates
         return []
 
-    def _update_open_below(self, uncovered: set[KPath]) -> None:
-        """Updated the cached counts of k-paths that are currently uncovered."""
-        if uncovered is self._uncovered:
-            return
-        newly_uncovered = uncovered - self._uncovered
-        newly_covered = self._uncovered - uncovered
-        for path in newly_uncovered:
-            target = self._state_target_of(path)
-            if len(target) != 0:
-                self._open_below[target] += 1
-        for path in newly_covered:
-            target = self._state_target_of(path)
-            if len(target) != 0:
-                self._open_below[target] -= 1
-                if self._open_below[target] == 0:
-                    del self._open_below[target]
-        self._uncovered = uncovered
-
-    def is_every_path_underivable(
-        self,
-        uncovered_paths: set[KPath],
-        is_derivable: Callable[[KPath], bool],
+    def is_derivable_coverage_complete(
+        self, uncovered_paths: set[KPath], navigator: PacketNavigator
     ) -> bool:
-        return not any(
-            self._is_derivable_path(path, is_derivable) for path in uncovered_paths
+        return self._open_targets.is_derivable_coverage_complete(
+            uncovered_paths, navigator
         )
-
-    def _is_derivable_path(
-        self, path: KPath, is_derivable: Callable[[KPath], bool]
-    ) -> bool:
-        """True if the path trimmed to the state grammar, or else a message producing it, is derivable."""
-        targets = self._trim_to_state_symbols([path]) or [
-            (message,) for message in self._model.messages_producing(path[0])
-        ]
-        return any(map(is_derivable, targets))
-
-    def _trim_to_state_symbols(self, uncovered_paths: list[KPath]) -> list[KPath]:
-        """Trim each path back to its last state-grammar symbol; drop empties."""
-        return [
-            target
-            for target in map(self._state_target_of, uncovered_paths)
-            if len(target) > 0
-        ]
-
-    def _state_target_of(self, path: KPath) -> KPath:
-        target = self._state_target_by_path.get(path)
-        if target is None:
-            path_last_state_cutoff = len(path) + 1
-            in_state_area = True
-            # Make sure that parts of the k-path are in the state area of the grammar. Ignore otherwise
-            if len(path) > 0:
-                first_symbol = path[0]
-                if first_symbol not in self._model.state_grammar_symbols:
-                    in_state_area = False
-                    path_last_state_cutoff = 0
-            if in_state_area:
-                for path_idx, symbol in enumerate(path):
-                    # Truncate k-path at first occurrence of a message symbol
-                    if symbol in self._protocol_msg_symbols:
-                        path_last_state_cutoff = path_idx + 1
-                        break
-            target = path[:path_last_state_cutoff]
-            self._state_target_by_path[path] = target
-        return target
 
     def _least_covered_message(
         self, coverage_scores: list[tuple[NonTerminal, float]]

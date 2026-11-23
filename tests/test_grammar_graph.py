@@ -406,11 +406,12 @@ class TestTargetSelector(unittest.TestCase):
         k_paths = GrammarKPaths(grammar)
         pm = ProtocolModel(grammar, k_paths, start_symbol)
         ts = TargetSelector(pm)
+        navigator = PacketNavigator(grammar, start_symbol)
         all_paths = k_paths.generate_all(
             k=5, non_terminal=start_symbol, input_parties={"Party"}
         )
         for _ in range(10):
-            target = ts.select(all_paths, [], lambda path: True)
+            target = ts.select(all_paths, [], navigator)
             assert target is not None
             self.assertFalse(PacketGuider._tuple_contains(a_follows_b, target))
             self.assertFalse(PacketGuider._tuple_contains(b_follows_a, target))
