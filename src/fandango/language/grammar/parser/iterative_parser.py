@@ -317,7 +317,7 @@ class IterativeParser:
             check_word = str(TreeValue(prev_val_raw).append(TreeValue(check_word)))
         return check_word, len(prev_val_raw)
 
-    def scan_regex(
+    def scan_regex_empty(
         self,
         state: ParseState,
         word: str | bytes,
@@ -326,11 +326,35 @@ class IterativeParser:
         word_index: int,
     ) -> bool:
         """
-        Scan a regex terminal from the input `word`.
+        Scan the empty match of a regex terminal, into the current column.
+        Return True if the regex matches the empty word, False otherwise.
+        """
+        assert isinstance(state.next_symbol, Terminal)
+        assert state.next_symbol.is_regex
+        if state.is_terminal_partial_match:
+            return False
+        lengths, _ = state.next_symbol.regex_check_multiple_lengths(word[:0], 0)
+        if not lengths:
+            return False
+        self._add_regex_match(state, word[:0], 0, table, column_index, word_index)
+        return True
+
+    def scan_regex(
+        self,
+        state: ParseState,
+        word: str | bytes,
+        table: list[Column],
+        column_index: int,
+        word_index: int,
+        to_end: bool = False,
+    ) -> bool:
+        """
+        Scan the non-empty matches of a regex terminal from the input `word`.
         `state` is the current parse state.
         `table` is the parse table.
         `table[column_index]` is the current column.
         `word[word_index]` is the current byte.
+        With `to_end`, scan only the match up to the end of `word`.
         Return True if the regex matched, completely or as an
         extendable prefix, False otherwise.
         """
@@ -344,45 +368,64 @@ class IterativeParser:
 
         check_word, prev_match_length = self._continued_word(state, word, word_index)
 
-        columns_per_byte = self._columns_per_byte
-        # A growing a partial match replaces the previous partial terminal
-        predecessor = state.predecessor() if state.is_terminal_partial_match else state
         # A regex accepts prefixes of the remaining input in several lengths,
         # and only the grammar around it decides which one carries the parse,
         # so we store a state at every length the regex accepts.
         assert isinstance(state.next_symbol, Terminal)
+        min_length = prev_match_length + 1
+        if to_end:
+            min_length = max(min_length, len(check_word))
         lengths, can_continue = state.next_symbol.regex_check_multiple_lengths(
-            check_word, prev_match_length + 1
+            check_word, min_length
         )
-        if not state.is_terminal_partial_match:
-            empty_lengths, _ = state.next_symbol.regex_check_multiple_lengths(
-                check_word[:0], 0
-            )
-            lengths = empty_lengths + lengths
         for length in lengths:
-            next_state = state.next()
-            next_state.partial_matched_length = 0
-            tree = ParserDerivationTree(Terminal(check_word[:length]))
-            next_state.set_edge(predecessor, tree)
-            self._column_at(
-                table,
-                column_index
-                + ((length - state.partial_matched_length) * columns_per_byte),
-            ).add(next_state)
-            self._max_position = max(self._max_position, word_index + length)
+            self._add_regex_match(
+                state, check_word, length, table, column_index, word_index
+            )
         if can_continue:
             # The input ends inside the regex; keep it open for the next chunk.
             next_state = state.copy()
             next_state.partial_matched_length = len(check_word)
             tree = ParserDerivationTree(Terminal(check_word))
-            next_state.set_edge(predecessor, tree)
+            # A growing partial match replaces the previous partial terminal
+            next_state.set_edge(
+                state.predecessor() if state.is_terminal_partial_match else state,
+                tree,
+            )
             self._column_at(
                 table,
                 column_index
-                + ((len(check_word) - state.partial_matched_length) * columns_per_byte),
+                + (
+                    (len(check_word) - state.partial_matched_length)
+                    * self._columns_per_byte
+                ),
             ).add(next_state)
 
         return can_continue or bool(lengths)
+
+    def _add_regex_match(
+        self,
+        state: ParseState,
+        check_word: str | bytes,
+        length: int,
+        table: list[Column],
+        column_index: int,
+        word_index: int,
+    ) -> None:
+        """Add the state past the regex of `state`, matching `check_word[:length]`."""
+        next_state = state.next()
+        next_state.partial_matched_length = 0
+        tree = ParserDerivationTree(Terminal(check_word[:length]))
+        # A growing partial match replaces the previous partial terminal
+        next_state.set_edge(
+            state.predecessor() if state.is_terminal_partial_match else state, tree
+        )
+        self._column_at(
+            table,
+            column_index
+            + ((length - state.partial_matched_length) * self._columns_per_byte),
+        ).add(next_state)
+        self._max_position = max(self._max_position, word_index + length)
 
     def _leo_entry(
         self, table: list[Column], column_index: int, symbol: Symbol
@@ -421,6 +464,38 @@ class IterativeParser:
             entry = LeoEntry(waiter) if entry is None else entry.push(waiter)
             table[cached_index].leo[cached_symbol] = entry
         return entry
+
+    def _ends_parse(self, table: list[Column], state: ParseState) -> bool:
+        """
+        Whether finishing `state` finishes the parse: every item waiting for
+        it, up to the start, has it as its last symbol.
+        Needs the columns up to `state.position` to be complete.
+        """
+        known = table[state.position].ends_parse.get(state.nonterminal)
+        if known is not None:
+            return known
+        seen: set[tuple[int, NonTerminal]] = set()
+        pending = [(state.position, state.nonterminal)]
+        while pending:
+            position, symbol = pending.pop()
+            if (position, symbol) in seen or symbol == self.implicit_start:
+                continue
+            seen.add((position, symbol))
+            known = table[position].ends_parse.get(symbol)
+            if known is True:
+                continue
+            waiters = table[position].waiting_for(symbol)
+            if known is False or not waiters:
+                table[state.position].ends_parse[state.nonterminal] = False
+                return False
+            for waiter in waiters:
+                if waiter.dot != len(waiter.symbols) - 1:
+                    table[state.position].ends_parse[state.nonterminal] = False
+                    return False
+                pending.append((waiter.position, waiter.nonterminal))
+        for position, symbol in seen:
+            table[position].ends_parse[symbol] = True
+        return True
 
     def complete(
         self,
@@ -532,10 +607,12 @@ class IterativeParser:
         self._parsing_mode = mode
         self._hookin_parent = hookin_parent
 
-    def consume(self, char: str | bytes | int) -> None:
+    def consume(self, char: str | bytes | int, final: bool = False) -> None:
         """
         Continues the current parse by adding `char` to the stream.
         Read the parses back with `parsed_positions` and `tree_at`.
+        With `final`, no input follows `char`; a complete parse may then
+        skip the parses that end before it does.
         """
         assert self._start is not None, "Call new_parse() before consume()"
         if isinstance(char, int):
@@ -581,6 +658,8 @@ class IterativeParser:
                 code_point = char if isinstance(char, int) else ord(char)
                 if code_point < 256:
                     self._lookahead = code_point
+            # Regexes that may end the parse; scanned once this column is complete
+            last_regexes_candidates: list[ParseState] = []
             for state in table[column_index]:
                 if state.is_finished:
                     # A parse counts at whole bytes, and at the end of the
@@ -615,13 +694,21 @@ class IterativeParser:
                                 state.next_symbol is not None
                                 and state.next_symbol.is_regex
                             ):
-                                _ = self.scan_regex(
-                                    state,
-                                    word,
-                                    table,
-                                    column_index,
-                                    word_index,
+                                _ = self.scan_regex_empty(
+                                    state, word, table, column_index, word_index
                                 )
+                                if (
+                                    final
+                                    and not at_end
+                                    and self._parsing_mode == ParsingMode.COMPLETE
+                                    and state.dot == len(state.symbols) - 1
+                                ):
+                                    # We might get more waiters for the regex. We need to defer the scan to the end of the column.
+                                    last_regexes_candidates.append(state)
+                                else:
+                                    _ = self.scan_regex(
+                                        state, word, table, column_index, word_index
+                                    )
                             else:
                                 _ = self.scan_bytes(
                                     state,
@@ -630,6 +717,16 @@ class IterativeParser:
                                     column_index,
                                     word_index,
                                 )
+
+            for state in last_regexes_candidates:
+                _ = self.scan_regex(
+                    state,
+                    word,
+                    table,
+                    column_index,
+                    word_index,
+                    to_end=self._ends_parse(table, state),
+                )
 
             if self._parsing_mode == ParsingMode.INCOMPLETE and at_end:
                 for state in table[column_index]:

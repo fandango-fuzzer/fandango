@@ -3,7 +3,8 @@ import time
 import pytest
 
 from fandango import Fandango
-from fandango.language.grammar import ParsingMode
+from fandango.language.grammar.parser.iterative_parser import IterativeParser
+from fandango.language.symbols import NonTerminal
 
 SPEC = """
 <start> ::= <head> <blob> <text>
@@ -12,6 +13,12 @@ SPEC = """
 <text> ::= r'[a-z]*'
 <word> ::= r'[a-z]+'
 <two> ::= rb'[0-9]+' b'x'
+<tail> ::= <x> <zs>
+<x> ::= 'x'
+<zs> ::= 'z' r'[z]+'
+<shared> ::= <low> | <e> <low> 'x'
+<e> ::= ''
+<low> ::= r'[a-w]*'
 """
 
 
@@ -21,11 +28,12 @@ def grammar():  # type: ignore[no-untyped-def]
 
 
 def iterative_parse(grammar, word, symbol):  # type: ignore[no-untyped-def]
-    """The first tree of the iterative parser, without the shortcut for one regex."""
-    tree = next(
-        grammar._parser._parse_forest(word, symbol, mode=ParsingMode.COMPLETE), None
-    )
-    return None if tree is None else grammar._parser.collapse(tree)
+    """The first tree of the iterative parser, without knowing the input is final."""
+    parser = IterativeParser(grammar.rules)
+    parser.new_parse(NonTerminal(symbol))
+    parser.consume(word)
+    tree = next(parser.tree_at(parser.consumed_length()), None)
+    return None if tree is None else parser.collapse(tree[0])
 
 
 @pytest.mark.parametrize(
@@ -38,6 +46,10 @@ def iterative_parse(grammar, word, symbol):  # type: ignore[no-untyped-def]
         ("<word>", ""),  # needs one letter
         ("<word>", "aBc"),
         ("<text>", ""),
+        ("<tail>", "xzzz"),
+        ("<tail>", "xz"),  # needs two z
+        ("<shared>", "abc"),
+        ("<shared>", "abcx"),  # <low> is not last here
     ],
 )
 def test_a_rule_of_one_regex_parses_as_before(grammar, symbol, word) -> None:  # type: ignore[no-untyped-def]
@@ -74,6 +86,15 @@ def test_a_long_value_for_a_rule_of_one_regex_is_parsed_quickly(grammar) -> None
     tree = grammar.parse(word, "<blob>")
     assert tree is not None
     assert tree.to_bytes() == word
+    assert time.time() - start < 2.0
+
+
+def test_a_long_regex_at_the_end_of_a_rule_is_parsed_quickly(grammar) -> None:  # type: ignore[no-untyped-def]
+    word = "x" + "z" * 50_000
+    start = time.time()
+    tree = grammar.parse(word, "<tail>")
+    assert tree is not None
+    assert str(tree) == word
     assert time.time() - start < 2.0
 
 
