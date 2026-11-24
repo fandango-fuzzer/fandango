@@ -143,7 +143,7 @@ class ContinuingNodeVisitor(NodeVisitor[None, bool]):
             try:
                 if len(node.nodes) <= child_idx:
                     raise GrammarKeyError(
-                        "Tree contains more children, then concatination node"
+                        "Tree contains more children than concatenation nodes"
                     )
                 continue_exploring = yield node.nodes[child_idx]
                 child_idx += 1

@@ -294,7 +294,7 @@ assert _exit_code == 0
 ```
 
 But while the values will fit the constraint, they will not be randomly distributed.
-This is because Fandango treats and generates them as _strings_ (= sequences of digits), ignoring thur semantics as numerical values.
+This is because Fandango treats and generates them as _strings_ (= sequences of digits), ignoring their semantics as numerical values.
 To obtain well-distributed numbers from the beginning, use a generator.
 
 1. If a value to be produced is _random_, it should be added via a _generator_.

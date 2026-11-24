@@ -85,7 +85,7 @@ class Terminal(Symbol):
             if not match.partial:
                 lengths.append(length)
         # This here should be able to check the can_continue property, but there seems to be a bug
-        # in the regex libray.
+        # in the regex library.
         # See this example:
         # (?:ab)+ on "abab" (regex 2026.9.10).
         # Using this when the bug is fixed on regex production:
