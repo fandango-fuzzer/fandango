@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         
       - name: Install Fandango
         uses: ./.github/workflows/setup-fandango
@@ -41,13 +41,13 @@ jobs:
           python3 -m coverage lcov
 
       - name: Upload HTML report (main + Ubuntu only)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Test Report
           path: report.html
 
       - name: Cache pygraphviz site-packages (main + Ubuntu only)
-        uses: actions/cache@v3
+        uses: actions/cache@v6
         with:
           path: /usr/local/lib/python3.11/dist-packages
           key: pygraphviz-${{ runner.os }}-python3.11
