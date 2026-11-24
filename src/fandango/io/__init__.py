@@ -43,7 +43,7 @@ class Protocol(enum.Enum):
     """
     The protocol used for network communication.
     * `Protocol.TCP` - the TCP protocol
-    * `Procotol.UDP` - the UDP protocol
+    * `Protocol.UDP` - the UDP protocol
     """
 
     TCP = "TCP"

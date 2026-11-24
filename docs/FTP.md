@@ -78,7 +78,7 @@ sequenceDiagram
 In our setting, we assume that Fandango is acting as _client_ to test an FTP server.
 Fandango connects to a server running on port 25521 on the local host.
 Whenever received a message using the `ClientControl` party, it marks the message as received from the `ServerControl` party.
-The call to `self.start()` in the constructior starts the party and lets it connect to the socket.
+The call to `self.start()` in the constructor starts the party and lets it connect to the socket.
 
 
 ```python
@@ -95,7 +95,7 @@ class ClientControl(NetworkParty):
 
 The `ServerControl` party is the counterpart to `ClientControl`.
 As in our scenario we are assuming that Fandango is acting as _client_ we set the `connection_mode` to `ConnectionMode.EXTERNAL`.
-The party does, therefore, not connect to a socket. The call to `self.start()` in the constructior is ignored.
+The party does, therefore, not connect to a socket. The call to `self.start()` in the constructor is ignored.
 
 ```python
 class ServerControl(NetworkParty):

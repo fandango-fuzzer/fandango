@@ -77,7 +77,7 @@ def decode64(input):
 <response_quit> ::= '221 ' r'[a-zA-Z0-9\-\. ]+' '\r\n'
 
 # When sending a mail the client to the server, the client first tells the server who he is and where to send the mail
-# to, afterwards the client send mail headers and the mail body before finally submitting the mail and goind back to the logged in state.
+# to, afterwards the client send mail headers and the mail body before finally submitting the mail and going back to the logged in state.
 <exchange_mail> ::= <Client:request_mail_from><Server:response_mail_from> \
     <Client:request_mail_to><Server:response_mail_to> \
     <Client:request_mail_data><Server:response_mail_data> \
