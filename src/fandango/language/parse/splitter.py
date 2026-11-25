@@ -12,21 +12,47 @@ from fandango.language.parser.FandangoParserVisitor import FandangoParserVisitor
 from fandango.logger import LOGGER
 
 
-def read_file(file_to_be_included: Path, includes: set[Path]) -> str:
-    dirs = {file_to_be_included.resolve().parent}
-    dirs.update(includes)
+def search_dirs(
+    file_to_be_included: Path,
+    include_dirs: Iterable[Path] = (),
+    file_dirs: Iterable[Path] = (),
+) -> list[Path]:
+    """The directories `include()` searches for a file, best first.
+
+    This is the order documented in `docs/Including.md`. It matters whenever the same
+    relative name exists in more than one of them (say, a copy next to your spec and one
+    installed for everyone): the first directory that has the file wins.
+
+    `include_dirs` are the directories given with `-I`; `file_dirs` are the directories
+    of the files being included from, the innermost first.
+    """
+    dirs: list[Path] = list(include_dirs)
 
     if os.environ.get("FANDANGO_PATH"):
-        dirs.update(Path(dir) for dir in os.environ["FANDANGO_PATH"].split(":"))
+        dirs.extend(Path(dir) for dir in os.environ["FANDANGO_PATH"].split(os.pathsep))
+
+    dirs.append(file_to_be_included.resolve().parent)
+    dirs.extend(file_dirs)
 
     if platform.system() == "Darwin":
-        dirs |= {Path.home() / "Library" / "Fandango"}  # ~/Library/Fandango
-        dirs |= {Path("/Library/Fandango")}  # /Library/Fandango
+        dirs.append(Path.home() / "Library" / "Fandango")  # ~/Library/Fandango
+    dirs.append(xdg_data_home() / "fandango")  # sth like ~/.local/share/fandango
 
-    dirs |= {xdg_data_home() / "fandango"}  # sth like ~/.local/share/fandango
-    dirs |= {
+    if platform.system() == "Darwin":
+        dirs.append(Path("/Library/Fandango"))  # /Library/Fandango
+    dirs.extend(
         dir / "fandango" for dir in xdg_data_dirs()
-    }  # sth like /usr/local/share/fandango
+    )  # sth like /usr/local/share/fandango
+
+    return list(dict.fromkeys(dirs))  # a directory listed twice is searched once
+
+
+def read_file(
+    file_to_be_included: Path,
+    include_dirs: Iterable[Path] = (),
+    file_dirs: Iterable[Path] = (),
+) -> str:
+    dirs = search_dirs(file_to_be_included, include_dirs, file_dirs)
 
     for dir in dirs:
         full_file_name = dir / file_to_be_included
@@ -37,7 +63,7 @@ def read_file(file_to_be_included: Path, includes: set[Path]) -> str:
             return full_file.read()
 
     raise FileNotFoundError(
-        f"{file_to_be_included!r} not found in {':'.join(str(dir) for dir in dirs)}"
+        f"{file_to_be_included!r} not found in {os.pathsep.join(str(dir) for dir in dirs)}"
     )
 
 
@@ -48,14 +74,19 @@ class FandangoSplitter(FandangoParserVisitor):
         used_symbols: set[str],
         includes: Optional[Iterable[str | Path]] = None,
         depth: int = 0,
+        file_dirs: Optional[Iterable[Path]] = None,
     ) -> None:
         self._filename = filename
-        self._includes = set(Path(include) for include in (includes or []))
+        # The directories given with `-I`, in the order given
+        self._includes = [Path(include) for include in (includes or [])]
         self._depth = depth
         self._used_symbols: set[str] = used_symbols or set()
+        # The directories of the files being included from, the innermost first
+        self._file_dirs: list[Path] = []
         dirname = Path(filename).parent
         if dirname != Path("."):
-            self._includes.add(dirname)
+            self._file_dirs.append(dirname)
+        self._file_dirs.extend(file_dirs or [])
 
         # depth, production
         self.productions: list[FandangoParser.ProductionContext] = []
@@ -80,12 +111,15 @@ class FandangoSplitter(FandangoParserVisitor):
         filename = filename[
             1:-1
         ]  # remove quotes, assume we're just using simple quotes
-        contents = read_file(Path(filename), includes=self._includes)
+        contents = read_file(
+            Path(filename), include_dirs=self._includes, file_dirs=self._file_dirs
+        )
         inner = FandangoSplitter(
             filename=filename,
             used_symbols=self._used_symbols,
             includes=self._includes,
             depth=self._depth + 1,
+            file_dirs=self._file_dirs,
         )
         tree = parse_tree(filename, contents)
         inner.visit(tree)
