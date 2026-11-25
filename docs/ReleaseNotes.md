@@ -15,6 +15,14 @@ kernelspec:
 
 This document lists major changes across releases.
 
+```{versionchanged} 1.3.2 (November 2026)
+* **Stronger `--validate`.** Fandango now parses each generated solution back with the grammar and reports an output that does not parse as a failure, stopping at the first one.
+* **Clearer `fuzz -n` limits.** `-n` sets how many outputs to produce without imposing a separate generation limit; a generation cap applies only when `-N` is also given, and a run no longer stops early while valid outputs are still being produced.
+* **Lower memory use.** Written solutions are no longer kept in memory, and the default cache size is 500 entries (down from 10000).
+* **Fixes for deep and recursive grammars.** k-path computation was rewritten to be iterative, avoiding a recursion error on deep grammars and running faster; a rule consisting of a single regex is now matched directly by the parser.
+* Repetition-bound repair is more robust, keeping the run alive when a generator fails and locating the common node through generator arguments. Assorted bug fixes and typo corrections.
+```
+
 ```{versionchanged} 1.3.1 (October 2026)
 * **More effective protocol fuzzing.** Navigation and coverage guidance now better account for blocked or unreachable steps, helping Fandango choose useful packet sequences and avoid paths that cannot make progress.
 * **Improved packet generation.** Packet populations can be evolved and mounted more efficiently, improving the search for valid protocol interactions.
